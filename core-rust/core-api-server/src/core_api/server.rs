@@ -124,7 +124,8 @@ pub async fn create_server<F>(
 ) where
     F: Future<Output = ()>,
 {
-    let da_state = core_api_state.da_state.clone();
+    let ca_clone = core_api_state.clone();
+    let da_state = ca_clone.clone().da_state.clone();
     let _ = thread::spawn(move || {
         let mut is_running = false;
         let mut handle: Option<JoinHandle<()>> = None;
@@ -138,9 +139,9 @@ pub async fn create_server<F>(
                 println!("[DA]: starting");
                 is_running = true;
 
-                let inner_da_state = da_state.clone();
+                let inner_core_api_state = ca_clone.clone();
                 let h = thread::spawn(move || {
-                    da_main(inner_da_state);
+                    da_main(inner_core_api_state);
                 });
                 handle.replace(h);
             } else if is_running && !should_run {

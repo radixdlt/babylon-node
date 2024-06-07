@@ -1,8 +1,16 @@
 use std::cell::RefCell;
+use std::iter;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::time::Instant;
+
 use postgres::{Client, NoTls};
-use crate::core_api::DaState;
+use radix_common::prelude::ScryptoSbor;
+use radix_substate_store_queries::typed_substate_layout::{TypedMetadataModuleSubstateKey, TypedSubstateKey};
+
+use state_manager::{StateVersion, SubstateChangeAction, SubstateReference};
+use state_manager::traits::*;
+
+use crate::core_api::{CoreApiState, create_typed_substate_key, create_typed_substate_value, MappingContext, to_api_entity_address};
 use crate::da::aggregate::*;
 use crate::da::db::*;
 
@@ -14,12 +22,11 @@ mod lru_like_dictionary;
 // TODO #2: reduce primitive variables usage
 // TODO #3: use separate channels for scanning and DB persistence
 
-pub fn da_main(inner_da_state: Arc<Mutex<DaState>>) {
+pub fn da_main(core_api_state: CoreApiState) {
     let mut postgres_db = Client::connect("host=localhost user=db_dev_superuser password=db_dev_password dbname=rust_agg", NoTls).unwrap();
     let mut sequences = DbSequences::new(&mut postgres_db);
     let ledger_tip = read_ledger_tip(&mut postgres_db);
 
-    let mut fetch_context = FetchContext::new(ledger_tip);
     let mut processing_context = ProcessingContext::new(&mut postgres_db);
 
     let processors: Vec<fn(&mut ProcessingContext, &mut DbSequences, &[Event]) -> ()> = vec![
@@ -30,23 +37,111 @@ pub fn da_main(inner_da_state: Arc<Mutex<DaState>>) {
         proc_fin,
     ];
 
+    let da_state = core_api_state.da_state;
+
+    // TODO not sure if we can use direct access or should we use the .snapshot()
+    let node_db = core_api_state.state_manager.database.access_direct();
+    let mut fetch_state_version = ledger_tip.unwrap_or(0) as u64;
+    let limit = 10000;
+
     loop {
-        let running = inner_da_state.lock().unwrap().should_run;
+        let running = da_state.lock().unwrap().should_run;
 
         if !running {
             break;
         }
 
-        let event_stream = fetch_sample_event_stream(&mut fetch_context);
+        processing_context.stopwatch.replace(Instant::now());
+
+        // TODO similarly to the Core API we'll fetch batches of 1000 TXs but this is definitely FAR from being most performant
+        let bundles_iter = node_db.get_committed_transaction_bundle_iter(StateVersion::of(fetch_state_version + 1));
+        let proofs_iter = Box::new(iter::empty());
+        let transactions_and_proofs_iter = TransactionAndProofIterator::new(bundles_iter, proofs_iter);
+
+        let mut event_stream = vec![];
+        for (bundle, _) in transactions_and_proofs_iter.take(limit) {
+            // TODO obviously normally we'd operate on the bundle itself but as I want to keep the code similar to the original prototype we'd do a bit of copying
+
+            let CommittedTransactionBundle {
+                state_version,
+                raw: _,
+                receipt,
+                identifiers: _,
+            } = bundle;
+
+            fetch_state_version = state_version.number();
+            let mut changes = vec![];
+            let substate_level_changes = receipt.on_ledger.state_changes.substate_level_changes;
+            let context = MappingContext::new_for_transaction_stream(&core_api_state.network);
+
+            // copied from the original Core API
+
+            // Step 1 - First, build actions
+            let mut changes_to_map = Vec::new();
+            for (substate_reference, action) in substate_level_changes.iter() {
+                let SubstateReference(node_id, partition_number, substate_key) = &substate_reference;
+                let typed_substate_key =
+                    create_typed_substate_key(&context, node_id, *partition_number, substate_key).unwrap();
+                if !typed_substate_key.value_is_mappable() {
+                    continue;
+                }
+                changes_to_map.push((substate_reference, typed_substate_key, action))
+            }
+
+            // Step 2 - Build supplementary lookups from the database
+            // let state_mapping_lookups =
+            //     StateMappingLookups::create_from_database(Some(&node_db), &changes_to_map).unwrap();
+
+            // Step 3 - Map the change actions
+            for (substate_reference, typed_substate_key, action) in changes_to_map.into_iter() {
+                let SubstateReference(node_id, _, _) = substate_reference;
+
+                let db_substate = match action {
+                    SubstateChangeAction::Create { new } => Some(new),
+                    SubstateChangeAction::Update { previous: _, new } => Some(new),
+                    SubstateChangeAction::Delete { .. } => None,
+                };
+
+                if let Some(db_substate) = db_substate {
+                    let raw: &[u8] = db_substate;
+
+                    if let TypedSubstateKey::MetadataModule(TypedMetadataModuleSubstateKey::MetadataEntryKey(metadata_module_key)) = &typed_substate_key {
+                        let entity_address = to_api_entity_address(&context, &node_id).unwrap();
+                        let typed_value = create_typed_substate_value(&typed_substate_key, &raw).unwrap();
+
+                        // if let TypedSubstateValue::MetadataModule(TypedMetadataModuleSubstateValue::MetadataEntry(metadata_value_substate)) = typed_value {
+                        //     let a = metadata_value_substate.into_value().unwrap();
+                        //     let b = scrypto_encode(&a).unwrap();
+                        //
+                        //
+                        // }
+
+                        changes.push(Change {
+                            entity_address,
+                            metadata_key: metadata_module_key.clone(),
+                            metadata_value: hex::encode(raw),
+                        });
+                    }
+                }
+            }
+
+            event_stream.push(Event {
+                state_version: fetch_state_version as i64,
+                changes,
+            });
+        }
+
+        println!("[DA][MAN][{:?}] batch prepared", processing_context.elapsed());
 
         for p in &processors {
             p(&mut processing_context, &mut sequences, &event_stream);
         }
+
+
     }
 }
 
-fn proc_init(_: &mut ProcessingContext, _: &mut DbSequences, event_stream: &[Event]) {
-    println!("[DA][INT] about to process {} events", event_stream.len());
+fn proc_init(_: &mut ProcessingContext, _: &mut DbSequences, _: &[Event]) {
 }
 
 fn proc_scan(pc: &mut ProcessingContext, _: &mut DbSequences, event_stream: &[Event]) {
@@ -100,19 +195,12 @@ fn proc_execute_processors(pc: &mut ProcessingContext, seq: &mut DbSequences, ev
 
     pc.increase_b.replace(increase_b);
 
-    println!("[DA][EXE] processed {} events", diff);
+    println!("[DA][EXE][{:?}] processed {} events", pc.elapsed(), diff);
 }
 
 fn proc_store(pc: &mut ProcessingContext, seq: &mut DbSequences, _: &[Event]) {
     let increase_a = pc.increase_a.take().unwrap();
     let increase_b = pc.increase_b.take().unwrap();
-
-    println!(
-        "[DA][STR] about to push to database: entity_definitions={}, ledger_transactions={}, metadata_aggregate={}, metadata_entry={}",
-        increase_a.entity_definitions.len(),
-        increase_b.ledger_transactions.len(),
-        increase_b.metadata_aggregate_history.len(),
-        increase_b.metadata_entry_history.len());
 
     let mut db_tx = pc.db_conn.transaction().unwrap();
 
@@ -124,6 +212,11 @@ fn proc_store(pc: &mut ProcessingContext, seq: &mut DbSequences, _: &[Event]) {
     db_tx.commit().unwrap();
 
     pc.min_state_version.replace(increase_b.last_state_version);
+
+    println!(
+        "[DA][STR][{:?}] pushed {} new entities",
+        pc.elapsed(),
+        increase_a.entity_definitions.len() + increase_b.ledger_transactions.len() + increase_b.metadata_aggregate_history.len() + increase_b.metadata_entry_history.len());
 }
 
 fn proc_fin(pc: &mut ProcessingContext, _: &mut DbSequences, _: &[Event]) {
@@ -132,6 +225,6 @@ fn proc_fin(pc: &mut ProcessingContext, _: &mut DbSequences, _: &[Event]) {
         let mra = pc.most_recent_aggregates.evict(|x| x.borrow().from_state_version < min_state_version);
         let mre = pc.most_recent_entries.evict(|x| x.from_state_version < min_state_version);
 
-        println!("[DA][FIN] cleared {} LRU existing_entities, {} LRU most_recent_aggregates, {} LRU most_recent_entries", ee, mra, mre);
+        println!("[DA][FIN][{:?}] cleared {} LRU entries", pc.elapsed(), ee + mra + mre);
     }
 }

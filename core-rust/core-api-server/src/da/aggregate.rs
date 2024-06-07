@@ -2,7 +2,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 use postgres::{Client, Transaction};
 
 use rand::{Rng, SeedableRng};
@@ -25,6 +25,7 @@ pub struct IncreaseB {
 
 pub struct ProcessingContext<'a> {
     pub db_conn: &'a mut Client,
+    pub stopwatch: Option<Instant>,
     pub existing_entities: LruLikeDictionary<String, Rc<DbEntityDefinition>>,
     pub most_recent_entries: LruLikeDictionary<DbMetadataEntryHistoryLookup, Rc<DbMetadataEntryHistory>>,
     pub most_recent_aggregates: LruLikeDictionary<i64, Rc<RefCell<DbMetadataAggregateHistory>>>,
@@ -38,14 +39,19 @@ impl<'a> ProcessingContext<'a> {
     pub fn new(db_conn: &'a mut Client) -> Self {
         Self {
             db_conn,
-            existing_entities: LruLikeDictionary::new(100000),
-            most_recent_entries: LruLikeDictionary::new(10000),
-            most_recent_aggregates: LruLikeDictionary::new(10000),
+            stopwatch: None,
+            existing_entities: LruLikeDictionary::new(1000000),
+            most_recent_entries: LruLikeDictionary::new(1000000),
+            most_recent_aggregates: LruLikeDictionary::new(1000000),
             scan_results: None,
             increase_a: None,
             increase_b: None,
             min_state_version: None,
         }
+    }
+
+    pub fn elapsed(&self) -> u128 {
+        self.stopwatch.as_ref().unwrap().elapsed().as_millis()
     }
 }
 
@@ -210,8 +216,6 @@ pub fn process_event_stream_step_b(
     });
 }
 
-// some boilerplate code below
-
 pub struct ScanResult {
     pub entity_definitions: HashMap<ObservedEntityDefinitionLookup, i64>,
     pub metadata_entry_history: HashSet<ObservedMetadataEntryHistoryLookup>,
@@ -248,23 +252,27 @@ pub fn scan_event_stream(event_stream: &[Event]) -> ScanResult {
     }
 }
 
+// some boilerplate code below
+
 pub struct Event {
-    state_version: i64,
-    changes: Vec<Change>,
+    pub state_version: i64,
+    pub changes: Vec<Change>,
 }
 
 pub struct Change {
-    entity_address: String,
-    metadata_key: String,
-    metadata_value: String,
+    pub entity_address: String,
+    pub metadata_key: String,
+    pub metadata_value: String,
 }
 
+#[allow(unused)]
 pub struct FetchContext {
-    next_state_version: i64,
+    pub next_state_version: i64,
     random: StdRng,
     resources: Vec<String>,
 }
 
+#[allow(unused)]
 impl FetchContext {
     pub fn new(ledger_tip: Option<i64>) -> Self {
         Self {
@@ -285,6 +293,7 @@ impl FetchContext {
     }
 }
 
+#[allow(unused)]
 pub fn fetch_sample_event_stream(context: &mut FetchContext) -> Vec<Event> {
     let mut res = vec![];
 
