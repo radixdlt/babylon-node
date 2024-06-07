@@ -63,7 +63,10 @@
  */
 
 use std::future::Future;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::JoinHandle;
+use std::time::Duration;
 
 use super::metrics::CoreApiMetrics;
 use super::metrics_layer::MetricsLayer;
@@ -85,15 +88,32 @@ use tracing::{debug, error, info, trace, warn, Level};
 
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
+use crate::da::da_main;
 use crate::core_api::models::ErrorResponse;
 use crate::core_api::InternalServerErrorResponseForPanic;
 use handle_status_network_configuration as handle_provide_info_at_root_path;
+
+#[derive(Debug, Clone)]
+pub struct DaState {
+    pub should_run: bool,
+    pub counter: i32,
+}
+
+impl DaState {
+    pub fn new() -> Self {
+        Self {
+            should_run: false,
+            counter: 0,
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct CoreApiState {
     pub network: NetworkDefinition,
     pub flags: CoreApiServerFlags,
     pub state_manager: StateManager,
+    pub da_state: Arc<Mutex<DaState>>,
 }
 
 pub async fn create_server<F>(
@@ -104,6 +124,35 @@ pub async fn create_server<F>(
 ) where
     F: Future<Output = ()>,
 {
+    let da_state = core_api_state.da_state.clone();
+    let _ = thread::spawn(move || {
+        let mut is_running = false;
+        let mut handle: Option<JoinHandle<()>> = None;
+
+        loop {
+            let should_run = da_state.lock().unwrap().should_run;
+
+            if is_running && should_run {
+                // do nothing
+            } else if !is_running && should_run {
+                println!("[DA]: starting");
+                is_running = true;
+
+                let inner_da_state = da_state.clone();
+                let h = thread::spawn(move || {
+                    da_main(inner_da_state);
+                });
+                handle.replace(h);
+            } else if is_running && !should_run {
+                println!("[DA]: stopping");
+                handle.take().unwrap().join().unwrap();
+                is_running = false;
+            } else if !is_running && !should_run {
+                thread::sleep(Duration::from_millis(500));
+            }
+        }
+    });
+
     let router = Router::new()
         // This only adds a route for /core, /core/ doesn't seem possible using /nest
         .route("/", get(handle_provide_info_at_root_path))
@@ -187,6 +236,9 @@ pub async fn create_server<F>(
         .route("/state/package", post(handle_state_package))
         .route("/state/resource", post(handle_state_resource))
         .route("/state/non-fungible", post(handle_state_non_fungible))
+        .route("/da/status", get(handle_da_status))
+        .route("/da/start", get(handle_da_start))
+        .route("/da/stop", get(handle_da_stop))
         .with_state(core_api_state);
 
     let metrics = Arc::new(CoreApiMetrics::new(metric_registry));

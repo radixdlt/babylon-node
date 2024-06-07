@@ -82,7 +82,7 @@ pub(crate) use conversions::*;
 pub(crate) use errors::*;
 pub(crate) use extractors::*;
 pub(crate) use helpers::*;
-pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState};
+pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState, DaState};
 
 pub(crate) mod models {
     pub(crate) use super::generated::models::*;

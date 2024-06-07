@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+lru = "0.12.3"
+postgres = { version = "0.19.7", features = ["array-impls"] }
+rand = "0.8.5"
 node-common = { path = "../node-common" }
 state-manager = { path = "../state-manager" }
 

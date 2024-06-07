@@ -21,6 +21,7 @@ mod transaction_preview;
 mod transaction_receipt;
 mod transaction_status;
 mod transaction_submit;
+mod da_controller;
 
 pub(crate) use mempool_list::*;
 pub(crate) use mempool_transaction::*;
@@ -43,3 +44,4 @@ pub(crate) use transaction_preview::*;
 pub(crate) use transaction_receipt::*;
 pub(crate) use transaction_status::*;
 pub(crate) use transaction_submit::*;
+pub(crate) use da_controller::*;

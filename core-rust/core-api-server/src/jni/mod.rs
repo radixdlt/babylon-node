@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::core_api::{create_server, CoreApiServerConfig, CoreApiState};
+use crate::core_api::{create_server, CoreApiServerConfig, CoreApiState, DaState};
 use crate::engine_prelude::*;
 use futures::channel::oneshot;
 use futures::channel::oneshot::Sender;
@@ -74,7 +74,7 @@ use node_common::java::*;
 use prometheus::*;
 use state_manager::jni::node_rust_environment::JNINodeRustEnvironment;
 use std::str;
-use std::sync::{Arc, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::runtime::Runtime;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustCoreApiServerPointer";
@@ -108,6 +108,7 @@ extern "system" fn Java_com_radixdlt_api_CoreApiServer_init(
                 network: jni_node_rust_env.network.clone(),
                 flags: config.flags.clone(),
                 state_manager: jni_node_rust_env.state_manager.clone(),
+                da_state: Arc::new(Mutex::new(DaState::new())),
             },
             config,
             running_server: None,
