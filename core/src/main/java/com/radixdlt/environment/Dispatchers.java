@@ -68,7 +68,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.monitoring.Metrics;
@@ -77,7 +76,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /** Helper class to set up environment with dispatched events */
-// TODO: get rid of field injection https://radixdlt.atlassian.net/browse/NT-3
 public final class Dispatchers {
   private Dispatchers() {
     throw new IllegalStateException("Cannot instantiate.");
@@ -101,7 +99,7 @@ public final class Dispatchers {
 
     @Override
     public EventDispatcher<T> get() {
-      final EventDispatcher<T> dispatcher = environmentProvider.get().getDispatcher(c);
+      final var dispatcher = environmentProvider.get().getDispatcher(c);
       final Set<EventProcessor<T>> processors =
           onDispatchProcessors.stream()
               .flatMap(p -> p.getProcessor(c).stream())
@@ -116,7 +114,6 @@ public final class Dispatchers {
 
   private static final class ScheduledDispatcherProvider<T extends LocalEvent>
       implements Provider<ScheduledEventDispatcher<T>> {
-    // TODO: get rid of field injection https://radixdlt.atlassian.net/browse/NT-3
     @Inject private Provider<Environment> environmentProvider;
     private final Class<T> eventClass;
     private final TypeLiteral<T> eventLiteral;
@@ -161,19 +158,32 @@ public final class Dispatchers {
     @Override
     public RemoteEventDispatcher<NodeId, T> get() {
       var remoteDispatcher = environmentProvider.get().getRemoteDispatcher(messageType);
-      var localDispatcher = environmentProvider.get().getDispatcher(messageType);
-      var onDispatch =
-          onDispatchProcessors.stream()
-              .flatMap(p -> p.getProcessor(messageType).stream())
-              .collect(Collectors.toSet());
-      return (node, e) -> {
-        if (node.equals(self)) {
-          localDispatcher.dispatch(e);
-        } else {
-          remoteDispatcher.dispatch(node, e);
-        }
-        onDispatch.forEach(p -> p.process(e));
-      };
+
+      if (LocalEvent.class.isAssignableFrom(messageType)) {
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        var localMessageType = (Class<LocalEvent>) (Class) messageType;
+        var localDispatcher = environmentProvider.get().getDispatcher(localMessageType);
+
+        return (node, e) -> {
+          if (node.equals(self)) {
+            localDispatcher.dispatch((LocalEvent) e);
+            onDispatchProcessors.stream()
+                .flatMap(p -> p.getProcessor(localMessageType).stream())
+                .forEach(p -> p.process((LocalEvent) e));
+          } else {
+            remoteDispatcher.dispatch(node, e);
+          }
+        };
+      } else {
+        return (node, e) -> {
+          if (node.equals(self)) {
+            throw new IllegalStateException(
+                "Remote event dispatched to itself: " + e + " from " + node);
+          } else {
+            remoteDispatcher.dispatch(node, e);
+          }
+        };
+      }
     }
   }
 
@@ -208,7 +218,7 @@ public final class Dispatchers {
    * @param <T> Event type.
    */
   @FunctionalInterface
-  public interface MetricUpdater<T extends CoreEvent> {
+  public interface MetricUpdater<T extends LocalEvent> {
 
     /**
      * Updates the metrics according to the event.

@@ -104,9 +104,9 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
   private final List<Subscription<?>> subscriptions;
   private final ImmutableList<Consumer<ScheduledExecutorService>> onStart;
 
-  private record Subscription<T extends CoreEvent>(Observable<T> o, EventProcessor<T> p) {
+  private record Subscription<T extends CoreEvent>(Observable<T> o, Consumer<T> processor) {
     Disposable subscribe(Scheduler s, Consumer<Throwable> errorHandler) {
-      return o.observeOn(s).subscribe(p::process, errorHandler::accept);
+      return o.observeOn(s).subscribe(processor::accept, errorHandler::accept);
     }
   }
 
@@ -133,13 +133,13 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
       return this;
     }
 
-    public <T extends CoreEvent> Builder add(Observable<T> o, EventProcessor<T> p) {
-      subscriptionsBuilder.add(new Subscription<>(o, p));
+    public <T extends LocalEvent> Builder add(Observable<T> o, EventProcessor<T> p) {
+      subscriptionsBuilder.add(new Subscription<>(o, p::process));
       return this;
     }
 
     public <T extends LocalEvent> Builder add(Flowable<T> o, EventProcessor<T> p) {
-      subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p));
+      subscriptionsBuilder.add(new Subscription<>(o.toObservable(), p::process));
       return this;
     }
 

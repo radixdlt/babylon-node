@@ -76,7 +76,6 @@ import com.google.inject.util.Modules;
 import com.radixdlt.RadixNodeModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.Self;
-import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.crypto.ECKeyPair;
@@ -84,7 +83,6 @@ import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.crypto.exception.PublicKeyException;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.rx.IncomingEvent;
-import com.radixdlt.environment.rx.RxEnvironment;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.GenesisFromPropertiesLoader;
@@ -128,10 +126,11 @@ public final class RadixShell {
 
   public static class NodeBuilder {
     private Network network = Network.LOCALNET;
-    private RuntimeProperties properties;
+    private final RuntimeProperties properties;
     private int p2pServerPort = 0;
-    private ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
-    private ImmutableMap.Builder<String, String> customProperties = new ImmutableMap.Builder<>();
+    private final ImmutableSet.Builder<String> moduleRunnersBuilder = new ImmutableSet.Builder<>();
+    private final ImmutableMap.Builder<String, String> customProperties =
+        new ImmutableMap.Builder<>();
     private Optional<String> dataDir = Optional.empty();
     private final String nodeKeyPass = System.getenv("RADIX_NODE_KEYSTORE_PASSWORD");
 
@@ -299,17 +298,6 @@ public final class RadixShell {
     public <T extends LocalEvent> void dispatch(T t) {
       ((EventDispatcher<T>) injector.getInstance(Environment.class).getDispatcher(t.getClass()))
           .dispatch(t);
-    }
-
-    public <T extends CoreEvent> Disposable onEvent(Class<T> eventClass, Consumer<T> consumer) {
-      final var disposable =
-          injector
-              .getInstance(RxEnvironment.class)
-              .getObservable(eventClass)
-              .subscribe(consumer::accept);
-
-      eventConsumers.add(disposable);
-      return disposable;
     }
 
     public void cleanEventConsumers() {

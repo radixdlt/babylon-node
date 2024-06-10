@@ -65,49 +65,66 @@
 package com.radixdlt.monitoring;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
+import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.ProtocolState;
-import com.radixdlt.statecomputer.commit.LedgerProof;
-import java.util.concurrent.atomic.AtomicReference;
+import com.radixdlt.statecomputer.commit.NextEpoch;
 
 /** Manages system information to be consumed by clients such as the api. */
 public final class InMemorySystemInfo {
-  private final AtomicReference<EpochRound> currentEpochRound =
-      new AtomicReference<>(EpochRound.of(0L, Round.epochInitial()));
-  private final AtomicReference<LedgerProof> epochsLedgerProof;
-
-  private ProtocolState protocolState;
+  private final RustStateReader rustStateReader;
+  private InMemorySystemInfoState state;
 
   @Inject
-  public InMemorySystemInfo(LedgerProofBundle latestProof, ProtocolState initialProtocolState) {
-    this.epochsLedgerProof = new AtomicReference<>(latestProof.closestEpochProofOnOrBefore());
-    this.protocolState = initialProtocolState;
+  public InMemorySystemInfo(
+      RustStateReader rustStateReader,
+      LedgerProofBundle latestProof,
+      ProtocolState initialProtocolState) {
+    this.rustStateReader = rustStateReader;
+    final var latestEpochChange =
+        latestProof.closestEpochProofOnOrBefore().ledgerHeader().nextEpoch().unwrap();
+    this.state =
+        new InMemorySystemInfoState(
+            initialProtocolState,
+            EpochRound.of(latestProof.resultantEpoch(), latestProof.resultantRound()),
+            latestEpochChange.validators(),
+            rustStateReader.getConsensusManagerConfigEpochTargetDurationMs().toLong(),
+            rustStateReader.getConsensusManagerStateEpochEffectiveStartMs());
   }
 
-  public void processEpochRound(EpochRound epochRound) {
-    currentEpochRound.set(epochRound);
+  public void processRoundUpdate(EpochRoundUpdate roundUpdate) {
+    this.state =
+        new InMemorySystemInfoState(
+            state.protocolState(),
+            roundUpdate.getEpochRound(),
+            state.currentEpochValidators(),
+            state.consensusManagerConfigEpochTargetDurationMs(),
+            state.consensusManagerStateEpochEffectiveStartMs());
+  }
+
+  public EpochRound getCurrentRound() {
+    return state.currentEpochRound();
   }
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
     return update -> {
-      epochsLedgerProof.set(update.committedProof().closestEpochProofOnOrBefore());
-      this.protocolState = update.resultantProtocolState();
+      final var committedProof = update.committedProof();
+      final var maybeNextEpoch = committedProof.primaryProof().ledgerHeader().nextEpoch();
+      this.state =
+          new InMemorySystemInfoState(
+              update.resultantProtocolState(),
+              EpochRound.of(committedProof.resultantEpoch(), committedProof.resultantRound()),
+              maybeNextEpoch.map(NextEpoch::validators).orElse(this.state.currentEpochValidators()),
+              rustStateReader.getConsensusManagerConfigEpochTargetDurationMs().toLong(),
+              rustStateReader.getConsensusManagerStateEpochEffectiveStartMs());
     };
   }
 
-  public LedgerProof getEpochProof() {
-    return epochsLedgerProof.get();
-  }
-
-  public EpochRound getCurrentRound() {
-    return this.currentEpochRound.get();
-  }
-
-  public ProtocolState getProtocolState() {
-    return this.protocolState;
+  public InMemorySystemInfoState getState() {
+    return this.state;
   }
 }

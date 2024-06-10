@@ -130,19 +130,19 @@ public class EpochManagerTest {
 
   @Inject private Hasher hasher;
 
-  private ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-  private BFTValidatorId selfValidatorId =
+  private final ECKeyPair ecKeyPair = ECKeyPair.generateNew();
+  private final BFTValidatorId selfValidatorId =
       BFTValidatorId.withKeyAndFakeDeterministicAddress(ecKeyPair.getPublicKey());
 
-  private ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-  private ScheduledEventDispatcher<GetVerticesRequest> timeoutScheduler =
-      rmock(ScheduledEventDispatcher.class);
-  private EventDispatcher<LocalSyncRequest> syncLedgerRequestSender = rmock(EventDispatcher.class);
-  private RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher =
+  private final ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
+  private final EventDispatcher<LocalSyncRequest> syncLedgerRequestSender =
+      rmock(EventDispatcher.class);
+  private final RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher =
       rmock(RemoteEventDispatcher.class);
-  private RemoteEventDispatcher<NodeId, Vote> voteDispatcher = rmock(RemoteEventDispatcher.class);
-  private Mempool mempool = mock(Mempool.class);
-  private StateComputer stateComputer =
+  private final RemoteEventDispatcher<NodeId, Vote> voteDispatcher =
+      rmock(RemoteEventDispatcher.class);
+  private final Mempool mempool = mock(Mempool.class);
+  private final StateComputer stateComputer =
       new StateComputer() {
         @Override
         public void addToMempool(MempoolAdd mempoolAdd, @Nullable NodeId origin) {
@@ -220,8 +220,6 @@ public class EpochManagerTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LedgerUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() {})
-            .toInstance(timeoutScheduler);
         bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() {})

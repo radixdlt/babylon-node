@@ -66,7 +66,6 @@ package com.radixdlt.ledger;
 
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.event.LocalEvent;
-import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.CommitSummary;
@@ -80,4 +79,4 @@ public record LedgerUpdate(
     ProtocolState resultantProtocolState,
     // Only used in tests
     List<RawLedgerTransaction> committedNonProtocolUpdateTransactions)
-    implements LocalEvent, RemoteEvent {}
+    implements LocalEvent {}

@@ -182,8 +182,6 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<ScheduledEventDispatcher<GetVerticesRequest>>() {})
-            .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<RoundQuorumResolution>>() {})
@@ -208,8 +206,6 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<ConsensusByzantineEvent>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        //        bind(new TypeLiteral<ScheduledEventDispatcher<Round>>() {})
-        //            .toInstance(rmock(ScheduledEventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
             .toInstance(rmock(ScheduledEventDispatcher.class));
 
