@@ -123,21 +123,21 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
 
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
-    final Round previousRound = this.latestRoundUpdate.getCurrentRound();
+    final Round previousRound = this.latestRoundUpdate.currentRound();
     log.trace("Processing roundUpdate {} cur {}", roundUpdate, previousRound);
 
     this.latestRoundUpdate = roundUpdate;
     forwardTo.processRoundUpdate(roundUpdate);
     roundQueues
-        .getOrDefault(roundUpdate.getCurrentRound(), new LinkedList<>())
+        .getOrDefault(roundUpdate.currentRound(), new LinkedList<>())
         .forEach(this::processRoundCachedEvent);
-    roundQueues.keySet().removeIf(v -> v.lte(roundUpdate.getCurrentRound()));
+    roundQueues.keySet().removeIf(v -> v.lte(roundUpdate.currentRound()));
 
     syncingEvents.stream()
-        .filter(e -> e.event.getRound().equals(roundUpdate.getCurrentRound()))
+        .filter(e -> e.event.getRound().equals(roundUpdate.currentRound()))
         .forEach(this::processQueuedConsensusEvent);
 
-    syncingEvents.removeIf(e -> e.event.getRound().lte(roundUpdate.getCurrentRound()));
+    syncingEvents.removeIf(e -> e.event.getRound().lte(roundUpdate.currentRound()));
   }
 
   private void processRoundCachedEvent(QueuedConsensusEvent queuedEvent) {
@@ -209,7 +209,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   }
 
   private <T extends ConsensusEvent> void syncUpAndProcess(T event, Consumer<T> processFn) {
-    final Round currentRound = this.latestRoundUpdate.getCurrentRound();
+    final Round currentRound = this.latestRoundUpdate.currentRound();
     if (event.getRound().gte(currentRound)) {
       final var highQcSource =
           switch (event) {
@@ -251,10 +251,10 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
 
   private <T extends ConsensusEvent> void processOnCurrentRoundOrCache(
       T event, Consumer<T> processFn) {
-    if (latestRoundUpdate.getCurrentRound().equals(event.getRound())) {
+    if (latestRoundUpdate.currentRound().equals(event.getRound())) {
       processFn.accept(event);
-    } else if (latestRoundUpdate.getCurrentRound().lt(event.getRound())) {
-      log.trace("Caching {}, current round is {}", event, latestRoundUpdate.getCurrentRound());
+    } else if (latestRoundUpdate.currentRound().lt(event.getRound())) {
+      log.trace("Caching {}, current round is {}", event, latestRoundUpdate.currentRound());
       roundQueues.putIfAbsent(event.getRound(), new LinkedList<>());
       roundQueues
           .get(event.getRound())

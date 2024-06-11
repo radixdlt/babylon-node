@@ -118,13 +118,13 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
 
   @Provides
   private RoundUpdate initialRoundUpdate(BFTConfiguration configuration) {
-    final var proposerElection = configuration.getProposerElection();
-    HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    Round round = highQC.highestQC().getRound().next();
-    final BFTValidatorId leader = proposerElection.getProposer(round);
-    final BFTValidatorId nextLeader = proposerElection.getProposer(round.next());
+    var proposerElection = configuration.getProposerElection();
+    var highQC = configuration.getVertexStoreState().getHighQC();
+    var round = highQC.highestQC().getRound().next();
+    var leader = proposerElection.getProposer(round);
+    var nextLeader = proposerElection.getProposer(round.next());
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+    return new RoundUpdate(round, highQC, leader, nextLeader);
   }
 
   @Provides
@@ -135,13 +135,13 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
   @Provides
   private BFTConfiguration configuration(
       LedgerProofBundle latestProof, BFTValidatorSet validatorSet, Hasher hasher) {
-    final var nextEpoch = latestProof.resultantEpoch();
-    final var genesisVertex =
+    var nextEpoch = latestProof.resultantEpoch();
+    var genesisVertex =
         Vertex.createInitialEpochVertex(
                 LedgerHeader.genesis(0, this.preGenesisLedgerHashes, validatorSet, 0, 0))
             .withId(hasher);
-    final var epochInitialHeader = REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader());
-    final var nextLedgerHeader =
+    var epochInitialHeader = REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader());
+    var nextLedgerHeader =
         LedgerHeader.create(
             epochInitialHeader.getNextEpoch().orElseThrow().getEpoch(),
             Round.epochInitial(),
@@ -149,9 +149,9 @@ public class MockedEpochsConsensusRecoveryModule extends AbstractModule {
             epochInitialHeader.getHashes(),
             epochInitialHeader.consensusParentRoundTimestamp(),
             epochInitialHeader.proposerTimestamp());
-    final var initialEpochQC =
-        QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
-    final var proposerElection = this.proposerElectionMode.instantiate(nextEpoch, validatorSet);
+    var initialEpochQC = QuorumCertificate.createInitialEpochQC(genesisVertex, nextLedgerHeader);
+    var proposerElection = this.proposerElectionMode.instantiate(nextEpoch, validatorSet);
+
     return new BFTConfiguration(
         proposerElection,
         validatorSet,

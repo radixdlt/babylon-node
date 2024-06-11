@@ -65,75 +65,9 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.HighQC;
-import java.util.Objects;
+import com.radixdlt.consensus.event.LocalEvent;
 
 /** Represents an internal (local) round update. */
-public final class RoundUpdate {
-
-  private final Round currentRound;
-  private final HighQC highQC;
-
-  private final BFTValidatorId leader;
-  private final BFTValidatorId nextLeader;
-
-  private RoundUpdate(
-      Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
-    this.currentRound = currentRound;
-    this.highQC = highQC;
-    this.leader = leader;
-    this.nextLeader = nextLeader;
-  }
-
-  public static RoundUpdate create(
-      Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader) {
-    Objects.requireNonNull(currentRound);
-    Objects.requireNonNull(highQC);
-    Objects.requireNonNull(leader);
-    Objects.requireNonNull(nextLeader);
-
-    return new RoundUpdate(currentRound, highQC, leader, nextLeader);
-  }
-
-  public HighQC getHighQC() {
-    return highQC;
-  }
-
-  public BFTValidatorId getLeader() {
-    return leader;
-  }
-
-  public BFTValidatorId getNextLeader() {
-    return nextLeader;
-  }
-
-  public Round getCurrentRound() {
-    return currentRound;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s[%s %s leader=%s next=%s]",
-        getClass().getSimpleName(), this.currentRound, this.highQC, this.leader, this.nextLeader);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final RoundUpdate that = (RoundUpdate) o;
-    return Objects.equals(currentRound, that.currentRound)
-        && Objects.equals(highQC, that.highQC)
-        && Objects.equals(leader, that.leader)
-        && Objects.equals(nextLeader, that.nextLeader);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(currentRound, highQC, leader, nextLeader);
-  }
-}
+public record RoundUpdate(
+    Round currentRound, HighQC highQC, BFTValidatorId leader, BFTValidatorId nextLeader)
+    implements LocalEvent {}

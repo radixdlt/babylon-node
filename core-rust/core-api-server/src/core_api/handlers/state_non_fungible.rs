@@ -34,7 +34,7 @@ pub(crate) async fn handle_state_non_fungible(
         )
         .ok_or_else(|| not_found_error("Resource not found".to_string()))?
         .into_payload()
-        .into_latest();
+        .fully_update_and_into_latest_version();
 
     let non_fungible_id =
         extract_non_fungible_id_from_simple_representation(&request.non_fungible_id)
@@ -61,7 +61,10 @@ pub(crate) async fn handle_state_non_fungible(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(StateNonFungibleResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         non_fungible: Some(to_api_non_fungible_resource_manager_data_substate(
             &mapping_context,
             &TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::NonFungibleResourceManager(

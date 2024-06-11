@@ -1,12 +1,14 @@
+
 # Branching Strategy
 
 Once you have read the [contributing guide](../CONTRIBUTING.md), if you want to start development, you will need to know which branches to use.
 
 > [!NOTE]
 >
-> As of 2024-02-12, the strictly ordered list of supported base branches, starting from earliest/furthest upstream, is:
+> As of 2024-05-15, the strictly ordered list of supported base branches, starting from earliest/furthest upstream, is:
 > 
-> * `release/anemone` - This is currently running on mainnet.
+> * `release/bottlenose` - This is currently running on mainnet.
+> * `release/anemone`
 > * `main`
 > * `develop`
 > 
@@ -80,7 +82,7 @@ At merge time, it is acceptable but not recommended to squash-merge. We encourag
 
 ## Diagram
 
-The following demonstrates a possible branch structure under this strategy, under the hypothetical scenario where `barnacle` is the current live protocol version, and `crayfish` is being prepared but not yet live.
+The following demonstrates a possible branch structure under this strategy, under the hypothetical scenario where `bottlenose` is the current live protocol version, and `cuttlefish` is being prepared but not yet live.
 
 Admittedly, this isn't particularly easy to follow. The key with this strategy is following the rules. If the rules are followed, you don't need to visualize the structure.
 

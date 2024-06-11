@@ -111,6 +111,11 @@ impl<'r, R: WriteableRocks> BufferedWriteSupport<'r, R> {
             self.rocks.write(write_batch);
         }
     }
+
+    /// Returns the size of buffered data, in bytes.
+    fn buffered_data_size(&self) -> usize {
+        self.buffer.byte_size()
+    }
 }
 
 impl<'r, R: WriteableRocks> Drop for BufferedWriteSupport<'r, R> {
@@ -144,6 +149,11 @@ impl<'r, R: WriteableRocks> TypedDbContext<'r, R, BufferedWriteSupport<'r, R>> {
     /// subsequent reads).
     pub fn flush(&self) {
         self.write_support.flush();
+    }
+
+    /// Returns the size of buffered data, in bytes.
+    pub fn buffered_data_size(&self) -> usize {
+        self.write_support.buffered_data_size()
     }
 }
 
@@ -217,6 +227,19 @@ impl<'r, 'w, CF: TypedCf, R: WriteableRocks>
     }
 }
 
+impl<'r, 'w, KC: BoundedDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
+    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+{
+    /// Deletes all entries.
+    pub fn delete_all(&self) {
+        self.write_support.buffer.delete_range(
+            self.cf.handle,
+            vec![],
+            self.cf.key_codec.upper_bound_encoding(),
+        );
+    }
+}
+
 impl<'r, 'w, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
     TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
 {
@@ -231,6 +254,9 @@ impl<'r, 'w, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: Writeabl
     }
 }
 
+// Note: some methods are defined just for completeness of their family; it may happen that they are
+// no longer used after some refactors, etc. - hence the `allow`:
+#[allow(dead_code)]
 impl<
         'r,
         'w,
@@ -244,6 +270,11 @@ impl<
     /// Gets the entry of the least key.
     pub fn get_first(&self) -> Option<(CF::Key, CF::Value)> {
         self.iterate(Direction::Forward).next()
+    }
+
+    /// Gets the least key.
+    pub fn get_first_key(&self) -> Option<CF::Key> {
+        self.get_first().map(|(key, _)| key)
     }
 
     /// Gets the value associated with the least key.
@@ -508,7 +539,7 @@ pub trait VersionedCf {
 impl<K, V, VV, KC, D> DefaultCf for D
 where
     V: Into<VV> + Clone,
-    VV: ScryptoEncode + ScryptoDecode + HasLatestVersion<Latest = V>,
+    VV: ScryptoEncode + ScryptoDecode + Versioned<LatestVersion = V>,
     KC: Default,
     D: VersionedCf<Key = K, Value = V, KeyCodec = KC, VersionedValue = VV>,
 {
@@ -532,6 +563,16 @@ pub trait DbCodec<T> {
     fn encode(&self, value: &T) -> Vec<u8>;
     /// Decodes the bytes into value.
     fn decode(&self, bytes: &[u8]) -> T;
+}
+
+/// An extra trait to be implemented on [`DbCodec`]s which know an upper bound on their subjects'
+/// encoding.
+///
+/// This capability allows e.g. for an efficient, atomic "delete all" operation (using a range of
+/// keys `[vec![], upper_bound)`).
+pub trait BoundedDbCodec {
+    /// Returns an encoding of an (exclusive) upper bound element.
+    fn upper_bound_encoding(&self) -> Vec<u8>;
 }
 
 /// A marker trait which must only be implemented on [`DbCodec`]s which preserve the business-level
@@ -614,12 +655,12 @@ pub trait IntraGroupOrderPreservingDbCodec<T>: GroupPreservingDbCodec {
 }
 
 /// A reusable versioning decorator for [`DbCodec`]s.
-pub struct VersionedDbCodec<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> {
+pub struct VersionedDbCodec<U: DbCodec<VT>, T: Into<VT> + Clone, VT: Versioned<LatestVersion = T>> {
     underlying: U,
     type_parameters_phantom: PhantomData<VT>,
 }
 
-impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> Default
+impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: Versioned<LatestVersion = T>> Default
     for VersionedDbCodec<U, T, VT>
 {
     fn default() -> Self {
@@ -630,7 +671,7 @@ impl<U: DbCodec<VT> + Default, T: Into<VT> + Clone, VT: HasLatestVersion<Latest 
     }
 }
 
-impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> DbCodec<T>
+impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: Versioned<LatestVersion = T>> DbCodec<T>
     for VersionedDbCodec<U, T, VT>
 {
     fn encode(&self, value: &T) -> Vec<u8> {
@@ -640,7 +681,7 @@ impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: HasLatestVersion<Latest = T>> DbCo
 
     fn decode(&self, bytes: &[u8]) -> T {
         let versioned = self.underlying.decode(bytes);
-        versioned.into_latest()
+        versioned.fully_update_and_into_latest_version()
     }
 }
 
@@ -765,6 +806,10 @@ impl WriteBuffer {
 
     pub fn flip(&self) -> WriteBatch {
         self.write_batch.replace(WriteBatch::default())
+    }
+
+    pub fn byte_size(&self) -> usize {
+        self.write_batch.borrow().size_in_bytes()
     }
 }
 

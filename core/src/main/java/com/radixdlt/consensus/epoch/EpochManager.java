@@ -90,6 +90,7 @@ import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.sync.LedgerProofSyncStatusDto;
 import com.radixdlt.sync.LedgerSyncDtoConversions;
 import com.radixdlt.sync.messages.remote.LedgerStatusUpdate;
 import java.util.*;
@@ -267,7 +268,7 @@ public final class EpochManager {
     final var round = highQC.getHighestRound().next();
     final var leader = proposerElection.getProposer(round);
     final var nextLeader = proposerElection.getProposer(round.next());
-    final var initialRoundUpdate = RoundUpdate.create(round, highQC, leader, nextLeader);
+    final var initialRoundUpdate = new RoundUpdate(round, highQC, leader, nextLeader);
 
     // Mutable Consensus State
     log.info(
@@ -368,10 +369,10 @@ public final class EpochManager {
       // then we don't broadcast the latest (i.e. post-protocol update) proof,
       // but the epoch proof that triggered the protocol update.
       // That's the `trimProtocolUpdate` call.
-      final var ledgerStatusUpdate =
-          LedgerStatusUpdate.create(
-              LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(
-                  epochChange.proof().trimProtocolUpdate()));
+      LedgerProofSyncStatusDto proof =
+          LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(
+              epochChange.proof().trimProtocolUpdate());
+      final var ledgerStatusUpdate = new LedgerStatusUpdate(proof);
       for (var validator : currentAndNextValidators) {
         if (!validator.getValidatorId().getKey().equals(selfValidatorInfo.key())) {
           var nodeId = NodeId.fromPublicKey(validator.getValidatorId().getKey());
@@ -458,12 +459,12 @@ public final class EpochManager {
 
   public EventProcessor<EpochRoundUpdate> epochRoundUpdateEventProcessor() {
     return epochRoundUpdate -> {
-      if (epochRoundUpdate.getEpoch() != this.currentEpoch()) {
+      if (epochRoundUpdate.epoch() != this.currentEpoch()) {
         return;
       }
 
       log.trace("Processing RoundUpdate: {}", epochRoundUpdate);
-      bftEventProcessor.processRoundUpdate(epochRoundUpdate.getRoundUpdate());
+      bftEventProcessor.processRoundUpdate(epochRoundUpdate.roundUpdate());
     };
   }
 

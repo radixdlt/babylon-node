@@ -74,6 +74,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /** Contributes to steady state by submitting transactions to the mempool every few seconds */
@@ -95,7 +96,7 @@ public class LocalMempoolPeriodicSubmitter implements SimulationNetworkActor {
 
   private void addTransactionToMempool(
       RunningNetwork network, RawNotarizedTransaction transaction, NodeId node) {
-    network.getDispatcher(MempoolAdd.class, node).dispatch(MempoolAdd.create(transaction));
+    network.getDispatcher(MempoolAdd.class, node).dispatch(new MempoolAdd(List.of(transaction)));
   }
 
   public Observable<Pair<RawNotarizedTransaction, NodeId>> issuedTransactions() {

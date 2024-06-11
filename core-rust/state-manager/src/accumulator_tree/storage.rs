@@ -91,8 +91,9 @@ impl<T: ReadableAccuTreeStore<K, N> + WriteableAccuTreeStore<K, N>, K, N> AccuTr
 /// This is an "incremental" persistence part of a tree representing a batch of appended leaf nodes
 /// and the resulting merkle updates, propagating up to a single root.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(categorize_types = "N")]
 pub struct TreeSlice<N> {
-    /// The tree-levels of this slice, arranged from leafs to root.
+    /// The tree-levels of this slice, arranged from leaves to root.
     pub levels: Vec<TreeSliceLevel<N>>,
 }
 
@@ -122,6 +123,7 @@ impl<N> TreeSlice<N> {
 /// Effectively this means that it is a horizontal slice of a corresponding level of an entire
 /// accumulator tree.
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[sbor(categorize_types = "N")]
 pub struct TreeSliceLevel<N> {
     /// The cached left sibling of the first node of that level slice, i.e. present if and only if
     /// the `nodes` actually start with a right child.
@@ -132,7 +134,7 @@ pub struct TreeSliceLevel<N> {
     pub left_sibling_cache: Option<N>,
 
     /// The actual nodes computed during the append to the accumulator tree.
-    /// Depending on the level, these might be exactly all the appended leafs, or their composite
+    /// Depending on the level, these might be exactly all the appended leaves, or their composite
     /// merkle nodes, all the way up. The highest level of each `TreeSlice` contains a single
     /// element in the `nodes`, representing the merkle root.
     pub nodes: Vec<N>,

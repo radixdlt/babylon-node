@@ -86,7 +86,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.KeyComparator;
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -161,8 +160,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(pacemakerTimeout, 0L),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(numValidatorNodes))));
 
     test.startAllNodes();
     test.runUntilMessage(nodeUnderTestReachesRound(Round.of(3)), 1000);
@@ -184,7 +182,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
       }
       final RoundUpdate p = (RoundUpdate) message.message();
       return message.channelId().receiverIndex() == nodeUnderTestIndex
-          && p.getCurrentRound().gte(round);
+          && p.currentRound().gte(round);
     };
   }
 
@@ -200,7 +198,7 @@ public class PacemakerRoundUpdateRaceConditionTest {
       // Proposal is dropped so that the node creates an empty timeout vote, and not a timeout of a
       // previous vote
       final Object msg = message.message();
-      if (msg instanceof RoundUpdate && ((RoundUpdate) msg).getCurrentRound().equals(Round.of(2))) {
+      if (msg instanceof RoundUpdate && ((RoundUpdate) msg).currentRound().equals(Round.of(2))) {
         queue.add(message.withAdditionalDelay(additionalMessageDelay));
         return true;
       } else if (msg instanceof BFTInsertUpdate

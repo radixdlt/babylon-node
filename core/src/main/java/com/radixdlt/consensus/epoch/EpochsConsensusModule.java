@@ -253,8 +253,7 @@ public class EpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
       EpochChange initialEpoch) {
     return localTimeout -> {
-      Epoched<ScheduledLocalTimeout> epochTimeout =
-          Epoched.from(initialEpoch.nextEpoch(), localTimeout);
+      var epochTimeout = new Epoched(initialEpoch.nextEpoch(), localTimeout);
       localTimeoutSender.dispatch(epochTimeout, localTimeout.millisecondsWaitTime());
     };
   }
@@ -268,7 +267,7 @@ public class EpochsConsensusModule extends AbstractModule {
           EpochChange initialEpoch) {
     return timeoutQuorumDelayedResolution -> {
       final var epochedTimeoutQuorumDelayedResolution =
-          Epoched.from(initialEpoch.nextEpoch(), timeoutQuorumDelayedResolution);
+          new Epoched(initialEpoch.nextEpoch(), timeoutQuorumDelayedResolution);
       epochedtimeoutQuorumDelayedResolutionDispatcher.dispatch(
           epochedTimeoutQuorumDelayedResolution,
           timeoutQuorumDelayedResolution.millisecondsWaitTime());
@@ -338,7 +337,7 @@ public class EpochsConsensusModule extends AbstractModule {
             timeout ->
                 timeoutEventDispatcher.dispatch(new EpochLocalTimeoutOccurrence(epoch, timeout)),
             (scheduledTimeout, ms) ->
-                localTimeoutSender.dispatch(Epoched.from(epoch, scheduledTimeout), ms),
+                localTimeoutSender.dispatch(new Epoched(epoch, scheduledTimeout), ms),
             timeoutCalculator,
             proposalGenerator,
             (n, m) -> {
@@ -397,7 +396,7 @@ public class EpochsConsensusModule extends AbstractModule {
             .timeoutQuorumDelayedResolutionDispatcher(
                 (timeoutQuorumDelayedResolution, ms) -> {
                   timeoutQuorumDelayedResolutionDispatcher.dispatch(
-                      Epoched.from(epoch, timeoutQuorumDelayedResolution), ms);
+                      new Epoched(epoch, timeoutQuorumDelayedResolution), ms);
                 })
             .timeoutQuorumResolutionDelayMs(timeoutQuorumResolutionDelayMs)
             .doubleVoteDispatcher(doubleVoteEventDispatcher)

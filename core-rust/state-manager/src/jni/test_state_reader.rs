@@ -74,9 +74,10 @@ use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
 use crate::store::traits::{
-    gc::StateHashTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
+    gc::StateTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
     SubstateNodeAncestryStore,
 };
+use crate::traits::measurement::MeasurableDatabase;
 use crate::transaction::LedgerTransactionHash;
 
 //
@@ -140,7 +141,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
                 },
                 error_message: match local_transaction_execution.outcome {
                     DetailedTransactionOutcome::Success(_) => None,
-                    DetailedTransactionOutcome::Failure(err) => Some(format!("{err:?}")),
+                    DetailedTransactionOutcome::Failure(error) => Some(error.render()),
                 },
                 consensus_receipt_bytes: scrypto_encode(
                     &committed_ledger_transaction_receipt.get_consensus_receipt(),
@@ -237,7 +238,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
                 )
                 .unwrap()
                 .into_payload()
-                .into_latest();
+                .fully_update_and_into_latest_version();
 
             JavaValidatorInfo {
                 stake_unit_resource: validator_state.stake_unit_resource,
@@ -257,12 +258,12 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_epoch(
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let database = database.snapshot();
-        database.get_epoch().number()
+        database.get_epoch_and_round().0.number()
     })
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHashTreeVersion(
+extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateTreeVersion(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
@@ -271,12 +272,28 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHas
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let least_stale_state_version = database
-            .access_direct() // the `get_stale_tree_parts_iter()` is inside a trait requiring writeability
+            .lock() // the `get_stale_tree_parts_iter()` is inside a trait requiring writeability
             .get_stale_tree_parts_iter()
             .next()
             .map(|(state_version, _)| state_version)
             .unwrap_or(StateVersion::pre_genesis());
         least_stale_state_version.number()
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_testutil_TestStateReader_historicalSubstateCount(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+        let count = database
+            .lock()
+            .count_entries("associated_state_tree_values");
+        count.try_into().expect("count out of bounds")
     })
 }
 

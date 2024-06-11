@@ -71,6 +71,7 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.db.checkpoint.RustDbCheckpoints;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
@@ -105,81 +106,88 @@ public final class REv2StateManagerModule extends AbstractModule {
 
   private final ProposalLimitsConfig proposalLimitsConfig;
   private final Option<VertexLimitsConfig> vertexLimitsConfigOpt;
-  private final DatabaseFlags databaseFlags;
+  private final DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
-  private final StateHashTreeGcConfig stateHashTreeGcConfig;
+  private final StateTreeGcConfig stateTreeGcConfig;
   private final LedgerProofsGcConfig ledgerProofsGcConfig;
   private final LedgerSyncLimitsConfig ledgerSyncLimitsConfig;
   private final ProtocolConfig protocolConfig;
   private final boolean noFees;
+  private final ScenariosExecutionConfig scenariosExecutionConfig;
 
   private REv2StateManagerModule(
       ProposalLimitsConfig proposalLimitsConfig,
       Option<VertexLimitsConfig> vertexLimitsConfigOpt,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees) {
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
-    this.databaseFlags = databaseFlags;
+    this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
-    this.stateHashTreeGcConfig = stateHashTreeGcConfig;
+    this.stateTreeGcConfig = stateTreeGcConfig;
     this.ledgerProofsGcConfig = ledgerProofsGcConfig;
     this.ledgerSyncLimitsConfig = ledgerSyncLimitsConfig;
     this.protocolConfig = protocolConfig;
     this.noFees = noFees;
+    this.scenariosExecutionConfig = scenariosExecutionConfig;
   }
 
   public static REv2StateManagerModule create(
       ProposalLimitsConfig proposalLimitsConfig,
       VertexLimitsConfig vertexLimitsConfig,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
-      ProtocolConfig protocolConfig) {
+      ProtocolConfig protocolConfig,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
-        databaseFlags,
+        databaseConfig,
         mempoolConfig,
         false,
-        stateHashTreeGcConfig,
+        stateTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
-        false);
+        false,
+        scenariosExecutionConfig);
   }
 
   public static REv2StateManagerModule createForTesting(
       ProposalLimitsConfig proposalLimitsConfig,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees) {
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
         proposalLimitsConfig,
         Option.none(),
-        databaseFlags,
+        databaseConfig,
         mempoolConfig,
         debugLogging,
-        stateHashTreeGcConfig,
+        stateTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
-        noFees);
+        noFees,
+        scenariosExecutionConfig);
   }
 
   @Override
@@ -187,7 +195,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
-    bind(DatabaseFlags.class).toInstance(databaseFlags);
+    bind(DatabaseConfig.class).toInstance(databaseConfig);
     bind(LedgerSyncLimitsConfig.class).toInstance(ledgerSyncLimitsConfig);
     bind(ProtocolConfig.class).toInstance(protocolConfig);
     install(proposalLimitsConfig.asModule());
@@ -209,7 +217,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               FatalPanicHandler fatalPanicHandler,
               Network network,
               DatabaseBackendConfig databaseBackendConfig,
-              DatabaseFlags databaseFlags) {
+              DatabaseConfig databaseConfig) {
             return new NodeRustEnvironment(
                 mempoolRelayDispatcher,
                 fatalPanicHandler,
@@ -218,13 +226,14 @@ public final class REv2StateManagerModule extends AbstractModule {
                     mempoolConfig,
                     vertexLimitsConfigOpt,
                     databaseBackendConfig,
-                    databaseFlags,
+                    databaseConfig,
                     getLoggingConfig(),
-                    stateHashTreeGcConfig,
+                    stateTreeGcConfig,
                     ledgerProofsGcConfig,
                     ledgerSyncLimitsConfig,
                     protocolConfig,
-                    noFees));
+                    noFees,
+                    scenariosExecutionConfig));
           }
 
           @Provides
@@ -360,5 +369,12 @@ public final class REv2StateManagerModule extends AbstractModule {
   @NewestProtocolVersion
   private String newestProtocolVersion(RustStateComputer rustStateComputer) {
     return rustStateComputer.newestProtocolVersion();
+  }
+
+  @Provides
+  @Singleton
+  private RustDbCheckpoints rustCheckpoints(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustDbCheckpoints(metrics, nodeRustEnvironment);
   }
 }

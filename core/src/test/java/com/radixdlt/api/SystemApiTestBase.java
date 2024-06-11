@@ -70,16 +70,19 @@ import static org.mockito.Mockito.*;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
+import com.google.inject.Module;
 import com.google.inject.Scopes;
+import com.google.inject.util.Modules;
 import com.radixdlt.api.common.JSON;
+import com.radixdlt.api.system.SystemApiConfig;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.deterministic.SingleNodeDeterministicRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.lang.Option;
 import com.radixdlt.messaging.TestMessagingModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.*;
@@ -101,6 +104,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ExceptionHandler;
 import io.undertow.util.HeaderMap;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Rule;
@@ -114,7 +118,15 @@ public abstract class SystemApiTestBase {
 
   @Inject private SingleNodeDeterministicRunner runner;
 
-  protected SystemApiTestBase() {}
+  private final Option<Module> overrideModule;
+
+  protected SystemApiTestBase() {
+    overrideModule = Option.empty();
+  }
+
+  protected SystemApiTestBase(Module overrideModule) {
+    this.overrideModule = Option.some(overrideModule);
+  }
 
   @Before
   public void setup() {
@@ -122,44 +134,50 @@ public abstract class SystemApiTestBase {
     when(p2pConfig.addressBookMaxSize()).thenReturn(1000);
     var injector =
         Guice.createInjector(
-            new SingleNodeAndPeersDeterministicNetworkModule(
-                TEST_KEY,
-                new FunctionalRadixNodeModule(
-                    NodeStorageConfig.tempFolder(folder),
-                    false,
-                    SafetyRecoveryConfig.MOCKED,
-                    ConsensusConfig.of(),
-                    LedgerConfig.stateComputerWithSyncRelay(
-                        StateComputerConfig.rev2(
-                            Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createTestGenesisWithSingleValidator(
+            Modules.override(
+                    new SingleNodeAndPeersDeterministicNetworkModule(
+                        TEST_KEY,
+                        new FunctionalRadixNodeModule(
+                            NodeStorageConfig.tempFolder(folder),
+                            false,
+                            SafetyRecoveryConfig.MOCKED,
+                            ConsensusConfig.of(),
+                            LedgerConfig.stateComputerWithSyncRelay(
+                                StateComputerConfig.rev2()
+                                    .withGenesis(
+                                        GenesisBuilder.createTestGenesisWithSingleValidator(
+                                            TEST_KEY.getPublicKey(),
+                                            Decimal.ONE,
+                                            GenesisConsensusManagerConfig.Builder.testDefaults())),
+                                new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
+                    new TestP2PModule.Builder().build(),
+                    new TestMessagingModule.Builder().build(),
+                    new AbstractModule() {
+                      @Override
+                      protected void configure() {
+                        bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
+                        bind(P2PConfig.class).toInstance(p2pConfig);
+                        bind(AddressBook.class).in(Scopes.SINGLETON);
+                        var selfUri =
+                            RadixNodeUri.fromPubKeyAndAddress(
+                                Network.INTEGRATIONTESTNET.getId(),
                                 TEST_KEY.getPublicKey(),
-                                Decimal.ONE,
-                                GenesisConsensusManagerConfig.Builder.testDefaults()),
-                            new DatabaseFlags(false, false),
-                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults()),
-                        new SyncRelayConfig(500, 10, 3000, 10, Long.MAX_VALUE)))),
-            new TestP2PModule.Builder().build(),
-            new TestMessagingModule.Builder().build(),
-            new AbstractModule() {
-              @Override
-              protected void configure() {
-                bind(Network.class).toInstance(Network.INTEGRATIONTESTNET);
-                bind(P2PConfig.class).toInstance(p2pConfig);
-                bind(AddressBook.class).in(Scopes.SINGLETON);
-                var selfUri =
-                    RadixNodeUri.fromPubKeyAndAddress(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        TEST_KEY.getPublicKey(),
-                        "localhost",
-                        23456);
-                bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
-                var runtimeProperties = mock(RuntimeProperties.class);
-                bind(RuntimeProperties.class).toInstance(runtimeProperties);
-                bind(HealthInfoService.class).to(HealthInfoServiceImpl.class);
-                bind(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
-              }
-            });
+                                "localhost",
+                                23456);
+                        bind(RadixNodeUri.class).annotatedWith(Self.class).toInstance(selfUri);
+                        try {
+                          bind(SystemApiConfig.class)
+                              .toInstance(
+                                  new SystemApiConfig(true, folder.newFolder().getAbsolutePath()));
+                        } catch (IOException e) {
+                          throw new RuntimeException(e);
+                        }
+                        bind(RuntimeProperties.class).toInstance(mock(RuntimeProperties.class));
+                        bind(HealthInfoService.class).to(HealthInfoServiceImpl.class);
+                        bind(HealthInfoServiceImpl.class).in(Scopes.SINGLETON);
+                      }
+                    })
+                .with(overrideModule.orElse(new AbstractModule() {})));
     injector.injectMembers(this);
   }
 

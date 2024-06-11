@@ -78,7 +78,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
 import java.util.Random;
 import org.junit.Test;
@@ -105,8 +104,7 @@ public class QuorumWithoutALeaderWithTimeoutsTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(numValidatorNodes))));
     test.startAllNodes();
     test.runUntilMessage(
         DeterministicTest.hasReachedRound(Round.of(numRounds)),

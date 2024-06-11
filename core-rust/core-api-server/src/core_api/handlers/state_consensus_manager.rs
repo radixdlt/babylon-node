@@ -2,7 +2,7 @@ use crate::core_api::*;
 use crate::engine_prelude::*;
 
 use state_manager::protocol::ProtocolVersionName;
-use state_manager::{ReadableRocks, StateManagerDatabase};
+use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
 use std::ops::Deref;
 
 #[tracing::instrument(skip(state))]
@@ -48,7 +48,10 @@ pub(crate) async fn handle_state_consensus_manager(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StateConsensusManagerResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         config: Some(to_api_consensus_manager_config_substate(&config_substate)?),
         state: Some(to_api_consensus_manager_state_substate(
             &mapping_context,
@@ -88,7 +91,9 @@ fn collect_current_validators_by_signalled_protocol_version(
     substate: ConsensusManagerCurrentValidatorSetFieldSubstate,
 ) -> Result<ValidatorsBySignalledProtocolVersion, ResponseError<()>> {
     let mut validators = ValidatorsBySignalledProtocolVersion::default();
-    let payload = substate.into_payload().into_latest();
+    let payload = substate
+        .into_payload()
+        .fully_update_and_into_latest_version();
     for (index, entry) in payload
         .validator_set
         .validators_by_stake_desc
@@ -104,7 +109,7 @@ fn collect_current_validators_by_signalled_protocol_version(
             &ValidatorField::ProtocolUpdateReadinessSignal.into(),
         )?
         .into_payload()
-        .into_latest()
+        .fully_update_and_into_latest_version()
         .protocol_version_name;
         validators.insert(
             ValidatorIndex::try_from(index).expect("validator set size guarantees this"),

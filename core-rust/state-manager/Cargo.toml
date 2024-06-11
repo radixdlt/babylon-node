@@ -7,15 +7,15 @@ edition = "2021"
 node-common = { path = "../node-common" }
 
 sbor = { workspace = true }
-transaction = { workspace = true }
-transaction-scenarios = { workspace = true }
-radix-engine-common = { workspace = true }
+radix-transactions = { workspace = true }
+radix-transaction-scenarios = { workspace = true }
+radix-common = { workspace = true }
 radix-engine-interface = { workspace = true }
 radix-engine = { workspace = true }
-substate-store-impls = { workspace = true }
-substate-store-interface = { workspace = true }
-substate-store-queries = { workspace = true }
-utils = { workspace = true }
+radix-substate-store-impls = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-substate-store-queries = { workspace = true }
+radix-rust = { workspace = true }
 
 # Non-Radix Engine Dependencies:
 itertools = { workspace = true }
@@ -24,14 +24,18 @@ tracing = { workspace = true }
 tokio = { workspace = true }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
 
-rocksdb = { version = "0.21.0" }
-hex = { version = "0.4.3", default-features = false }
-lru = { version = "0.8.0", default-features = false }
-slotmap = { version = "1.0.6" }
-im = { version = "15.1.0" }
-rand = { version = "0.8.5" }
+rocksdb = { version = "=0.21.0" }
+lru = { version = "=0.8.1", default-features = false }
+slotmap = { version = "=1.0.6" }
+im = { version = "=15.1.0" }
 
 [dev-dependencies]
-tempfile = { version = "3.4.0" }
+tempfile = { version = "=3.8.0" }
 chrono = { workspace = true }
+
+[features]
+db_checker = ["radix-engine/db_checker"]
+rocksdb = ["radix-substate-store-impls/rocksdb"]

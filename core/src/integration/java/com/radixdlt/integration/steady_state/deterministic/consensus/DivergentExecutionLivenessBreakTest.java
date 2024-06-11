@@ -90,7 +90,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.ConsensusConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
@@ -235,14 +234,16 @@ public final class DivergentExecutionLivenessBreakTest {
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
                 INITIAL_CONSENSUS_CONFIG,
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            NUM_VALIDATORS,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
-                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                            new REV2TransactionGenerator(), 1)))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                NUM_VALIDATORS,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                    100000)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                                new REV2TransactionGenerator(), 1)))));
   }
 
   @Test

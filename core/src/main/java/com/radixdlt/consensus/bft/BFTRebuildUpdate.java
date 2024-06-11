@@ -64,9 +64,11 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.utils.WrappedByteArray;
 
 /** An even emitted when the vertex store has been rebuilt. */
 public record BFTRebuildUpdate(
-    VertexStoreState vertexStoreState, WrappedByteArray serializedVertexStoreState) {}
+    VertexStoreState vertexStoreState, WrappedByteArray serializedVertexStoreState)
+    implements LocalEvent {}

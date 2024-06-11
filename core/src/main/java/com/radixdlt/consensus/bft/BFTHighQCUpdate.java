@@ -66,6 +66,7 @@ package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.HighQC;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.lang.Option;
 import com.radixdlt.utils.WrappedByteArray;
@@ -77,4 +78,5 @@ import com.radixdlt.utils.WrappedByteArray;
 public record BFTHighQCUpdate(
     HighQC newHighQc,
     Option<ImmutableList<ExecutedVertex>> committedVertices,
-    WrappedByteArray serializedVertexStoreState) {}
+    WrappedByteArray serializedVertexStoreState)
+    implements LocalEvent {}

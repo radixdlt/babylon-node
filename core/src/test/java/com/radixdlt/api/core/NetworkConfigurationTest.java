@@ -75,7 +75,7 @@ import org.junit.Test;
 public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_network_configuration() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var configurationResponse = getStatusApi().statusNetworkConfigurationPost();
@@ -84,6 +84,11 @@ public class NetworkConfigurationTest extends DeterministicCoreApiTestBase {
           .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.logical_name());
       assertThat(configurationResponse.getNetworkHrpSuffix())
           .isEqualTo(DeterministicCoreApiTestBase.networkDefinition.hrp_suffix());
+
+      // We automatically iterate over the enum in runtime, so this assertion is expected to need
+      // adjusting every time the Engine defines a new EntityType. While doing this, please consider
+      // whether any other "static API listing" needs adjusting (e.g. the known addresses).
+      assertThat(configurationResponse.getAddressTypes()).hasSize(22);
 
       // And check the package endpoint whilst we're here, using a well known address...
       final var faucetPackageAddress =

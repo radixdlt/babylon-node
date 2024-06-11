@@ -66,24 +66,87 @@
 
 use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
 use super::ReadableStore;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
 
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::engine_prelude::*;
-use crate::protocol::ProtocolState;
 use crate::staging::overlays::{
     MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
 };
 use crate::staging::{
-    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
-    StateHashTreeDiff,
+    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt, StateTreeDiff,
 };
-use crate::transaction::{LedgerTransactionHash, TransactionLogic};
-use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
+use crate::transaction::{
+    HasLedgerTransactionHash, LedgerTransactionHash, PreparedLedgerTransaction, TransactionLogic,
+};
+use crate::{
+    EpochTransactionIdentifiers, LedgerHashes, ReceiptTreeHash, StateVersion, TransactionTreeHash,
+};
 use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 
+use crate::rocks_db::ActualStateManagerDatabase;
 use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use crate::traits::{ConfigurableDatabase, QueryableProofStore};
+use node_common::locks::{DbLock, LockFactory, Mutex};
 use slotmap::SecondaryMap;
+
+pub struct ExecutionCacheManager {
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
+    execution_cache: Mutex<ExecutionCache>,
+}
+
+impl ExecutionCacheManager {
+    pub fn new(
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        lock_factory: &LockFactory,
+    ) -> Self {
+        let execution_cache = Self::create_clean_execution_cache(database.lock().deref());
+        Self {
+            database,
+            execution_cache: lock_factory
+                .named("execution_cache")
+                .new_mutex(execution_cache),
+        }
+    }
+
+    pub fn clear(&self) {
+        *self.execution_cache.lock() =
+            Self::create_clean_execution_cache(self.database.lock().deref());
+    }
+
+    pub fn access_exclusively(&self) -> impl DerefMut<Target = ExecutionCache> + '_ {
+        self.execution_cache.lock()
+    }
+
+    pub fn find_transaction_root(
+        &self,
+        parent_transaction_root: &TransactionTreeHash,
+        transactions: &[PreparedLedgerTransaction],
+    ) -> Option<TransactionTreeHash> {
+        let execution_cache = self.execution_cache.lock();
+        let mut transaction_root = parent_transaction_root;
+        for transaction in transactions {
+            transaction_root = match execution_cache.get_cached_transaction_root(
+                transaction_root,
+                &transaction.ledger_transaction_hash(),
+            ) {
+                Some(cached) => cached,
+                None => return None,
+            }
+        }
+        Some(*transaction_root)
+    }
+
+    fn create_clean_execution_cache<S: QueryableProofStore>(database: &S) -> ExecutionCache {
+        let current_transaction_root = database
+            .get_latest_proof()
+            .map(|proof| proof.ledger_header.hashes.transaction_root)
+            .unwrap_or_else(|| LedgerHashes::pre_genesis().transaction_root);
+        ExecutionCache::new(current_transaction_root)
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
 struct TransactionPlacement {
@@ -157,9 +220,9 @@ impl ExecutionCache {
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_state_version: StateVersion,
         parent_transaction_root: &TransactionTreeHash,
-        parent_protocol_state: &ProtocolState,
         ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
+        engine_receipt_listener: impl FnOnce(&TransactionReceipt),
     ) -> &ProcessedTransactionReceipt {
         let transaction_placement =
             TransactionPlacement::new(parent_transaction_root, ledger_transaction_hash);
@@ -173,8 +236,9 @@ impl ExecutionCache {
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let transaction_receipt = executable.execute_on(&staged_store);
+                engine_receipt_listener(&transaction_receipt);
 
-                let processed = ProcessedTransactionReceipt::process::<_, SpreadPrefixKeyMapper>(
+                let processed = ProcessedTransactionReceipt::process(
                     HashUpdateContext {
                         store: &staged_store,
                         epoch_transaction_identifiers,
@@ -182,7 +246,6 @@ impl ExecutionCache {
                         ledger_transaction_hash,
                     },
                     transaction_receipt,
-                    parent_protocol_state,
                 );
 
                 let internal_transaction_ids = InternalTransactionIds {
@@ -359,7 +422,7 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
 }
 
 impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.overlay
             .state_tree_nodes
             .get(key)
@@ -402,6 +465,28 @@ impl<'s, S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore
     }
 }
 
+impl<'s, S: ConfigurableDatabase> ConfigurableDatabase for StagedStore<'s, S> {
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.root.is_account_change_index_enabled()
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.root.is_local_transaction_execution_index_enabled()
+    }
+
+    fn are_entity_listing_indices_enabled(&self) -> bool {
+        self.root.are_entity_listing_indices_enabled()
+    }
+
+    fn is_state_history_enabled(&self) -> bool {
+        self.root.is_state_history_enabled()
+    }
+
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
+        self.root.get_first_stored_historical_state_version()
+    }
+}
+
 impl Delta for ProcessedTransactionReceipt {
     fn weight(&self) -> usize {
         match self {
@@ -418,13 +503,13 @@ impl Delta for ProcessedTransactionReceipt {
 
 impl HashStructuresDiff {
     pub fn weight(&self) -> usize {
-        self.state_hash_tree_diff.weight()
+        self.state_tree_diff.weight()
             + self.transaction_tree_diff.weight()
             + self.receipt_tree_diff.weight()
     }
 }
 
-impl StateHashTreeDiff {
+impl StateTreeDiff {
     pub fn weight(&self) -> usize {
         self.new_nodes.len()
     }
@@ -445,7 +530,7 @@ impl<K, N> AccuTreeDiff<K, N> {
 #[derive(Clone)]
 pub struct ImmutableStore {
     partition_updates: ImmutableHashMap<DbPartitionKey, ImmutablePartitionUpdates>,
-    state_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
+    state_tree_nodes: ImmutableHashMap<StoredTreeNodeKey, TreeNode>,
     transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
     node_ancestry_records: ImmutableHashMap<NodeId, SubstateNodeAncestryRecord>,
@@ -569,7 +654,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
             }
 
             let hash_structures_diff = &commit.hash_structures_diff;
-            let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
+            let state_tree_diff = &hash_structures_diff.state_tree_diff;
             self.state_tree_nodes
                 .extend(state_tree_diff.new_nodes.iter().cloned());
             let transaction_tree_diff = &hash_structures_diff.transaction_tree_diff;

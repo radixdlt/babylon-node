@@ -70,7 +70,6 @@ import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -101,9 +100,7 @@ public final class PacemakerRoundProlongationTest {
                 ConsensusConfig.of(PACEMAKER_BASE_TIMEOUT_MS, ADDITIONAL_TIME_MS),
                 LedgerConfig.stateComputerMockedSync(
                     StateComputerConfig.mockedWithEpochs(
-                        Round.of(10000),
-                        EpochNodeWeightMapping.constant(1),
-                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                        10000, EpochNodeWeightMapping.constant(1)))));
   }
 
   // spotless:off

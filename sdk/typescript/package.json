@@ -10,8 +10,14 @@
   "module": "./dist/babylon-core-api-sdk.mjs",
   "exports": {
     ".": {
-      "import": "./dist/babylon-core-api-sdk.mjs",
-      "require": "./dist/babylon-core-api-sdk.umd.js"
+      "import": {
+        "types": "./dist/lib/index.d.ts",
+        "default": "./dist/babylon-core-api-sdk.mjs"
+      },
+      "require": {
+        "types": "./dist/lib/index.d.ts",
+        "default": "./dist/babylon-core-api-sdk.umd.js"
+      }
     }
   },
   "description": "A client for the RadixDLT Babylon Core API",

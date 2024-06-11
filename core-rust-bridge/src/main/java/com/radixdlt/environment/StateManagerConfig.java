@@ -77,13 +77,14 @@ public record StateManagerConfig(
     Option<RustMempoolConfig> mempoolConfigOpt,
     Option<VertexLimitsConfig> vertexLimitsConfigOpt,
     DatabaseBackendConfig databaseBackendConfig,
-    DatabaseFlags databaseFlags,
+    DatabaseConfig databaseConfig,
     LoggingConfig loggingConfig,
-    StateHashTreeGcConfig stateHashTreeGcConfig,
+    StateTreeGcConfig stateTreeGcConfig,
     LedgerProofsGcConfig ledgerProofsGcConfig,
     LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
     ProtocolConfig protocolConfig,
-    boolean noFees) {
+    boolean noFees,
+    ScenariosExecutionConfig scenariosExecutionConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         StateManagerConfig.class,

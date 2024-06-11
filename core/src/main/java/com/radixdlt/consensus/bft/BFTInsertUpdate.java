@@ -64,9 +64,11 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.utils.WrappedByteArray;
 
 /** An event emitted after a vertex has been inserted into the vertex store. */
 public record BFTInsertUpdate(
-    ExecutedVertex insertedVertex, WrappedByteArray serializedVertexStoreState) {}
+    ExecutedVertex insertedVertex, WrappedByteArray serializedVertexStoreState)
+    implements LocalEvent {}

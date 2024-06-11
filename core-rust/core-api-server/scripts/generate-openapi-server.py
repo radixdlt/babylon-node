@@ -9,7 +9,9 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', level=log
 
 CORE_API_SPEC_LOCATION = '../core-api-schema.yaml'
 CORE_API_RUST_GENERATED_DESTINATION = '../src/core_api/generated/'
-CORE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/com/radixdlt/api/core/generated/'
+CORE_API_RUST_PACKAGE = 'core_api::generated'
+CORE_API_JAVA_GENERATED_DESTINATION = '../../../core/src/test-core/java/'
+CORE_API_JAVA_PACKAGE = 'com.radixdlt.api.core.generated'
 
 OPENAPI_GENERATION_FOLDER='.'
 OPENAPI_TEMP_GENERATION_FOLDER='./temp'
@@ -50,7 +52,7 @@ def run(command, cwd = '.', should_log = False):
     if (should_log): logging.debug('Response: %s', stdout)
     return stdout
 
-def generate_rust_models(schema_file, tmp_client_folder, out_location):
+def generate_rust_models(schema_file, tmp_client_folder, out_location, rust_package):
     safe_os_remove(out_location, True)
     # See https://openapi-generator.tech/docs/generators/rust/
     run(['java', '-jar', OPENAPI_GENERATOR_FIXED_VERSION_JAR, 'generate',
@@ -85,11 +87,11 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
 
     def fix_for_enum_not_implementing_default(file_path, type_name):
         # Fix bug that enums don't implement Default... So replace their Boxes with Options
-        regex_pattern = 'pub ([^: ]+): Box<crate::core_api::generated::models::' + type_name + '>'
+        regex_pattern = 'pub ([^: ]+): Box<crate::' + rust_package + '::models::' + type_name + '>'
         field_names = find_in_file_multiline(file_path, re.compile(regex_pattern))
         if len(field_names) == 0:
             return
-        replace_in_file(file_path, 'Box<crate::core_api::generated::models::' + type_name + '>,', 'Option<crate::core_api::generated::models::' + type_name + '>, // Using Option permits Default trait; Will always be Some in normal use')
+        replace_in_file(file_path, 'Box<crate::' + rust_package + '::models::' + type_name + '>,', 'Option<crate::' + rust_package + '::models::' + type_name + '>, // Using Option permits Default trait; Will always be Some in normal use')
         for field_name in field_names:
             replace_in_file(file_path, field_name + ': Box::new(' + field_name + ')', field_name + ': Option::Some(' + field_name + ')')
 
@@ -97,9 +99,9 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
     for file_name in file_names:
         file_path = os.path.join(out_models, file_name)
         # Fix changes due to putting generated files directly into the crate
-        replace_in_file(file_path, 'crate::', 'crate::core_api::generated::')
+        replace_in_file(file_path, 'crate::', 'crate::' + rust_package + '::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
-        replace_in_file(file_path, '::std::collections::HashMap', '::utils::rust::prelude::IndexMap')
+        replace_in_file(file_path, '::std::collections::HashMap', '::radix_rust::prelude::IndexMap')
         # Fix bugs in the OAS generation:
         fix_broken_discriminator_tag(file_path, "substate_type")
         fix_broken_discriminator_tag(file_path, "resource_type")
@@ -148,29 +150,69 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location):
         fix_for_enum_not_implementing_default(file_path, "LedgerProofOrigin")
         fix_for_enum_not_implementing_default(file_path, "StreamProofsErrorDetails")
         fix_for_enum_not_implementing_default(file_path, "StreamProofsFilter")
+        fix_for_enum_not_implementing_default(file_path, "LedgerStateSelector")
 
     logging.info("Successfully fixed up rust models.")
 
-def generate_java_models(schema_file, tmp_client_folder, out_location):
-    safe_os_remove(out_location, True)
-    package_name = "core-api"
-    api_package = "com.radixdlt.api.core.generated.api"
-    invoker_package = "com.radixdlt.api.core.generated.client"
-    models_package = "com.radixdlt.api.core.generated.models"
+def generate_java_models(schema_file, tmp_client_folder, out_location, java_package):
+    java_package_path = java_package.replace('.', '/')
+    safe_os_remove(out_location + java_package_path, True)
+
+    api_package = java_package + '.api'
+    invoker_package = java_package + '.client'
+    models_package = java_package + '.models'
     # See https://openapi-generator.tech/docs/generators/java
     run(['java', '-jar', OPENAPI_GENERATOR_FIXED_VERSION_JAR, 'generate',
          '-g', 'java',
          '-i', schema_file,
          '-o', tmp_client_folder,
-         '--additional-properties=packageName={},openApiNullable=false,useOneOfDiscriminatorLookup=true,library=native,hideGenerationTimestamp=true,apiPackage={},invokerPackage={},modelPackage={}'.format(package_name, api_package, invoker_package, models_package),
+         '--additional-properties=openApiNullable=false,useOneOfDiscriminatorLookup=true,library=native,hideGenerationTimestamp=true,apiPackage={},invokerPackage={},modelPackage={}'.format(api_package, invoker_package, models_package),
     ], should_log=False)
 
     logging.info("Successfully generated java models.")
 
-    code_root = os.path.join(tmp_client_folder, 'src/main/java/com/radixdlt/api/core/generated/')
-    shutil.copytree(code_root, out_location)
+    code_root = os.path.join(tmp_client_folder, 'src/main/java/' + java_package_path + '/')
+    code_models = os.path.join(code_root, 'models')
+
+    def fix_discriminator_order(file_path, discriminator, class_name):
+        # Fix bug that discriminator tags contain (unnecessary) entry for each subclass name - when
+        # such unnecessary entry happens to be (lexicographically) placed before the actual
+        # discriminator, the API client will use the (invalid) subclass name as the discriminator
+        # value, and the API server will not be able to deserialize it.
+        subtype_line_pattern = '  @JsonSubTypes.Type(value = {}.class, name = "{}"),\n'
+        replace_in_file(file_path, subtype_line_pattern.format(class_name, class_name), '')
+        replace_in_file(file_path, subtype_line_pattern.format(class_name, discriminator), subtype_line_pattern.format(class_name, discriminator) + subtype_line_pattern.format(class_name, class_name))
+
+    file_names = [file_name for file_name in os.listdir(code_models) if os.path.isfile(os.path.join(code_models, file_name))]
+    for file_name in file_names:
+        file_path = os.path.join(code_models, file_name)
+        # Fix bugs in the OAS generation:
+        fix_discriminator_order(file_path, 'Function', 'BlueprintFunctionTargetIdentifier')
+        fix_discriminator_order(file_path, 'Method', 'ComponentMethodTargetIdentifier')
+
+    logging.info("Successfully fixed up java models.")
+
+    shutil.copytree(code_root, out_location + java_package_path)
 
     logging.info("Successfully copied java models.")
+
+def fix_spec_and_generate_models(spec_location, rust_destination, rust_package, java_destination, java_package):
+    # download & fix the spec files
+    os.makedirs(OPENAPI_TEMP_GENERATION_FOLDER)
+    spec_temp_location = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'spec.yaml')
+    copy_file(spec_location, spec_temp_location)
+    replace_in_file(spec_temp_location, 'openapi: 3.1.0', 'openapi: 3.0.0')
+    logging.info('Loaded spec from {}'.format(os.path.abspath(spec_location)))
+
+    logging.info('Generating code from spec...')
+
+    generate_rust_models(spec_temp_location, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "models-rust"), rust_destination, rust_package)
+    generate_java_models(spec_temp_location, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "models-java"), java_destination, java_package)
+
+    logging.info("Code has been created.")
+
+    # clean up
+    safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)
 
 if __name__ == "__main__":
     logger.info('Will generate models from the API specifications')
@@ -189,20 +231,11 @@ if __name__ == "__main__":
         logger.info('All good.')
 
     safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)
-    os.makedirs(OPENAPI_TEMP_GENERATION_FOLDER)
 
-    # download & fix the spec files
-    core_api_spec_temp_filename = os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, 'core_api_schema.yaml')
-    copy_file(CORE_API_SPEC_LOCATION, core_api_spec_temp_filename)
-    replace_in_file(core_api_spec_temp_filename, 'openapi: 3.1.0', 'openapi: 3.0.0')
-    logging.info('Loaded Core API Spec from {}'.format(os.path.abspath(CORE_API_SPEC_LOCATION)))
-
-    logging.info('Generating code from specs...')
-
-    generate_rust_models(core_api_spec_temp_filename, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api-rust"), CORE_API_RUST_GENERATED_DESTINATION)
-    generate_java_models(core_api_spec_temp_filename, os.path.join(OPENAPI_TEMP_GENERATION_FOLDER, "core-api-java"), CORE_API_JAVA_GENERATED_DESTINATION)
-
-    logging.info("Code has been created.")
-
-    # clean up
-    safe_os_remove(OPENAPI_TEMP_GENERATION_FOLDER, silent=True)
+    fix_spec_and_generate_models(
+        CORE_API_SPEC_LOCATION,
+        CORE_API_RUST_GENERATED_DESTINATION,
+        CORE_API_RUST_PACKAGE,
+        CORE_API_JAVA_GENERATED_DESTINATION,
+        CORE_API_JAVA_PACKAGE
+    )

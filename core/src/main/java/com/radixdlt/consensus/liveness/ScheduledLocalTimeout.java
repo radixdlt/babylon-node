@@ -66,10 +66,12 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.RoundUpdate;
+import com.radixdlt.consensus.event.LocalEvent;
 
 /** A potential timeout that is scheduled */
 public record ScheduledLocalTimeout(
-    RoundUpdate roundUpdate, long millisecondsWaitTime, int count, boolean hasBeenProlonged) {
+    RoundUpdate roundUpdate, long millisecondsWaitTime, int count, boolean hasBeenProlonged)
+    implements LocalEvent {
 
   public static ScheduledLocalTimeout create(RoundUpdate roundUpdate, long millisecondsWaitTime) {
     return new ScheduledLocalTimeout(roundUpdate, millisecondsWaitTime, 0, false);
@@ -85,6 +87,6 @@ public record ScheduledLocalTimeout(
   }
 
   public Round round() {
-    return roundUpdate.getCurrentRound();
+    return roundUpdate.currentRound();
   }
 }

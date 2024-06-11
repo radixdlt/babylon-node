@@ -71,7 +71,6 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::mem::size_of;
 use std::num::TryFromIntError;
-use std::ops::Range;
 
 /// A complete ID of a Substate.
 #[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -305,7 +304,8 @@ impl LedgerHashes {
 #[derive(Debug)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifestV1,
-    pub explicit_epoch_range: Option<Range<Epoch>>,
+    pub start_epoch_inclusive: Option<Epoch>,
+    pub end_epoch_exclusive: Option<Epoch>,
     pub notary_public_key: Option<PublicKey>,
     pub notary_is_signatory: bool,
     pub tip_percentage: u16,
@@ -407,7 +407,7 @@ pub struct TimestampedValidatorSignature {
 
 define_versioned!(
     #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub enum VersionedLedgerProof {
+    pub VersionedLedgerProof(LedgerProofVersions) {
         previous_versions: [
             1 => LedgerProofV1: { updates_to: 2 },
         ],
@@ -503,6 +503,26 @@ impl From<LedgerHeaderV1> for LedgerHeader {
     }
 }
 
+pub struct LedgerStateSummary {
+    pub epoch: Epoch,
+    pub round: Round,
+    pub state_version: StateVersion,
+    pub hashes: LedgerHashes,
+    pub proposer_timestamp_ms: i64,
+}
+
+impl From<LedgerHeader> for LedgerStateSummary {
+    fn from(header: LedgerHeader) -> Self {
+        Self {
+            epoch: header.epoch,
+            round: header.round,
+            state_version: header.state_version,
+            hashes: header.hashes,
+            proposer_timestamp_ms: header.proposer_timestamp_ms,
+        }
+    }
+}
+
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProtocolUpdateResult {
     pub post_update_proof: LedgerProof,
@@ -510,8 +530,8 @@ pub struct ProtocolUpdateResult {
 
 pub struct EpochTransactionIdentifiers {
     pub state_version: StateVersion,
-    pub transaction_hash: TransactionTreeHash,
-    pub receipt_hash: ReceiptTreeHash,
+    pub transaction_root: TransactionTreeHash,
+    pub receipt_root: ReceiptTreeHash,
 }
 
 impl EpochTransactionIdentifiers {
@@ -519,16 +539,16 @@ impl EpochTransactionIdentifiers {
         let ledger_hashes = LedgerHashes::pre_genesis();
         Self {
             state_version: StateVersion::pre_genesis(),
-            transaction_hash: ledger_hashes.transaction_root,
-            receipt_hash: ledger_hashes.receipt_root,
+            transaction_root: ledger_hashes.transaction_root,
+            receipt_root: ledger_hashes.receipt_root,
         }
     }
 
     pub fn from(epoch_header: &LedgerHeader) -> Self {
         Self {
             state_version: epoch_header.state_version,
-            transaction_hash: epoch_header.hashes.transaction_root,
-            receipt_hash: epoch_header.hashes.receipt_root,
+            transaction_root: epoch_header.hashes.transaction_root,
+            receipt_root: epoch_header.hashes.receipt_root,
         }
     }
 }

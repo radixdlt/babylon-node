@@ -5,13 +5,14 @@ use crate::engine_prelude::*;
 
 pub fn to_api_access_controller_substate(
     context: &MappingContext,
-    substate: &AccessControllerStateFieldSubstate,
+    substate: &AccessControllerV2StateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
     Ok(field_substate_versioned!(
         substate,
         AccessControllerFieldState,
-        AccessControllerSubstate {
+        AccessControllerV2Substate {
             controlled_asset,
+            xrd_fee_vault,
             timed_recovery_delay_in_minutes,
             recovery_badge,
             state: (
@@ -27,6 +28,11 @@ pub fn to_api_access_controller_substate(
                 context,
                 controlled_asset.0.as_node_id()
             )?),
+            xrd_fee_vault: xrd_fee_vault
+                .as_ref()
+                .map(|xrd_fee_vault| to_api_entity_reference(context, xrd_fee_vault.0.as_node_id()))
+                .transpose()?
+                .map(Box::new),
             timed_recovery_delay_minutes: timed_recovery_delay_in_minutes
                 .as_ref()
                 .map(|minutes| to_api_u32_as_i64(*minutes)),
@@ -65,8 +71,8 @@ pub fn to_api_access_controller_substate(
                             context,
                             recovery_proposal,
                         )?),
-                        timed_recovery_allowed_after: timed_recovery_allowed_after
-                            .map(to_api_instant)
+                        allow_timed_recovery_after: timed_recovery_allowed_after
+                            .map(to_api_scrypto_instant)
                             .transpose()?
                             .map(Box::new),
                     }))

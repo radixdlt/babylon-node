@@ -78,6 +78,7 @@ import com.radixdlt.transaction.GetSyncableTxnsAndProofError.*;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawLedgerTransaction;
+import java.util.List;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -108,10 +109,11 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
             startStateVersionInclusive, this.limitsConfig);
 
     return syncableTxnsResult.fold(
-        txnsAndProof ->
-            LedgerExtension.create(
-                txnsAndProof.transactions().stream().map(RawLedgerTransaction::create).toList(),
-                txnsAndProof.proof()),
+        txnsAndProof -> {
+          List<RawLedgerTransaction> transactions =
+              txnsAndProof.transactions().stream().map(RawLedgerTransaction::create).toList();
+          return new LedgerExtension(transactions, txnsAndProof.proof());
+        },
         err -> {
           switch (err) {
             case FailedToPrepareAResponseWithinLimits unused -> {

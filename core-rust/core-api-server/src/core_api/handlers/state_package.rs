@@ -33,7 +33,10 @@ pub(crate) async fn handle_state_package(
     let header = read_current_ledger_header(database.deref());
 
     Ok(Json(models::StatePackageResponse {
-        at_ledger_state: Box::new(to_api_ledger_state_summary(&mapping_context, &header)?),
+        at_ledger_state: Box::new(to_api_ledger_state_summary(
+            &mapping_context,
+            &header.into(),
+        )?),
         owner_role: Some(to_api_owner_role_substate(
             &mapping_context,
             &owner_role_substate,

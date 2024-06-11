@@ -88,7 +88,7 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.p2p.PeerEvent;
-import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
+import com.radixdlt.p2p.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.discovery.DiscoverPeers;
 import com.radixdlt.p2p.discovery.GetPeers;
 import com.radixdlt.p2p.discovery.PeersResponse;
@@ -128,14 +128,10 @@ public class DispatcherModule extends AbstractModule {
                 NoVote.class, (counters, event) -> counters.bft().noVotesSent()))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>>>() {})
-        .toProvider(
-            Dispatchers.scheduledDispatcherProvider(
-                new TypeLiteral<Epoched<ScheduledLocalTimeout>>() {}))
+        .toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<>() {}))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<Epoched<TimeoutQuorumDelayedResolution>>>() {})
-        .toProvider(
-            Dispatchers.scheduledDispatcherProvider(
-                new TypeLiteral<Epoched<TimeoutQuorumDelayedResolution>>() {}))
+        .toProvider(Dispatchers.scheduledDispatcherProvider(new TypeLiteral<>() {}))
         .in(Scopes.SINGLETON);
     bind(new TypeLiteral<ScheduledEventDispatcher<VertexRequestTimeout>>() {})
         .toProvider(Dispatchers.scheduledDispatcherProvider(VertexRequestTimeout.class))
@@ -174,6 +170,10 @@ public class DispatcherModule extends AbstractModule {
 
     final var unexpecedEventKey = new TypeLiteral<EventProcessor<ConsensusByzantineEvent>>() {};
     Multibinder.newSetBinder(binder(), unexpecedEventKey, ProcessOnDispatch.class);
+
+    final var getVerticesRequestCaptureKey =
+        new TypeLiteral<RemoteEventCapture<GetVerticesRequest>>() {};
+    Multibinder.newSetBinder(binder(), getVerticesRequestCaptureKey);
 
     final var scheduledTimeoutKey = new TypeLiteral<EventProcessor<ScheduledLocalTimeout>>() {};
     Multibinder.newSetBinder(binder(), scheduledTimeoutKey, ProcessOnDispatch.class);
@@ -223,9 +223,6 @@ public class DispatcherModule extends AbstractModule {
     final var syncUpdateKey = new TypeLiteral<EventProcessor<LedgerExtension>>() {};
     Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
-    final var verticesRequestKey = new TypeLiteral<EventProcessor<GetVerticesRequest>>() {};
-    Multibinder.newSetBinder(binder(), verticesRequestKey, ProcessOnDispatch.class);
-
     bind(new TypeLiteral<EventDispatcher<RoundQuorumResolution>>() {})
         .toProvider(
             Dispatchers.dispatcherProvider(
@@ -269,7 +266,7 @@ public class DispatcherModule extends AbstractModule {
               @Self NodeId selfNodeId) {
             return transaction ->
                 mempoolAddSuccessEventDispatcher.dispatch(
-                    MempoolAddSuccess.create(transaction, selfNodeId));
+                    new MempoolAddSuccess(transaction, selfNodeId));
           }
         });
   }
@@ -421,7 +418,7 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   private RemoteEventDispatcher<NodeId, GetVerticesRequest> verticesRequestDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<GetVerticesRequest>> processors,
+      Set<RemoteEventCapture<GetVerticesRequest>> processors,
       Environment environment,
       Metrics metrics) {
     var dispatcher = environment.getRemoteDispatcher(GetVerticesRequest.class);

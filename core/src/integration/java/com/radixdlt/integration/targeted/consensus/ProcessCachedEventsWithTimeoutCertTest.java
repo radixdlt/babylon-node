@@ -110,9 +110,7 @@ public class ProcessCachedEventsWithTimeoutCertTest {
                 FunctionalRadixNodeModule.ConsensusConfig.of(),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                     StateComputerConfig.mockedWithEpochs(
-                        Round.of(100),
-                        EpochNodeWeightMapping.constant(5),
-                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                        100, EpochNodeWeightMapping.constant(5)))));
   }
 
   @Test

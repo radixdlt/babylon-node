@@ -89,12 +89,12 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
   @Provides
   private RoundUpdate initialRoundUpdate(
       BFTConfiguration configuration, ProposerElection proposerElection) {
-    HighQC highQC = configuration.getVertexStoreState().getHighQC();
-    Round round = highQC.getHighestRound().next();
-    final BFTValidatorId leader = proposerElection.getProposer(round);
-    final BFTValidatorId nextLeader = proposerElection.getProposer(round.next());
+    var highQC = configuration.getVertexStoreState().getHighQC();
+    var round = highQC.getHighestRound().next();
+    var leader = proposerElection.getProposer(round);
+    var nextLeader = proposerElection.getProposer(round.next());
 
-    return RoundUpdate.create(round, highQC, leader, nextLeader);
+    return new RoundUpdate(round, highQC, leader, nextLeader);
   }
 
   @Provides
@@ -110,11 +110,12 @@ public final class MockedNoEpochsConsensusRecoveryModule extends AbstractModule 
   @Provides
   private BFTConfiguration configuration(
       LedgerProofBundle latestProof, BFTValidatorSet validatorSet, Hasher hasher) {
-    final var nextEpoch = latestProof.resultantEpoch();
-    final var initialState =
+    var nextEpoch = latestProof.resultantEpoch();
+    var initialState =
         VertexStoreState.createNewForNextEpoch(
             REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader()), nextEpoch, hasher);
-    final var proposerElection = this.proposerElectionMode.instantiate(nextEpoch, validatorSet);
+    var proposerElection = this.proposerElectionMode.instantiate(nextEpoch, validatorSet);
+
     return new BFTConfiguration(proposerElection, validatorSet, initialState);
   }
 }

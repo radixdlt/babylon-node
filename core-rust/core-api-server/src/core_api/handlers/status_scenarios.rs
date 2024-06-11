@@ -3,8 +3,7 @@ use crate::core_api::*;
 use crate::engine_prelude::*;
 
 use state_manager::store::traits::scenario::{
-    ExecutedGenesisScenario, ExecutedGenesisScenarioStore, ExecutedScenarioTransaction,
-    ScenarioSequenceNumber,
+    ExecutedScenario, ExecutedScenarioStore, ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
 
 #[tracing::instrument(skip(state))]
@@ -29,9 +28,9 @@ pub(crate) async fn handle_status_scenarios(
 pub fn to_api_executed_scenario(
     context: &MappingContext,
     number: ScenarioSequenceNumber,
-    scenario: &ExecutedGenesisScenario,
-) -> Result<models::ExecutedGenesisScenario, MappingError> {
-    Ok(models::ExecutedGenesisScenario {
+    scenario: &ExecutedScenario,
+) -> Result<models::ExecutedScenario, MappingError> {
+    Ok(models::ExecutedScenario {
         sequence_number: to_api_scenario_number(number)?,
         logical_name: scenario.logical_name.clone(),
         committed_transactions: scenario

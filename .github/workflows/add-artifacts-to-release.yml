@@ -5,11 +5,27 @@ on:
     types: [published]
 
 jobs:
-
+  setup_version_properties:
+    name: Setup version properties
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION_BRANCH: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
+      VERSION_BUILD: ${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
+      VERSION_COMMIT: ${{ steps.setup_version_properties.outputs.VERSION_COMMIT }}
+      VERSION_DISPLAY: ${{ steps.setup_version_properties.outputs.VERSION_DISPLAY }}
+      VERSION_TAG: ${{ steps.setup_version_properties.outputs.VERSION_TAG }}
+      VERSION_LAST_TAG: ${{ steps.setup_version_properties.outputs.VERSION_LAST_TAG }}
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          fetch-depth: 0
+      - name: Setup version properties
+        id: setup_version_properties
+        uses: ./.github/actions/setup-version-properties
   build-core-rust:
     continue-on-error: true
     runs-on: '${{ matrix.os }}'
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       matrix:
         include:
@@ -93,6 +109,9 @@ jobs:
     if: github.event_name == 'release'
     needs: 
       - build-core-rust
+      - setup_version_properties
+    permissions:
+      contents: write
     runs-on: 'ubuntu-latest'
     continue-on-error: true
     strategy:
@@ -127,34 +146,30 @@ jobs:
       - name: Build core-rust
         run: |
           ls -lah libcorerust-${{ matrix.target }}
-          zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
-      - if: github.event_name == 'release'
-        id: get_version
-        name: Get radixdlt version
-        uses: ./.github/actions/get-version
-        with:
-          is_release: true      
+          zip -j babylon-node-rust-${{ matrix.zipname }}-release-${{ needs.setup_version_properties.outputs.VERSION_TAG }}.zip libcorerust-${{ matrix.target }}/${{ matrix.artifact }}
 
       - name: Upload distribution zip
         if: github.event_name == 'release'
         uses: RDXWorks-actions/action-gh-release@master
         with:
           files: |
-            babylon-node-rust-${{ matrix.zipname }}-release-${{ github.event.release.tag_name }}.zip
-      
-        
+            babylon-node-rust-${{ matrix.zipname }}-release-${{ needs.setup_version_properties.outputs.VERSION_TAG }}.zip
 
   publish-distribution-zip:
     if: github.event_name == 'release'
     name: Build and Upload Application Binary
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
+    needs:
+      - setup_version_properties
     environment: publish-artifacts
     steps:
       - name: Dump context
         uses: RDXWorks-actions/ghaction-dump-context@master
       - uses: RDXWorks-actions/checkout@main
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ needs.setup_version_properties.outputs.VERSION_TAG }}
           fetch-depth: 0
       - name: Set up JDK 17
         uses: RDXWorks-actions/setup-java@main
@@ -175,20 +190,15 @@ jobs:
         with:
           is_release: true
           gradle_command: clean build -x test
-      - id: get_version
-        name: Get radixdlt version
-        uses: ./.github/actions/get-version
-        with:
-          is_release: true
       - name: List files
         run: |
           ls -la ./core/build/distributions/
-          mv ./core/build/distributions/core-${{ steps.get_version.outputs.radixdlt_version }}.zip babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
+          mv ./core/build/distributions/core-${{ needs.setup_version_properties.outputs.VERSION_TAG }}.zip babylon-node-${{ needs.setup_version_properties.outputs.VERSION_TAG }}.zip
       - name: Upload distribution zip
         uses: RDXWorks-actions/action-gh-release@master
         with:
           files: |
-            babylon-node-${{ steps.get_version.outputs.radixdlt_version }}.zip
+            babylon-node-${{ needs.setup_version_properties.outputs.VERSION_TAG }}.zip
 
   snyk-sbom:
     if: github.event_name == 'release'
@@ -208,7 +218,7 @@ jobs:
       - name: Generate SBOM
         uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
         with:
-          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json --json-file-output sbom.json
+          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json > sbom.json
           command: sbom
       - name: Upload SBOM
         uses: RDXWorks-actions/action-gh-release@master

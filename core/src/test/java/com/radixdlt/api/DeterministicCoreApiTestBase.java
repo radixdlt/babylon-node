@@ -68,7 +68,6 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -77,86 +76,56 @@ import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.*;
 import com.radixdlt.environment.CoreApiServerFlags;
-import com.radixdlt.environment.DatabaseFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.lang.Functions;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.*;
+import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.utils.FreePortFinder;
 import java.net.http.HttpClient;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import javax.net.ssl.SSLContext;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 public abstract class DeterministicCoreApiTestBase {
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
   public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
   public static String networkLogicalName = networkDefinition.logical_name();
-  protected int coreApiPort = FreePortFinder.findFreeLocalPort();
 
-  protected ApiClient apiClient = buildApiClient();
+  private final int coreApiPort;
+  private final ApiClient apiClient;
 
   static {
     ensureOpenApiModelsAreReady();
   }
 
-  protected DeterministicCoreApiTestBase() {}
-
-  protected DeterministicTest buildRunningServerTest() {
-    return buildRunningServerTest(
-        1000000,
-        new DatabaseFlags(true, false),
-        GenesisData.NO_SCENARIOS,
-        ProtocolConfig.testingDefault());
+  protected DeterministicCoreApiTestBase() {
+    this.coreApiPort = FreePortFinder.findFreeLocalPort();
+    this.apiClient = buildApiClient();
   }
 
-  protected DeterministicTest buildRunningServerTestWithProtocolConfig(
-      int roundsPerEpoch, ProtocolConfig protocolConfig) {
-    return buildRunningServerTest(
-        roundsPerEpoch, new DatabaseFlags(true, false), GenesisData.NO_SCENARIOS, protocolConfig);
+  protected StateComputerConfig.REv2StateComputerConfig defaultConfig() {
+    return StateComputerConfig.rev2()
+        .withGenesis(
+            GenesisBuilder.createTestGenesisWithNumValidators(
+                1,
+                Decimal.ONE,
+                GenesisConsensusManagerConfig.Builder.testDefaults()
+                    .epochExactRoundCount(1000000)));
   }
 
-  protected DeterministicTest buildRunningServerTestWithScenarios(ImmutableList<String> scenarios) {
-    return buildRunningServerTest(
-        1000000, new DatabaseFlags(true, false), scenarios, ProtocolConfig.testingDefault());
-  }
-
-  protected DeterministicTest buildRunningServerTest(DatabaseFlags databaseFlags) {
-    return buildRunningServerTest(
-        1000000, databaseFlags, GenesisData.NO_SCENARIOS, ProtocolConfig.testingDefault());
-  }
-
-  protected DeterministicTest buildRunningServerTest(int roundsPerEpoch) {
-    return buildRunningServerTest(
-        roundsPerEpoch,
-        new DatabaseFlags(true, false),
-        GenesisData.NO_SCENARIOS,
-        ProtocolConfig.testingDefault());
-  }
-
-  protected DeterministicTest buildRunningServerTest(
-      int roundsPerEpoch,
-      DatabaseFlags databaseConfig,
-      ImmutableList<String> scenariosToRun,
-      ProtocolConfig protocolConfig) {
+  protected DeterministicTest buildRunningServerTest(StateComputerConfig stateComputerConfig) {
     var test =
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
@@ -181,20 +150,7 @@ public abstract class DeterministicCoreApiTestBase {
                     FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
                     FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                        StateComputerConfig.rev2(
-                            Network.INTEGRATIONTESTNET.getId(),
-                            GenesisBuilder.createTestGenesisWithNumValidators(
-                                1,
-                                Decimal.ONE,
-                                GenesisConsensusManagerConfig.Builder.testDefaults()
-                                    .epochExactRoundCount(roundsPerEpoch),
-                                scenariosToRun),
-                            databaseConfig,
-                            StateComputerConfig.REV2ProposerConfig.Mempool.defaults(),
-                            false,
-                            false,
-                            protocolConfig),
-                        SyncRelayConfig.of(200, 10, 2000))));
+                        stateComputerConfig, SyncRelayConfig.of(200, 10, 2000))));
     try {
       test.startAllNodes();
     } catch (Exception ex) {
@@ -230,19 +186,9 @@ public abstract class DeterministicCoreApiTestBase {
   protected ApiClient buildApiClient() {
     final var apiClient = new ApiClient();
     apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
-    // Create a dummy SSLContext to avoid the "NoSuchAlgorithmException" when
-    // the default HttpClient fails to load a trust store. We don't need SSL anyway.
-    try {
-      // SNYK - this file is ignored in .snyk file
-      // Raised issue: Inadequate Encryption Strength
-      // Explanation: This is just a test, it doesn't matter.
-      final var dummySSLContext = SSLContext.getInstance("TLS");
-      dummySSLContext.init(null, null, null);
-      apiClient.setHttpClientBuilder(HttpClient.newBuilder().sslContext(dummySSLContext));
-      return apiClient;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    apiClient.setHttpClientBuilder(
+        HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
+    return apiClient;
   }
 
   public <Response> Response assertErrorResponseOfType(
@@ -276,141 +222,15 @@ public abstract class DeterministicCoreApiTestBase {
     return new LtsApi(apiClient);
   }
 
-  public enum TransactionOutcome {
-    CommittedSuccess,
-    CommittedFailure,
-    PermanentRejection,
-  }
-
-  public <T> T submitAndWait(
-      DeterministicTest test,
-      Functions.Func1<Manifest.Parameters, String> manifest,
-      List<ECKeyPair> signatories,
-      Functions.Func3<IntentHash, TransactionOutcome, LtsTransactionStatusResponse, T>
-          outcomeMapper)
-      throws Exception {
-    var metadata =
-        getLtsApi()
-            .ltsTransactionConstructionPost(
-                new LtsTransactionConstructionRequest().network(networkLogicalName));
-
-    var transaction =
-        TransactionBuilder.forNetwork(networkDefinition)
-            .manifest(manifest)
-            .fromEpoch(metadata.getCurrentEpoch())
-            .signatories(signatories)
-            .prepare();
-
-    var submitResponse =
-        getLtsApi()
-            .ltsTransactionSubmitPost(
-                new LtsTransactionSubmitRequest()
-                    .network(networkLogicalName)
-                    .notarizedTransactionHex(transaction.hexPayloadBytes()));
-
-    assertThat(submitResponse.getDuplicate()).isFalse();
-
-    int messagesProcessedPerAttempt = 20;
-    long attempts = 50;
-
-    LtsTransactionStatusResponse statusResponse = null;
-    for (long i = 0; i < attempts; i++) {
-      statusResponse =
-          getLtsApi()
-              .ltsTransactionStatusPost(
-                  new LtsTransactionStatusRequest()
-                      .network(networkLogicalName)
-                      .intentHash(transaction.hexIntentHash()));
-      switch (statusResponse.getIntentStatus()) {
-        case COMMITTEDSUCCESS -> {
-          return outcomeMapper.apply(
-              transaction.intentHash(), TransactionOutcome.CommittedSuccess, statusResponse);
-        }
-        case COMMITTEDFAILURE -> {
-          return outcomeMapper.apply(
-              transaction.intentHash(), TransactionOutcome.CommittedFailure, statusResponse);
-        }
-        case PERMANENTREJECTION -> {
-          return outcomeMapper.apply(
-              transaction.intentHash(), TransactionOutcome.PermanentRejection, statusResponse);
-        }
-        default -> test.runForCount(messagesProcessedPerAttempt);
-      }
-    }
-    throw new RuntimeException(
-        String.format(
-            "Transaction submit didn't complete in after running for count of %s. Status still: %s",
-            attempts * messagesProcessedPerAttempt, statusResponse.getIntentStatus()));
-  }
-
-  public CommittedResult submitAndWaitForSuccess(
-      DeterministicTest test,
-      Functions.Func1<Manifest.Parameters, String> manifest,
-      List<ECKeyPair> signatories)
-      throws Exception {
-    return this.submitAndWait(
-        test,
-        manifest,
-        signatories,
-        (intentHash, outcome, response) -> {
-          switch (outcome) {
-            case CommittedSuccess -> {
-              var stateVersion = response.getCommittedStateVersion();
-              if (stateVersion == null) {
-                throw new RuntimeException(
-                    "Transaction got committed as success without state version on response");
-              }
-              return new CommittedResult(intentHash, stateVersion, Optional.empty());
-            }
-            case CommittedFailure -> throw new RuntimeException(
-                String.format(
-                    "Transaction got committed as failure: %s",
-                    response.getKnownPayloads().get(0).getErrorMessage()));
-            case PermanentRejection -> throw new RuntimeException(
-                String.format(
-                    "Transaction got permanently rejected: %s",
-                    response.getKnownPayloads().get(0).getErrorMessage()));
-          }
-          throw new IllegalStateException("Shouldn't be able to get here");
-        });
-  }
-
-  public CommittedResult submitAndWaitForCommittedFailure(
-      DeterministicTest test,
-      Functions.Func1<Manifest.Parameters, String> manifest,
-      List<ECKeyPair> signatories)
-      throws Exception {
-    return this.submitAndWait(
-        test,
-        manifest,
-        signatories,
-        (intentHash, outcome, response) -> {
-          switch (outcome) {
-            case CommittedSuccess -> throw new RuntimeException(
-                "Transaction got committed as success, but was expecting committed failure");
-            case CommittedFailure -> {
-              var stateVersion = response.getCommittedStateVersion();
-              if (stateVersion == null) {
-                throw new RuntimeException(
-                    "Transaction got committed as failure without state version on response");
-              }
-              var errorMessage =
-                  Objects.requireNonNull(response.getKnownPayloads().get(0).getErrorMessage());
-              return new CommittedResult(intentHash, stateVersion, Optional.of(errorMessage));
-            }
-            case PermanentRejection -> throw new RuntimeException(
-                String.format(
-                    "Transaction got permanently rejected: %s",
-                    response.getKnownPayloads().get(0).getErrorMessage()));
-          }
-          throw new IllegalStateException("Shouldn't be able to get here");
-        });
+  protected CoreApiHelper getApiHelper() {
+    return new CoreApiHelper(networkDefinition, coreApiPort);
   }
 
   public ResourceAddress createFreeMintBurnNonFungibleResource(DeterministicTest test)
       throws Exception {
     var committedNewResourceTxn =
-        submitAndWaitForSuccess(test, Manifest.createAllowAllNonFungibleResource(), List.of());
+        getApiHelper()
+            .submitAndWaitForSuccess(test, Manifest.createAllowAllNonFungibleResource(), List.of());
 
     final var receipt =
         getTransactionApi()
@@ -430,7 +250,4 @@ public abstract class DeterministicCoreApiTestBase {
 
     return addressing.decodeResourceAddress(newResourceAddressStr);
   }
-
-  public record CommittedResult(
-      IntentHash intentHash, long stateVersion, Optional<String> errorMessage) {}
 }

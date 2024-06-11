@@ -77,6 +77,7 @@ import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.environment.NoEpochsConsensusModule;
 import com.radixdlt.environment.NoEpochsSyncModule;
 import com.radixdlt.environment.NodeAutoCloseable;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
@@ -298,9 +299,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         false,
         SafetyRecoveryConfig.MOCKED,
         ConsensusConfig.of(),
-        LedgerConfig.stateComputerNoSync(
-            StateComputerConfig.mockedNoEpochs(
-                numValidators, new MockedMempoolConfig.NoMempool())));
+        LedgerConfig.stateComputerNoSync(StateComputerConfig.mockedNoEpochs(numValidators)));
   }
 
   public boolean supportsEpochs() {
@@ -426,14 +425,15 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(
                     REv2StateManagerModule.createForTesting(
                         ProposalLimitsConfig.testDefaults(),
-                        rev2Config.databaseFlags(),
+                        rev2Config.databaseConfig(),
                         Option.none(),
                         rev2Config.debugLogging(),
-                        rev2Config.stateHashTreeGcConfig(),
+                        rev2Config.stateTreeGcConfig(),
                         rev2Config.ledgerProofsGcConfig(),
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
-                        rev2Config.noFees()));
+                        rev2Config.noFees(),
+                        ScenariosExecutionConfig.ALL));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(mempool.mempoolRelayerConfig()));
@@ -443,14 +443,15 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(
                     REv2StateManagerModule.createForTesting(
                         mempool.proposalLimitsConfig(),
-                        rev2Config.databaseFlags(),
+                        rev2Config.databaseConfig(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging(),
-                        rev2Config.stateHashTreeGcConfig(),
+                        rev2Config.stateTreeGcConfig(),
                         rev2Config.ledgerProofsGcConfig(),
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
-                        rev2Config.noFees()));
+                        rev2Config.noFees(),
+                        ScenariosExecutionConfig.ALL));
               }
             }
           }

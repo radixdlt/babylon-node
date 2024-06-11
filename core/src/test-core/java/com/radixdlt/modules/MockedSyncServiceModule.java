@@ -70,6 +70,8 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.consensus.event.LocalEvent;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
@@ -158,7 +160,7 @@ public class MockedSyncServiceModule extends AbstractModule {
             LongStream.range(currentVersion + 1, proof.stateVersion() + 1)
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
-        syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(transactions, proof));
+        syncedTransactionRunDispatcher.dispatch(new LedgerExtension(transactions, proof));
         currentVersion = proof.stateVersion();
         currentEpoch =
             proof
@@ -187,7 +189,7 @@ public class MockedSyncServiceModule extends AbstractModule {
                 .mapToObj(sharedCommittedTransactions::get)
                 .collect(ImmutableList.toImmutableList());
 
-        syncedTransactionRunDispatcher.dispatch(LedgerExtension.create(txns, target));
+        syncedTransactionRunDispatcher.dispatch(new LedgerExtension(txns, target));
         currentVersion = targetVersion;
         currentEpoch = request.target().ledgerHeader().epoch().toLong();
       }
@@ -204,7 +206,7 @@ public class MockedSyncServiceModule extends AbstractModule {
         (sender, ev) ->
             localSyncRequestEventDispatcher.dispatch(
                 new LocalSyncRequest(
-                    LedgerSyncDtoConversions.syncStatusDtoToLedgerProof(ev.getProof()),
+                    LedgerSyncDtoConversions.syncStatusDtoToLedgerProof(ev.proof()),
                     ImmutableList.of(sender))));
   }
 
@@ -258,12 +260,14 @@ public class MockedSyncServiceModule extends AbstractModule {
     return noOpRemoteProcessor(SyncResponse.class);
   }
 
-  private EventProcessorOnRunner<?> noOpProcessor(Class<?> clazz) {
+  private <T extends LocalEvent> EventProcessorOnRunner<?> noOpProcessor(Class<T> clazz) {
     return new EventProcessorOnRunner<>(Runners.SYNC, clazz, ev -> {});
   }
 
-  private RemoteEventProcessorOnRunner<?, ?> noOpRemoteProcessor(Class<?> clazz) {
-    return new RemoteEventProcessorOnRunner<>(
-        Runners.SYNC, NodeId.class, clazz, (sender, ev) -> {});
+  @SuppressWarnings("unchecked")
+  private <N, T extends RemoteEvent> RemoteEventProcessorOnRunner<N, T> noOpRemoteProcessor(
+      Class<T> clazz) {
+    return (RemoteEventProcessorOnRunner<N, T>)
+        new RemoteEventProcessorOnRunner<>(Runners.SYNC, NodeId.class, clazz, (sender, ev) -> {});
   }
 }

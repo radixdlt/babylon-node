@@ -83,7 +83,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.utils.KeyComparator;
 import com.radixdlt.utils.Pair;
 import java.util.Map;
@@ -108,11 +107,10 @@ public class DifferentTimestampsCauseTimeoutTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes,
-                            MockedMempoolConfig.noMempool(),
-                            StateComputerConfig.ProposerElectionMode
-                                .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))))
+                        StateComputerConfig.mockedNoEpochs(numValidatorNodes)
+                            .withProposerElection(
+                                StateComputerConfig.ProposerElectionMode
+                                    .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))))
             .createExecutor();
 
     executor.start();
@@ -160,11 +158,10 @@ public class DifferentTimestampsCauseTimeoutTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes,
-                            MockedMempoolConfig.noMempool(),
-                            StateComputerConfig.ProposerElectionMode
-                                .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))))
+                        StateComputerConfig.mockedNoEpochs(numValidatorNodes)
+                            .withProposerElection(
+                                StateComputerConfig.ProposerElectionMode
+                                    .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))))
             .createExecutor();
 
     executor.start();

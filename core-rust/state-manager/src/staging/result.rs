@@ -66,7 +66,6 @@ use super::ReadableStateTreeStore;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
 
 use crate::engine_prelude::*;
-use crate::protocol::{ProtocolState, ProtocolVersionName};
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 use crate::transaction::LedgerTransactionHash;
 use crate::{
@@ -81,6 +80,7 @@ use crate::staging::ReadableStore;
 use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
 use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
 use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use crate::traits::{ConfigurableDatabase, LeafSubstateKeyAssociation};
 use node_common::utils::IsAccountExt;
 
 pub enum ProcessedTransactionReceipt {
@@ -101,8 +101,7 @@ pub struct ProcessedCommitResult {
     pub hash_structures_diff: HashStructuresDiff,
     pub database_updates: DatabaseUpdates,
     pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
-    pub new_protocol_state: ProtocolState,
-    pub next_protocol_version: Option<ProtocolVersionName>,
+    pub new_leaf_substate_keys: Vec<LeafSubstateKeyAssociation>,
 }
 
 pub struct HashUpdateContext<'s, S> {
@@ -115,18 +114,17 @@ pub struct HashUpdateContext<'s, S> {
 pub struct ExecutionFeeData {
     pub fee_summary: TransactionFeeSummary,
     pub engine_costing_parameters: CostingParameters,
-    pub transaction_costing_parameters: TransactionCostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
 }
 
 impl ProcessedTransactionReceipt {
-    pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
+    pub fn process<S: ReadableStore>(
         hash_update_context: HashUpdateContext<S>,
         receipt: TransactionReceipt,
-        parent_protocol_state: &ProtocolState,
     ) -> Self {
         match receipt.result {
             TransactionResult::Commit(commit) => {
-                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process::<_, D>(
+                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process(
                     hash_update_context,
                     commit,
                     ExecutionFeeData {
@@ -134,7 +132,6 @@ impl ProcessedTransactionReceipt {
                         engine_costing_parameters: receipt.costing_parameters,
                         transaction_costing_parameters: receipt.transaction_costing_parameters,
                     },
-                    parent_protocol_state,
                 ))
             }
             TransactionResult::Reject(reject) => {
@@ -182,36 +179,39 @@ impl ProcessedTransactionReceipt {
 }
 
 impl ProcessedCommitResult {
-    pub fn process<S: ReadableStore, D: DatabaseKeyMapper>(
+    pub fn process<S: ReadableStore>(
         hash_update_context: HashUpdateContext<S>,
         commit_result: CommitResult,
         execution_fee_data: ExecutionFeeData,
-        parent_protocol_state: &ProtocolState,
     ) -> Self {
         let epoch_identifiers = hash_update_context.epoch_transaction_identifiers;
         let parent_state_version = hash_update_context.parent_state_version;
         let ledger_transaction_hash = *hash_update_context.ledger_transaction_hash;
         let store = hash_update_context.store;
 
-        let state_changes =
-            Self::compute_ledger_state_changes::<S, D>(store, &commit_result.state_updates);
+        let state_changes = Self::compute_ledger_state_changes(store, &commit_result.state_updates);
 
-        let database_updates = commit_result.state_updates.create_database_updates::<D>();
+        let database_updates = commit_result
+            .state_updates
+            .create_database_updates::<SpreadPrefixKeyMapper>();
 
-        let global_balance_update = Self::compute_global_balance_update(
+        let GlobalBalanceUpdate {
+            global_balance_summary,
+            new_substate_node_ancestry_records,
+        } = Self::compute_global_balance_update(
             store,
             &state_changes,
             &commit_result.state_update_summary.vault_balance_changes,
         );
 
-        let state_hash_tree_diff =
+        let (new_state_root, state_tree_diff, new_leaf_substate_keys) =
             Self::compute_state_tree_update(store, parent_state_version, &database_updates);
 
         let epoch_accu_trees =
             EpochAwareAccuTreeFactory::new(epoch_identifiers.state_version, parent_state_version);
 
         let transaction_tree_diff = epoch_accu_trees.compute_tree_diff(
-            epoch_identifiers.transaction_hash,
+            epoch_identifiers.transaction_root,
             store,
             vec![TransactionTreeHash::from(ledger_transaction_hash)],
         );
@@ -219,51 +219,46 @@ impl ProcessedCommitResult {
         let local_receipt = LocalTransactionReceipt::new(
             commit_result,
             state_changes,
-            global_balance_update.global_balance_summary,
+            global_balance_summary,
             execution_fee_data,
         );
         let consensus_receipt = local_receipt.on_ledger.get_consensus_receipt();
 
         let receipt_tree_diff = epoch_accu_trees.compute_tree_diff(
-            epoch_identifiers.receipt_hash,
+            epoch_identifiers.receipt_root,
             store,
             vec![ReceiptTreeHash::from(consensus_receipt.get_hash())],
         );
 
         let ledger_hashes = LedgerHashes {
-            state_root: state_hash_tree_diff.new_root,
+            state_root: new_state_root,
             transaction_root: *transaction_tree_diff.slice.root(),
             receipt_root: *receipt_tree_diff.slice.root(),
         };
-
-        let (new_protocol_state, next_protocol_version) = parent_protocol_state.compute_next(
-            &local_receipt,
-            parent_state_version.next().expect("State version overflow"),
-        );
 
         Self {
             local_receipt,
             hash_structures_diff: HashStructuresDiff {
                 ledger_hashes,
-                state_hash_tree_diff,
+                state_tree_diff,
                 transaction_tree_diff,
                 receipt_tree_diff,
             },
             database_updates,
-            new_substate_node_ancestry_records: global_balance_update
-                .new_substate_node_ancestry_records,
-            new_protocol_state,
-            next_protocol_version,
+            new_substate_node_ancestry_records,
+            new_leaf_substate_keys,
         }
     }
 
-    pub fn expect_success(self, description: impl Display) -> Self {
+    pub fn expect_success(self, desc: impl Display) -> Self {
         if let DetailedTransactionOutcome::Failure(error) =
             &self.local_receipt.local_execution.outcome
         {
             panic!(
                 "{} (ledger hash: {}) failed: {:?}",
-                description, self.hash_structures_diff.ledger_hashes.transaction_root, error
+                desc,
+                self.hash_structures_diff.ledger_hashes.transaction_root,
+                error.render()
             );
         }
         self
@@ -304,7 +299,7 @@ impl ProcessedCommitResult {
         }
     }
 
-    pub fn compute_ledger_state_changes<S: SubstateDatabase, D: DatabaseKeyMapper>(
+    pub fn compute_ledger_state_changes<S: SubstateDatabase>(
         store: &S,
         state_updates: &StateUpdates,
     ) -> LedgerStateChanges {
@@ -338,10 +333,10 @@ impl ProcessedCommitResult {
                     },
                 };
                 for (substate_key, update) in substate_updates.as_ref() {
-                    let partition_key = D::to_db_partition_key(node_id, *partition_num);
-                    let sort_key = D::to_db_sort_key(substate_key);
-
-                    let previous_opt = store.get_substate(&partition_key, &sort_key);
+                    let previous_opt = store.get_substate(
+                        &SpreadPrefixKeyMapper::to_db_partition_key(node_id, *partition_num),
+                        &SpreadPrefixKeyMapper::to_db_sort_key(substate_key),
+                    );
                     let change_action_opt = match (update, previous_opt) {
                         (DatabaseUpdate::Set(new), Some(previous)) if previous != *new => {
                             Some(SubstateChangeAction::Update {
@@ -376,18 +371,22 @@ impl ProcessedCommitResult {
         }
     }
 
-    fn compute_state_tree_update<S: ReadableStateTreeStore>(
+    fn compute_state_tree_update<S: ReadableStore>(
         store: &S,
         parent_state_version: StateVersion,
         database_updates: &DatabaseUpdates,
-    ) -> StateHashTreeDiff {
+    ) -> (StateHash, StateTreeDiff, Vec<LeafSubstateKeyAssociation>) {
         let collector = CollectingTreeStore::new(store);
         let root_hash = put_at_next_version(
             &collector,
             Some(parent_state_version.number()).filter(|v| *v > 0),
             database_updates,
         );
-        collector.into_diff_with(root_hash)
+        let CollectedTreeWrites {
+            diff,
+            key_associations,
+        } = collector.done();
+        (StateHash::from(root_hash), diff, key_associations)
     }
 }
 
@@ -481,7 +480,7 @@ impl GlobalBalanceSummary {
                     scrypto_decode::<FungibleVaultBalanceFieldSubstate>(resultant_balance_substate)
                         .expect("cannot decode vault balance substate")
                         .into_payload()
-                        .into_latest()
+                        .fully_update_and_into_latest_version()
                         .amount();
                 let balance_existed = resultant_fungible_account_balances
                     .entry(root_address)
@@ -523,29 +522,27 @@ impl From<EpochChangeEvent> for NextEpoch {
 #[derive(Clone, Debug)]
 pub struct HashStructuresDiff {
     pub ledger_hashes: LedgerHashes,
-    pub state_hash_tree_diff: StateHashTreeDiff,
+    pub state_tree_diff: StateTreeDiff,
     pub transaction_tree_diff: AccuTreeDiff<StateVersion, TransactionTreeHash>,
     pub receipt_tree_diff: AccuTreeDiff<StateVersion, ReceiptTreeHash>,
 }
 
 #[derive(Clone, Debug)]
-pub struct StateHashTreeDiff {
-    pub new_root: StateHash,
-    pub new_nodes: Vec<(NodeKey, TreeNode)>,
+pub struct StateTreeDiff {
+    pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
     pub stale_tree_parts: Vec<StaleTreePart>,
 }
 
-impl StateHashTreeDiff {
+impl StateTreeDiff {
     pub fn new() -> Self {
         Self {
-            new_root: StateHash::from(Hash([0; Hash::LENGTH])),
             new_nodes: Vec::new(),
             stale_tree_parts: Vec::new(),
         }
     }
 }
 
-impl Default for StateHashTreeDiff {
+impl Default for StateTreeDiff {
     fn default() -> Self {
         Self::new()
     }
@@ -600,33 +597,67 @@ impl<'s, S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'s, S
 
 struct CollectingTreeStore<'s, S> {
     readable_delegate: &'s S,
-    diff: RefCell<StateHashTreeDiff>,
+    diff: RefCell<StateTreeDiff>,
+    key_associations: RefCell<Vec<LeafSubstateKeyAssociation>>,
+}
+
+struct CollectedTreeWrites {
+    diff: StateTreeDiff,
+    key_associations: Vec<LeafSubstateKeyAssociation>,
 }
 
 impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     pub fn new(readable_delegate: &'s S) -> Self {
         Self {
             readable_delegate,
-            diff: RefCell::new(StateHashTreeDiff::new()),
+            diff: RefCell::new(StateTreeDiff::new()),
+            key_associations: RefCell::new(Vec::new()),
         }
     }
 
-    pub fn into_diff_with(self, new_root: Hash) -> StateHashTreeDiff {
-        let mut diff = self.diff.take();
-        diff.new_root = StateHash::from(new_root);
-        diff
+    pub fn done(self) -> CollectedTreeWrites {
+        CollectedTreeWrites {
+            diff: self.diff.take(),
+            key_associations: self.key_associations.take(),
+        }
     }
 }
 
 impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, S> WriteableTreeStore for CollectingTreeStore<'s, S> {
-    fn insert_node(&self, key: NodeKey, node: TreeNode) {
+impl<'s, S: SubstateDatabase + ConfigurableDatabase> WriteableTreeStore
+    for CollectingTreeStore<'s, S>
+{
+    fn insert_node(&self, key: StoredTreeNodeKey, node: TreeNode) {
         self.diff.borrow_mut().new_nodes.push((key, node));
+    }
+
+    fn associate_substate(
+        &self,
+        state_tree_leaf_key: &StoredTreeNodeKey,
+        partition_key: &DbPartitionKey,
+        sort_key: &DbSortKey,
+        substate_value: AssociatedSubstateValue,
+    ) {
+        if !self.readable_delegate.is_state_history_enabled() {
+            return; // avoid unneeded DB read or clone if the Node does not maintain state history
+        }
+        self.key_associations
+            .borrow_mut()
+            .push(LeafSubstateKeyAssociation {
+                tree_node_key: state_tree_leaf_key.clone(),
+                substate_value: match substate_value {
+                    AssociatedSubstateValue::Upserted(value) => value.clone(),
+                    AssociatedSubstateValue::Unchanged => self
+                        .readable_delegate
+                        .get_substate(partition_key, sort_key)
+                        .expect("unchanged value not found in substate database"),
+                },
+            });
     }
 
     fn record_stale_tree_part(&self, part: StaleTreePart) {

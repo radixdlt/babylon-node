@@ -253,7 +253,7 @@ public class StateComputerLedgerTest {
         new LedgerProof(
             REv2ToConsensus.ledgerHeader(ledgerHeader),
             new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()));
-    var verified = LedgerExtension.create(List.of(nextLedgerTransaction), header);
+    var verified = new LedgerExtension(List.of(nextLedgerTransaction), header);
 
     // Act
     sut.syncEventProcessor().process(verified);

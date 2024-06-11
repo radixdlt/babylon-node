@@ -1,3 +1,4 @@
+use crate::engine_prelude::wasm::*;
 use crate::engine_prelude::*;
 
 use std::collections::HashMap;
@@ -10,7 +11,7 @@ use super::ValidatedLedgerTransaction;
 
 /// A logic of an already-validated transaction, ready to be executed against an arbitrary state of
 /// a substate store.
-pub trait TransactionLogic<S>: Sized {
+pub trait TransactionLogic<S> {
     fn execute_on(self, store: &S) -> TransactionReceipt;
 }
 
@@ -19,14 +20,14 @@ pub trait TransactionLogic<S>: Sized {
 pub enum ConfigType {
     /// A system genesis transaction.
     Genesis,
-    /// A system transaction _other_ than genesis (e.g. round update).
-    OtherSystem,
     /// A user transaction during regular execution (e.g. prepare or commit).
     Regular,
     /// A user transaction during "committability check" execution (e.g. in mempool).
     Pending,
     /// A user transaction during preview execution.
     Preview,
+    /// A user transaction during preview execution with auth module disabled.
+    PreviewNoAuth,
 }
 
 const PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(100);
@@ -39,7 +40,7 @@ impl ConfigType {
         match self {
             ConfigType::Genesis => GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
             ConfigType::Pending => PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
-            ConfigType::Preview => PREVIEW_RUNTIME_WARN_THRESHOLD,
+            ConfigType::Preview | ConfigType::PreviewNoAuth => PREVIEW_RUNTIME_WARN_THRESHOLD,
             _ => TRANSACTION_RUNTIME_WARN_THRESHOLD,
         }
     }
@@ -49,47 +50,39 @@ impl ConfigType {
 /// `TransactionLogic`.
 pub struct ExecutionConfigurator {
     scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    pub(crate) costing_parameters: CostingParameters,
-    pub execution_configs: HashMap<ConfigType, ExecutionConfig>,
+    execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
 
 impl ExecutionConfigurator {
-    pub fn new(
-        network: &NetworkDefinition,
-        engine_trace: bool,
-        costing_parameters: CostingParameters,
-    ) -> Self {
+    pub fn new(network: &NetworkDefinition, no_fees: bool, engine_trace: bool) -> Self {
         Self {
             scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
-            costing_parameters,
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
                     ExecutionConfig::for_genesis_transaction(network.clone())
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
-                ),
-                (
-                    ConfigType::OtherSystem,
-                    ExecutionConfig {
-                        max_number_of_events: 1_000_000,
-                        ..ExecutionConfig::for_system_transaction(network.clone())
-                            .with_kernel_trace(engine_trace)
-                    },
                 ),
                 (
                     ConfigType::Regular,
                     ExecutionConfig::for_notarized_transaction(network.clone())
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Pending,
                     ExecutionConfig::for_notarized_transaction(network.clone())
-                        .up_to_loan_repayment(true)
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Preview,
-                    ExecutionConfig::for_preview(network.clone()),
+                    ExecutionConfig::for_preview(network.clone()).with_no_fees(no_fees),
+                ),
+                (
+                    ConfigType::PreviewNoAuth,
+                    ExecutionConfig::for_preview_no_auth(network.clone()).with_no_fees(no_fees),
                 ),
             ]),
         }
@@ -117,7 +110,7 @@ impl ExecutionConfigurator {
         transaction: &'a ValidatedNotarizedTransactionV1,
     ) -> ConfiguredExecutable<'a> {
         self.wrap_transaction(
-            transaction.get_executable(),
+            transaction.get_executable().abort_when_loan_repaid(),
             ConfigType::Pending,
             format!(
                 "pending intent hash {:?}, up to fee loan",
@@ -130,9 +123,14 @@ impl ExecutionConfigurator {
         &'a self,
         validated_preview_intent: &'a ValidatedPreviewIntent,
     ) -> ConfiguredExecutable<'a> {
+        let config_type = if validated_preview_intent.flags.disable_auth {
+            ConfigType::PreviewNoAuth
+        } else {
+            ConfigType::Preview
+        };
         self.wrap_transaction(
             validated_preview_intent.get_executable(),
-            ConfigType::Preview,
+            config_type,
             "preview".to_string(),
         )
     }
@@ -146,7 +144,6 @@ impl ExecutionConfigurator {
         ConfiguredExecutable::Transaction {
             executable,
             scrypto_interpreter: &self.scrypto_vm,
-            costing_parameters: &self.costing_parameters,
             execution_config: self.execution_configs.get(&config_type).unwrap(),
             threshold: config_type.get_transaction_runtime_warn_threshold(),
             description,
@@ -165,7 +162,6 @@ pub enum ConfiguredExecutable<'a> {
     Transaction {
         executable: Executable<'a>,
         scrypto_interpreter: &'a ScryptoVm<DefaultWasmEngine>,
-        costing_parameters: &'a CostingParameters,
         execution_config: &'a ExecutionConfig,
         threshold: Duration,
         description: String,
@@ -177,32 +173,22 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
         match self {
             ConfiguredExecutable::GenesisFlash { flash_receipt } => flash_receipt.into(),
             ConfiguredExecutable::SystemFlash { state_updates } => {
-                let mut substate_schema_mapper =
-                    SubstateSchemaMapper::new(SystemDatabaseReader::new(store));
-                substate_schema_mapper.add_for_all_individually_updated(&state_updates);
-                let substate_system_structures = substate_schema_mapper.done();
-
-                // Sanity check that all updates are to existing nodes so that
-                // we can assure there are no new entities in the receipt
-                let reader = SystemDatabaseReader::new(store);
-                for (node_id, ..) in &state_updates.by_node {
-                    reader
-                        .get_object_info(*node_id)
-                        .expect("Substate flash is currently only supported for existing nodes.");
-                }
+                let application_events = Vec::new();
+                let system_structure =
+                    SystemStructure::resolve(store, &state_updates, &application_events);
+                let new_node_ids = collect_new_node_ids(&state_updates);
+                let state_update_summary =
+                    StateUpdateSummary::new(store, new_node_ids, &state_updates);
 
                 let commit_result = CommitResult {
                     state_updates,
-                    state_update_summary: Default::default(),
+                    state_update_summary,
                     fee_source: Default::default(),
                     fee_destination: Default::default(),
                     outcome: TransactionOutcome::Success(vec![]),
-                    application_events: vec![],
+                    application_events,
                     application_logs: vec![],
-                    system_structure: SystemStructure {
-                        substate_system_structures,
-                        event_system_structures: index_map_new(),
-                    },
+                    system_structure,
                     execution_trace: None,
                 };
 
@@ -211,19 +197,17 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
             ConfiguredExecutable::Transaction {
                 executable,
                 scrypto_interpreter,
-                costing_parameters,
                 execution_config,
                 threshold,
                 description,
             } => {
                 let start = Instant::now();
-                let result = execute_transaction(
+                let result = execute_transaction_with_configuration::<_, Vm<_, _>>(
                     store,
-                    Vm {
+                    VmInit {
                         scrypto_vm: scrypto_interpreter,
-                        native_vm: DefaultNativeVm::new(),
+                        native_vm_extension: NoExtension,
                     },
-                    costing_parameters,
                     execution_config,
                     &executable,
                 );
@@ -238,6 +222,48 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                 }
                 result
             }
+        }
+    }
+}
+
+/// Traverses the given [`StateUpdates`] and returns [`NodeId`]s of the newly-created entities.
+///
+/// Note: this assumes that the [`TYPE_INFO_FIELD_PARTITION`] is mandatory and immutable, i.e. it is
+/// written to exactly once, at the creation of its entity.
+fn collect_new_node_ids(state_updates: &StateUpdates) -> IndexSet<NodeId> {
+    state_updates
+        .by_node
+        .iter()
+        .filter(|(_node_id, node_state_updates)| {
+            let NodeStateUpdates::Delta { by_partition } = node_state_updates;
+            by_partition.contains_key(&TYPE_INFO_FIELD_PARTITION)
+        })
+        .map(|(node_id, _node_state_updates)| *node_id)
+        .collect()
+}
+
+/// An extension trait for easier, declarative customization of our various [`ExecutionConfig`]s.
+trait CustomizedExecutionConfig {
+    fn with_no_fees(self, no_fees: bool) -> Self;
+}
+
+impl CustomizedExecutionConfig for ExecutionConfig {
+    fn with_no_fees(self, no_fees: bool) -> Self {
+        let ExecutionConfig {
+            enable_kernel_trace,
+            enable_cost_breakdown,
+            execution_trace,
+            system_overrides,
+        } = self;
+        ExecutionConfig {
+            enable_kernel_trace,
+            enable_cost_breakdown,
+            execution_trace,
+            system_overrides: Some(SystemOverrides {
+                disable_costing: no_fees,
+                // Note: In practice, all ExecutionConfig's constructors set the system_overrides.
+                ..system_overrides.unwrap_or_default()
+            }),
         }
     }
 }

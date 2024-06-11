@@ -49,7 +49,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
                     state_version: to_api_state_version(header.state_version)?,
                     ledger_header_summary: Box::new(to_api_ledger_header_summary(
                         &mapping_context,
-                        &header,
+                        &header.into(),
                     )?),
                     account_address: to_api_component_address(
                         &mapping_context,
@@ -102,7 +102,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
             state_version: to_api_state_version(header.state_version)?,
             ledger_header_summary: Box::new(to_api_ledger_header_summary(
                 &mapping_context,
-                &header,
+                &header.into(),
             )?),
             account_address: to_api_component_address(&mapping_context, &component_address)?,
             fungible_resource_balances,

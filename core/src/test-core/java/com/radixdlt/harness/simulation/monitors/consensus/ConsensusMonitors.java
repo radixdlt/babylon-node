@@ -143,9 +143,7 @@ public final class ConsensusMonitors {
       @MonitorKey(Monitor.CONSENSUS_NO_TIMEOUTS)
       TestInvariant noTimeoutsInvariant(NodeEvents nodeEvents) {
         return new EventNeverOccursInvariant<>(
-            nodeEvents,
-            LocalTimeoutOccurrence.class,
-            timeout -> timeout.getRound().gt(Round.of(4)));
+            nodeEvents, LocalTimeoutOccurrence.class, timeout -> timeout.round().gt(Round.of(4)));
       }
 
       @ProvidesIntoMap

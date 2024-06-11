@@ -5,11 +5,12 @@ use std::ops::Deref;
 
 use crate::core_api::*;
 
+use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
 use state_manager::store::traits::*;
 use state_manager::transaction::*;
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    LocalTransactionReceipt, ReadableRocks, StateManagerDatabase, StateVersion,
+    LocalTransactionReceipt, StateVersion,
 };
 
 use super::to_api_committed_state_identifiers;
@@ -28,7 +29,7 @@ pub(crate) async fn handle_stream_transactions(
         .with_transaction_formats(&request.transaction_format_options)
         .with_substate_formats(&request.substate_format_options);
 
-    let from_state_version = extract_api_state_version(request.from_state_version)
+    let from_state_version = extract_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let limit: u64 = request
@@ -582,7 +583,9 @@ pub fn to_api_round_update_transaction(
         leader_proposal_history,
     } = round_update_transaction;
     Ok(models::RoundUpdateTransaction {
-        proposer_timestamp: Box::new(to_api_instant_from_safe_timestamp(*proposer_timestamp_ms)?),
+        proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(
+            *proposer_timestamp_ms,
+        )?),
         epoch: to_api_epoch(context, *epoch)?,
         round_in_epoch: to_api_round(*round)?,
         leader_proposal_history: Box::new(models::LeaderProposalHistory {
