@@ -71,4 +71,12 @@ import com.radixdlt.utils.WrappedByteArray;
 /** An even emitted when the vertex store has been rebuilt. */
 public record BFTRebuildUpdate(
     VertexStoreState vertexStoreState, WrappedByteArray serializedVertexStoreState)
-    implements LocalEvent {}
+    implements LocalEvent {
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[serializedVertexStoreStateSize=%s]",
+        getClass().getSimpleName(), serializedVertexStoreState.size());
+  }
+}

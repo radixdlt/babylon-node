@@ -101,11 +101,6 @@ public class LivenessInvariant implements TestInvariant {
                     emitter.onNext(highQCUpdate.newHighQc().highestQC());
                   },
                   BFTHighQCUpdate.class);
-              nodeEvents.addListener(
-                  (node, highQcUpdate) -> {
-                    emitter.onNext(highQcUpdate.newHighQc().highestQC());
-                  },
-                  BFTHighQCUpdate.class);
             })
         .serialize()
         .map(QuorumCertificate::getProposedHeader)

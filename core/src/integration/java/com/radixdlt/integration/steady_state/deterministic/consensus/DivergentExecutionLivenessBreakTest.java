@@ -96,6 +96,7 @@ import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.REv2StateComputer;
 import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -195,7 +196,8 @@ public final class DivergentExecutionLivenessBreakTest {
 
             @Override
             public LedgerProofBundle commit(
-                LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+                LedgerExtension ledgerExtension,
+                Option<WrappedByteArray> serializedVertexStoreState) {
               return underlyingStateComputer.commit(ledgerExtension, serializedVertexStoreState);
             }
           };

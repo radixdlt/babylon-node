@@ -71,4 +71,11 @@ import com.radixdlt.utils.WrappedByteArray;
 /** An event emitted after a vertex has been inserted into the vertex store. */
 public record BFTInsertUpdate(
     ExecutedVertex insertedVertex, WrappedByteArray serializedVertexStoreState)
-    implements LocalEvent {}
+    implements LocalEvent {
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[insertedVertex=%s serializedVertexStoreStateSize=%s]",
+        getClass().getSimpleName(), insertedVertex(), serializedVertexStoreState.size());
+  }
+}

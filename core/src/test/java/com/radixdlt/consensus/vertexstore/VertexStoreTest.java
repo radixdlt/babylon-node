@@ -77,6 +77,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
@@ -91,6 +92,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.ZeroHasher;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -210,7 +212,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = vertices.get(1).vertex().getQCToParent();
-    vertexStoreAdapter.insertQc(qc);
+    vertexStoreAdapter.insertQuorumCertificate(qc);
 
     // Assert
     assertThat(vertexStoreAdapter.highQC().highestQC()).isEqualTo(qc);
@@ -278,7 +280,7 @@ public class VertexStoreTest {
             .getQCToParent();
 
     // Act
-    final var insertQcResult = vertexStoreAdapter.insertQc(qcForVertexG);
+    final var insertQcResult = vertexStoreAdapter.insertQuorumCertificate(qcForVertexG);
 
     assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.Inserted);
     assertEquals(vertexStoreAdapter.getRoot().hash(), vertexD.hash());
@@ -318,7 +320,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = vertices.get(3).vertex().getQCToParent();
-    final var insertQcResult = vertexStoreAdapter.insertQc(qc);
+    final var insertQcResult = vertexStoreAdapter.insertQuorumCertificate(qc);
 
     // Assert
     assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.Inserted);
@@ -359,7 +361,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = this.nextVertex.get().vertex().getQCToParent();
-    final var insertQcResult = vertexStoreAdapter.insertQc(qc);
+    final var insertQcResult = vertexStoreAdapter.insertQuorumCertificate(qc);
 
     // Assert
     assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.VertexIsMissing);
@@ -371,11 +373,12 @@ public class VertexStoreTest {
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
 
     final var qc = vertices.get(3).vertex().getQCToParent();
+    final var nonRootVertices = vertices.stream().skip(1).collect(ImmutableSet.toImmutableSet());
     VertexStoreState vertexStoreState =
         VertexStoreState.create(
             HighQC.from(qc, qc, vertexStoreAdapter.highQC().highestTC()),
             vertices.get(0),
-            vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
+            nonRootVertices,
             hasher);
 
     // Act
@@ -386,8 +389,8 @@ public class VertexStoreTest {
         .dispatch(
             argThat(
                 u -> {
-                  List<VertexWithHash> sentVertices = u.vertexStoreState().getVertices();
-                  return sentVertices.equals(vertices.subList(1, vertices.size()));
+                  Set<VertexWithHash> sentVertices = u.vertexStoreState().getVertices();
+                  return sentVertices.equals(nonRootVertices);
                 }));
   }
 

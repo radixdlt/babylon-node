@@ -81,6 +81,7 @@ import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -204,7 +205,7 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
 
   @Override
   public LedgerProofBundle commit(
-      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+      LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
     var ledgerUpdate = this.generateLedgerUpdate(ledgerExtension);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
     return ledgerUpdate.committedProof();

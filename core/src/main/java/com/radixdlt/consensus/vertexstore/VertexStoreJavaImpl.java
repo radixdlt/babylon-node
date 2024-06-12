@@ -67,6 +67,7 @@ package com.radixdlt.consensus.vertexstore;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.BFTHeader;
@@ -425,7 +426,10 @@ public final class VertexStoreJavaImpl implements VertexStore {
       return;
     }
 
-    final var children = vertexChildren.removeAll(vertexId);
+    // Note that we need a copy of the children list here (.stream().toList()) - that is because
+    // we're removing the items in the loop (otherwise, this could lead to
+    // ConcurrentModificationException)
+    final var children = vertexChildren.get(vertexId).stream().toList();
     for (HashCode child : children) {
       if (!Optional.of(child).equals(skip)) {
         removeVertexAndPruneInternal(child, Optional.empty());
@@ -468,13 +472,13 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   private VertexStoreState getState() {
     // TODO: store list dynamically rather than recomputing
-    ImmutableList.Builder<VertexWithHash> verticesBuilder = ImmutableList.builder();
+    ImmutableSet.Builder<VertexWithHash> verticesBuilder = ImmutableSet.builder();
     getChildrenVerticesList(this.rootVertex, verticesBuilder);
     return VertexStoreState.create(this.highQC(), this.rootVertex, verticesBuilder.build(), hasher);
   }
 
   private void getChildrenVerticesList(
-      VertexWithHash parent, ImmutableList.Builder<VertexWithHash> builder) {
+      VertexWithHash parent, ImmutableSet.Builder<VertexWithHash> builder) {
     for (HashCode child : this.vertexChildren.get(parent.hash())) {
       final var v = vertices.get(child);
       builder.add(v);

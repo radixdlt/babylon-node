@@ -118,6 +118,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt192;
 import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -168,7 +169,7 @@ public class EpochManagerTest {
 
         @Override
         public LedgerProofBundle commit(
-            LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+            LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
           // No-op
           // `closestEpochProofOnOrBefore` isn't really correct here, but that's fine
           return new LedgerProofBundle(

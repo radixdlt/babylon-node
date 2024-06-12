@@ -70,6 +70,7 @@ import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.lang.Option;
 import com.radixdlt.utils.WrappedByteArray;
+import java.util.AbstractCollection;
 
 /**
  * An event emitted when vertex store updates its highQC, which possibly results in some vertices
@@ -79,4 +80,15 @@ public record BFTHighQCUpdate(
     HighQC newHighQc,
     Option<ImmutableList<ExecutedVertex>> committedVertices,
     WrappedByteArray serializedVertexStoreState)
-    implements LocalEvent {}
+    implements LocalEvent {
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[newHighQc=%s numCommittedVertices=%s serializedVertexStoreStateSize=%s]",
+        getClass().getSimpleName(),
+        newHighQc,
+        committedVertices.map(AbstractCollection::size).orElse(0),
+        serializedVertexStoreState.size());
+  }
+}

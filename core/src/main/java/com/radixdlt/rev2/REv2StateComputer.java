@@ -90,6 +90,7 @@ import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -283,7 +284,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
 
   @Override
   public LedgerProofBundle commit(
-      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+      LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
     final var proof = ledgerExtension.proof();
     final var header = proof.ledgerHeader();
 
@@ -291,7 +292,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new CommitRequest(
             ledgerExtension.transactions(),
             proof,
-            serializedVertexStoreState,
+            serializedVertexStoreState.map(WrappedByteArray::value),
             Option.from(selfValidatorId));
 
     final var result = stateComputer.commit(commitRequest);
