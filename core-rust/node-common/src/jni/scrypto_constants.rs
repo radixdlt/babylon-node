@@ -114,4 +114,13 @@ extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getLockerPackageAddre
     jni_sbor_coded_call(&env, request_payload, |_: ()| LOCKER_PACKAGE)
 }
 
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getResourcePackage(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| RESOURCE_PACKAGE)
+}
+
 pub fn export_extern_functions() {}
