@@ -62,19 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.nofaucet;
+package com.radixdlt.api.core;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static com.radixdlt.lang.Tuple.tuple;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.CoreApiServer;
+import com.radixdlt.api.CoreApiServerModule;
+import com.radixdlt.api.DummySslContextFactory;
 import com.radixdlt.api.core.generated.api.TransactionApi;
+import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.CoreApiServerFlags;
+import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.*;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -85,17 +93,40 @@ import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.ScryptoConstants;
-import com.radixdlt.rev2.protocol.ProtocolUpdateTestUtils;
+import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
+import java.net.http.HttpClient;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class CallPreviewWithoutFaucetTest {
+  private final ApiClient apiClient;
+  private final Module coreServerModule;
+
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private DeterministicTest createTest(Module... extraModules) {
+  public CallPreviewWithoutFaucetTest() {
+    var coreApiPort = FreePortFinder.findFreeLocalPort();
+
+    apiClient = buildApiClient(coreApiPort);
+    coreServerModule =
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            install(
+                new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)));
+          }
+
+          @ProvidesIntoSet
+          private StartProcessorOnRunner startCoreApi(CoreApiServer coreApiServer) {
+            return new StartProcessorOnRunner("coreApi", coreApiServer::start);
+          }
+        };
+  }
+
+  private DeterministicTest createTest() {
     final var validatorKey = ECKeyPair.fromSeed(new byte[] {0x02}).getPublicKey();
 
     var genesisData =
@@ -128,7 +159,7 @@ public final class CallPreviewWithoutFaucetTest {
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
         .messageMutator(MessageMutator.dropTimeouts())
-        .addModules(extraModules)
+        .addModule(coreServerModule)
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 FunctionalRadixNodeModule.NodeStorageConfig.tempFolder(folder),
@@ -137,6 +168,15 @@ public final class CallPreviewWithoutFaucetTest {
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2().withGenesis(genesisData))));
+  }
+
+  private static ApiClient buildApiClient(int coreApiPort) {
+    final var apiClient = new ApiClient();
+
+    apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
+    apiClient.setHttpClientBuilder(
+        HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
+    return apiClient;
   }
 
   @Test
@@ -153,7 +193,7 @@ public final class CallPreviewWithoutFaucetTest {
     //    }
 
     final var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
-    final var accountLockerCall =
+    final var callPreviewRequest =
         new TransactionCallPreviewRequest()
             .network(Network.INTEGRATIONTESTNET.getLogicalName())
             .target(
@@ -169,17 +209,16 @@ public final class CallPreviewWithoutFaucetTest {
             .addArgumentsItem("4d2102230c2100230c2200")
             .addArgumentsItem("4d220000");
 
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
-    try (var test = createTest(coreApiHelper.module())) {
+    try (var test = createTest()) {
       // Arrange: Start a single node network
       test.startAllNodes();
 
       // Act: Preview a transaction
-      final var callBeforeBottlenose =
-          new TransactionApi(coreApiHelper.client()).transactionCallPreviewPost(accountLockerCall);
+      final var callPreviewResponse =
+          new TransactionApi(apiClient).transactionCallPreviewPost(callPreviewRequest);
 
       // Assert: It should succeed despite empty faucet
-      assertEquals(TransactionStatus.SUCCEEDED, callBeforeBottlenose.getStatus());
+      assertEquals(TransactionStatus.SUCCEEDED, callPreviewResponse.getStatus());
     }
   }
 }
