@@ -55,6 +55,7 @@ impl<K: Hash + Eq, V> LruLikeDictionary<K, V> {
 
 #[cfg(test)]
 mod tests {
+    use std::error::Error;
     use super::*;
 
     #[derive(Debug, Eq, PartialEq)]
@@ -71,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    fn run() {
+    fn run() -> Result<(), dyn Error> {
         let mut dict: LruLikeDictionary<&str, SomeType> = LruLikeDictionary::new(3);
         dict.put("a", SomeType::new(2));
         dict.put("b", SomeType::new(2));
@@ -84,6 +85,8 @@ mod tests {
         assert_eq!(6, dict.len());
         assert_eq!(2, dict.evict(|x| x.from_state_version < 3));
         assert_eq!(4, dict.len());
-        assert_eq!(SomeType { from_state_version: 4 }, *dict.get(&"a").unwrap());
+        assert_eq!(SomeType { from_state_version: 4 }, *dict.get(&"a")?);
+
+        Ok()
     }
 }

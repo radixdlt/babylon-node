@@ -141,7 +141,7 @@ pub async fn create_server<F>(
 
                 let inner_core_api_state = ca_clone.clone();
                 let h = thread::spawn(move || {
-                    da_main(inner_core_api_state);
+                    da_main(inner_core_api_state).unwrap();
                 });
                 handle.replace(h);
             } else if is_running && !should_run {

@@ -1,19 +1,20 @@
 use std::collections::HashMap;
+use std::error::Error;
 use postgres::Client;
 use crate::da::db::*;
 
-pub fn read_ledger_tip(postgres_db: &mut Client) -> Option<i64> {
-    postgres_db.query_one("SELECT max(state_version) FROM ledger_transactions;", &[]).unwrap().get(0)
+pub fn read_ledger_tip(postgres_db: &mut Client) -> Result<Option<i64>, Box<dyn Error>> {
+    Ok(postgres_db.query_one("SELECT max(state_version) FROM ledger_transactions;", &[])?.get(0))
 }
 
-pub fn read_next_sequence_id(postgres_db: &mut Client, table_name: &str) -> i64 {
+pub fn read_next_sequence_id(postgres_db: &mut Client, table_name: &str) -> Result<i64, Box<dyn Error>> {
     let sequence_id = format!("{}_id_seq", table_name);
 
-    postgres_db.query_one("SELECT nextval($1::text), pg_typeof(123)::text;", &[&sequence_id]).unwrap().get(0)
+    Ok(postgres_db.query_one("SELECT nextval($1::text);", &[&sequence_id])?.get(0))
 }
 
-pub fn existing_entity_definitions(postgres_db: &mut Client, lookup: &[String]) -> Vec<DbEntityDefinition> {
-    let mut res = vec![];
+pub fn existing_entity_definitions(postgres_db: &mut Client, lookup: &[String]) -> Result<HashMap<DbEntityDefinitionLookup, DbEntityDefinition>, Box<dyn Error>> {
+    let mut res = HashMap::new();
 
     if lookup.len() > 0 {
         let rows = postgres_db.query(
@@ -21,21 +22,26 @@ pub fn existing_entity_definitions(postgres_db: &mut Client, lookup: &[String]) 
             SELECT id, from_state_version, address
             FROM entity_definitions
             WHERE address = ANY($1)",
-            &[&lookup]).unwrap();
+            &[&lookup])?;
 
         for row in rows {
-            res.push(DbEntityDefinition {
+            let key = DbEntityDefinitionLookup {
+                id: row.get(0),
+            };
+            let value = DbEntityDefinition {
                 id: row.get(0),
                 from_state_version: row.get(1),
                 address: row.get(2),
-            });
+            };
+
+            res.insert(key, value);
         }
     }
 
-    return res;
+    Ok(res)
 }
 
-pub fn most_recent_metadata_entry_history(postgres_db: &mut Client, lookup: &[DbMetadataEntryHistoryLookup]) -> HashMap<DbMetadataEntryHistoryLookup, DbMetadataEntryHistory> {
+pub fn most_recent_metadata_entry_history(postgres_db: &mut Client, lookup: &[DbMetadataEntryHistoryLookup]) -> Result<HashMap<DbMetadataEntryHistoryLookup, DbMetadataEntryHistory>, Box<dyn Error>> {
     let mut res = HashMap::new();
 
     if lookup.len() > 0 {
@@ -59,7 +65,7 @@ pub fn most_recent_metadata_entry_history(postgres_db: &mut Client, lookup: &[Db
                 ORDER BY from_state_version DESC
                 LIMIT 1
             ) mr ON true;",
-            &[&entity_ids, &keys]).unwrap();
+            &[&entity_ids, &keys])?;
 
         for row in rows {
             let key = DbMetadataEntryHistoryLookup {
@@ -78,10 +84,10 @@ pub fn most_recent_metadata_entry_history(postgres_db: &mut Client, lookup: &[Db
         }
     }
 
-    return res;
+    Ok(res)
 }
 
-pub fn most_recent_metadata_aggregate_history(postgres_db: &mut Client, lookup: &[i64]) -> HashMap<i64, DbMetadataAggregateHistory> {
+pub fn most_recent_metadata_aggregate_history(postgres_db: &mut Client, lookup: &[i64]) -> Result<HashMap<DbMetadataAggregateHistoryLookup, DbMetadataAggregateHistory>, Box<dyn Error>> {
     let mut res = HashMap::new();
 
     if lookup.len() > 0 {
@@ -97,17 +103,22 @@ pub fn most_recent_metadata_aggregate_history(postgres_db: &mut Client, lookup: 
                 ORDER BY from_state_version DESC
                 LIMIT 1
             ) mr ON true;",
-            &[&lookup]).unwrap();
+            &[&lookup])?;
 
         for row in rows {
-            res.insert(row.get(0), DbMetadataAggregateHistory {
+            let key = DbMetadataAggregateHistoryLookup {
+                id: row.get(0),
+            };
+            let value = DbMetadataAggregateHistory {
                 id: row.get(0),
                 from_state_version: row.get(1),
                 entity_id: row.get(2),
                 entry_ids: row.get(3),
-            });
+            };
+
+            res.insert(key, value);
         }
     }
 
-    return res;
+    Ok(res)
 }

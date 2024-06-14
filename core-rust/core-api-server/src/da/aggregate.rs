@@ -1,16 +1,17 @@
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 use std::rc::Rc;
 use std::time::{Instant, SystemTime};
-use postgres::{Client, Transaction};
 
+use postgres::Client;
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
-use crate::da::lru_like_dictionary::LruLikeDictionary;
-use crate::da::db::*;
 
-#[derive(Debug)]
+use crate::da::db::*;
+use crate::da::lru_like_dictionary::LruLikeDictionary;
+
+ #[derive(Debug)]
 pub struct IncreaseA {
     pub entity_definitions: Vec<Rc<DbEntityDefinition>>,
 }
@@ -28,7 +29,7 @@ pub struct ProcessingContext<'a> {
     pub stopwatch: Option<Instant>,
     pub existing_entities: LruLikeDictionary<String, Rc<DbEntityDefinition>>,
     pub most_recent_entries: LruLikeDictionary<DbMetadataEntryHistoryLookup, Rc<DbMetadataEntryHistory>>,
-    pub most_recent_aggregates: LruLikeDictionary<i64, Rc<RefCell<DbMetadataAggregateHistory>>>,
+    pub most_recent_aggregates: LruLikeDictionary<DbMetadataAggregateHistoryLookup, Rc<RefCell<DbMetadataAggregateHistory>>>,
     pub scan_results: Option<ScanResult>,
     pub increase_a: Option<Box<IncreaseA>>,
     pub increase_b: Option<Box<IncreaseB>>,
@@ -55,51 +56,7 @@ impl<'a> ProcessingContext<'a> {
     }
 }
 
-pub struct DbSequences {
-    next_entity_definitions_id: Cell<i64>,
-    next_metadata_entry_history_id: Cell<i64>,
-    next_metadata_aggregate_history_id: Cell<i64>,
-}
-
-impl DbSequences {
-    pub fn new(postgres_db: &mut Client) -> Self {
-        Self {
-            next_entity_definitions_id: Cell::new(read_next_sequence_id(postgres_db, "entity_definitions")),
-            next_metadata_entry_history_id: Cell::new(read_next_sequence_id(postgres_db, "metadata_entry_history")),
-            next_metadata_aggregate_history_id: Cell::new(read_next_sequence_id(postgres_db, "metadata_aggregate_history")),
-        }
-    }
-
-    pub fn persist(&self, postgres_db: &mut Transaction) {
-        let values = HashMap::from([
-            ("entity_definitions", self.next_entity_definitions_id.get()),
-            ("metadata_entry_history", self.next_metadata_entry_history_id.get()),
-            ("metadata_aggregate_history", self.next_metadata_aggregate_history_id.get()),
-        ]);
-
-        persist_sequences(postgres_db, values);
-    }
-
-    pub fn next_entity_definition_id(&self) -> i64 {
-        let curr = self.next_entity_definitions_id.get();
-        self.next_entity_definitions_id.set(curr + 1);
-        curr
-    }
-
-    pub fn next_metadata_entry_history_id(&self) -> i64 {
-        let curr = self.next_metadata_entry_history_id.get();
-        self.next_metadata_entry_history_id.set(curr + 1);
-        curr
-    }
-
-    pub fn next_metadata_aggregate_history_id(&self) -> i64 {
-        let curr = self.next_metadata_aggregate_history_id.get();
-        self.next_metadata_aggregate_history_id.set(curr + 1);
-        curr
-    }
-}
-
-pub fn process_event_stream_step_a(
+pub fn process_tx_stream_step_a(
     existing_entities: &mut LruLikeDictionary<String, Rc<DbEntityDefinition>>,
     seq: &DbSequences,
     sr: &ScanResult
@@ -125,41 +82,41 @@ pub fn process_event_stream_step_a(
     });
 }
 
-pub fn process_event_stream_step_b(
+pub fn process_tx_stream_step_b(
     existing_entities: &mut LruLikeDictionary<String, Rc<DbEntityDefinition>>,
     most_recent_entries: &mut LruLikeDictionary<DbMetadataEntryHistoryLookup, Rc<DbMetadataEntryHistory>>,
-    most_recent_aggregates: &mut LruLikeDictionary<i64, Rc<RefCell<DbMetadataAggregateHistory>>>,
+    most_recent_aggregates: &mut LruLikeDictionary<DbMetadataAggregateHistoryLookup, Rc<RefCell<DbMetadataAggregateHistory>>>,
     sequences: &DbSequences,
-    event_stream: &[Event]
+    tx_stream: &[Tx]
 ) -> Box<IncreaseB> {
     let mut ledger_transactions = vec![];
     let mut metadata_entry_history = vec![];
     let mut metadata_aggregate_history = vec![];
     let mut last_state_version = None;
 
-    for event in event_stream {
+    for tx in tx_stream {
+        last_state_version.replace(tx.state_version);
+
         let new_ledger_transaction = DbLedgerTransaction {
-            state_version: event.state_version,
+            state_version: tx.state_version,
             created_at: SystemTime::now(),
         };
 
         ledger_transactions.push(Rc::new(new_ledger_transaction));
 
-        for change in &event.changes {
-            last_state_version.replace(event.state_version);
-
+        for change in &tx.changes {
             let entity = existing_entities.get(&change.entity_address.clone()).expect("ble, must exist");
-            let previous_aggregate = most_recent_aggregates.get(&entity.id);
+            let previous_aggregate = most_recent_aggregates.get(&DbMetadataAggregateHistoryLookup { id: entity.id });
             let tmp_aggregate;
 
             let mut aggregate = match previous_aggregate {
-                Some(&ref e) if e.borrow().from_state_version == event.state_version => {
+                Some(&ref e) if e.borrow().from_state_version == tx.state_version => {
                     e.borrow_mut()
                 }
                 _ => {
                     let new_aggregate = DbMetadataAggregateHistory {
                         id: sequences.next_metadata_aggregate_history_id(),
-                        from_state_version: event.state_version,
+                        from_state_version: tx.state_version,
                         entity_id: entity.id,
                         entry_ids: match previous_aggregate {
                             None => vec![],
@@ -170,7 +127,7 @@ pub fn process_event_stream_step_b(
                     tmp_aggregate = Rc::new(RefCell::new(new_aggregate));
                     metadata_aggregate_history.push(Rc::clone(&tmp_aggregate));
 
-                    most_recent_aggregates.put(entity.id, Rc::clone(&tmp_aggregate));
+                    most_recent_aggregates.put(DbMetadataAggregateHistoryLookup { id: entity.id }, Rc::clone(&tmp_aggregate));
 
                     tmp_aggregate.borrow_mut()
                 }
@@ -190,7 +147,7 @@ pub fn process_event_stream_step_b(
             let new_entry_id = sequences.next_metadata_entry_history_id();
             let new_entry = DbMetadataEntryHistory {
                 id: new_entry_id,
-                from_state_version: event.state_version,
+                from_state_version: tx.state_version,
                 entity_id,
                 key,
                 value,
@@ -232,14 +189,14 @@ pub struct ObservedMetadataEntryHistoryLookup(pub String, pub String);
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct ObservedMetadataAggregateHistoryLookup(pub String);
 
-pub fn scan_event_stream(event_stream: &[Event]) -> ScanResult {
+pub fn scan_tx_stream(tx_stream: &[Tx]) -> ScanResult {
     let mut entity_definitions = HashMap::new();
     let mut metadata_entry_history = HashSet::new();
     let mut metadata_aggregate_history = HashSet::new();
 
-    for event in event_stream {
-        for change in &event.changes {
-            entity_definitions.entry(ObservedEntityDefinitionLookup(change.entity_address.clone())).or_insert(event.state_version);
+    for tx in tx_stream {
+        for change in &tx.changes {
+            entity_definitions.entry(ObservedEntityDefinitionLookup(change.entity_address.clone())).or_insert(tx.state_version);
             metadata_entry_history.insert(ObservedMetadataEntryHistoryLookup(change.entity_address.clone(), change.metadata_key.clone()));
             metadata_aggregate_history.insert(ObservedMetadataAggregateHistoryLookup(change.entity_address.clone()));
         }
@@ -254,7 +211,7 @@ pub fn scan_event_stream(event_stream: &[Event]) -> ScanResult {
 
 // some boilerplate code below
 
-pub struct Event {
+pub struct Tx {
     pub state_version: i64,
     pub changes: Vec<Change>,
 }
@@ -294,7 +251,7 @@ impl FetchContext {
 }
 
 #[allow(unused)]
-pub fn fetch_sample_event_stream(context: &mut FetchContext) -> Vec<Event> {
+pub fn fetch_sample_tx_stream(context: &mut FetchContext) -> Vec<Tx> {
     let mut res = vec![];
 
     // TODO should be easy to rewrite with range + map().collect() similarly to C#'s LINQ
@@ -315,7 +272,7 @@ pub fn fetch_sample_event_stream(context: &mut FetchContext) -> Vec<Event> {
             });
         }
 
-        res.push(Event {
+        res.push(Tx {
             state_version: context.next_state_version(),
             changes,
         })
@@ -325,15 +282,15 @@ pub fn fetch_sample_event_stream(context: &mut FetchContext) -> Vec<Event> {
 }
 
 #[allow(unused)]
-pub fn print_event_stream(event_stream: &[Event]) {
-    println!("### EVENT STREAM (metadata changes) ###");
-    println!("event #STATE_VERSION: ENTITY.KEY = VALUE[; ENTITY.KEY  = VALUE]*");
+pub fn print_tx_stream(tx_stream: &[Tx]) {
+    println!("### TX STREAM (metadata changes) ###");
+    println!("tx #STATE_VERSION: ENTITY.KEY = VALUE[; ENTITY.KEY  = VALUE]*");
     println!();
 
-    for event in event_stream {
-        let changes = event.changes.iter().map(|c| format!("{}.{} = {}", c.entity_address, c.metadata_key, c.metadata_value)).collect::<Vec<String>>().join("; ");
+    for tx in tx_stream {
+        let changes = tx.changes.iter().map(|c| format!("{}.{} = {}", c.entity_address, c.metadata_key, c.metadata_value)).collect::<Vec<String>>().join("; ");
 
-        println!("event #{}: {}", event.state_version, changes);
+        println!("tx #{}: {}", tx.state_version, changes);
     }
 }
 
