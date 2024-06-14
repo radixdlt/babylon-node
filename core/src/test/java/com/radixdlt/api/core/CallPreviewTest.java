@@ -64,124 +64,42 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static com.radixdlt.lang.Tuple.tuple;
 import static org.junit.Assert.assertEquals;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.CoreApiServer;
-import com.radixdlt.api.CoreApiServerModule;
-import com.radixdlt.api.DummySslContextFactory;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.api.TransactionApi;
-import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
-import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.api.core.generated.models.BlueprintFunctionTargetIdentifier;
+import com.radixdlt.api.core.generated.models.TargetIdentifierType;
+import com.radixdlt.api.core.generated.models.TransactionCallPreviewRequest;
+import com.radixdlt.api.core.generated.models.TransactionStatus;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.CoreApiServerFlags;
-import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.*;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.ScryptoConstants;
-import com.radixdlt.utils.FreePortFinder;
-import com.radixdlt.utils.UInt32;
-import com.radixdlt.utils.UInt64;
-import java.net.http.HttpClient;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-public final class CallPreviewWithoutFaucetTest {
-  private final ApiClient apiClient;
-  private final Module coreServerModule;
-
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  public CallPreviewWithoutFaucetTest() {
-    var coreApiPort = FreePortFinder.findFreeLocalPort();
-
-    apiClient = buildApiClient(coreApiPort);
-    coreServerModule =
-        new AbstractModule() {
-          @Override
-          protected void configure() {
-            install(
-                new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)));
-          }
-
-          @ProvidesIntoSet
-          private StartProcessorOnRunner startCoreApi(CoreApiServer coreApiServer) {
-            return new StartProcessorOnRunner("coreApi", coreApiServer::start);
-          }
-        };
-  }
-
-  private DeterministicTest createTest() {
+public final class CallPreviewTest extends DeterministicCoreApiTestBase {
+  private StateComputerConfig prepareConfig() {
     final var validatorKey = ECKeyPair.fromSeed(new byte[] {0x02}).getPublicKey();
 
-    var genesisData =
-        new GenesisData(
-            UInt64.fromNonNegativeLong(1L),
-            0,
-            GenesisConsensusManagerConfig.testingDefaultEmpty(),
-            ImmutableList.of(
-                new GenesisDataChunk.Validators(
-                    ImmutableList.of(
-                        new GenesisValidator(
-                            validatorKey,
-                            true,
-                            true,
-                            Decimal.ZERO,
-                            ImmutableList.of(),
-                            Address.virtualAccountAddress(validatorKey)))),
-                new GenesisDataChunk.Stakes(
-                    ImmutableList.of(Address.virtualAccountAddress(validatorKey)),
-                    ImmutableList.of(
-                        tuple(
-                            validatorKey,
-                            ImmutableList.of(
-                                new GenesisStakeAllocation(
-                                    UInt32.fromNonNegativeInt(0), Decimal.ONE)))))),
-            Decimal.ofNonNegative(0L),
-            ImmutableList.of());
-
-    return DeterministicTest.builder()
-        .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
-        .messageSelector(firstSelector())
-        .messageMutator(MessageMutator.dropTimeouts())
-        .addModule(coreServerModule)
-        .functionalNodeModule(
-            new FunctionalRadixNodeModule(
-                FunctionalRadixNodeModule.NodeStorageConfig.tempFolder(folder),
-                true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
-                FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2().withGenesis(genesisData))));
-  }
-
-  private static ApiClient buildApiClient(int coreApiPort) {
-    final var apiClient = new ApiClient();
-
-    apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
-    apiClient.setHttpClientBuilder(
-        HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
-    return apiClient;
+    return defaultConfig()
+        .withGenesis(
+            GenesisBuilder.createTestGenesisWithSingleValidatorAndFaucetSupply(
+                validatorKey,
+                Decimal.ONE,
+                GenesisConsensusManagerConfig.Builder.testDefaults()
+                    .epochExactRoundCount(
+                        Long.MAX_VALUE), // Prevent enactment of any protocol updates
+                Decimal.ZERO));
   }
 
   @Test
   public void call_preview_works_without_faucet() throws ApiException {
-    // Parameters corresponding to the following struct passed as input:
+    // Parameters passed to endpoint corresponding to the following struct:
     //    FungibleResourceManagerCreateWithInitialSupplyInput {
     //      owner_role: Default::default(),
     //      track_total_supply: Default::default(),
@@ -209,13 +127,13 @@ public final class CallPreviewWithoutFaucetTest {
             .addArgumentsItem("4d2102230c2100230c2200")
             .addArgumentsItem("4d220000");
 
-    try (var test = createTest()) {
+    try (var test = buildRunningServerTest(prepareConfig())) {
       // Arrange: Start a single node network
       test.startAllNodes();
 
       // Act: Preview a transaction
       final var callPreviewResponse =
-          new TransactionApi(apiClient).transactionCallPreviewPost(callPreviewRequest);
+          new TransactionApi(buildApiClient()).transactionCallPreviewPost(callPreviewRequest);
 
       // Assert: It should succeed despite empty faucet
       assertEquals(TransactionStatus.SUCCEEDED, callPreviewResponse.getStatus());
