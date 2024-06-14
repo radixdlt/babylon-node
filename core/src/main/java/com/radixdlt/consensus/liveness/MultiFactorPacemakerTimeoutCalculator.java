@@ -62,19 +62,55 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.liveness;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.math.LinearTransformation;
+import com.google.common.primitives.Doubles;
+import com.google.inject.Inject;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+/**
+ * Main timeout calculator implementation: uses the number of consecutive timeout occurrences to
+ * calculate an exponential timeout and then on top of that applies a multiplier that's based on
+ * vertex store utilization.
+ */
+public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
+  private final PacemakerTimeoutCalculatorConfig config;
 
-/** The amount of time the pacemaker will wait until considering the round timed out. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface PacemakerBaseTimeoutMs {}
+  @Inject
+  public MultiFactorPacemakerTimeoutCalculator(PacemakerTimeoutCalculatorConfig config) {
+    this.config = config;
+  }
+
+  @Override
+  @SuppressWarnings("UnstableApiUsage")
+  public long calculateTimeoutMs(long timeoutOccurrences, double vertexStoreUtilizationRatio) {
+    final var exponential =
+        Math.pow(config.rate(), Math.min(config.maxExponent(), timeoutOccurrences));
+
+    final var exponentialTimeout = config.baseTimeoutMs() * exponential;
+
+    // It should already be in the [0, 1] range, but we're nonetheless sanitizing the input
+    final var vertexStoreUtilizationRatioClamped =
+        Doubles.constrainToRange(vertexStoreUtilizationRatio, 0, 1);
+
+    // We're only applying the multiplier if vertexStoreUtilizationRatio is
+    // on or above vertexStoreMultiplierThreshold: we're translating from
+    // range [vertexStoreMultiplierThreshold, 1] to [1, maxVertexStoreMultiplier].
+    // The multiplier starts at 1 right at the threshold
+    // and linearly grows to reach maxVertexStoreMultiplier
+    // when vertexStoreUtilizationRatio = 1.
+    final var multiplier =
+        Math.max(
+            1, // Multiplier is 1 (i.e. no-op) if we're below the threshold
+            LinearTransformation.mapping(config.vertexStoreMultiplierThreshold(), 1.0)
+                .and(1.0, config.maxVertexStoreMultiplier())
+                .transform(vertexStoreUtilizationRatioClamped));
+
+    return Math.round(exponentialTimeout * multiplier);
+  }
+
+  @Override
+  public long additionalRoundTimeIfProposalReceivedMs() {
+    return config.additionalRoundTimeIfProposalReceivedMs();
+  }
+}

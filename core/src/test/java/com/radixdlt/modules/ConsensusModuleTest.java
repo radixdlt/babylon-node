@@ -227,10 +227,8 @@ public class ConsensusModuleTest {
             .toInstance(RateLimiter.create(Double.MAX_VALUE));
         bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
         bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
-        bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(1000L);
-        bindConstant().annotatedWith(PacemakerBackoffRate.class).to(2.0);
-        bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
-        bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(1000L);
+        bind(PacemakerTimeoutCalculatorConfig.class)
+            .toInstance(new PacemakerTimeoutCalculatorConfig(1000L, 2.0, 6, 1000L, 0, 1));
         bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(1000L);
         bind(VertexStoreConfig.class).toInstance(VertexStoreConfig.testingDefault());
 

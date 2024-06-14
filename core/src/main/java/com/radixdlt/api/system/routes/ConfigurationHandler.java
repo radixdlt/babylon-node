@@ -70,8 +70,8 @@ import com.radixdlt.api.system.SystemModelMapper;
 import com.radixdlt.api.system.generated.models.BFTConfiguration;
 import com.radixdlt.api.system.generated.models.MempoolConfiguration;
 import com.radixdlt.api.system.generated.models.SystemConfigurationResponse;
-import com.radixdlt.consensus.bft.PacemakerBaseTimeoutMs;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculatorConfig;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.mempool.MempoolThrottleMs;
@@ -81,7 +81,7 @@ import com.radixdlt.sync.SyncRelayConfig;
 
 public final class ConfigurationHandler extends SystemJsonHandler<SystemConfigurationResponse> {
 
-  private final long pacemakerTimeout;
+  private final PacemakerTimeoutCalculatorConfig pacemakerTimeoutCalculatorConfig;
   private final int bftSyncPatienceMillis;
   private final long mempoolThrottleMs;
   private final SyncRelayConfig syncRelayConfig;
@@ -93,7 +93,7 @@ public final class ConfigurationHandler extends SystemJsonHandler<SystemConfigur
   @Inject
   ConfigurationHandler(
       @Self ECDSASecp256k1PublicKey self,
-      @PacemakerBaseTimeoutMs long pacemakerTimeout,
+      PacemakerTimeoutCalculatorConfig pacemakerTimeoutCalculatorConfig,
       @BFTSyncPatienceMillis int bftSyncPatienceMillis,
       @MempoolThrottleMs long mempoolThrottleMs,
       SyncRelayConfig syncRelayConfig,
@@ -102,7 +102,7 @@ public final class ConfigurationHandler extends SystemJsonHandler<SystemConfigur
       ProtocolConfig protocolConfig) {
     super();
     this.self = self;
-    this.pacemakerTimeout = pacemakerTimeout;
+    this.pacemakerTimeoutCalculatorConfig = pacemakerTimeoutCalculatorConfig;
     this.bftSyncPatienceMillis = bftSyncPatienceMillis;
     this.mempoolThrottleMs = mempoolThrottleMs;
     this.syncRelayConfig = syncRelayConfig;
@@ -120,7 +120,7 @@ public final class ConfigurationHandler extends SystemJsonHandler<SystemConfigur
         .bft(
             new BFTConfiguration()
                 .bftSyncPatience(bftSyncPatienceMillis)
-                .pacemakerTimeout(pacemakerTimeout))
+                .pacemakerTimeout(pacemakerTimeoutCalculatorConfig.baseTimeoutMs()))
         .mempool(new MempoolConfiguration().maxSize(0).throttle(mempoolThrottleMs))
         .sync(systemModelMapper.syncConfiguration(syncRelayConfig))
         .networking(systemModelMapper.networkingConfiguration(self, p2PConfig))

@@ -155,5 +155,12 @@ public interface VertexStore {
    */
   Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
 
+  /** Returns the current size of the serialized vertex store state (in bytes). */
   int getCurrentSerializedSizeBytes();
+
+  /**
+   * Returns a value indicating the utilization of vertex store capacity. Returns a percentage value
+   * between 0 and 1 (both inclusive). In practice the size is always above 0.
+   */
+  double getCurrentUtilizationRatio();
 }

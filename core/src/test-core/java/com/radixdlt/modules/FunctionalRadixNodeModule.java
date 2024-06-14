@@ -71,6 +71,7 @@ import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculatorConfig;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
@@ -198,15 +199,18 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         @Override
         protected void configure() {
           bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(bftSyncPatienceMillis);
-          bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(pacemakerBaseTimeoutMs);
-          bindConstant().annotatedWith(PacemakerBackoffRate.class).to(pacemakerBackoffRate);
-          bindConstant()
-              .annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class)
-              .to(additionalRoundTimeIfProposalReceivedMs);
+          bind(PacemakerTimeoutCalculatorConfig.class)
+              .toInstance(
+                  new PacemakerTimeoutCalculatorConfig(
+                      pacemakerBaseTimeoutMs,
+                      pacemakerBackoffRate,
+                      0,
+                      additionalRoundTimeIfProposalReceivedMs,
+                      0,
+                      1));
           bindConstant()
               .annotatedWith(TimeoutQuorumResolutionDelayMs.class)
               .to(timeoutQuorumResolutionDelayMs);
-          bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
           bind(VertexStoreConfig.class).toInstance(vertexStoreConfig);
         }
       };

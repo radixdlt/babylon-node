@@ -157,7 +157,7 @@ public final class PacemakerGenerateProposalTest {
 
   @Test
   public void when_previous_vertex_in_the_past_then_should_use_current_time_for_proposal() {
-    when(timeoutCalculator.calculateTimeoutMs(anyLong())).thenReturn(0L);
+    when(timeoutCalculator.calculateTimeoutMs(anyLong(), anyDouble())).thenReturn(0L);
     when(vertexStore.getPathFromRoot(any())).thenReturn(List.of());
     when(proposalGenerator.getTransactionsForProposal(any(), any())).thenReturn(List.of());
 
@@ -175,7 +175,7 @@ public final class PacemakerGenerateProposalTest {
 
   @Test
   public void when_previous_vertex_in_the_future_then_should_reuse_its_timestamp() {
-    when(timeoutCalculator.calculateTimeoutMs(anyLong())).thenReturn(0L);
+    when(timeoutCalculator.calculateTimeoutMs(anyLong(), anyDouble())).thenReturn(0L);
     when(vertexStore.getPathFromRoot(any())).thenReturn(List.of());
     when(proposalGenerator.getTransactionsForProposal(any(), any())).thenReturn(List.of());
 

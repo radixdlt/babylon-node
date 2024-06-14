@@ -118,6 +118,7 @@ public class PacemakerTest {
     when(committedQc.getRound()).thenReturn(Round.of(0));
     when(highQC.highestCommittedQC()).thenReturn(committedQc);
     when(highQC.getHighestRound()).thenReturn(Round.of(0));
+    when(this.vertexStore.getCurrentUtilizationRatio()).thenReturn(0.1);
 
     var initialRoundUpdate =
         new RoundUpdate(
@@ -174,6 +175,7 @@ public class PacemakerTest {
 
     verify(this.voteDispatcher, times(1)).dispatch(eq(validators), eq(lastVoteWithTimeout));
     verify(this.vertexStore, times(1)).getExecutedVertex(vertexId);
+    verify(this.vertexStore, atLeastOnce()).getCurrentUtilizationRatio();
     verifyNoMoreInteractions(this.vertexStore);
     verify(this.safetyRules, times(1)).getLastVote(round);
     verify(this.safetyRules, times(1)).timeoutVote(lastVote);
@@ -249,6 +251,7 @@ public class PacemakerTest {
     verifyNoMoreInteractions(this.safetyRules);
 
     verify(this.vertexStore, times(2)).getExecutedVertex(any());
+    verify(this.vertexStore, atLeastOnce()).getCurrentUtilizationRatio();
 
     ArgumentCaptor<VertexWithHash> insertVertexCaptor =
         ArgumentCaptor.forClass(VertexWithHash.class);
