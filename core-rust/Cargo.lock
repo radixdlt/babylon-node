@@ -460,7 +460,6 @@ dependencies = [
  "radix-substate-store-interface",
  "radix-substate-store-queries",
  "radix-transactions",
- "rand 0.8.5",
  "sbor",
  "serde",
  "serde_json",

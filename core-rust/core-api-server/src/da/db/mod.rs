@@ -25,6 +25,14 @@ pub struct DbEntityDefinitionLookup {
     pub id: i64,
 }
 
+impl DbEntityDefinition {
+    pub fn to_lookup(&self) -> DbEntityDefinitionLookup {
+        DbEntityDefinitionLookup {
+            id: self.id,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct DbMetadataEntryHistory {
     pub id: i64,
@@ -40,6 +48,15 @@ pub struct DbMetadataEntryHistoryLookup {
     pub key: Vec<u8>,
 }
 
+impl DbMetadataEntryHistory {
+    pub fn to_lookup(&self) -> DbMetadataEntryHistoryLookup {
+        DbMetadataEntryHistoryLookup {
+            entity_id: self.entity_id,
+            key: self.key.clone(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct DbMetadataAggregateHistory {
     pub id: i64,
@@ -51,4 +68,12 @@ pub struct DbMetadataAggregateHistory {
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct DbMetadataAggregateHistoryLookup {
     pub id: i64,
+}
+
+impl DbMetadataAggregateHistory {
+    pub fn to_lookup(&self) -> DbMetadataAggregateHistoryLookup {
+        DbMetadataAggregateHistoryLookup {
+            id: self.id,
+        }
+    }
 }

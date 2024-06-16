@@ -70,7 +70,7 @@ pub fn persist_metadata_aggregate_history(postgres_db: &mut Transaction, db_enti
 }
 
 // TODO ugh... :(
-pub fn persist_sequences(postgres_db: &mut Transaction, sequences: HashMap<&str, i64>) -> Result<u64, Box<dyn Error>> {
+pub fn persist_sequences(postgres_db: &mut Transaction, sequences: HashMap<&str, i64>) -> Result<(), Box<dyn Error>> {
     let mut c = 1;
     let mut query = String::from("SELECT ");
     let mut parameters: Vec<&(dyn ToSql + Sync)> = vec![];
@@ -85,5 +85,5 @@ pub fn persist_sequences(postgres_db: &mut Transaction, sequences: HashMap<&str,
 
     postgres_db.execute(query.as_str(), &parameters.as_slice())?;
 
-    Ok(0)
+    Ok(())
 }

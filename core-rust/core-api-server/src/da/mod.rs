@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::error::Error;
-use std::iter;
+use std::{iter, thread};
 use std::rc::Rc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use postgres::{Client, NoTls};
 use radix_substate_store_queries::typed_substate_layout::{TypedMetadataModuleSubstateKey, TypedSubstateKey};
@@ -11,44 +11,35 @@ use state_manager::{StateVersion, SubstateChangeAction, SubstateReference};
 use state_manager::traits::*;
 
 use crate::core_api::{CoreApiState, create_typed_substate_key, create_typed_substate_value, MappingContext, to_api_entity_address};
-use crate::da::aggregate::*;
+use crate::da::scan_result::*;
 use crate::da::db::*;
+use crate::da::processing_context::ProcessingContext;
+use crate::da::processors::*;
 
+mod scan_result;
 mod db;
-mod aggregate;
 mod lru_like_dictionary;
+mod processors;
+mod processing_context;
 
 // TODO #1: reduce .clone()ing
 // TODO #2: reduce primitive variables usage
 // TODO #3: use separate channels for scanning and DB persistence; possibly use even separate channel for read rocksdb + create missing definitions?
 // TODO #4: eliminate all of those Box<dyn Error>
 // TODO #5: actually does it even makes sense to process TX stream in batches if we stream it from the database? on a one hand batching eliminates tone of network round-trips of "find existing/most-recent" queries but maybe it's not worth it after all? batch saves are definitely valuable!
-// TODO #6: add from/into for trivial type mapping (e.g. lookup types)
 
 pub fn da_main(core_api_state: CoreApiState) -> Result<(), Box<dyn Error>> {
     let mut postgres_db = Client::connect("host=localhost user=db_dev_superuser password=db_dev_password dbname=rust_agg", NoTls)?;
-    let mut sequences = DbSequences::new(&mut postgres_db)?;
+    let sequences = DbSequences::new(&mut postgres_db)?;
     let ledger_tip = read_ledger_tip(&mut postgres_db);
-
-    let mut processing_context = ProcessingContext::new(&mut postgres_db);
-
-    let processors: Vec<fn(&mut ProcessingContext, &mut DbSequences, &[Tx]) -> Result<(), Box<dyn Error>>> = vec![
-        proc_init,
-        proc_scan,
-        proc_execute_processors,
-        proc_store,
-        proc_fin,
-    ];
-
-    let da_state = core_api_state.da_state;
+    let mut processing_context = ProcessingContext::new(&mut postgres_db, ledger_tip?.unwrap_or(0));
 
     // TODO not sure if we can use direct access or should we use the .snapshot()
     let node_db = core_api_state.state_manager.database.access_direct();
-    let mut fetch_state_version = ledger_tip?.unwrap_or(0) as u64;
     let limit = 1000;
 
     loop {
-        let running = da_state.lock().unwrap().should_run;
+        let running = core_api_state.da_state.lock().unwrap().should_run;
 
         if !running {
             break;
@@ -57,7 +48,7 @@ pub fn da_main(core_api_state: CoreApiState) -> Result<(), Box<dyn Error>> {
         processing_context.stopwatch.replace(Instant::now());
 
         // TODO similarly to the Core API we'll fetch batches of 1000 TXs but this is definitely FAR from being most performant
-        let bundles_iter = node_db.get_committed_transaction_bundle_iter(StateVersion::of(fetch_state_version + 1));
+        let bundles_iter = node_db.get_committed_transaction_bundle_iter(StateVersion::of(processing_context.ledger_tip as u64 + 1));
         let proofs_iter = Box::new(iter::empty());
         let transactions_and_proofs_iter = TransactionAndProofIterator::new(bundles_iter, proofs_iter);
 
@@ -72,7 +63,7 @@ pub fn da_main(core_api_state: CoreApiState) -> Result<(), Box<dyn Error>> {
                 identifiers: _,
             } = bundle;
 
-            fetch_state_version = state_version.number();
+            processing_context.ledger_tip = state_version.number() as i64;
             let mut changes = vec![];
             let substate_level_changes = receipt.on_ledger.state_changes.substate_level_changes;
             let context = MappingContext::new_for_transaction_stream(&core_api_state.network);
@@ -129,62 +120,67 @@ pub fn da_main(core_api_state: CoreApiState) -> Result<(), Box<dyn Error>> {
             }
 
             tx_stream.push(Tx {
-                state_version: fetch_state_version as i64,
+                state_version: state_version.number() as i64,
                 changes,
             });
         }
 
-        println!("[DA][MAN][{:?}] batch prepared", processing_context.elapsed());
+        println!("[DA][MAN][{:?}] batch of {} prepared", processing_context.elapsed(), tx_stream.len());
 
-        for p in &processors {
-            p(&mut processing_context, &mut sequences, &tx_stream)?;
+        if tx_stream.len() == 0 {
+            println!("[DA][MAN] waiting...");
+
+            thread::sleep(Duration::from_millis(1000));
+
+            continue;
         }
+
+        // second loop
+        proc_execute_processors(&mut processing_context, &sequences, &tx_stream)?;
+        proc_store(&mut processing_context, &sequences)?;
+        proc_fin(&mut processing_context)?;
     }
 
-    println!("[DA] DONE");
+    println!("[DA][MAN] DONE");
 
     Ok(())
 }
 
-fn proc_init(_: &mut ProcessingContext, _: &mut DbSequences, _: &[Tx]) -> Result<(), Box<dyn Error>> {
-    Ok(())
-}
-
-fn proc_scan(pc: &mut ProcessingContext, _: &mut DbSequences, tx_stream: &[Tx]) -> Result<(), Box<dyn Error>> {
-    let sr = scan_tx_stream(tx_stream);
-
-    pc.scan_results.replace(sr);
-
-    Ok(())
-}
-
-fn proc_execute_processors(pc: &mut ProcessingContext, seq: &mut DbSequences, tx_stream: &[Tx]) -> Result<(), Box<dyn Error>> {
+fn proc_execute_processors(pc: &mut ProcessingContext, seq: &DbSequences, tx_stream: &[Tx]) -> Result<(), Box<dyn Error>> {
+    // STEP 1
+    let existing_entities_by_address = &mut pc.existing_entities_by_address;
     let existing_entities = &mut pc.existing_entities;
-    let scan_results = pc.scan_results.take().ok_or("blee 5")?;
+    let scan_results = scan_tx_stream(&tx_stream);
 
-    let mut ed_to_load = vec![];
+    let mut entity_definitions_to_load = vec![];
     for (k, _) in &scan_results.entity_definitions {
-        ed_to_load.push(k.0.clone())
-    }
-    for (_, ed) in existing_entity_definitions(&mut pc.db_conn, ed_to_load.as_slice())? {
-        existing_entities.put(ed.address.clone(), Rc::new(ed));
+        entity_definitions_to_load.push(k.0.clone())
     }
 
-    let increase_a = process_tx_stream_step_a(existing_entities, &seq, &scan_results);
-    pc.increase_a.replace(increase_a);
+    // actually loads from the db
+    for (_, ed) in existing_entity_definitions(&mut pc.db_conn, entity_definitions_to_load.as_slice())? {
+        let ed = Rc::new(ed);
+        existing_entities_by_address.put(ed.address.clone(), Rc::clone(&ed));
+        existing_entities.put(ed.to_lookup(), Rc::clone(&ed));
+    }
 
-    let most_recent_entries = &mut pc.most_recent_entries;
-    let most_recent_aggregates = &mut pc.most_recent_aggregates;
+    // create entities increase
+    let entity_increase = todo_rename_create_missing_entities(existing_entities_by_address, existing_entities, &seq, &scan_results);
+    pc.increases.push(Box::new(entity_increase));
+
+    // STEP 2
+    let most_recent_entries = &mut pc.most_recent_metadata_entry_hisotry;
+    let most_recent_aggregates = &mut pc.most_recent_metadata_aggregate_history;
 
     let mut a_to_load = vec![];
     let mut e_to_load = vec![];
     for x in scan_results.metadata_aggregate_history {
-        if let Some(ee) = existing_entities.get(&x.0) {
+        if let Some(ee) = existing_entities_by_address.get(&x.0) {
             a_to_load.push(ee.id);
         }
     }
     for x in scan_results.metadata_entry_history {
-        if let Some(ee) = existing_entities.get(&x.0) {
+        if let Some(ee) = existing_entities_by_address.get(&x.0) {
             e_to_load.push(DbMetadataEntryHistoryLookup {
                 entity_id: ee.id,
                 key: x.1.clone().as_bytes().to_vec(),
@@ -198,47 +194,57 @@ fn proc_execute_processors(pc: &mut ProcessingContext, seq: &mut DbSequences, tx
         most_recent_entries.put(k, Rc::new(v));
     }
 
-    let increase_b = process_tx_stream_step_b(existing_entities, most_recent_entries, most_recent_aggregates, &seq, tx_stream);
-    let diff = increase_b.last_state_version - pc.min_state_version.unwrap_or(0);
+    let mut ltp = LedgerTransactionProcessor::new();
+    let mut mp = MetadataProcessor::new();
+    let mut new_tip = pc.ledger_tip;
 
-    pc.increase_b.replace(increase_b);
+    for tx in tx_stream {
+        new_tip = tx.state_version;
+
+        ltp.process_tx(tx, seq)?;
+
+        for change in &tx.changes {
+            mp.process_change(change, tx, seq, existing_entities_by_address, most_recent_entries, most_recent_aggregates)?;
+        }
+    }
+
+    pc.increases.push(Box::new(ltp));
+    pc.increases.push(Box::new(mp));
+
+    let diff = new_tip - pc.ledger_tip;
+    pc.ledger_tip = new_tip;
 
     println!("[DA][EXE][{:?}] processed {} TXs", pc.elapsed(), diff);
 
     Ok(())
 }
 
-fn proc_store(pc: &mut ProcessingContext, seq: &mut DbSequences, _: &[Tx]) -> Result<(), Box<dyn Error>> {
-    let increase_a = pc.increase_a.take().ok_or("blee a")?;
-    let increase_b = pc.increase_b.take().ok_or("blee b")?;
-
+fn proc_store(pc: &mut ProcessingContext, seq: &DbSequences) -> Result<(), Box<dyn Error>> {
     let mut db_tx = pc.db_conn.transaction()?;
     let mut cnt = 0;
 
-    cnt += persist_entity_definitions(&mut db_tx, &increase_a.entity_definitions)?;
-    cnt += persist_ledger_transactions(&mut db_tx, &increase_b.ledger_transactions)?;
-    cnt += persist_metadata_entry_history(&mut db_tx, &increase_b.metadata_entry_history)?;
-    cnt += persist_metadata_aggregate_history(&mut db_tx, &increase_b.metadata_aggregate_history)?;
-    cnt += seq.persist(&mut db_tx)?;
+    for increase in &pc.increases {
+        cnt += increase.save_changes(&mut db_tx)?;
+    }
 
+    seq.persist(&mut db_tx)?;
     db_tx.commit()?;
 
-    pc.min_state_version.replace(increase_b.last_state_version);
+    pc.increases.clear();
 
-    println!("[DA][STR][{:?}] pushed {} new entities", pc.elapsed(), cnt);
+    println!("[DA][STR][{:?}] stored {} new entities", pc.elapsed(), cnt);
 
     Ok(())
 }
 
-fn proc_fin(pc: &mut ProcessingContext, _: &mut DbSequences, _: &[Tx]) -> Result<(), Box<dyn Error>> {
-    if let Some(min_state_version) = pc.min_state_version {
-        let total = pc.existing_entities.len() + pc.most_recent_aggregates.len() + pc.existing_entities.len();
-        let ee = pc.existing_entities.evict(|x| x.from_state_version < min_state_version);
-        let mra = pc.most_recent_aggregates.evict(|x| x.borrow().from_state_version < min_state_version);
-        let mre = pc.most_recent_entries.evict(|x| x.from_state_version < min_state_version);
+fn proc_fin(pc: &mut ProcessingContext) -> Result<(), Box<dyn Error>> {
+    let total = pc.existing_entities_by_address.len() + pc.most_recent_metadata_aggregate_history.len() + pc.existing_entities_by_address.len();
+    let ee = pc.existing_entities_by_address.evict(|x| x.from_state_version < pc.ledger_tip);
+    let mra = pc.most_recent_metadata_aggregate_history.evict(|x| x.borrow().from_state_version < pc.ledger_tip);
+    let mre = pc.most_recent_metadata_entry_hisotry.evict(|x| x.from_state_version < pc.ledger_tip);
+    let evicted = ee + mra + mre;
 
-        println!("[DA][FIN][{:?}] cleared {} out of {} LRU-like entries", pc.elapsed(), total, ee + mra + mre);
-    }
+    println!("[DA][FIN][{:?}] cleared {} out of {} LRU-like entries", pc.elapsed(), evicted, total);
 
     Ok(())
 }

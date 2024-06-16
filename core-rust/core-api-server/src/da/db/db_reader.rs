@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::error::Error;
+
 use postgres::Client;
+
 use crate::da::db::*;
 
 pub fn read_ledger_tip(postgres_db: &mut Client) -> Result<Option<i64>, Box<dyn Error>> {
@@ -25,16 +27,13 @@ pub fn existing_entity_definitions(postgres_db: &mut Client, lookup: &[String]) 
             &[&lookup])?;
 
         for row in rows {
-            let key = DbEntityDefinitionLookup {
-                id: row.get(0),
-            };
             let value = DbEntityDefinition {
                 id: row.get(0),
                 from_state_version: row.get(1),
                 address: row.get(2),
             };
 
-            res.insert(key, value);
+            res.insert(value.to_lookup(), value);
         }
     }
 
@@ -68,10 +67,6 @@ pub fn most_recent_metadata_entry_history(postgres_db: &mut Client, lookup: &[Db
             &[&entity_ids, &keys])?;
 
         for row in rows {
-            let key = DbMetadataEntryHistoryLookup {
-                entity_id: row.get(2),
-                key: row.get(3),
-            };
             let value = DbMetadataEntryHistory {
                 id: row.get(0),
                 from_state_version: row.get(1),
@@ -80,7 +75,7 @@ pub fn most_recent_metadata_entry_history(postgres_db: &mut Client, lookup: &[Db
                 value: row.get(4),
             };
 
-            res.insert(key, value);
+            res.insert(value.to_lookup(), value);
         }
     }
 
@@ -106,9 +101,6 @@ pub fn most_recent_metadata_aggregate_history(postgres_db: &mut Client, lookup: 
             &[&lookup])?;
 
         for row in rows {
-            let key = DbMetadataAggregateHistoryLookup {
-                id: row.get(0),
-            };
             let value = DbMetadataAggregateHistory {
                 id: row.get(0),
                 from_state_version: row.get(1),
@@ -116,7 +108,7 @@ pub fn most_recent_metadata_aggregate_history(postgres_db: &mut Client, lookup: 
                 entry_ids: row.get(3),
             };
 
-            res.insert(key, value);
+            res.insert(value.to_lookup(), value);
         }
     }
 

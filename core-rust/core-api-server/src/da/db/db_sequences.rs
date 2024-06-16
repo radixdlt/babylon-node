@@ -19,14 +19,16 @@ impl DbSequences {
         })
     }
 
-    pub fn persist(&self, postgres_db: &mut Transaction) -> Result<u64, Box<dyn Error>> {
+    pub fn persist(&self, postgres_db: &mut Transaction) -> Result<(), Box<dyn Error>> {
         let values = HashMap::from([
             ("entity_definitions", self.next_entity_definitions_id.get()),
             ("metadata_entry_history", self.next_metadata_entry_history_id.get()),
             ("metadata_aggregate_history", self.next_metadata_aggregate_history_id.get()),
         ]);
 
-        Ok(persist_sequences(postgres_db, values)?)
+        persist_sequences(postgres_db, values)?;
+
+        Ok(())
     }
 
     pub fn next_entity_definition_id(&self) -> i64 {
