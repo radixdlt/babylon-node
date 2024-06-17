@@ -76,11 +76,6 @@ pub(crate) async fn handle_transaction_callpreview(
         PreviewRequest {
             manifest: TransactionManifestV1 {
                 instructions: vec![
-                    InstructionV1::CallMethod {
-                        address: FAUCET.into(),
-                        method_name: "lock_fee".to_string(),
-                        args: manifest_args!(Decimal::from(100u32)).into(),
-                    },
                     requested_call,
                 ],
                 blobs: index_map_new(),
@@ -109,7 +104,6 @@ pub(crate) async fn handle_transaction_callpreview(
                 TransactionOutcome::Success(data) => {
                     let output = match data
                         .into_iter()
-                        .skip(1) // Skip the result of `lock_fee`
                         .map(|line_output| {
                             let bytes = match line_output {
                                 InstructionOutput::None => scrypto_encode(&()).unwrap(),

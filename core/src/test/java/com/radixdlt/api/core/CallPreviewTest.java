@@ -62,65 +62,81 @@
  * permissions under this License.
  */
 
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+package com.radixdlt.api.core;
 
-use crate::engine_prelude::*;
-use crate::java::utils::jni_sbor_coded_call;
+import static org.junit.Assert.assertEquals;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| XRD)
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.DeterministicCoreApiTestBase;
+import com.radixdlt.api.core.generated.api.TransactionApi;
+import com.radixdlt.api.core.generated.client.ApiException;
+import com.radixdlt.api.core.generated.models.BlueprintFunctionTargetIdentifier;
+import com.radixdlt.api.core.generated.models.TargetIdentifierType;
+import com.radixdlt.api.core.generated.models.TransactionCallPreviewRequest;
+import com.radixdlt.api.core.generated.models.TransactionStatus;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.genesis.*;
+import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.ScryptoConstants;
+import org.junit.Test;
+
+public final class CallPreviewTest extends DeterministicCoreApiTestBase {
+  private StateComputerConfig prepareConfig() {
+    final var validatorKey = ECKeyPair.fromSeed(new byte[] {0x02}).getPublicKey();
+
+    return defaultConfig()
+        .withGenesis(
+            GenesisBuilder.createTestGenesisWithSingleValidatorAndFaucetSupply(
+                validatorKey,
+                Decimal.ONE,
+                GenesisConsensusManagerConfig.Builder.testDefaults()
+                    .epochExactRoundCount(
+                        Long.MAX_VALUE), // Prevent enactment of any protocol updates
+                Decimal.ZERO));
+  }
+
+  @Test
+  public void call_preview_works_without_faucet() throws ApiException {
+    // Parameters passed to endpoint corresponding to the following struct:
+    //    FungibleResourceManagerCreateWithInitialSupplyInput {
+    //      owner_role: Default::default(),
+    //      track_total_supply: Default::default(),
+    //      divisibility: Default::default(),
+    //      resource_roles: Default::default(),
+    //      metadata: Default::default()
+    //      address_reservation: Default::default(),
+    //      initial_supply: Default::default(),
+    //    }
+
+    final var addressing = Addressing.ofNetwork(Network.INTEGRATIONTESTNET);
+    final var callPreviewRequest =
+        new TransactionCallPreviewRequest()
+            .network(Network.INTEGRATIONTESTNET.getLogicalName())
+            .target(
+                new BlueprintFunctionTargetIdentifier()
+                    .packageAddress(addressing.encode(ScryptoConstants.RESOURCE_PACKAGE_ADDRESS))
+                    .blueprintName("FungibleResourceManager")
+                    .functionName("create")
+                    .type(TargetIdentifierType.FUNCTION))
+            .addArgumentsItem("4d220000")
+            .addArgumentsItem("4d0100")
+            .addArgumentsItem("4d0700")
+            .addArgumentsItem("4d2106220000220000220000220000220000220000")
+            .addArgumentsItem("4d2102230c2100230c2200")
+            .addArgumentsItem("4d220000");
+
+    try (var test = buildRunningServerTest(prepareConfig())) {
+      // Arrange: Start a single node network
+      test.startAllNodes();
+
+      // Act: Preview a transaction
+      final var callPreviewResponse =
+          new TransactionApi(buildApiClient()).transactionCallPreviewPost(callPreviewRequest);
+
+      // Assert: It should succeed despite empty faucet
+      assertEquals(TransactionStatus.SUCCEEDED, callPreviewResponse.getStatus());
+    }
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getFaucetAddress(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| FAUCET)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getConsensusManagerComponentAddress(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| CONSENSUS_MANAGER)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getValidatorOwnerTokenResourceAddress(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| VALIDATOR_OWNER_BADGE)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getLockerPackageAddress(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| LOCKER_PACKAGE)
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getResourcePackage(
-    env: JNIEnv,
-    _class: JClass,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| RESOURCE_PACKAGE)
-}
-
-pub fn export_extern_functions() {}
