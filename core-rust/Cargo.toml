@@ -23,18 +23,18 @@ resolver = "2"
 #   $ git push origin "release_name-BLAH"
 # * Then use tag="release_name-BLAH" in the below dependencies.
 # 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce", features = ["serde"] }
-radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce" }
-radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce" }
-radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce" }
-radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce" }
-radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce" }
-radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce" }
-radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce", features = ["serde"] }
-radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce", features = ["serde"] }
-scrypto-test = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "simulator-f68bce" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c", features = ["serde"] }
+radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c" }
+radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c" }
+radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c" }
+radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c" }
+radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c" }
+radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c" }
+radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c", features = ["serde"] }
+radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c", features = ["serde"] }
+scrypto-test = { git = "https://github.com/radixdlt/radixdlt-scrypto", rev = "824080a97c99d561c5cca9ed2376c7411f54916c" }
 
 itertools = { version = "=0.10.5" }
 jni = { version = "=0.19.0" }
