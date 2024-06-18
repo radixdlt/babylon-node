@@ -136,4 +136,6 @@ pub mod engine_prelude {
     // (because it contains a private module of the same name)
     pub use radix_engine::track::interface::*;
     pub use radix_engine::track::state_updates::*;
+
+    pub use scrypto_test::*;
 }
