@@ -610,7 +610,6 @@ pub trait CheckpointableRocks {
 }
 
 /// Direct RocksDB instance.
-#[derive(Clone)]
 pub struct DirectRocks {
     db: DB,
 }
@@ -762,7 +761,6 @@ impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
 }
 
 /// A RocksDB-backed persistence layer for state manager.
-#[derive(Clone)]
 pub struct StateManagerDatabase<R> {
     /// Database config.
     ///
