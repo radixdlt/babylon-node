@@ -21,7 +21,7 @@ scrypto-test = { workspace = true }
 # Non-Radix Engine Dependencies:
 itertools = { workspace = true }
 jni = { workspace = true }
-tracing = { workspace = true }
+tracing = "0.1.40"
 tokio = { workspace = true }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
