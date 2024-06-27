@@ -7,7 +7,7 @@ pub fn to_api_owner_role_substate(
     context: &MappingContext,
     substate: &RoleAssignmentOwnerFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         RoleAssignmentModuleFieldOwnerRole,
         OwnerRoleSubstate { owner_role_entry },
@@ -35,7 +35,7 @@ pub fn to_api_access_rule_entry(
             ModuleRoleKey { module, key }
         ))
     );
-    Ok(key_value_store_optional_substate_versioned!(
+    Ok(key_value_store_optional_substate_single_versioned!(
         substate,
         RoleAssignmentModuleRuleEntry,
         models::ObjectRoleKey {

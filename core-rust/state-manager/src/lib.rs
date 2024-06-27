@@ -99,7 +99,6 @@ pub use crate::types::*;
 pub mod engine_prelude {
     pub use radix_common::prelude::*;
 
-    pub use radix_engine::*;
     pub use radix_engine::errors::*;
     pub use radix_engine::system::bootstrap::*;
     #[cfg(feature = "db_checker")]
@@ -109,9 +108,10 @@ pub mod engine_prelude {
     pub use radix_engine::transaction::*;
     pub use radix_engine::updates::*;
     pub use radix_engine::vm::*;
+    pub use radix_engine::*;
 
-    pub use radix_engine_interface::blueprints::transaction_processor::*;
     pub use radix_engine_interface::blueprints::account::*;
+    pub use radix_engine_interface::blueprints::transaction_processor::*;
     pub use radix_engine_interface::prelude::*;
 
     pub use radix_substate_store_impls::state_tree::tree_store::*;
@@ -125,12 +125,12 @@ pub mod engine_prelude {
     pub use radix_transaction_scenarios::scenario::*;
 
     pub use radix_transactions::builder::*;
+    pub use radix_transactions::define_raw_transaction_payload;
     pub use radix_transactions::errors::*;
     pub use radix_transactions::manifest::*;
     pub use radix_transactions::model::*;
     pub use radix_transactions::prelude::*;
     pub use radix_transactions::validation::*;
-    pub use radix_transactions::*;
 
     // Note: plain `pub use radix_engine::track::*` would clash with the top-level `utils::prelude`
     // (because it contains a private module of the same name)
