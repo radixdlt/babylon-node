@@ -51,7 +51,7 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     docker.io=20.10.24+dfsg1-1+b3 \
-    libssl-dev=3.0.11-1~deb12u2 \
+    libssl-dev=3.0.13-1~deb12u1 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
     wget=${WGET_VERSION} \
@@ -104,7 +104,7 @@ COPY --from=java-build-stage /radixdlt/core/build/distributions /
 # LAYER: library-build-stage-base
 # Creates the base image for building the rust library
 # =================================================================================================
-FROM debian:12.1-slim as library-build-stage-base
+FROM debian:12.1-slim AS library-build-stage-base
 WORKDIR /app
 
 
@@ -127,12 +127,12 @@ RUN apt-get update \
     ca-certificates \
     build-essential=12.9 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u5 \
+    curl=7.88.1-10+deb12u6 \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.11-1~deb12u2 \
+    libssl-dev=3.0.13-1~deb12u1 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -153,7 +153,7 @@ ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 # Specifically - the Rust isn't built as part of the image, instead the CMD of the image is to do the build.
 # It allows us to use volumes at runtime to cache the build dependencies and artifacts.
 # =================================================================================================
-FROM library-build-stage-base as library-builder-local
+FROM library-build-stage-base AS library-builder-local
 WORKDIR /app
 
 COPY docker/build_scripts/cargo_local_build.sh /opt/radixdlt/cargo_local_build.sh
@@ -167,7 +167,7 @@ CMD ["/opt/radixdlt/cargo_local_build.sh"]
 # LAYER: library-build-stage-cache-packages
 # This layer allows us to cache the compilation of all our rust dependencies in a Docker layer
 # =================================================================================================
-FROM library-build-stage-base as library-build-stage-cache-packages
+FROM library-build-stage-base AS library-build-stage-cache-packages
 
 WORKDIR /app
 
@@ -205,7 +205,7 @@ RUN --mount=type=cache,id=radixdlt-babylon-node-rust-cache,target=/root/.cache/s
 # LAYER: library-build-stage
 # The actual build of the library
 # =================================================================================================
-FROM library-build-stage-cache-packages as library-build-stage
+FROM library-build-stage-cache-packages AS library-build-stage
 
 # Tidy up from the previous layer
 RUN rm -rf core-api-server engine-state-api-server jni-export node-common state-manager
@@ -226,14 +226,14 @@ RUN --mount=type=cache,id=radixdlt-babylon-node-rust-cache,target=/root/.cache/s
 # LAYER: library-container
 # A layer containing just the built library at the root: /libcorerust.so
 # =================================================================================================
-FROM scratch as library-container
+FROM scratch AS library-container
 COPY --from=library-build-stage /libcorerust.so /
 
 # =================================================================================================
 # LAYER: app-container
 # The application container which will actually run the application
 # =================================================================================================
-FROM debian:12.1-slim as app-container
+FROM debian:12.1-slim AS app-container
 
 LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
@@ -261,7 +261,7 @@ RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
     openjdk-17-jre-headless=${OPENJDK_17_VERSION} \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u5 \
+    curl=7.88.1-10+deb12u6 \
     gettext-base=0.21-12 \
     daemontools=1:0.76-8.1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-4911
