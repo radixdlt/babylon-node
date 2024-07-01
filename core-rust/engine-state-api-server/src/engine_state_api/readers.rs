@@ -431,9 +431,17 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
         let mut staged_database = SubstateDatabaseOverlay::new_unmergeable(self.database);
 
         let intent = create_intent_forcing_instantiation(node_id);
+
+        // Note: here, we initialize a new `ScryptoVm` instance every time - however, this is
+        // currently a very lightweight operation. At the same time, we would NOT be able to feel
+        // the benefits of caching an instance (since we do not use any WASM here). If these
+        // assumptions change in future, then it will make most sense to turn the `Self` into a
+        // long-lived service holding a `ScryptoVm` as its dependency.
+        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+
         let receipt = execute_and_commit_transaction(
             &mut staged_database,
-            VmInit::new(&ScryptoVm::<DefaultWasmEngine>::default(), NoExtension),
+            VmInit::new(&scrypto_vm, NoExtension),
             &ExecutionConfig::default(),
             &intent.get_executable(),
         );
