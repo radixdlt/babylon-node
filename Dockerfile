@@ -45,7 +45,7 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 # - https://packages.debian.org/bookworm/pkg-config
 # - https://packages.debian.org/bookworm/unzip
 # - https://packages.debian.org/bookworm/wget
-# - https://packages.debian.org/bookworm/software-properties-commo
+# - https://packages.debian.org/bookworm/software-properties-common
 # - https://packages.debian.org/bookworm/openjdk-17-jdk
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -54,7 +54,7 @@ RUN apt-get update \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
     wget=${WGET_VERSION} \
-    software-properties-common=0.99.30-4 \
+    software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
     openjdk-17-jdk=17.0.11+9-1~deb12u1 \
   && apt-get clean \
@@ -265,7 +265,7 @@ RUN apt-get update -y \
     # Fixes CVE-2023-4911 can be removed when we update the base OS image to include this fix
     # docker run -it debian:12.1-slim ldd --version
     # This fix can be removed as long as the version printed in the above command is 2.36-9+deb12u3 or above
-    libc6=2.36-9+deb12u4 \
+    libc6=2.36-9+deb12u7 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
