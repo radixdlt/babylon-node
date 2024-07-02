@@ -233,7 +233,12 @@ public record Metrics(
         Counter invalidEpochInitialQcSyncStates) {}
 
     public record VertexStore(
-        Gauge size, Counter forks, Counter rebuilds, Counter indirectParents) {}
+        Gauge vertexCount,
+        Gauge byteSize,
+        Counter forks,
+        Counter rebuilds,
+        Counter indirectParents,
+        Counter errorsDueToSizeLimit) {}
 
     public record DivergentVertexExecution(int numDistinctExecutionResults) {}
   }

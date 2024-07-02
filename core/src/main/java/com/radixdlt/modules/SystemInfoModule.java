@@ -69,7 +69,6 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.epoch.EpochRoundUpdate;
 import com.radixdlt.consensus.liveness.EpochLocalTimeoutOccurrence;
@@ -89,7 +88,6 @@ public class SystemInfoModule extends AbstractModule {
             .permitDuplicates();
     eventBinder.addBinding().toInstance(EpochRoundUpdate.class);
     eventBinder.addBinding().toInstance(EpochLocalTimeoutOccurrence.class);
-    eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
     eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
   }
 

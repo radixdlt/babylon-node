@@ -64,7 +64,8 @@
 
 package com.radixdlt.harness.simulation.monitors.ledger;
 
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
@@ -79,7 +80,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Checks to make sure that everything committed by consensus eventually makes it to the ledger of
- * atleast one node (TODO: test for every node)
+ * at least one node (TODO: test for every node)
  */
 public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
   private final NodeEvents commits;
@@ -102,15 +103,14 @@ public class ConsensusToLedgerCommittedInvariant implements TestInvariant {
                 })
             .subscribe(committedTxns::onNext);
 
-    return Observable.<BFTCommittedUpdate>create(
+    return Observable.<BFTHighQCUpdate>create(
             emitter ->
-                commits.addListener(
-                    (node, event) -> emitter.onNext(event), BFTCommittedUpdate.class))
+                commits.addListener((node, event) -> emitter.onNext(event), BFTHighQCUpdate.class))
         .serialize()
         .concatMap(
             committedUpdate ->
                 Observable.fromStream(
-                    committedUpdate.committed().stream()
+                    committedUpdate.committedVertices().orElse(ImmutableList.of()).stream()
                         .flatMap(ExecutedVertex::successfulTransactions)))
         .flatMapMaybe(
             txn ->

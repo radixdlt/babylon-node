@@ -67,6 +67,7 @@ package com.radixdlt.consensus.sync;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.*;
@@ -244,7 +245,7 @@ public final class BFTSync implements BFTSyncer {
       return SyncResult.INVALID;
     }
 
-    return switch (vertexStore.insertQc(qc)) {
+    return switch (vertexStore.insertQuorumCertificate(qc)) {
       case VertexStore.InsertQcResult.Inserted ignored -> {
         // QC was inserted, try TC too (as it can be higher), and then process a new highQC
         highQC.highestTC().map(vertexStore::insertTimeoutCertificate);
@@ -464,8 +465,8 @@ public final class BFTSync implements BFTSyncer {
     // TODO: check if there are any vertices which haven't been local sync processed yet
     if (requiresLedgerSync(syncState)) {
       syncState.fetched.sort(Comparator.comparing(v -> v.vertex().getRound()));
-      ImmutableList<VertexWithHash> nonRootVertices =
-          syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
+      ImmutableSet<VertexWithHash> nonRootVertices =
+          syncState.fetched.stream().skip(1).collect(ImmutableSet.toImmutableSet());
 
       final var syncStateHighestCommittedQc = syncState.highQC.highestCommittedQC();
       final var syncStateHighestTc = syncState.highQC.highestTC();

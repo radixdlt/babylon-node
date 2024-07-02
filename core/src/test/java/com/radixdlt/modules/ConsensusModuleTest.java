@@ -84,6 +84,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -178,8 +179,6 @@ public class ConsensusModuleTest {
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<BFTHighQCUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() {})
-            .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<LocalSyncRequest>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<ScheduledEventDispatcher<ScheduledLocalTimeout>>() {})
@@ -233,6 +232,7 @@ public class ConsensusModuleTest {
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(6);
         bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(1000L);
         bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(1000L);
+        bind(VertexStoreConfig.class).toInstance(VertexStoreConfig.testingDefault());
 
         ECKeyPair ecKeyPair = ECKeyPair.generateNew();
         bind(HashSigner.class).toInstance(ecKeyPair::sign);

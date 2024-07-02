@@ -71,11 +71,11 @@ import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimeoutCertificate;
 import com.radixdlt.consensus.VertexWithHash;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.lang.Option;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -92,40 +92,56 @@ public final class VertexStoreAdapter {
   private final EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher;
   private final EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher;
   private final EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher;
-  private final EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher;
 
   @Inject
   public VertexStoreAdapter(
       VertexStore vertexStore,
       EventDispatcher<BFTHighQCUpdate> highQCUpdateDispatcher,
       EventDispatcher<BFTInsertUpdate> bftUpdateDispatcher,
-      EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher,
-      EventDispatcher<BFTCommittedUpdate> bftCommittedDispatcher) {
+      EventDispatcher<BFTRebuildUpdate> bftRebuildDispatcher) {
     this.vertexStore = Objects.requireNonNull(vertexStore);
     this.highQCUpdateDispatcher = Objects.requireNonNull(highQCUpdateDispatcher);
     this.bftUpdateDispatcher = Objects.requireNonNull(bftUpdateDispatcher);
     this.bftRebuildDispatcher = Objects.requireNonNull(bftRebuildDispatcher);
-    this.bftCommittedDispatcher = Objects.requireNonNull(bftCommittedDispatcher);
   }
 
   public boolean tryRebuild(VertexStoreState vertexStoreState) {
     final var result = vertexStore.tryRebuild(vertexStoreState);
 
-    result.onPresent(
-        newVertexStoreState ->
-            bftRebuildDispatcher.dispatch(new BFTRebuildUpdate(newVertexStoreState)));
+    result.onSuccess(
+        rebuildSummary ->
+            bftRebuildDispatcher.dispatch(
+                new BFTRebuildUpdate(
+                    rebuildSummary.resultantState(), rebuildSummary.serializedVertexStoreState())));
 
-    return result.isPresent();
+    return result.isSuccess();
   }
 
   public boolean insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
-    return vertexStore.insertTimeoutCertificate(timeoutCertificate);
+    final var result = vertexStore.insertTimeoutCertificate(timeoutCertificate);
+
+    return switch (result) {
+      case VertexStore.InsertTcResult.Inserted inserted -> {
+        highQCUpdateDispatcher.dispatch(
+            new BFTHighQCUpdate(
+                inserted.newHighQc(),
+                Option.empty() /* TC can't commit anything */,
+                inserted.serializedVertexStoreState()));
+        yield true;
+      }
+      case VertexStore.InsertTcResult.Ignored ignored -> false; // No-op
+    };
   }
 
-  public VertexStore.InsertQcResult insertQc(QuorumCertificate qc) {
+  public VertexStore.InsertQcResult insertQuorumCertificate(QuorumCertificate qc) {
     final var result = vertexStore.insertQc(qc);
-    if (result instanceof VertexStore.InsertQcResult.Inserted inserted) {
-      dispatchPostQcInsertionEvents(inserted);
+    switch (result) {
+      case VertexStore.InsertQcResult.Inserted inserted -> this.highQCUpdateDispatcher.dispatch(
+          new BFTHighQCUpdate(
+              inserted.newHighQc(),
+              inserted.committedUpdate().map(VertexStore.CommittedUpdate::committedVertices),
+              inserted.serializedVertexStoreState()));
+      default -> {} // no-op
     }
     return result;
   }
@@ -140,38 +156,29 @@ public final class VertexStoreAdapter {
 
   public void insertVertexChain(VertexChain vertexChain) {
     final var result = vertexStore.insertVertexChain(vertexChain);
-    result.insertedQcs().forEach(this::dispatchPostQcInsertionEvents);
+    result
+        .insertedQcs()
+        .forEach(
+            inserted -> {
+              this.highQCUpdateDispatcher.dispatch(
+                  new BFTHighQCUpdate(
+                      inserted.newHighQc(),
+                      inserted
+                          .committedUpdate()
+                          .map(VertexStore.CommittedUpdate::committedVertices),
+                      inserted.serializedVertexStoreState()));
+            });
     result.insertUpdates().forEach(bftUpdateDispatcher::dispatch);
-  }
-
-  private void dispatchPostQcInsertionEvents(VertexStore.InsertQcResult.Inserted inserted) {
-    // This is a bit of an abstraction break.
-    // We don't want to persist the vertex store state (via PersistentVertexStore)
-    // if the state is already being persisted alongside commit.
-    // This implicitly assumes that:
-    // - BFTHighQCUpdate triggers vertex store state persistence
-    //    (that's why this if statement is needed)
-    // - no other component needs this event if we're also committing
-    if (inserted.committedUpdate().isEmpty()) {
-      this.highQCUpdateDispatcher.dispatch(new BFTHighQCUpdate(inserted.vertexStoreState()));
-    }
-
-    inserted
-        .committedUpdate()
-        .onPresent(
-            committedUpdate ->
-                this.bftCommittedDispatcher.dispatch(
-                    new BFTCommittedUpdate(
-                        committedUpdate.committedVertices(), inserted.vertexStoreState())));
   }
 
   public Optional<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count) {
     return vertexStore.getVertices(vertexId, count).toOptional();
   }
 
-  public void insertVertex(VertexWithHash vertex) {
+  public boolean insertVertex(VertexWithHash vertex) {
     final var result = vertexStore.insertVertex(vertex);
     result.onPresent(bftUpdateDispatcher::dispatch);
+    return result.isPresent();
   }
 
   public boolean containsVertex(HashCode vertexId) {
@@ -193,5 +200,9 @@ public final class VertexStoreAdapter {
 
   public VertexWithHash getRoot() {
     return vertexStore.getRoot();
+  }
+
+  public int getCurrentSerializedSizeBytes() {
+    return vertexStore.getCurrentSerializedSizeBytes();
   }
 }

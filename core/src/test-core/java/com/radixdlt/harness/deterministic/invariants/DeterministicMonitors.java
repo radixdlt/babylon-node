@@ -70,7 +70,6 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.ConsensusByzantineEvent;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
 import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
@@ -156,13 +155,10 @@ public final class DeterministicMonitors {
       }
 
       final QuorumCertificate highQC;
-      switch (message.message()) {
-        case BFTHighQCUpdate update -> highQC = update.getHighQC().highestQC();
-        case BFTCommittedUpdate committed -> highQC =
-            committed.vertexStoreState().getHighQC().highestQC();
-        default -> {
-          return;
-        }
+      if (message.message() instanceof BFTHighQCUpdate update) {
+        highQC = update.newHighQc().highestQC();
+      } else {
+        return;
       }
 
       var header = highQC.getProposedHeader();

@@ -64,24 +64,18 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.utils.WrappedByteArray;
 
-/** An update emitted when the BFT has inserted a new vertex */
+/** An event emitted after a vertex has been inserted into the vertex store. */
 public record BFTInsertUpdate(
-    ExecutedVertex insertedVertex, int siblingsCount, VertexStoreState vertexStoreState)
+    ExecutedVertex insertedVertex, WrappedByteArray serializedVertexStoreState)
     implements LocalEvent {
-
-  public int getVertexStoreSize() {
-    return vertexStoreState.getVertices().size();
-  }
-
-  public BFTHeader getHeader() {
-    return new BFTHeader(
-        insertedVertex.getRound(),
-        insertedVertex.getVertexHash(),
-        insertedVertex.getLedgerHeader());
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[insertedVertex=%s serializedVertexStoreStateSize=%s]",
+        getClass().getSimpleName(), insertedVertex(), serializedVertexStoreState.size());
   }
 }

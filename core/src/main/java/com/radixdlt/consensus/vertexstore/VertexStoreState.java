@@ -67,7 +67,7 @@ package com.radixdlt.consensus.vertexstore;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.Round;
@@ -89,25 +89,18 @@ import org.apache.logging.log4j.Logger;
  * <p>In future, we'd like to move to having a separate vertex store, responsible for maintaining
  * its own state.
  */
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @Immutable
 public final class VertexStoreState {
   private static final Logger logger = LogManager.getLogger();
 
   private final VertexWithHash root;
   private final HighQC highQC;
-  // TODO: collapse the following two
-  private final ImmutableList<VertexWithHash> vertices;
-  private final ImmutableMap<HashCode, VertexWithHash> idToVertex;
+  private final ImmutableSet<VertexWithHash> vertices;
 
   private VertexStoreState(
-      HighQC highQC,
-      VertexWithHash root,
-      ImmutableMap<HashCode, VertexWithHash> idToVertex,
-      ImmutableList<VertexWithHash> vertices) {
+      HighQC highQC, VertexWithHash root, ImmutableSet<VertexWithHash> vertices) {
     this.highQC = highQC;
     this.root = root;
-    this.idToVertex = idToVertex;
     this.vertices = vertices;
   }
 
@@ -131,11 +124,11 @@ public final class VertexStoreState {
   }
 
   public static VertexStoreState create(HighQC highQC, VertexWithHash root, Hasher hasher) {
-    return create(highQC, root, ImmutableList.of(), hasher);
+    return create(highQC, root, ImmutableSet.of(), hasher);
   }
 
   public static VertexStoreState create(
-      HighQC highQC, VertexWithHash root, ImmutableList<VertexWithHash> vertices, Hasher hasher) {
+      HighQC highQC, VertexWithHash root, ImmutableSet<VertexWithHash> vertices, Hasher hasher) {
     final var processedQcCommit =
         highQC
             .highestCommittedQC()
@@ -217,7 +210,14 @@ public final class VertexStoreState {
        */
     }
 
-    return new VertexStoreState(highQC, root, ImmutableMap.copyOf(seen), vertices);
+    return new VertexStoreState(highQC, root, vertices);
+  }
+
+  public VertexStoreState withVertex(VertexWithHash vertex) {
+    return new VertexStoreState(
+        this.highQC,
+        this.root,
+        ImmutableSet.<VertexWithHash>builder().addAll(this.vertices).add(vertex).build());
   }
 
   public SerializedVertexStoreState toSerialized() {
@@ -237,13 +237,13 @@ public final class VertexStoreState {
     return root;
   }
 
-  public ImmutableList<VertexWithHash> getVertices() {
+  public ImmutableSet<VertexWithHash> getVertices() {
     return vertices;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(root, highQC, idToVertex, vertices);
+    return Objects.hash(root, highQC, vertices);
   }
 
   @Override
@@ -255,8 +255,7 @@ public final class VertexStoreState {
     return o instanceof VertexStoreState other
         && Objects.equals(this.root, other.root)
         && Objects.equals(this.highQC, other.highQC)
-        && Objects.equals(this.vertices, other.vertices)
-        && Objects.equals(this.idToVertex, other.idToVertex);
+        && Objects.equals(this.vertices, other.vertices);
   }
 
   @Override
@@ -303,36 +302,22 @@ public final class VertexStoreState {
       this.highQC = Objects.requireNonNull(highQC);
     }
 
-    public Vertex getRoot() {
-      return root;
+    public boolean isForEpoch(long epoch) {
+      return highQC.highestQC().getEpoch() == epoch;
     }
 
-    public ImmutableList<Vertex> getVertices() {
-      return vertices;
-    }
+    public VertexStoreState toVertexStoreState(Hasher hasher) {
+      var rootWithHash = root.withId(hasher);
 
-    public HighQC getHighQC() {
-      return highQC;
+      var verticesWithHash =
+          vertices.stream().map(v -> v.withId(hasher)).collect(ImmutableSet.toImmutableSet());
+
+      return VertexStoreState.create(highQC, rootWithHash, verticesWithHash, hasher);
     }
 
     @Override
     public int hashCode() {
       return Objects.hash(root, vertices, highQC);
-    }
-
-    public boolean isForEpoch(long epoch) {
-      return getHighQC().highestQC().getEpoch() == epoch;
-    }
-
-    public VertexStoreState toVertexStoreState(Hasher hasher) {
-      var rootVertex = getRoot().withId(hasher);
-
-      var vertices =
-          getVertices().stream()
-              .map(v -> v.withId(hasher))
-              .collect(ImmutableList.toImmutableList());
-
-      return VertexStoreState.create(getHighQC(), rootVertex, vertices, hasher);
     }
 
     @Override

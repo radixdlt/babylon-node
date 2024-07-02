@@ -66,6 +66,17 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.utils.WrappedByteArray;
 
-/** An update emitted when the BFT has been rebuilt */
-public record BFTRebuildUpdate(VertexStoreState vertexStoreState) implements LocalEvent {}
+/** An even emitted when the vertex store has been rebuilt. */
+public record BFTRebuildUpdate(
+    VertexStoreState vertexStoreState, WrappedByteArray serializedVertexStoreState)
+    implements LocalEvent {
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s[serializedVertexStoreStateSize=%s]",
+        getClass().getSimpleName(), serializedVertexStoreState.size());
+  }
+}

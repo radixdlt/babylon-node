@@ -83,6 +83,10 @@ public record WrappedByteArray(byte[] value) implements Hashable {
     return Hex.toHexString(value);
   }
 
+  public int size() {
+    return value.length;
+  }
+
   @Override
   public byte[] hashableBytes() {
     return value;

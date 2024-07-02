@@ -62,18 +62,22 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.vertexstore;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.event.LocalEvent;
-import com.radixdlt.consensus.vertexstore.ExecutedVertex;
-import com.radixdlt.consensus.vertexstore.VertexStoreState;
+public record VertexStoreConfig(int maxSerializedSizeBytes) {
+  /* This limit is mostly to prevent the node from crashing when we're
+  SBOR-encoding the vertex store (so that it can be persisted on the Rust side).
+  It could grow too large in a scenario of a prolonged liveness break.
+  The default limit is based on the SBOR limit of 0x0FFFFFFF (268_435_455).
+  150 MB is a reasonable default: it's more than enough for regular node operation
+  and at the same time it leaves enough room for intervention (additional ~100 MB)
+  in case we run into issues.
+  The default limit can be changed with a configuration parameter (bft.vertex_store.max_serialized_size_bytes). */
+  public static final int DEFAULT_MAX_SERIALIZED_SIZE_BYTES = 150 * 1024 * 1024 /* 150 MB */;
 
-/** Vertex Store update of committed vertices */
-public record BFTCommittedUpdate(
-    ImmutableList<ExecutedVertex> committed, VertexStoreState vertexStoreState)
-    implements LocalEvent {
-  public int vertexStoreSize() {
-    return vertexStoreState.getVertices().size();
+  public static final int MIN_MAX_SERIALIZED_SIZE_BYTES = 10 * 1024 * 1024 /* 10 MB */;
+
+  public static VertexStoreConfig testingDefault() {
+    return new VertexStoreConfig(DEFAULT_MAX_SERIALIZED_SIZE_BYTES);
   }
 }
