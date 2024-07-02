@@ -77,8 +77,6 @@ pub(crate) mod engine_prelude {
 
     pub use radix_common::prelude::*;
 
-    pub use radix_engine_interface::blueprints::account::*;
-    pub use radix_engine_interface::blueprints::identity::*;
     pub use radix_engine_interface::prelude::*;
 
     pub use radix_transactions::model::*;

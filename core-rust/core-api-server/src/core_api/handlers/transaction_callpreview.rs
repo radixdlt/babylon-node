@@ -75,9 +75,7 @@ pub(crate) async fn handle_transaction_callpreview(
     let result = state.state_manager.transaction_previewer.preview(
         PreviewRequest {
             manifest: TransactionManifestV1 {
-                instructions: vec![
-                    requested_call,
-                ],
+                instructions: vec![requested_call],
                 blobs: index_map_new(),
             },
             start_epoch_inclusive: None,
