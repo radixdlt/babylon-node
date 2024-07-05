@@ -4,7 +4,7 @@ use std::time::SystemTime;
 
 use postgres::Transaction;
 
-use crate::da::scan_result::Tx;
+use crate::da::Tx;
 use crate::da::db::*;
 use crate::da::processors::DbIncrease;
 
@@ -25,7 +25,7 @@ impl LedgerTransactionProcessor {
         _: &DbSequences
     ) -> Result<(), Box<dyn Error>> {
         let new_ledger_transaction = DbLedgerTransaction {
-            state_version: tx.state_version,
+            state_version: tx.state_version.number() as i64,
             created_at: SystemTime::now(),
         };
 

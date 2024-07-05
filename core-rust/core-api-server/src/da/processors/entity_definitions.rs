@@ -33,7 +33,7 @@ pub fn todo_rename_create_missing_entities(
         if let None = existing_entities_by_address.get(&lookup.0) {
             let new_entity = DbEntityDefinition {
                 id: seq.next_entity_definition_id(),
-                from_state_version: *state_version,
+                from_state_version: state_version.number() as i64,
                 address: lookup.0.clone(),
             };
 

@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::error::Error;
 use std::rc::Rc;
 use postgres::Transaction;
-use crate::da::scan_result::{Change, Tx};
+use crate::da::{SubstateChange, Tx};
 use crate::da::db::*;
 use crate::da::lru_like_dictionary::LruLikeDictionary;
 use crate::da::processors::DbIncrease;
@@ -22,25 +22,26 @@ impl MetadataProcessor {
 
     pub fn process_change(
         &mut self,
-        change: &Change,
+        change: &SubstateChange,
         tx: &Tx,
         sequences: &DbSequences,
         existing_entities: &mut LruLikeDictionary<String, Rc<DbEntityDefinition>>,
         most_recent_entries: &mut LruLikeDictionary<DbMetadataEntryHistoryLookup, Rc<DbMetadataEntryHistory>>,
         most_recent_aggregates: &mut LruLikeDictionary<DbMetadataAggregateHistoryLookup, Rc<RefCell<DbMetadataAggregateHistory>>>
     ) -> Result<(), Box<dyn Error>> {
-        let entity = existing_entities.get(&change.entity_address.clone()).expect("ble, must exist");
+
+        let entity = existing_entities.get(&change.node_address.clone()).expect("ble, must exist");
         let previous_aggregate = most_recent_aggregates.get(&DbMetadataAggregateHistoryLookup { id: entity.id });
         let tmp_aggregate;
 
         let mut aggregate = match previous_aggregate {
-            Some(&ref e) if e.borrow().from_state_version == tx.state_version => {
+            Some(&ref e) if e.borrow().from_state_version == tx.state_version.number() as i64 => {
                 e.borrow_mut()
             }
             _ => {
                 let new_aggregate = DbMetadataAggregateHistory {
                     id: sequences.next_metadata_aggregate_history_id(),
-                    from_state_version: tx.state_version,
+                    from_state_version: tx.state_version.number() as i64,
                     entity_id: entity.id,
                     entry_ids: match previous_aggregate {
                         None => vec![],
@@ -57,37 +58,39 @@ impl MetadataProcessor {
             }
         };
 
-        let entity_id = existing_entities.get(&change.entity_address).expect("ble, must exist").id;
-        let key = change.metadata_key.clone().as_bytes().to_vec();
-        let value = change.metadata_value.clone().as_bytes().to_vec();
-        let lookup = DbMetadataEntryHistoryLookup { entity_id, key: key.clone() };
-        let previous_entry = most_recent_entries.get(&lookup);
-        let previous_position = if let Some(previous_entry) = previous_entry {
-            aggregate.entry_ids.iter().position(|&x| x == previous_entry.id)
-        } else {
-            None
-        };
+        return Ok(());
 
-        let new_entry_id = sequences.next_metadata_entry_history_id();
-        let new_entry = DbMetadataEntryHistory {
-            id: new_entry_id,
-            from_state_version: tx.state_version,
-            entity_id,
-            key,
-            value,
-        };
-
-        if let Some(previous_position) = previous_position {
-            aggregate.entry_ids.remove(previous_position);
-        }
-
-        aggregate.entry_ids.insert(0, new_entry_id);
-
-        let tmp_entry = Rc::new(new_entry);
-        self.entries_to_add.push(Rc::clone(&tmp_entry));
-        most_recent_entries.put(lookup, tmp_entry);
-
-        Ok(())
+        // let entity_id = existing_entities.get(&change.node_address).expect("ble, must exist").id;
+        // let key = change.metadata_key.clone().as_bytes().to_vec();
+        // let value = change.metadata_value.clone().as_bytes().to_vec();
+        // let lookup = DbMetadataEntryHistoryLookup { entity_id, key: key.clone() };
+        // let previous_entry = most_recent_entries.get(&lookup);
+        // let previous_position = if let Some(previous_entry) = previous_entry {
+        //     aggregate.entry_ids.iter().position(|&x| x == previous_entry.id)
+        // } else {
+        //     None
+        // };
+        //
+        // let new_entry_id = sequences.next_metadata_entry_history_id();
+        // let new_entry = DbMetadataEntryHistory {
+        //     id: new_entry_id,
+        //     from_state_version: tx.state_version,
+        //     entity_id,
+        //     key,
+        //     value,
+        // };
+        //
+        // if let Some(previous_position) = previous_position {
+        //     aggregate.entry_ids.remove(previous_position);
+        // }
+        //
+        // aggregate.entry_ids.insert(0, new_entry_id);
+        //
+        // let tmp_entry = Rc::new(new_entry);
+        // self.entries_to_add.push(Rc::clone(&tmp_entry));
+        // most_recent_entries.put(lookup, tmp_entry);
+        //
+        // Ok(())
     }
 }
 
