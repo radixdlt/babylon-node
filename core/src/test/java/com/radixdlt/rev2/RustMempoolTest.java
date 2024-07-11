@@ -80,10 +80,12 @@ import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.transactions.RawNotarizedTransaction;
+
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -91,59 +93,13 @@ import org.junit.rules.TemporaryFolder;
 
 public final class RustMempoolTest {
 
-  private static final DatabaseConfig TEST_DATABASE_CONFIG =
-      new DatabaseConfig(false, false, false, false);
-
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  /** A no-op dispatcher of transactions to be relayed. */
-  private static final MempoolRelayDispatcher<RawNotarizedTransaction> NOOP_DISPATCHER = tx -> {};
-
-  /**
-   * A no-op fatal panic handler. Please note that a JNI-invoking test (like this one) will observe
-   * panics as runtime exceptions propagated up the stack (through JNI), which will fail the test
-   * gracefully anyway.
-   */
-  private static final FatalPanicHandler NOOP_HANDLER = () -> {};
-
-  private static void initStateComputer(NodeRustEnvironment nodeRustEnvironment) {
-    final var metrics = new MetricsInitializer().initialize();
-    final var genesisProvider =
-        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty());
-    new REv2LedgerInitializer(
-            new Blake2b256Hasher(DefaultSerialization.getInstance()),
-            new RustStateComputer(metrics, nodeRustEnvironment),
-            new REv2TransactionsAndProofReader(
-                new REv2TransactionAndProofStore(metrics, nodeRustEnvironment),
-                LedgerSyncLimitsConfig.defaults(),
-                metrics))
-        .initialize(genesisProvider);
-  }
 
   @Test
   public void test_rust_mempool_add() throws Exception {
-    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
-    final var mempoolMaxTransactionCount = 20;
-    final var config =
-        new StateManagerConfig(
-            NetworkDefinition.INT_TEST_NET,
-            Option.some(
-                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
-            Option.none(),
-            new DatabaseBackendConfig(folder.newFolder().getPath()),
-            TEST_DATABASE_CONFIG,
-            LoggingConfig.getDefault(),
-            StateTreeGcConfig.forTesting(),
-            LedgerProofsGcConfig.forTesting(),
-            LedgerSyncLimitsConfig.defaults(),
-            ProtocolConfig.testingDefault(),
-            false,
-            ScenariosExecutionConfig.NONE);
-    final var metrics = new MetricsInitializer().initialize();
-
-    try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
-      initStateComputer(stateManager);
-      final var rustMempool = new RustMempool(metrics, stateManager);
+    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+      initStateComputer(nodeRustEnvironment);
+      final var rustMempool = new RustMempool(new MetricsInitializer().initialize(), nodeRustEnvironment);
       final var transaction1 = constructValidTransaction(0, 0);
       final var transaction2 = constructValidTransaction(0, 1);
 
@@ -181,28 +137,9 @@ public final class RustMempoolTest {
 
   @Test
   public void test_rust_mempool_getTxns() throws Exception {
-    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
-    final var mempoolMaxTransactionCount = 20;
-    final var config =
-        new StateManagerConfig(
-            NetworkDefinition.INT_TEST_NET,
-            Option.some(
-                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
-            Option.none(),
-            new DatabaseBackendConfig(folder.newFolder().getPath()),
-            TEST_DATABASE_CONFIG,
-            LoggingConfig.getDefault(),
-            StateTreeGcConfig.forTesting(),
-            LedgerProofsGcConfig.forTesting(),
-            LedgerSyncLimitsConfig.defaults(),
-            ProtocolConfig.testingDefault(),
-            false,
-            ScenariosExecutionConfig.NONE);
-    final var metrics = new MetricsInitializer().initialize();
-
-    try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
-      initStateComputer(stateManager);
-      final var rustMempool = new RustMempool(metrics, stateManager);
+    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+      initStateComputer(nodeRustEnvironment);
+      final var rustMempool = new RustMempool(new MetricsInitializer().initialize(), nodeRustEnvironment);
       final var transaction1 = constructValidTransaction(0, 0);
       final var transaction2 = constructValidTransaction(0, 1);
       final var transaction3 = constructValidTransaction(0, 2);
@@ -323,28 +260,9 @@ public final class RustMempoolTest {
 
   @Test
   public void test_rust_mempool_getRelayTxns() throws Exception {
-    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
-    final var mempoolMaxTransactionCount = 20;
-    final var config =
-        new StateManagerConfig(
-            NetworkDefinition.INT_TEST_NET,
-            Option.some(
-                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
-            Option.none(),
-            new DatabaseBackendConfig(folder.newFolder().getPath()),
-            TEST_DATABASE_CONFIG,
-            LoggingConfig.getDefault(),
-            StateTreeGcConfig.forTesting(),
-            LedgerProofsGcConfig.forTesting(),
-            LedgerSyncLimitsConfig.defaults(),
-            ProtocolConfig.testingDefault(),
-            false,
-            ScenariosExecutionConfig.NONE);
-    final var metrics = new MetricsInitializer().initialize();
-
-    try (var stateManager = new NodeRustEnvironment(NOOP_DISPATCHER, NOOP_HANDLER, config)) {
-      initStateComputer(stateManager);
-      final var rustMempool = new RustMempool(metrics, stateManager);
+    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+      initStateComputer(nodeRustEnvironment);
+      final var rustMempool = new RustMempool(new MetricsInitializer().initialize(), nodeRustEnvironment);
       final var transaction1 = constructValidTransaction(0, 0);
       final var transaction2 = constructValidTransaction(0, 1);
       final var transaction3 = constructValidTransaction(0, 2);
@@ -381,6 +299,51 @@ public final class RustMempoolTest {
       returnedList = rustMempool.getTransactionsToRelay(3, txnPayloadSize * 3 - 1);
       assertEquals(2, returnedList.size());
     }
+  }
+
+  private NodeRustEnvironment createNodeRustEnvironment() throws IOException {
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
+    final var stateManagerDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
+    final var nodeDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
+
+    final var config =
+        new StateManagerConfig(
+            NetworkDefinition.INT_TEST_NET,
+            Option.some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
+            stateManagerDbConfig,
+            new DatabaseConfig(false, false, false, false),
+            LoggingConfig.getDefault(),
+            StateTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefault(),
+            false,
+            ScenariosExecutionConfig.NONE);
+
+    return new NodeRustEnvironment(
+        tx -> {}, // A no-op dispatcher of transactions to be relayed.
+        () -> {}, // A no-op fatal panic handler. Please note that a JNI-invoking test (like this one) will observe
+                  // panics as runtime exceptions propagated up the stack (through JNI), which will fail the test
+                  // gracefully anyway.
+        config,
+        new NodeConfig(nodeDbConfig));
+  }
+
+  private static void initStateComputer(NodeRustEnvironment nodeRustEnvironment) {
+    final var metrics = new MetricsInitializer().initialize();
+    final var genesisProvider =
+        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty());
+    new REv2LedgerInitializer(
+        new Blake2b256Hasher(DefaultSerialization.getInstance()),
+        new RustStateComputer(metrics, nodeRustEnvironment),
+        new REv2TransactionsAndProofReader(
+            new REv2TransactionAndProofStore(metrics, nodeRustEnvironment),
+            LedgerSyncLimitsConfig.defaults(),
+            metrics))
+        .initialize(genesisProvider);
   }
 
   private static PreparedNotarizedTransaction constructValidTransaction(long fromEpoch, int nonce) {

@@ -69,7 +69,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.safety.SafetyStateDTO;
+import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -207,5 +210,13 @@ public final class SafetyState {
   @DsonOutput(DsonOutput.Output.ALL)
   public Vote getSerializerLastVote() {
     return lastVote.orElse(null);
+  }
+
+  public static SafetyState fromDto(Serialization serialization, SafetyStateDTO dto) throws DeserializeException {
+    return serialization.fromDson(dto.dsonEncodedContent(), SafetyState.class);
+  }
+
+  public static SafetyStateDTO toDto(Serialization serialization, SafetyState safetyState) {
+    return new SafetyStateDTO(serialization.toDson(safetyState, DsonOutput.Output.PERSIST));
   }
 }

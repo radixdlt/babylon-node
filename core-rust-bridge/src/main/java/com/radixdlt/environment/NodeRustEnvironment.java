@@ -90,12 +90,15 @@ public final class NodeRustEnvironment implements AutoCloseable {
   public NodeRustEnvironment(
       MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
       FatalPanicHandler fatalPanicHandler,
-      StateManagerConfig config) {
+      StateManagerConfig config,
+      NodeConfig nodeConfig) {
     this.mempoolRelayDispatcher = mempoolRelayDispatcher;
     this.fatalPanicHandler = fatalPanicHandler;
     final var encodedConfig =
         NodeSborCodecs.encode(config, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
-    init(this, encodedConfig);
+    final var encodedNodeConfig =
+        NodeSborCodecs.encode(nodeConfig, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
+    init(this, encodedConfig, encodedNodeConfig);
   }
 
   @Override
@@ -128,7 +131,7 @@ public final class NodeRustEnvironment implements AutoCloseable {
     this.fatalPanicHandler.handleFatalPanic();
   }
 
-  private static native void init(NodeRustEnvironment nodeRustEnvironment, byte[] config);
+  private static native void init(NodeRustEnvironment nodeRustEnvironment, byte[] config, byte[] nodeConfig);
 
   private static native void cleanup(NodeRustEnvironment nodeRustEnvironment);
 }

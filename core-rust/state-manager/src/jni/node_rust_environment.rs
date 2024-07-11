@@ -63,6 +63,7 @@
  */
 
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -71,7 +72,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::environment::setup_tracing;
-use node_common::java::{jni_call, jni_jbytearray_to_vector};
+use node_common::java::{jni_call, jni_jbytearray_to_vector, StructFromJava};
 use node_common::locks::*;
 use prometheus::Registry;
 
@@ -86,10 +87,11 @@ use crate::priority_mempool::PriorityMempool;
 use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolManager;
-use crate::rocks_db::ActualStateManagerDatabase;
+use crate::rocks_db::{ActualNodeDatabase, ActualStateManagerDatabase};
 use crate::transaction::Preparator;
 use crate::{Committer, LedgerMetrics, SystemExecutor};
 use crate::{StateManager, StateManagerConfig};
+use crate::node::NodeConfig;
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -99,9 +101,10 @@ extern "system" fn Java_com_radixdlt_environment_NodeRustEnvironment_init(
     _class: JClass,
     j_node_rust_env: JObject,
     j_config: jbyteArray,
+    j_node_config: jbyteArray,
 ) {
     jni_call(&env, || {
-        JNINodeRustEnvironment::init(&env, j_node_rust_env, j_config)
+        JNINodeRustEnvironment::init(&env, j_node_rust_env, j_config, j_node_config)
     });
 }
 
@@ -122,13 +125,16 @@ pub struct JNINodeRustEnvironment {
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
     pub running_task_tracker: UntilDropTracker,
+    pub node_store: Arc<DbLock<ActualNodeDatabase>>,
 }
 
 impl JNINodeRustEnvironment {
-    pub fn init(env: &JNIEnv, j_node_rust_env: JObject, j_config: jbyteArray) {
+    pub fn init(env: &JNIEnv, j_node_rust_env: JObject, j_config: jbyteArray, j_node_config: jbyteArray) {
         let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
         let config = StateManagerConfig::valid_from_java(&config_bytes).unwrap();
 
+        let db_config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_node_config).unwrap();
+        let node_config = NodeConfig::from_java(&db_config_bytes).unwrap();
         let network = config.network_definition.clone();
 
         let runtime = Arc::new(Runtime::new().unwrap());
@@ -162,6 +168,10 @@ impl JNINodeRustEnvironment {
         );
 
         let running_task_tracker = scheduler.into_task_tracker();
+        
+        let node_db_path = PathBuf::from(node_config.database_backend_config.rocks_db_path);
+        let raw_node_db = ActualNodeDatabase::new(node_db_path);
+        let node_store = Arc::new(lock_factory.named("node_database").new_db_lock(raw_node_db));
 
         let jni_node_rust_env = JNINodeRustEnvironment {
             runtime,
@@ -169,6 +179,7 @@ impl JNINodeRustEnvironment {
             state_manager,
             metric_registry,
             running_task_tracker,
+            node_store,
         };
 
         env.set_rust_field(j_node_rust_env, POINTER_JNI_FIELD_NAME, jni_node_rust_env)
@@ -205,6 +216,15 @@ impl JNINodeRustEnvironment {
         Self::get(env, j_node_rust_env)
             .state_manager
             .database
+            .clone()
+    }
+    
+    pub fn get_node_database(
+        env: &JNIEnv,
+        j_node_rust_env: JObject,
+    ) -> Arc<DbLock<ActualNodeDatabase>> {
+        Self::get(env, j_node_rust_env)
+            .node_store
             .clone()
     }
 

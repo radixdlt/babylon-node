@@ -62,41 +62,74 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+use crate::engine_prelude::*;
+use crate::jni::node_rust_environment::JNINodeRustEnvironment;
+use crate::traits::node::AddressBookStore;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use node_common::java::*;
+use crate::address_book_components::{AddressBookEntry, AddressBookNodeId};
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.StateManagerStorageLocation;
-import com.radixdlt.utils.properties.RuntimeProperties;
-
-public class BerkeleySafetyStoreModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-    Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
-        .addBinding()
-        .to(BerkeleySafetyStateStore.class);
-  }
-
-  @Provides
-  @Singleton
-  BerkeleySafetyStateStore safetyStateStore(
-      RuntimeProperties properties,
-      Serialization serialization,
-      Metrics metrics,
-      @StateManagerStorageLocation String nodeStorageLocation) {
-    return new BerkeleySafetyStateStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-  }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_removeOne(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_id: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_id, |request: AddressBookNodeId| {
+        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
+            .lock()
+            .remove_one(&request);
+    })
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_upsertOne(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_data: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_data, |request: AddressBookEntry| {
+        // It should be safe to unwrap here, as this operation was already successful inside
+        // jni_sbor_coded_call.
+        let entity = jni_jbytearray_to_vector(&env, node_data).unwrap();
+
+        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
+            .lock()
+            .upsert_one(&request.node_id, &entity);
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_reset(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_id: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_id, |_ : Vec<u8>| -> Vec<u8> {
+        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
+            .lock()
+            .reset();
+        vec![0]
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_getAll(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_id: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_id, |_ : Vec<u8>| -> Vec<u8> {
+        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
+            .lock()
+            .get_all()
+    })
+}
+
+pub fn export_extern_functions() {}

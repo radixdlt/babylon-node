@@ -62,12 +62,15 @@
  * permissions under this License.
  */
 
-mod codecs;
+pub mod address_book_components;
+pub mod column_families;
 pub mod historical_state;
 pub mod jmt_gc;
+pub mod migration;
 pub mod proofs_gc;
 pub mod rocks_db;
 pub mod traits;
+mod codecs;
 mod typed_cf_api;
 
 use crate::store::traits::measurement::MeasurableDatabase;

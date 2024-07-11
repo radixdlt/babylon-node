@@ -88,7 +88,7 @@ import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpoc
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.store.StateManagerStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
@@ -163,7 +163,7 @@ public final class P2PModule extends AbstractModule {
   BerkeleyAddressBookStore addressBookStore(
       Serialization serialization,
       Metrics metrics,
-      @NodeStorageLocation String nodeStorageLocation) {
+      @StateManagerStorageLocation String nodeStorageLocation) {
     return new BerkeleyAddressBookStore(
         serialization,
         metrics,

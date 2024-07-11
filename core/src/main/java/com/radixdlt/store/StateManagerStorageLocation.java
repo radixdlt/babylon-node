@@ -62,41 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.store;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.StateManagerStorageLocation;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-public class BerkeleySafetyStoreModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-    Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
-        .addBinding()
-        .to(BerkeleySafetyStateStore.class);
-  }
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import javax.inject.Qualifier;
 
-  @Provides
-  @Singleton
-  BerkeleySafetyStateStore safetyStateStore(
-      RuntimeProperties properties,
-      Serialization serialization,
-      Metrics metrics,
-      @StateManagerStorageLocation String nodeStorageLocation) {
-    return new BerkeleySafetyStateStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-  }
-}
+/** Specifies a folder where the state manager can store its files */
+@Qualifier
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface StateManagerStorageLocation {}

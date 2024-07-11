@@ -63,7 +63,6 @@
  */
 
 use std::collections::HashSet;
-use std::fmt;
 
 use crate::engine_prelude::*;
 use crate::store::traits::*;
@@ -71,8 +70,6 @@ use crate::{
     BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin,
     LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash,
     StateVersion, SubstateChangeAction, TransactionTreeHash,
-    VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
-    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
 use node_common::utils::IsAccountExt;
 use rocksdb::checkpoint::Checkpoint;
@@ -86,27 +83,26 @@ use std::path::PathBuf;
 use node_common::locks::Snapshottable;
 use tracing::{error, info, warn};
 
+use super::traits::extensions::*;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
+use crate::address_book_components::AddressBookNodeId;
+use crate::column_families::*;
+use crate::migration::{MigrationId, MigrationStatus};
 use crate::query::TransactionIdentifierLoader;
-use crate::store::codecs::*;
 use crate::store::historical_state::StateTreeBasedSubstateDatabase;
-use crate::store::traits::gc::{
-    LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore, VersionedLedgerProofsGcProgress,
-};
+use crate::store::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
 use crate::store::traits::indices::{
-    CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintName, ObjectBlueprintNameV1,
-    VersionedEntityBlueprintId, VersionedObjectBlueprintName,
+    CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintNameV1,
 };
 use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
 use crate::store::traits::scenario::{
-    ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber, VersionedExecutedScenario,
+    ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber,
 };
 use crate::store::typed_cf_api::*;
+use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
 use crate::transaction::{
     LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
 };
-
-use super::traits::extensions::*;
 
 /// A listing of all column family names used by the Node.
 ///
@@ -126,7 +122,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 25] = [
+const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 25] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -154,394 +150,11 @@ const ALL_COLUMN_FAMILIES: [&str; 25] = [
     BlueprintAndCreationIndexedObjectsCf::VERSIONED_NAME,
 ];
 
-/// Committed transactions.
-/// Schema: `StateVersion.to_bytes()` -> `RawLedgerTransaction.as_ref::<[u8]>()`
-/// Note: This table does not use explicit versioning wrapper, since the serialized content of
-/// [`RawLedgerTransaction`] is itself versioned.
-struct RawLedgerTransactionsCf;
-impl DefaultCf for RawLedgerTransactionsCf {
-    type Key = StateVersion;
-    type Value = RawLedgerTransaction;
-
-    const DEFAULT_NAME: &'static str = "raw_ledger_transactions";
-    type KeyCodec = StateVersionDbCodec;
-    type ValueCodec = RawLedgerTransactionDbCodec;
-}
-
-/// Identifiers of committed transactions.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedCommittedTransactionIdentifiers)`
-struct CommittedTransactionIdentifiersCf;
-impl VersionedCf for CommittedTransactionIdentifiersCf {
-    type Key = StateVersion;
-    type Value = CommittedTransactionIdentifiers;
-
-    const VERSIONED_NAME: &'static str = "committed_transaction_identifiers";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedCommittedTransactionIdentifiers;
-}
-
-/// Ledger receipts of committed transactions.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerTransactionReceipt)`
-struct TransactionReceiptsCf;
-impl VersionedCf for TransactionReceiptsCf {
-    type Key = StateVersion;
-    type Value = LedgerTransactionReceipt;
-
-    const VERSIONED_NAME: &'static str = "transaction_receipts";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLedgerTransactionReceipt;
-}
-
-/// Off-ledger details of committed transaction results (stored only when configured via
-/// `enable_local_transaction_execution_index`).
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLocalTransactionExecution)`
-struct LocalTransactionExecutionsCf;
-impl VersionedCf for LocalTransactionExecutionsCf {
-    type Key = StateVersion;
-    type Value = LocalTransactionExecution;
-
-    const VERSIONED_NAME: &'static str = "local_transaction_executions";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLocalTransactionExecution;
-}
-
-/// Ledger proofs of committed transactions.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-struct LedgerProofsCf;
-impl VersionedCf for LedgerProofsCf {
-    type Key = StateVersion;
-    type Value = LedgerProof;
-
-    const VERSIONED_NAME: &'static str = "ledger_proofs";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLedgerProof;
-}
-
-/// Ledger proofs of new epochs - i.e. the proofs which trigger the given `next_epoch`.
-/// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
-struct EpochLedgerProofsCf;
-impl VersionedCf for EpochLedgerProofsCf {
-    type Key = Epoch;
-    type Value = LedgerProof;
-
-    const VERSIONED_NAME: &'static str = "epoch_ledger_proofs";
-    type KeyCodec = EpochDbCodec;
-    type VersionedValue = VersionedLedgerProof;
-}
-
-/// Ledger proofs that initialize protocol updates, i.e. proofs of Consensus `origin`,
-/// with headers containing a non-empty `next_protocol_version`.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
-struct ProtocolUpdateInitLedgerProofsCf;
-impl VersionedCf for ProtocolUpdateInitLedgerProofsCf {
-    type Key = StateVersion;
-    type Value = LedgerProof;
-
-    const VERSIONED_NAME: &'static str = "protocol_update_init_ledger_proofs";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLedgerProof;
-}
-
-/// Ledger proofs of ProtocolUpdate `origin`, i.e. proofs created locally
-/// while protocol update state modifications were being applied.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
-struct ProtocolUpdateExecutionLedgerProofsCf;
-impl VersionedCf for ProtocolUpdateExecutionLedgerProofsCf {
-    type Key = StateVersion;
-    type Value = LedgerProof;
-
-    const VERSIONED_NAME: &'static str = "protocol_update_execution_ledger_proofs";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLedgerProof;
-}
-
-/// DB "index" table for transaction's [`IntentHash`] resolution.
-/// Schema: `IntentHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
-/// Note: This table does not use explicit versioning wrapper, since the value represents a DB
-/// key of another table (and versioning DB keys is not useful).
-struct IntentHashesCf;
-impl DefaultCf for IntentHashesCf {
-    type Key = IntentHash;
-    type Value = StateVersion;
-
-    const DEFAULT_NAME: &'static str = "intent_hashes";
-    type KeyCodec = HashDbCodec<IntentHash>;
-    type ValueCodec = StateVersionDbCodec;
-}
-
-/// DB "index" table for transaction's [`NotarizedTransactionHash`] resolution.
-/// Schema: `NotarizedTransactionHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
-/// Note: This table does not use explicit versioning wrapper, since the value represents a DB
-/// key of another table (and versioning DB keys is not useful).
-struct NotarizedTransactionHashesCf;
-impl DefaultCf for NotarizedTransactionHashesCf {
-    type Key = NotarizedTransactionHash;
-    type Value = StateVersion;
-
-    const DEFAULT_NAME: &'static str = "notarized_transaction_hashes";
-    type KeyCodec = HashDbCodec<NotarizedTransactionHash>;
-    type ValueCodec = StateVersionDbCodec;
-}
-
-/// DB "index" table for transaction's [`LedgerTransactionHash`] resolution.
-/// Schema: `LedgerTransactionHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
-/// Note: This table does not use explicit versioning wrapper, since the value represents a DB
-/// key of another table (and versioning DB keys is not useful).
-struct LedgerTransactionHashesCf;
-impl DefaultCf for LedgerTransactionHashesCf {
-    type Key = LedgerTransactionHash;
-    type Value = StateVersion;
-
-    const DEFAULT_NAME: &'static str = "ledger_transaction_hashes";
-    type KeyCodec = HashDbCodec<LedgerTransactionHash>;
-    type ValueCodec = StateVersionDbCodec;
-}
-
-/// Radix Engine's runtime Substate database.
-/// Schema: `encode_to_rocksdb_bytes(DbPartitionKey, DbSortKey)` -> `Vec<u8>`
-/// Note: This table does not use explicit versioning wrapper, since each serialized substate
-/// value is already versioned.
-struct SubstatesCf;
-impl DefaultCf for SubstatesCf {
-    type Key = DbSubstateKey;
-    type Value = DbSubstateValue;
-
-    const DEFAULT_NAME: &'static str = "substates";
-    type KeyCodec = SubstateKeyDbCodec;
-    type ValueCodec = DirectDbCodec;
-}
-
-/// Ancestor information for the RE Nodes of [`Substates`] (which is useful and can be computed,
-/// but is not provided by the Engine itself).
-/// Schema: `NodeId.0` -> `scrypto_encode(VersionedSubstateNodeAncestryRecord)`
-/// Note: we do not persist records of root Nodes (which do not have any ancestor).
-struct SubstateNodeAncestryRecordsCf;
-impl VersionedCf for SubstateNodeAncestryRecordsCf {
-    type Key = NodeId;
-    type Value = SubstateNodeAncestryRecord;
-
-    const VERSIONED_NAME: &'static str = "substate_node_ancestry_records";
-    type KeyCodec = NodeIdDbCodec;
-    type VersionedValue = VersionedSubstateNodeAncestryRecord;
-}
-
-/// Vertex store.
-/// Schema: `[]` -> `scrypto_encode(VersionedVertexStoreBlob)`
-/// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
-struct VertexStoreCf;
-impl VersionedCf for VertexStoreCf {
-    type Key = ();
-    type Value = VertexStoreBlob;
-
-    const VERSIONED_NAME: &'static str = "vertex_store";
-    type KeyCodec = UnitDbCodec;
-    type VersionedValue = VersionedVertexStoreBlob;
-}
-
-/// Individual nodes of the Substate database's hash tree.
-/// Schema: `encode_key(StoredTreeNodeKey)` -> `scrypto_encode(VersionedTreeNode)`.
-struct StateTreeNodesCf;
-impl VersionedCf for StateTreeNodesCf {
-    type Key = StoredTreeNodeKey;
-    type Value = TreeNode;
-
-    // Note: the legacy `state_hash_tree` name lives on here because it already got persisted.
-    const VERSIONED_NAME: &'static str = "state_hash_tree_nodes";
-    type KeyCodec = StoredTreeNodeKeyDbCodec;
-    type VersionedValue = VersionedTreeNode;
-}
-
-/// Parts of the Substate database's hash tree that became stale at a specific state version.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedStaleTreeParts)`.
-struct StaleStateTreePartsCf;
-impl VersionedCf for StaleStateTreePartsCf {
-    type Key = StateVersion;
-    type Value = StaleTreeParts;
-
-    // Note: the legacy `state_hash_tree` name lives on here because it already got persisted.
-    const VERSIONED_NAME: &'static str = "stale_state_hash_tree_parts";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedStaleTreeParts;
-}
-
-/// Transaction accumulator tree slices added at a specific state version.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedTransactionAccuTreeSlice)`.
-struct TransactionAccuTreeSlicesCf;
-impl VersionedCf for TransactionAccuTreeSlicesCf {
-    type Key = StateVersion;
-    type Value = TransactionAccuTreeSlice;
-
-    const VERSIONED_NAME: &'static str = "transaction_accu_tree_slices";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedTransactionAccuTreeSlice;
-}
-
-/// Receipt accumulator tree slices added at a specific state version.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedReceiptAccuTreeSlice)`.
-struct ReceiptAccuTreeSlicesCf;
-impl VersionedCf for ReceiptAccuTreeSlicesCf {
-    type Key = StateVersion;
-    type Value = ReceiptAccuTreeSlice;
-
-    const VERSIONED_NAME: &'static str = "receipt_accu_tree_slices";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedReceiptAccuTreeSlice;
-}
-
-/// Various data needed by extensions.
-/// Schema: `ExtensionsDataKeys.to_string().as_bytes() -> Vec<u8>`.
-/// Note: This table does not use explicit versioning wrapper, since each extension manages the
-/// serialization of their data (of its custom type).
-struct ExtensionsDataCf;
-impl TypedCf for ExtensionsDataCf {
-    type Key = ExtensionsDataKey;
-    type Value = Vec<u8>;
-
-    type KeyCodec = PredefinedDbCodec<ExtensionsDataKey>;
-    type ValueCodec = DirectDbCodec;
-
-    const NAME: &'static str = "extensions_data";
-
-    fn key_codec(&self) -> PredefinedDbCodec<ExtensionsDataKey> {
-        PredefinedDbCodec::new_from_string_representations(vec![
-            ExtensionsDataKey::AccountChangeIndexEnabled,
-            ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
-            ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
-            ExtensionsDataKey::December2023LostSubstatesRestored,
-            ExtensionsDataKey::StateTreeAssociatedValuesStatus,
-            ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
-        ])
-    }
-
-    fn value_codec(&self) -> DirectDbCodec {
-        DirectDbCodec::default()
-    }
-}
-
-/// Account addresses and state versions at which they were changed.
-/// Schema: `[GlobalAddress.0, StateVersion.to_bytes()].concat() -> []`.
-/// Note: This is a key-only table (i.e. the empty value is the only allowed value). Given fast
-/// prefix iterator from RocksDB this emulates a `Map<Account, Set<StateVersion>>`.
-struct AccountChangeStateVersionsCf;
-impl TypedCf for AccountChangeStateVersionsCf {
-    type Key = (GlobalAddress, StateVersion);
-    type Value = ();
-
-    type KeyCodec = PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec>;
-    type ValueCodec = UnitDbCodec;
-
-    const NAME: &'static str = "account_change_state_versions";
-
-    fn key_codec(&self) -> PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec> {
-        PrefixGlobalAddressDbCodec::new(StateVersionDbCodec::default())
-    }
-
-    fn value_codec(&self) -> UnitDbCodec {
-        UnitDbCodec::default()
-    }
-}
-
-/// Additional details of "Scenarios" (and their transactions) executed as part of Genesis,
-/// keyed by their sequence number (i.e. their index in the list of Scenarios to execute).
-/// Schema: `ScenarioSequenceNumber.to_be_bytes()` -> `scrypto_encode(VersionedExecutedScenario)`
-struct ExecutedScenariosCf;
-impl VersionedCf for ExecutedScenariosCf {
-    type Key = ScenarioSequenceNumber;
-    type Value = ExecutedScenario;
-
-    // Note: a legacy name is still used here, even though we now have scenarios run outside Genesis
-    const VERSIONED_NAME: &'static str = "executed_genesis_scenarios";
-    type KeyCodec = ScenarioSequenceNumberDbCodec;
-    type VersionedValue = VersionedExecutedScenario;
-}
-
-/// A progress of the GC process pruning the [`LedgerProofsCf`].
-/// Schema: `[]` -> `scrypto_encode(VersionedLedgerProofsGcProgress)`
-/// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
-struct LedgerProofsGcProgressCf;
-impl VersionedCf for LedgerProofsGcProgressCf {
-    type Key = ();
-    type Value = LedgerProofsGcProgress;
-
-    const VERSIONED_NAME: &'static str = "ledger_proofs_gc_progress";
-    type KeyCodec = UnitDbCodec;
-    type VersionedValue = VersionedLedgerProofsGcProgress;
-}
-
-/// Node IDs and blueprints of all entities, indexed by their type and creation order.
-/// Schema: `[EntityType as u8, StateVersion.to_be_bytes(), (index_within_txn as u32).to_be_bytes()].concat()` -> `scrypto_encode(VersionedEntityBlueprintId)`
-struct TypeAndCreationIndexedEntitiesCf;
-impl VersionedCf for TypeAndCreationIndexedEntitiesCf {
-    type Key = (EntityType, CreationId);
-    type Value = EntityBlueprintId;
-
-    const VERSIONED_NAME: &'static str = "type_and_creation_indexed_entities";
-    type KeyCodec = TypeAndCreationIndexKeyDbCodec;
-    type VersionedValue = VersionedEntityBlueprintId;
-}
-
-/// Node IDs and blueprints of all objects, indexed by their blueprint ID and creation order.
-/// Schema: `[PackageAddress.0, hash(blueprint_name), StateVersion.to_be_bytes(), (index_within_txn as u32).to_be_bytes()].concat()` -> `scrypto_encode(VersionedObjectBlueprintName)`
-struct BlueprintAndCreationIndexedObjectsCf;
-impl VersionedCf for BlueprintAndCreationIndexedObjectsCf {
-    type Key = (PackageAddress, Hash, CreationId);
-    type Value = ObjectBlueprintName;
-
-    const VERSIONED_NAME: &'static str = "blueprint_and_creation_indexed_objects";
-    type KeyCodec = BlueprintAndCreationIndexKeyDbCodec;
-    type VersionedValue = VersionedObjectBlueprintName;
-}
-
-/// Substate values associated with leaf nodes of the state hash tree's Substate Tier.
-/// Needed for [`LeafSubstateValueStore`].
-/// Note: This table does not use explicit versioning wrapper, since each serialized substate
-/// value is already versioned.
-struct AssociatedStateTreeValuesCf;
-impl DefaultCf for AssociatedStateTreeValuesCf {
-    type Key = StoredTreeNodeKey;
-    type Value = DbSubstateValue;
-
-    const DEFAULT_NAME: &'static str = "associated_state_tree_values";
-    type KeyCodec = StoredTreeNodeKeyDbCodec;
-    type ValueCodec = DirectDbCodec;
-}
-
-/// An enum key for [`ExtensionsDataCf`].
-#[derive(Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Debug)]
-enum ExtensionsDataKey {
-    AccountChangeIndexLastProcessedStateVersion,
-    AccountChangeIndexEnabled,
-    LocalTransactionExecutionIndexEnabled,
-    December2023LostSubstatesRestored,
-    StateTreeAssociatedValuesStatus,
-    EntityListingIndicesLastProcessedStateVersion,
-}
-
-// IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
-// effectively clear the associated extension's state in DB. For this reason, we choose to
-// define them manually (rather than using the enum's `Into<String>`, which is refactor-sensitive).
-impl fmt::Display for ExtensionsDataKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let str = match self {
-            Self::AccountChangeIndexLastProcessedStateVersion => {
-                "account_change_index_last_processed_state_version"
-            }
-            Self::AccountChangeIndexEnabled => "account_change_index_enabled",
-            Self::LocalTransactionExecutionIndexEnabled => {
-                "local_transaction_execution_index_enabled"
-            }
-            Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
-            Self::StateTreeAssociatedValuesStatus => "state_tree_associated_values_status",
-            Self::EntityListingIndicesLastProcessedStateVersion => {
-                "entity_listing_indices_last_processed_state_version"
-            }
-        };
-        write!(f, "{str}")
-    }
-}
+const ALL_NODE_COLUMN_FAMILIES: [&str; 3] = [
+    MigrationStatusCf::DEFAULT_NAME,
+    AddressBookCf::DEFAULT_NAME,
+    SafetyStoreCf::DEFAULT_NAME,
+];
 
 /// A redefined RocksDB's "key and value bytes" tuple (the original one lives in a private module).
 pub type KVBytes = (Box<[u8]>, Box<[u8]>);
@@ -740,6 +353,7 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
 }
 
 pub type ActualStateManagerDatabase = StateManagerDatabase<DirectRocks>;
+pub type ActualNodeDatabase = NodeDatabase<DirectRocks>;
 
 impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
     type Snapshot = StateManagerDatabase<SnapshotRocks<'db>>;
@@ -759,6 +373,108 @@ impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
         }
     }
 }
+
+/// A RocksDB-backed persistence layer for node-specific address book and safety store.
+pub struct NodeDatabase<R> {
+    /// Underlying RocksDB instance.
+    rocks: R,
+}
+
+impl ActualNodeDatabase {
+    pub fn new(
+        root_path: PathBuf,
+    ) -> ActualNodeDatabase {
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(true);
+        db_opts.create_missing_column_families(true);
+
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_NODE_COLUMN_FAMILIES
+            .iter()
+            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .collect();
+
+        let db = DB::open_cf_descriptors(&db_opts, root_path.as_path(), column_families).unwrap();
+
+        NodeDatabase {
+            rocks: DirectRocks { db },
+        }
+    }
+}
+
+impl<R: WriteableRocks> NodeDatabase<R> {
+    fn open_rw_context(&self) -> TypedDbContext<R, BufferedWriteSupport<R>> {
+        TypedDbContext::new(&self.rocks, BufferedWriteSupport::new(&self.rocks))
+    }
+}
+
+impl<R: WriteableRocks> AddressBookStore for NodeDatabase<R> {
+    fn remove_one(&self, node_id: &AddressBookNodeId) -> bool {
+        let binding = self.open_rw_context();
+        let context = binding.cf(AddressBookCf);
+        let exists = context.get(node_id).is_some();
+
+        if exists {
+            context.delete(node_id);
+        }
+
+        exists
+    }
+
+    fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool {
+        let binding = self.open_rw_context();
+        let context = binding.cf(AddressBookCf);
+        let exists = context.get(node_id).is_some();
+
+        context.put(node_id, &entry.to_vec());
+
+        exists
+    }
+
+    fn reset(&self) {
+        todo!("reset")
+    }
+
+    fn get_all(&self) -> Vec<u8> {
+        todo!("get_all")
+    }
+}
+
+impl<R: WriteableRocks> HighPriorityPeersStore for NodeDatabase<R> {
+    fn upsert_all_peers(&self, peers: &[u8]) {
+        self.open_rw_context().cf(HighPriorityPeersCf).put(&(), &peers.to_vec());
+    }
+
+    fn get_all_peers(&self) -> Vec<u8> {
+        self.open_rw_context().cf(HighPriorityPeersCf)
+            .get(&())
+            .unwrap_or_default()
+    }
+}
+
+impl<R: WriteableRocks> SafetyStateStore for NodeDatabase<R> {
+    fn upsert_safety_state(&self, safety_state: &[u8]) {
+        self.open_rw_context().cf(SafetyStoreCf).put(&(), &safety_state.to_vec());
+    }
+
+    fn get_safety_state(&self) -> Vec<u8> {
+        self.open_rw_context().cf(SafetyStoreCf)
+            .get(&())
+            .unwrap_or_default()
+    }
+}
+
+impl<R: WriteableRocks> MigrationStore for NodeDatabase<R> {
+    fn is_migration_required(&self, store_id: MigrationId) -> bool {
+        self.open_rw_context().cf(MigrationStatusCf)
+            .get(&store_id).is_none()
+    }
+
+    fn migration_done(&self, store_id: MigrationId) {
+        self.open_rw_context().cf(MigrationStatusCf)
+            .put(&store_id, &MigrationStatus::Completed)
+    }
+}
+
 
 /// A RocksDB-backed persistence layer for state manager.
 pub struct StateManagerDatabase<R> {
@@ -782,7 +498,7 @@ impl ActualStateManagerDatabase {
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
 
-        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_STATE_MANAGER_COLUMN_FAMILIES
             .iter()
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
@@ -819,7 +535,7 @@ impl ActualStateManagerDatabase {
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
 
-        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_STATE_MANAGER_COLUMN_FAMILIES
             .iter()
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
@@ -1071,7 +787,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
 
 impl MeasurableDatabase for ActualStateManagerDatabase {
     fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic> {
-        let mut statistics = ALL_COLUMN_FAMILIES
+        let mut statistics = ALL_STATE_MANAGER_COLUMN_FAMILIES
             .iter()
             .map(|cf_name| {
                 (
@@ -1080,13 +796,11 @@ impl MeasurableDatabase for ActualStateManagerDatabase {
                 )
             })
             .collect::<IndexMap<_, _>>();
-        let live_files = match self.rocks.db.live_files() {
-            Ok(live_files) => live_files,
-            Err(err) => {
-                warn!("could not get DB live files; returning 0: {:?}", err);
-                Vec::new()
-            }
-        };
+        let live_files = self.rocks.db.live_files().unwrap_or_else(|err| {
+            warn!("could not get DB live files; returning 0: {:?}", err);
+            Vec::new()
+        });
+
         for live_file in live_files {
             let Some(statistic) = statistics.get_mut(&live_file.column_family_name) else {
                 warn!("LiveFile of unknown column family: {:?}", live_file);

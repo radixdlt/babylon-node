@@ -62,19 +62,40 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+use crate::engine_prelude::*;
+use crate::jni::node_rust_environment::JNINodeRustEnvironment;
+use crate::traits::node::SafetyStateStore;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+use jni::JNIEnv;
+use node_common::java::*;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.utils.properties.RuntimeProperties;
-
-/** Reads node's storage location from properties */
-public final class NodeStorageLocationFromPropertiesModule extends AbstractModule {
-  @Provides
-  @Singleton
-  @NodeStorageLocation
-  private String nodeStorageLocation(RuntimeProperties properties) {
-    return properties.get("db.location", ".//RADIXDB");
-  }
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbSafetyStore_upsert(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_id: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_id, |request: Vec<u8>| {
+        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
+            .lock()
+            .upsert_safety_state(&request);
+    })
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbSafetyStore_get(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_id: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_id, |_ : Vec<u8>| -> Vec<u8> {
+        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
+            .lock()
+            .get_safety_state()
+    })
+}
+
+pub fn export_extern_functions() {}

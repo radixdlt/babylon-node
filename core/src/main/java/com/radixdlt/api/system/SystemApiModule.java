@@ -70,7 +70,7 @@ import com.radixdlt.api.common.HandlerRoute;
 import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.api.system.health.HealthInfoServiceImpl;
 import com.radixdlt.api.system.routes.*;
-import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.store.StateManagerStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import io.undertow.server.HttpHandler;
 import java.nio.file.Path;
@@ -116,7 +116,7 @@ public class SystemApiModule extends AbstractModule {
   @Provides
   @Singleton
   public SystemApiConfig systemApiConfig(
-      RuntimeProperties runtimeProperties, @NodeStorageLocation String nodeStorageLocation) {
+      RuntimeProperties runtimeProperties, @StateManagerStorageLocation String nodeStorageLocation) {
     final var dbCheckpointEnabled = runtimeProperties.get("api.system.enable_db_checkpoint", false);
     final var dbCheckpointsPath =
         runtimeProperties.get(

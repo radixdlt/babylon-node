@@ -67,6 +67,7 @@ package com.radixdlt.sbor;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
+import com.radixdlt.db.StoreId;
 import com.radixdlt.environment.*;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.genesis.*;
@@ -75,10 +76,13 @@ import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.ProposalTransactionsRequest;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.message.*;
+import com.radixdlt.p2p.AddressBookEntryDTO;
+import com.radixdlt.p2p.NodeIdDTO;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.protocol.*;
 import com.radixdlt.rev2.*;
+import com.radixdlt.safety.*;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -213,6 +217,24 @@ public final class NodeSborCodecs {
     StateTreeGcConfig.registerCodec(codecMap);
     LedgerProofsGcConfig.registerCodec(codecMap);
     LedgerSyncLimitsConfig.registerCodec(codecMap);
+    NodeConfig.registerCodec(codecMap);
+
+    BFTHeaderDTO.registerCodec(codecMap);
+    BFTValidatorIdDTO.registerCodec(codecMap);
+    HighQCDTO.registerCodec(codecMap);
+    QuorumCertificateDTO.registerCodec(codecMap);
+    RoundDTO.registerCodec(codecMap);
+    SafetyStateDTO.registerCodec(codecMap);
+    TimeoutCertificateDTO.registerCodec(codecMap);
+    TimestampedECDSASignatureDTO.registerCodec(codecMap);
+    TimestampedECDSASignaturesDTO.registerCodec(codecMap);
+    VertexIdDTO.registerCodec(codecMap);
+    VoteDataDTO.registerCodec(codecMap);
+    VoteDTO.registerCodec(codecMap);
+
+    AddressBookEntryDTO.registerCodec(codecMap);
+    NodeIdDTO.registerCodec(codecMap);
+    StoreId.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

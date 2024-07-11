@@ -72,7 +72,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.store.StateManagerStorageLocation;
 import com.sleepycat.je.*;
 import java.io.File;
 import java.io.IOException;
@@ -101,7 +101,7 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
   public BerkeleyAddressBookStore(
       Serialization serialization,
       Metrics metrics,
-      @NodeStorageLocation String nodeStorageLocation,
+      @StateManagerStorageLocation String nodeStorageLocation,
       EnvironmentConfig envConfig) {
     this.serialization = Objects.requireNonNull(serialization);
     this.metrics = Objects.requireNonNull(metrics);

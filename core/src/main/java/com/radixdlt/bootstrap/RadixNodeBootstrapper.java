@@ -79,7 +79,7 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Unit;
 import com.radixdlt.networks.FixedNetworkGenesis;
 import com.radixdlt.networks.Network;
-import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.store.StateManagerStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 import java.io.IOException;
@@ -111,7 +111,7 @@ public final class RadixNodeBootstrapper {
       RuntimeProperties properties,
       GenesisFromPropertiesLoader genesisFromPropertiesLoader,
       GenesisStore genesisStore,
-      @NodeStorageLocation String nodeStorageLocation) {
+      @StateManagerStorageLocation String nodeStorageLocation) {
     this.network = network;
     this.hasher = hasher;
     this.properties = properties;

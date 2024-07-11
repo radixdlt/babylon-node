@@ -73,6 +73,7 @@ pub mod mempool;
 pub mod metrics;
 pub mod protocol;
 pub mod query;
+mod node;
 mod receipt;
 mod staging;
 mod state_manager;

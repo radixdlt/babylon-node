@@ -62,41 +62,26 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.store;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.StateManagerStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
-public class BerkeleySafetyStoreModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-    Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
-        .addBinding()
-        .to(BerkeleySafetyStateStore.class);
+/** Reads node's storage location from properties */
+public final class StorageLocationFromPropertiesModule extends AbstractModule {
+  @Provides
+  @Singleton
+  @StateManagerStorageLocation
+  private String stateManagerStorageLocation(RuntimeProperties properties) {
+    return properties.get("db.location", ".//RADIXDB");
   }
 
   @Provides
   @Singleton
-  BerkeleySafetyStateStore safetyStateStore(
-      RuntimeProperties properties,
-      Serialization serialization,
-      Metrics metrics,
-      @StateManagerStorageLocation String nodeStorageLocation) {
-    return new BerkeleySafetyStateStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+  @NodeStorageLocation
+  private String nodeStorageLocation(RuntimeProperties properties) {
+    return properties.get("db.location.node", ".//RADIXDB/node");
   }
 }

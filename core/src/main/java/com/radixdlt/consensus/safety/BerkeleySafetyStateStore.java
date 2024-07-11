@@ -71,7 +71,7 @@ import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.NodeStorageLocation;
+import com.radixdlt.store.StateManagerStorageLocation;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.*;
 import java.io.File;
@@ -101,7 +101,7 @@ public final class BerkeleySafetyStateStore implements PersistentSafetyStateStor
   public BerkeleySafetyStateStore(
       Serialization serialization,
       Metrics metrics,
-      @NodeStorageLocation String nodeStorageLocation,
+      @StateManagerStorageLocation String nodeStorageLocation,
       EnvironmentConfig envConfig) {
     this.serialization = Objects.requireNonNull(serialization);
     this.metrics = Objects.requireNonNull(metrics);

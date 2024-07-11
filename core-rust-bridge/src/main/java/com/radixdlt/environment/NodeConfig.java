@@ -62,41 +62,15 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.environment;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.StateManagerStorageLocation;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-public class BerkeleySafetyStoreModule extends AbstractModule {
-  @Override
-  protected void configure() {
-    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-    Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
-        .addBinding()
-        .to(BerkeleySafetyStateStore.class);
-  }
-
-  @Provides
-  @Singleton
-  BerkeleySafetyStateStore safetyStateStore(
-      RuntimeProperties properties,
-      Serialization serialization,
-      Metrics metrics,
-      @StateManagerStorageLocation String nodeStorageLocation) {
-    return new BerkeleySafetyStateStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+public record NodeConfig(DatabaseBackendConfig databaseBackendConfig) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        NodeConfig.class,
+        codecs -> StructCodec.fromRecordComponents(NodeConfig.class, codecs));
   }
 }

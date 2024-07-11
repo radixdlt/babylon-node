@@ -260,7 +260,7 @@ impl DbCodec<StoredTreeNodeKey> for StoredTreeNodeKeyDbCodec {
 impl BoundedDbCodec for StoredTreeNodeKeyDbCodec {
     fn upper_bound_encoding(&self) -> Vec<u8> {
         // Note: here we use knowledge of `encode_key()`'s internals: it puts the state version
-        // first. Additionally we need to assume that maximum state version is never reached.
+        // first. Additionally, we need to assume that maximum state version is never reached.
         encode_key(&StoredTreeNodeKey::new(
             Version::MAX,
             NibblePath::new_even(vec![]),
