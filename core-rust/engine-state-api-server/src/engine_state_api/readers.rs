@@ -3,18 +3,6 @@ use std::ops::Deref;
 use crate::engine_prelude::*;
 
 use convert_case::{Case, Casing};
-use itertools::Itertools;
-use radix_engine::transaction::{
-    execute_and_commit_transaction, CommitResult, ExecutionConfig, StateUpdateSummary,
-    TransactionResult,
-};
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
-use radix_substate_store_impls::substate_database_overlay::SubstateDatabaseOverlay;
-
-use state_manager::store::traits::indices::{
-    CreationId, EntityBlueprintId, EntityBlueprintIdV1, EntityListingIndex,
-};
 
 use super::*;
 
@@ -34,22 +22,13 @@ pub struct EngineStateMetaLoader<'s, S: SubstateDatabase> {
     // Engine, but many parts could be achieved in a more performant way (e.g. avoid loading the
     // same data multiple times, or avoid parsing large parts of SBOR). We can either extend the
     // Engine's reader, or implement required lower-level logic here.
-    reader: SystemDatabaseReader<'s, S>,
-    // Note: we also need the direct reference to the `SubstateDatabase`, because it is required for
-    // a staged instantiation of "global virtual" entities (and the `SystemDatabaseReader` above
-    // does not expose it).
-    database: &'s S,
+    pub reader: SystemDatabaseReader<'s, S>,
+    // The IDs of entities that should be returned as `is_instantiated: false`; they were captured
+    // during "staged instantiation" by this loader's factory.
+    pub non_instantiated_node_ids: IndexSet<NodeId>,
 }
 
 impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self {
-            reader: SystemDatabaseReader::new(database),
-            database,
-        }
-    }
-
     /// Loads metadata on the given blueprint.
     pub fn load_blueprint_meta(
         &self,
@@ -147,34 +126,64 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
     ) -> Result<EntityMeta, EngineStateBrowsingError> {
         let type_info = match self.reader.get_type_info(node_id) {
             Ok(type_info) => type_info,
-            Err(error) => match error {
-                SystemReaderError::NodeIdDoesNotExist => {
-                    if node_id.is_global_virtual() {
-                        return self.derive_uninstantiated_entity_meta(node_id);
+            Err(error) => {
+                return Err(match error {
+                    SystemReaderError::NodeIdDoesNotExist => {
+                        EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Entity)
                     }
-                    return Err(EngineStateBrowsingError::RequestedItemNotFound(
-                        ItemKind::Entity,
-                    ));
-                }
-                unexpected => {
-                    return Err(EngineStateBrowsingError::UnexpectedEngineError(
+                    unexpected => EngineStateBrowsingError::UnexpectedEngineError(
                         unexpected,
                         "when getting type info".to_string(),
-                    ))
-                }
-            },
+                    ),
+                })
+            }
         };
-        EntityInfoLoader::new(&self.reader).load_instantiated_entity_meta(type_info, node_id)
+        match type_info {
+            TypeInfoSubstate::Object(object_info) => Ok(EntityMeta::Object(
+                self.load_object_meta(node_id, object_info)?,
+            )),
+            TypeInfoSubstate::KeyValueStore(kv_store_info) => Ok(EntityMeta::KeyValueStore(
+                self.load_kv_store_meta(node_id, kv_store_info)?,
+            )),
+            TypeInfoSubstate::GlobalAddressReservation(_)
+            | TypeInfoSubstate::GlobalAddressPhantom(_) => {
+                Err(EngineStateBrowsingError::RequestedItemInvalid(
+                    ItemKind::Entity,
+                    "entity neither an object nor a KV store".to_string(),
+                ))
+            }
+        }
     }
 
     /// Loads metadata on "state" (i.e. all fields and collections) of the given object's module.
-    /// Does *not* support uninstantiated objects.
+    ///
+    /// API note: this is normally a part of the [`Self::load_entity_meta()`] result, but some
+    /// clients are interested only in specific module and can use this cheaper method.
     pub fn load_object_module_state_meta(
         &self,
         node_id: &NodeId,
         module_id: ModuleId,
     ) -> Result<ObjectModuleStateMeta, EngineStateBrowsingError> {
-        EntityInfoLoader::new(&self.reader).load_object_module_state_meta(node_id, module_id)
+        let type_target = self
+            .reader
+            .get_blueprint_type_target(node_id, module_id)
+            .map_err(|error| match error {
+                SystemReaderError::NodeIdDoesNotExist => {
+                    EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Entity)
+                }
+                SystemReaderError::ModuleDoesNotExist => {
+                    EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Module)
+                }
+                SystemReaderError::NotAnObject => EngineStateBrowsingError::RequestedItemInvalid(
+                    ItemKind::Entity,
+                    "not an object".to_string(),
+                ),
+                unexpected => EngineStateBrowsingError::UnexpectedEngineError(
+                    unexpected,
+                    "when getting type target".to_string(),
+                ),
+            })?;
+        self.load_blueprint_state_meta(&type_target)
     }
 
     /// Loads extra metadata on the given field (a part of [`Self::load_blueprint_meta()`]).
@@ -402,7 +411,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
     ) -> Result<BlueprintNamedTypeMeta, EngineStateBrowsingError> {
         Ok(BlueprintNamedTypeMeta {
             name,
-            resolved_type: SchemaLoader::new(&self.reader)
+            resolved_type: self
                 .augment_with_schema(ResolvedTypeReference::new(*node_id, scoped_type_id))?,
         })
     }
@@ -416,48 +425,215 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
     ) -> Result<BlueprintTypeMeta, EngineStateBrowsingError> {
         Ok(match payload_def {
             BlueprintPayloadDef::Static(scoped_type_id) => BlueprintTypeMeta::Static(
-                SchemaLoader::new(&self.reader)
-                    .augment_with_schema(ResolvedTypeReference::new(*node_id, scoped_type_id))?,
+                self.augment_with_schema(ResolvedTypeReference::new(*node_id, scoped_type_id))?,
             ),
             BlueprintPayloadDef::Generic(index) => BlueprintTypeMeta::Generic(index),
         })
     }
 
-    /// An implementation delegate of [`Self::load_entity_meta()`] for uninstantiated entities.
-    fn derive_uninstantiated_entity_meta(
+    /// An implementation delegate of [`Self::load_entity_meta()`] for `Object`s.
+    fn load_object_meta(
         &self,
         node_id: &NodeId,
-    ) -> Result<EntityMeta, EngineStateBrowsingError> {
-        let mut staged_database = SubstateDatabaseOverlay::new_unmergeable(self.database);
+        object_info: ObjectInfo,
+    ) -> Result<ObjectMeta, EngineStateBrowsingError> {
+        let ObjectInfo {
+            blueprint_info,
+            object_type,
+        } = object_info;
+        Ok(ObjectMeta {
+            is_instantiated: !self.non_instantiated_node_ids.contains(node_id),
+            main_module_state: self.load_object_module_state_meta(node_id, ModuleId::Main)?,
+            attached_module_states: match object_type {
+                ObjectType::Global { modules } => modules
+                    .into_keys() // deliberately ignored per-module blueprint versions
+                    .map(|module_id| {
+                        Ok((
+                            module_id,
+                            self.load_object_module_state_meta(node_id, module_id.into())?,
+                        ))
+                    })
+                    .collect::<Result<IndexMap<_, _>, _>>()?,
+                ObjectType::Owned => index_map_new(),
+            },
+            blueprint_reference: BlueprintReference {
+                id: blueprint_info.blueprint_id,
+                version: blueprint_info.blueprint_version,
+            },
+            instance_meta: ObjectInstanceMeta {
+                outer_object: match blueprint_info.outer_obj_info {
+                    OuterObjectInfo::Some { outer_object } => Some(outer_object),
+                    OuterObjectInfo::None => None,
+                },
+                enabled_features: Vec::from_iter(blueprint_info.features),
+                substituted_generic_types: blueprint_info
+                    .generic_substitutions
+                    .into_iter()
+                    .map(|substitution| {
+                        TypeReferenceResolver::new(&self.reader)
+                            .resolve_generic_substitution(Some(node_id), substitution)
+                            .and_then(|resolved_type| self.augment_with_schema(resolved_type))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+            },
+        })
+    }
 
-        let intent = create_intent_forcing_instantiation(node_id);
+    /// An implementation delegate of [`Self::load_entity_meta()`] for `KeyValueStore`s.
+    fn load_kv_store_meta(
+        &self,
+        node_id: &NodeId,
+        kv_store_info: KeyValueStoreInfo,
+    ) -> Result<KeyValueStoreMeta, EngineStateBrowsingError> {
+        let KeyValueStoreGenericSubstitutions {
+            key_generic_substitution,
+            value_generic_substitution,
+            ..
+        } = kv_store_info.generic_substitutions;
+        let resolver = TypeReferenceResolver::new(&self.reader);
+        Ok(KeyValueStoreMeta {
+            resolved_key_type: resolver
+                .resolve_generic_substitution(Some(node_id), key_generic_substitution)
+                .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+            resolved_value_type: resolver
+                .resolve_generic_substitution(Some(node_id), value_generic_substitution)
+                .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+        })
+    }
 
-        // Note: here, we initialize a new `ScryptoVm` instance every time - however, this is
-        // currently a very lightweight operation. At the same time, we would NOT be able to feel
-        // the benefits of caching an instance (since we do not use any WASM here). If these
-        // assumptions change in future, then it will make most sense to turn the `Self` into a
-        // long-lived service holding a `ScryptoVm` as its dependency.
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+    /// Loads metadata of all fields and collections within the blueprint referenced by the given
+    /// [`BlueprintTypeTarget`]. The "type target" will also be used while resolving all types (see
+    /// [`TypeReferenceResolver`]).
+    fn load_blueprint_state_meta(
+        &self,
+        type_target: &BlueprintTypeTarget,
+    ) -> Result<ObjectModuleStateMeta, EngineStateBrowsingError> {
+        let blueprint_info = &type_target.blueprint_info;
+        let blueprint_id = &blueprint_info.blueprint_id;
+        let blueprint_name = blueprint_id.blueprint_name.as_str();
+        let IndexedStateSchema {
+            fields,
+            collections,
+            ..
+        } = self
+            .reader
+            .get_blueprint_definition(blueprint_id)
+            .map_err(|error| {
+                EngineStateBrowsingError::UnexpectedEngineError(
+                    error,
+                    "when getting blueprint definition".to_string(),
+                )
+            })?
+            .interface
+            .state
+            .clone();
 
-        let receipt = execute_and_commit_transaction(
-            &mut staged_database,
-            VmInit::new(&scrypto_vm, NoExtension),
-            &ExecutionConfig::default(),
-            &intent.get_executable(),
-        );
-        let TransactionResult::Commit(commit) = receipt.result else {
-            panic!("failed to force instantiation: {:?}", receipt);
+        let type_resolver = TypeReferenceResolver::new(&self.reader);
+        let conditions_context = self.load_conditions_context(blueprint_info)?;
+
+        let fields = fields
+            .into_iter()
+            .flat_map(|(_partition_description, fields)| fields)
+            .enumerate()
+            .filter(|(_index, schema)| conditions_context.meets(&schema.condition))
+            .map(|(index, schema)| {
+                Ok(ObjectFieldMeta::new(
+                    index,
+                    blueprint_id.blueprint_name.as_str(),
+                    type_resolver
+                        .resolve_type_from_blueprint_data(type_target, schema.field)
+                        .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+                    schema.transience,
+                ))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let collections = collections
+            .into_iter()
+            .enumerate()
+            .map(|(index, (_partition_description, schema))| {
+                let (kind, collection_schema) = destructure_collection_schema(schema);
+                let BlueprintKeyValueSchema { key, value, .. } = collection_schema;
+                Ok(ObjectCollectionMeta::new(
+                    index,
+                    blueprint_name,
+                    kind,
+                    type_resolver
+                        .resolve_type_from_blueprint_data(type_target, key)
+                        .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+                    type_resolver
+                        .resolve_type_from_blueprint_data(type_target, value)
+                        .and_then(|resolved_type| self.augment_with_schema(resolved_type))?,
+                ))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(ObjectModuleStateMeta {
+            fields,
+            collections,
+        })
+    }
+
+    /// Constructs an [`ObjectConditionsContext`] from the given object's blueprint-related info.
+    /// Note: the method belongs to the `load_*` family, since it may need to actually load the
+    /// outer object's enabled feature set (if it exists) from database.
+    fn load_conditions_context(
+        &self,
+        blueprint_info: &BlueprintInfo,
+    ) -> Result<ObjectConditionsContext, EngineStateBrowsingError> {
+        let object_features = blueprint_info.features.clone();
+        let outer_object_features = match &blueprint_info.outer_obj_info {
+            OuterObjectInfo::Some { outer_object } => {
+                self.reader
+                    .get_object_info(*outer_object.as_node_id())
+                    .map_err(|error| {
+                        EngineStateBrowsingError::UnexpectedEngineError(
+                            error,
+                            "when fetching outer object's info".to_string(),
+                        )
+                    })?
+                    .blueprint_info
+                    .features
+            }
+            OuterObjectInfo::None => index_set_new(),
         };
+        Ok(ObjectConditionsContext {
+            object_features,
+            outer_object_features,
+        })
+    }
 
-        let staged_reader = SystemDatabaseReader::new(&staged_database);
-        let type_info = staged_reader.get_type_info(node_id).map_err(|_| {
-            EngineStateBrowsingError::EngineInvariantBroken(
-                "an entity remained uninstantiated after access".to_string(),
-            )
-        })?;
-        EntityInfoLoader::new(&staged_reader)
-            .with_staged_instantiations_from(&commit)
-            .load_instantiated_entity_meta(type_info, node_id)
+    /// Wraps the given [`ResolvedTypeReference`] into a [`ResolvedTypeMeta`] by *eagerly* loading
+    /// the actual referenced schema.
+    /// Note: the schema seems irrelevant for many "get meta information" methods, but it is needed
+    /// to resolve human-readable type names (from which some field names are derived as well).
+    fn augment_with_schema(
+        &self,
+        type_reference: ResolvedTypeReference,
+    ) -> Result<ResolvedTypeMeta, EngineStateBrowsingError> {
+        Ok(ResolvedTypeMeta {
+            schema: match &type_reference {
+                ResolvedTypeReference::SchemaBased(schema_based) => {
+                    let SchemaReference {
+                        node_id,
+                        schema_hash,
+                    } = &schema_based.schema_reference;
+                    self.reader
+                        .get_schema(node_id, schema_hash)
+                        .map_err(|error| {
+                            EngineStateBrowsingError::UnexpectedEngineError(
+                                error,
+                                "when locating schema".to_string(),
+                            )
+                        })?
+                        .as_ref()
+                        .clone()
+                        .fully_update_and_into_latest_version()
+                }
+                ResolvedTypeReference::WellKnown(_) => SchemaV1::empty(),
+            },
+            type_reference,
+        })
     }
 }
 
@@ -933,84 +1109,12 @@ struct AuthorizedCallablesMeta {
     roles: BlueprintRolesDefinition,
 }
 
-/// A lister of entities.
-pub struct EngineEntityLister<'s, S> {
-    database: &'s S,
-}
-
-/// Basic information about an entity (i.e. read from a DB index, for listing purposes).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EntitySummary {
-    pub node_id: NodeId,
-    pub creation_id: CreationId,
-    pub blueprint_id: Option<BlueprintId>, // only present for Object entities
-}
-
-impl<'s, S: EntityListingIndex> EngineEntityLister<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self { database }
-    }
-
-    /// Returns an iterator of entities having one of the given [`EntityType`]s, starting from the
-    /// given [`CreationId`] (or its successor, if it does not exist), in the [`CreationId`]'s
-    /// natural order (ascending).
-    pub fn iter_created_entities(
-        &self,
-        entity_types: impl Iterator<Item = EntityType>,
-        from_creation_id: Option<&CreationId>,
-    ) -> Result<impl Iterator<Item = EntitySummary> + 's, EngineStateBrowsingError> {
-        Ok(entity_types
-            .map(|entity_type| {
-                self.database
-                    .get_created_entity_iter(entity_type, from_creation_id)
-            })
-            .kmerge_by(|(a_creation_id, _), (b_creation_id, _)| a_creation_id < b_creation_id)
-            .map(Self::to_entity_summary))
-    }
-
-    /// Returns an iterator of entities having the given [`BlueprintId`], starting from the given
-    /// [`CreationId`] (or its successor, if it does not exist), in the [`CreationId`]'s natural
-    /// order (ascending).
-    pub fn iter_blueprint_entities(
-        &self,
-        blueprint_id: &BlueprintId,
-        from_creation_id: Option<&CreationId>,
-    ) -> Result<impl Iterator<Item = EntitySummary> + 's, EngineStateBrowsingError> {
-        Ok(self
-            .database
-            .get_blueprint_entity_iter(blueprint_id, from_creation_id)
-            .map(Self::to_entity_summary))
-    }
-
-    /// Converts a database index entry into an [`EntitySummary`].
-    fn to_entity_summary(db_entry: (CreationId, EntityBlueprintId)) -> EntitySummary {
-        let (creation_id, entity_blueprint_id) = db_entry;
-        let EntityBlueprintIdV1 {
-            node_id,
-            blueprint_id,
-        } = entity_blueprint_id;
-        EntitySummary {
-            node_id,
-            creation_id,
-            blueprint_id,
-        }
-    }
-}
-
 /// A loader of Engine State's data (i.e. values) required by the Engine State API.
 pub struct EngineStateDataLoader<'s, S: SubstateDatabase> {
-    reader: SystemDatabaseReader<'s, S>,
+    pub reader: SystemDatabaseReader<'s, S>,
 }
 
 impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self {
-            reader: SystemDatabaseReader::new(database),
-        }
-    }
-
     /// Loads an SBOR-encoded value of the given field.
     /// Note: technically, loading an SBOR does not need the fully-resolved field metadata (just its
     /// index); however, the object we return is schema-aware, so that it can render itself
@@ -1503,333 +1607,6 @@ impl From<EngineStateBrowsingError> for ResponseError {
     }
 }
 
-/// An internal implementation delegate for resolving information from an Entity's type info,
-/// aware of any "staged instantiation" of uninstantiated Entities.
-struct EntityInfoLoader<'s, S: SubstateDatabase> {
-    // Note: this will either be the direct reference to the caller's `reader`, or a temporary
-    // reader based on a staged database (when reading an uninstantiated Entity).
-    reader: &'s SystemDatabaseReader<'s, S>,
-    // Note: these are the Entities created via "staged instantiation" on the `reader`'s database;
-    // they can be read normally, but their `ObjectMeta.is_instantiated` will be `false`.
-    staged_node_ids: IndexSet<NodeId>,
-}
-
-impl<'s, S: SubstateDatabase> EntityInfoLoader<'s, S> {
-    /// Creates an instance sharing the given reader.
-    pub fn new(reader: &'s SystemDatabaseReader<'s, S>) -> Self {
-        Self {
-            reader,
-            staged_node_ids: index_set_new(),
-        }
-    }
-
-    /// Records the Entities instantiated by the given commit as "uninstantiated" (i.e. marks that
-    /// their [`ObjectMeta.is_instantiated`] should be `false` if read through this loader).
-    pub fn with_staged_instantiations_from(mut self, commit: &CommitResult) -> Self {
-        let StateUpdateSummary {
-            new_packages,
-            new_components,
-            new_resources,
-            new_vaults,
-            vault_balance_changes: _,
-        } = &commit.state_update_summary;
-        self.staged_node_ids
-            .extend(new_packages.iter().map(|addr| *addr.as_node_id()));
-        self.staged_node_ids
-            .extend(new_components.iter().map(|addr| *addr.as_node_id()));
-        self.staged_node_ids
-            .extend(new_resources.iter().map(|addr| *addr.as_node_id()));
-        self.staged_node_ids
-            .extend(new_vaults.iter().map(|addr| *addr.as_node_id()));
-        self
-    }
-
-    /// Loads metadata on the given entity, assuming that it is already instantiated (within the
-    /// [`Self.reader`]'s database) if needed.
-    /// The caller [`EngineStateMetaLoader::load_entity_meta()] shows how this is used to support
-    /// uninstantiated entities.
-    pub fn load_instantiated_entity_meta(
-        &self,
-        type_info: TypeInfoSubstate,
-        node_id: &NodeId,
-    ) -> Result<EntityMeta, EngineStateBrowsingError> {
-        match type_info {
-            TypeInfoSubstate::Object(object_info) => Ok(EntityMeta::Object(
-                self.load_object_meta(node_id, object_info)?,
-            )),
-            TypeInfoSubstate::KeyValueStore(kv_store_info) => Ok(EntityMeta::KeyValueStore(
-                self.load_kv_store_meta(node_id, kv_store_info)?,
-            )),
-            TypeInfoSubstate::GlobalAddressReservation(_)
-            | TypeInfoSubstate::GlobalAddressPhantom(_) => {
-                Err(EngineStateBrowsingError::RequestedItemInvalid(
-                    ItemKind::Entity,
-                    "entity neither an object nor a KV store".to_string(),
-                ))
-            }
-        }
-    }
-
-    /// Loads metadata on "state" (i.e. all fields and collections) of the given object's module.
-    /// Does *not* support uninstantiated objects.
-    ///
-    /// API note: this is normally a part of the [`Self::load_instantiated_entity_meta()`] result,
-    /// but some clients are interested only in specific module and can use this cheaper method.
-    pub fn load_object_module_state_meta(
-        &self,
-        node_id: &NodeId,
-        module_id: ModuleId,
-    ) -> Result<ObjectModuleStateMeta, EngineStateBrowsingError> {
-        let type_target = self
-            .reader
-            .get_blueprint_type_target(node_id, module_id)
-            .map_err(|error| match error {
-                SystemReaderError::NodeIdDoesNotExist => {
-                    EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Entity)
-                }
-                SystemReaderError::ModuleDoesNotExist => {
-                    EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Module)
-                }
-                SystemReaderError::NotAnObject => EngineStateBrowsingError::RequestedItemInvalid(
-                    ItemKind::Entity,
-                    "not an object".to_string(),
-                ),
-                unexpected => EngineStateBrowsingError::UnexpectedEngineError(
-                    unexpected,
-                    "when getting type target".to_string(),
-                ),
-            })?;
-        self.load_blueprint_state_meta(&type_target)
-    }
-
-    /// Loads metadata of all fields and collections within the blueprint referenced by the given
-    /// [`BlueprintTypeTarget`]. The "type target" will also be used while resolving all types (see
-    /// [`TypeReferenceResolver`]).
-    fn load_blueprint_state_meta(
-        &self,
-        type_target: &BlueprintTypeTarget,
-    ) -> Result<ObjectModuleStateMeta, EngineStateBrowsingError> {
-        let blueprint_info = &type_target.blueprint_info;
-        let blueprint_id = &blueprint_info.blueprint_id;
-        let blueprint_name = blueprint_id.blueprint_name.as_str();
-        let IndexedStateSchema {
-            fields,
-            collections,
-            ..
-        } = self
-            .reader
-            .get_blueprint_definition(blueprint_id)
-            .map_err(|error| {
-                EngineStateBrowsingError::UnexpectedEngineError(
-                    error,
-                    "when getting blueprint definition".to_string(),
-                )
-            })?
-            .interface
-            .state
-            .clone();
-
-        let type_resolver = TypeReferenceResolver::new(self.reader);
-        let schema_loader = SchemaLoader::new(self.reader);
-        let conditions_context = self.load_conditions_context(blueprint_info)?;
-
-        let fields = fields
-            .into_iter()
-            .flat_map(|(_partition_description, fields)| fields)
-            .enumerate()
-            .filter(|(_index, schema)| conditions_context.meets(&schema.condition))
-            .map(|(index, schema)| {
-                Ok(ObjectFieldMeta::new(
-                    index,
-                    blueprint_id.blueprint_name.as_str(),
-                    type_resolver
-                        .resolve_type_from_blueprint_data(type_target, schema.field)
-                        .and_then(|resolved_type| {
-                            schema_loader.augment_with_schema(resolved_type)
-                        })?,
-                    schema.transience,
-                ))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let collections = collections
-            .into_iter()
-            .enumerate()
-            .map(|(index, (_partition_description, schema))| {
-                let (kind, collection_schema) = destructure_collection_schema(schema);
-                let BlueprintKeyValueSchema { key, value, .. } = collection_schema;
-                Ok(ObjectCollectionMeta::new(
-                    index,
-                    blueprint_name,
-                    kind,
-                    type_resolver
-                        .resolve_type_from_blueprint_data(type_target, key)
-                        .and_then(|resolved_type| {
-                            schema_loader.augment_with_schema(resolved_type)
-                        })?,
-                    type_resolver
-                        .resolve_type_from_blueprint_data(type_target, value)
-                        .and_then(|resolved_type| {
-                            schema_loader.augment_with_schema(resolved_type)
-                        })?,
-                ))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(ObjectModuleStateMeta {
-            fields,
-            collections,
-        })
-    }
-
-    /// Constructs an [`ObjectConditionsContext`] from the given object's blueprint-related info.
-    /// Note: the method belongs to the `load_*` family, since it may need to actually load the
-    /// outer object's enabled feature set (if it exists) from database.
-    fn load_conditions_context(
-        &self,
-        blueprint_info: &BlueprintInfo,
-    ) -> Result<ObjectConditionsContext, EngineStateBrowsingError> {
-        let object_features = blueprint_info.features.clone();
-        let outer_object_features = match &blueprint_info.outer_obj_info {
-            OuterObjectInfo::Some { outer_object } => {
-                self.reader
-                    .get_object_info(*outer_object.as_node_id())
-                    .map_err(|error| {
-                        EngineStateBrowsingError::UnexpectedEngineError(
-                            error,
-                            "when fetching outer object's info".to_string(),
-                        )
-                    })?
-                    .blueprint_info
-                    .features
-            }
-            OuterObjectInfo::None => index_set_new(),
-        };
-        Ok(ObjectConditionsContext {
-            object_features,
-            outer_object_features,
-        })
-    }
-
-    /// An implementation delegate of [`Self::load_instantiated_entity_meta()`] for `Object`s.
-    fn load_object_meta(
-        &self,
-        node_id: &NodeId,
-        object_info: ObjectInfo,
-    ) -> Result<ObjectMeta, EngineStateBrowsingError> {
-        let ObjectInfo {
-            blueprint_info,
-            object_type,
-        } = object_info;
-        Ok(ObjectMeta {
-            is_instantiated: !self.staged_node_ids.contains(node_id),
-            main_module_state: self.load_object_module_state_meta(node_id, ModuleId::Main)?,
-            attached_module_states: match object_type {
-                ObjectType::Global { modules } => modules
-                    .into_keys() // deliberately ignored per-module blueprint versions
-                    .map(|module_id| {
-                        Ok((
-                            module_id,
-                            self.load_object_module_state_meta(node_id, module_id.into())?,
-                        ))
-                    })
-                    .collect::<Result<IndexMap<_, _>, _>>()?,
-                ObjectType::Owned => index_map_new(),
-            },
-            blueprint_reference: BlueprintReference {
-                id: blueprint_info.blueprint_id,
-                version: blueprint_info.blueprint_version,
-            },
-            instance_meta: ObjectInstanceMeta {
-                outer_object: match blueprint_info.outer_obj_info {
-                    OuterObjectInfo::Some { outer_object } => Some(outer_object),
-                    OuterObjectInfo::None => None,
-                },
-                enabled_features: Vec::from_iter(blueprint_info.features),
-                substituted_generic_types: blueprint_info
-                    .generic_substitutions
-                    .into_iter()
-                    .map(|substitution| {
-                        TypeReferenceResolver::new(self.reader)
-                            .resolve_generic_substitution(Some(node_id), substitution)
-                            .and_then(|resolved_type| {
-                                SchemaLoader::new(self.reader).augment_with_schema(resolved_type)
-                            })
-                    })
-                    .collect::<Result<Vec<_>, _>>()?,
-            },
-        })
-    }
-
-    /// An implementation delegate of [`Self::load_instantiated_entity_meta()`] for `KeyValueStore`s.
-    fn load_kv_store_meta(
-        &self,
-        node_id: &NodeId,
-        kv_store_info: KeyValueStoreInfo,
-    ) -> Result<KeyValueStoreMeta, EngineStateBrowsingError> {
-        let KeyValueStoreGenericSubstitutions {
-            key_generic_substitution,
-            value_generic_substitution,
-            ..
-        } = kv_store_info.generic_substitutions;
-        let type_resolver = TypeReferenceResolver::new(self.reader);
-        let schema_loader = SchemaLoader::new(self.reader);
-        Ok(KeyValueStoreMeta {
-            resolved_key_type: type_resolver
-                .resolve_generic_substitution(Some(node_id), key_generic_substitution)
-                .and_then(|resolved_type| schema_loader.augment_with_schema(resolved_type))?,
-            resolved_value_type: type_resolver
-                .resolve_generic_substitution(Some(node_id), value_generic_substitution)
-                .and_then(|resolved_type| schema_loader.augment_with_schema(resolved_type))?,
-        })
-    }
-}
-
-/// An internal implementation delegate for augmenting type references with their schemas.
-struct SchemaLoader<'s, S: SubstateDatabase> {
-    reader: &'s SystemDatabaseReader<'s, S>,
-}
-
-impl<'s, S: SubstateDatabase> SchemaLoader<'s, S> {
-    /// Creates an instance sharing the given reader.
-    pub fn new(reader: &'s SystemDatabaseReader<'s, S>) -> Self {
-        Self { reader }
-    }
-
-    /// Wraps the given [`ResolvedTypeReference`] into a [`ResolvedTypeMeta`] by *eagerly* loading
-    /// the actual referenced schema.
-    /// Note: the schema seems irrelevant for many "get meta information" methods, but it is needed
-    /// to resolve human-readable type names (from which some field names are derived as well).
-    pub fn augment_with_schema(
-        &self,
-        type_reference: ResolvedTypeReference,
-    ) -> Result<ResolvedTypeMeta, EngineStateBrowsingError> {
-        Ok(ResolvedTypeMeta {
-            schema: match &type_reference {
-                ResolvedTypeReference::SchemaBased(schema_based) => {
-                    let SchemaReference {
-                        node_id,
-                        schema_hash,
-                    } = &schema_based.schema_reference;
-                    self.reader
-                        .get_schema(node_id, schema_hash)
-                        .map_err(|error| {
-                            EngineStateBrowsingError::UnexpectedEngineError(
-                                error,
-                                "when locating schema".to_string(),
-                            )
-                        })?
-                        .as_ref()
-                        .clone()
-                        .fully_update_and_into_latest_version()
-                }
-                ResolvedTypeReference::WellKnown(_) => SchemaV1::empty(),
-            },
-            type_reference,
-        })
-    }
-}
-
 /// Converts the given [`BlueprintCollectionSchema`] to a more direct representation.
 fn destructure_collection_schema(
     schema: BlueprintCollectionSchema<BlueprintPayloadDef>,
@@ -1845,54 +1622,5 @@ fn destructure_collection_schema(
         BlueprintCollectionSchema::SortedIndex(schema) => {
             (ObjectCollectionKind::SortedIndex, schema)
         }
-    }
-}
-
-/// Creates a minimal transaction intent which forces an instantiation of the given Entity.
-fn create_intent_forcing_instantiation(node_id: &NodeId) -> ValidatedPreviewIntent {
-    let address =
-        GlobalAddress::try_from(*node_id).expect("should only be reachable for global entities");
-    // Use dummy key, as for a regular preview:
-    let notary_public_key =
-        PublicKey::Secp256k1(Secp256k1PrivateKey::from_u64(1).unwrap().public_key());
-    let intent = IntentV1 {
-        header: TransactionHeaderV1 {
-            // Use dummy values, since we disable these checks anyway:
-            network_id: 0,
-            start_epoch_inclusive: Epoch::zero(),
-            end_epoch_exclusive: Epoch::zero(),
-            nonce: 0,
-            notary_public_key,
-            notary_is_signatory: true,
-            tip_percentage: 0,
-        },
-        instructions: InstructionsV1(vec![
-            // Call any basic, non-invasive method, which is enough to force instantiation:
-            // Note: the "get metadata" call below seems universal and future-proof enough, but
-            // a more elegant solution could be based on some hypothetical "ensure exists" method?
-            InstructionV1::CallMetadataMethod {
-                address: DynamicGlobalAddress::Static(address),
-                method_name: "get".to_string(),
-                args: ManifestValue::Tuple {
-                    fields: vec![ManifestValue::String {
-                        value: "dummy name".to_string(),
-                    }],
-                },
-            },
-        ]),
-        blobs: BlobsV1::default(),
-        message: MessageV1::None,
-    };
-
-    ValidatedPreviewIntent {
-        intent: intent.prepare().expect("hardcoded"),
-        encoded_instructions: manifest_encode(&intent.instructions.0).expect("hardcoded"),
-        signer_public_keys: vec![],
-        flags: PreviewFlags {
-            use_free_credit: true,
-            assume_all_signature_proofs: true,
-            skip_epoch_check: true,
-            disable_auth: true,
-        },
     }
 }

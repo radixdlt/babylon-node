@@ -2,6 +2,7 @@ use crate::engine_state_api::*;
 
 use crate::engine_prelude::*;
 
+use crate::engine_state_api::factories::EngineStateLoaderFactory;
 use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_object_field(
@@ -31,14 +32,16 @@ pub(crate) async fn handle_object_field(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let meta_loader = EngineStateMetaLoader::new(&database);
+    let loader_factory = EngineStateLoaderFactory::new(&database).ensure_instantiated(&node_id);
+
+    let meta_loader = loader_factory.create_meta_loader();
     let module_state_meta = meta_loader.load_object_module_state_meta(&node_id, module_id)?;
     let field_meta = match field_input {
         RichIndexInput::Name(name) => module_state_meta.field_by_name(name),
         RichIndexInput::Index(index) => module_state_meta.field_by_index(index),
     }?;
 
-    let data_loader = EngineStateDataLoader::new(&database);
+    let data_loader = loader_factory.create_data_loader();
     let field_data = data_loader.load_field_value(&node_id, module_id, field_meta)?;
 
     let ledger_state = database.at_ledger_state();

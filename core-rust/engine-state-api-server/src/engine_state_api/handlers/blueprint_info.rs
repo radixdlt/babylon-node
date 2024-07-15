@@ -1,6 +1,7 @@
 use crate::engine_prelude::*;
 use crate::engine_state_api::*;
 
+use crate::engine_state_api::factories::EngineStateLoaderFactory;
 use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_blueprint_info(
@@ -33,9 +34,11 @@ pub(crate) async fn handle_blueprint_info(
         .database
         .snapshot()
         .scoped_at(requested_state_version)?;
+    let loader_factory = EngineStateLoaderFactory::new(&database);
 
-    let meta_loader = EngineStateMetaLoader::new(&database);
-    let blueprint_meta = meta_loader.load_blueprint_meta(&blueprint_reference)?;
+    let blueprint_meta = loader_factory
+        .create_meta_loader()
+        .load_blueprint_meta(&blueprint_reference)?;
 
     let ledger_state = database.at_ledger_state();
 

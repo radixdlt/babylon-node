@@ -4,6 +4,7 @@ use crate::engine_prelude::*;
 
 use crate::engine_state_api::handlers::HandlerPagingSupport;
 
+use crate::engine_state_api::factories::EngineStateLoaderFactory;
 use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_object_metadata_iterator(
@@ -28,7 +29,9 @@ pub(crate) async fn handle_object_metadata_iterator(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let loader = ObjectMetadataLoader::new(&database);
+    let loader_factory = EngineStateLoaderFactory::new(&database).ensure_instantiated(&node_id);
+
+    let loader = loader_factory.create_object_metadata_loader();
     let page = paging_support.get_page(|from| loader.iter_keys(&node_id, from))?;
 
     let ledger_state = database.at_ledger_state();

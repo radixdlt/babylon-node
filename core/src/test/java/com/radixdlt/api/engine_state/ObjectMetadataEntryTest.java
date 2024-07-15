@@ -68,6 +68,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.models.*;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.Address;
 import org.junit.Test;
 
 public final class ObjectMetadataEntryTest extends DeterministicEngineStateApiTestBase {
@@ -92,6 +94,28 @@ public final class ObjectMetadataEntryTest extends DeterministicEngineStateApiTe
               new UrlMetadataValue()
                   .value("https://assets.radixdlt.com/icons/icon-package_owner_badge.png")
                   .type(MetadataValueType.URL));
+    }
+  }
+
+  @Test
+  public void engine_state_api_return_object_metadata_entry_supports_uninstantiated()
+      throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      final var uninstantiatedAccountAddress =
+          Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
+
+      final var metadataValue =
+          getAttachedModulesApi()
+              .objectAttachedModulesMetadataEntryPost(
+                  new ObjectMetadataEntryRequest()
+                      .entityAddress(uninstantiatedAccountAddress.encode(networkDefinition))
+                      .key("owner_badge"))
+              .getContent();
+
+      // Hard to assert on the exact owner badge of a generated key, but we expect SOME value:
+      assertThat(metadataValue).isInstanceOf(NonFungibleLocalIdMetadataValue.class);
     }
   }
 }
