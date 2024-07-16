@@ -26,7 +26,7 @@ jobs:
     with:
       phylum_pr_number: ${{ github.event.number }}
       phylum_pr_name: ${{ github.head_ref }}
-      phylum_group_name: protocol
+      phylum_group_name: Protocol
       phylum_project_id: 3f5b2c53-46bd-4f68-b050-5898f929002f
       github_repository: ${{ github.repository }}
       add_report_comment_to_pull_request: true

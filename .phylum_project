@@ -1,7 +1,7 @@
 id: 3f5b2c53-46bd-4f68-b050-5898f929002f
 name: babylon-node
 created_at: 2024-07-05T10:48:15.419011+02:00
-group_name: protocol
+group_name: Protocol
 depfiles:
   - path: ./core/gradle.lockfile
     type: gradle
