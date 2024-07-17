@@ -25,7 +25,7 @@ jobs:
         uses: RDXWorks-actions/github-script@main
         with:
           script: |
-            const branches = await github.repos.listBranches({
+            const branches = await github.rest.repos.listBranches({
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
