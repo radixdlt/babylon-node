@@ -14,6 +14,8 @@ jobs:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.set_matrix.outputs.branches }}
     steps:
       - name: Checkout repository
         uses: RDXWorks-actions/checkout@main
@@ -58,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: 
-        branch: ${{ needs.phylum_analyze.outputs.branches }}
+        branch: ${{ fromJson(needs.get_phylum_branches_to_analyze.outputs.branches) }}
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
