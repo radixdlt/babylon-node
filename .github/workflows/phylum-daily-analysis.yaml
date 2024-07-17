@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: 
-        branch: ${{ fromJson(needs.phylum_analyze.outputs.branches) }}
+        branch: ${{ needs.phylum_analyze.outputs.branches }}
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
