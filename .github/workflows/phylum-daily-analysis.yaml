@@ -28,6 +28,7 @@ jobs:
             const branches = await github.rest.repos.listBranches({
               owner: context.repo.owner,
               repo: context.repo.repo,
+              per_page: 100,
             });
             const initBranchesNames = branches.data
               .map(branch => branch.name)
