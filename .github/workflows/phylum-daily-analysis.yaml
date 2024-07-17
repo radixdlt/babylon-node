@@ -25,20 +25,23 @@ jobs:
         uses: RDXWorks-actions/github-script@main
         with:
           script: |
-            const branches = await github.rest.repos.listBranches({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 100,
-            });
-            const initBranchesNames = branches.data
-              .map(branch => branch.name)
-            console.log("InitBranches name: " + initBranchesNames)
-            const branchNames = branches.data
+            let branches = [];
+            let page = 1;
+            while (true) {
+              const response = await github.rest.repos.listBranches({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+                page: page,
+              });
+              branches = branches.concat(response.data);
+              if (response.data.length < 100) break;
+              page++;
+            }
+            const branchNames = branches
               .map(branch => branch.name)
               .filter(name => name === 'DO-2628' || name.startsWith('release/'));
-            console.log("Branches name: " + branchNames)
             return JSON.stringify(branchNames);
-          result-encoding: string
 
       - name: Set branches matrix
         id: set_matrix
