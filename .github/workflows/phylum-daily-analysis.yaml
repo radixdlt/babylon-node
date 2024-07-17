@@ -32,6 +32,7 @@ jobs:
             const branchNames = branches.data
               .map(branch => branch.name)
               .filter(name => name === 'DO-2628' || name.startsWith('release/'));
+            console.log("Branches name: " + branchNames)
             return branchNames;
           result-encoding: string
 
@@ -39,6 +40,7 @@ jobs:
         id: set_matrix
         run: |
           echo "branches=$(jq -n --argjson branches "${{ steps.get_branches.outputs.result }}" '{"branches": $branches}') >> $GITHUB_ENV"
+
   analyze_branch_phylum:
     name: Analyze dependencies with Phylum
     permissions:
