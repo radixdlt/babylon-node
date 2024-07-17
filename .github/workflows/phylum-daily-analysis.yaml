@@ -16,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        branch: [main, develop, DO-2628]
+        branch: [DO-2628]
         include:
-          - branch: main
-          - branch: develop
+          # - branch: main
+          # - branch: develop
           - branch: DO-2628
           # - branch: release/*
 
