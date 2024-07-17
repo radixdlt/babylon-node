@@ -29,6 +29,9 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
             });
+            const initBranchesNames = branches.data
+              .map(branch => branch.name)
+            console.log("InitBranches name: " + initBranchesNames)
             const branchNames = branches.data
               .map(branch => branch.name)
               .filter(name => name === 'DO-2628' || name.startsWith('release/'));
