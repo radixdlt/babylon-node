@@ -20,7 +20,7 @@ jobs:
         include:
           - branch: main
           - branch: develop
-          - branch: release/*
+          # - branch: release/*
 
     steps:
       - uses: RDXWorks-actions/checkout@main
