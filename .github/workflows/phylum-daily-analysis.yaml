@@ -10,6 +10,8 @@ on:
 jobs:
   get_phylum_branches_to_analyze:
     name: Get Branches to analyze with phylum
+    outputs:
+      branches: ${{ steps.get_branches.outputs.result}}
     permissions:
       contents: read
       pull-requests: write
@@ -46,7 +48,7 @@ jobs:
       - name: Set branches matrix
         id: set_matrix
         run: |
-          echo "::set-output name=branches::${{ steps.get_branches.outputs.result }}"
+          echo "branches=${{ steps.get_branches.outputs.result }}"  >> $GITHUB_OUTPUT
 
   analyze_branch_phylum:
     name: Analyze dependencies with Phylum
