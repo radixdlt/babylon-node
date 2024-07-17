@@ -1,12 +1,9 @@
 name: Daily Analysis Phylum
 
 on:
-  # schedule:
-  #   # Runs at 14:00 UTC every day
-  #   - cron: '0 14 * * *'
-  push:
-    branches:
-      - DO-2628
+  schedule:
+    # Runs at 14:00 UTC every day
+    - cron: '0 14 * * *'
 jobs:
   get_phylum_branches_to_analyze:
     name: Get Branches to analyze with phylum
@@ -42,7 +39,7 @@ jobs:
             }
             const branchNames = branches
               .map(branch => branch.name)
-              .filter(name => name === 'DO-2628' || name.startsWith('release/'));
+              .filter(name => name === 'main' || name === 'develop' || name.startsWith('release/'));
             return JSON.stringify(branchNames);
 
       - name: Set branches matrix
