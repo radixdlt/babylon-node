@@ -59,7 +59,8 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{ needs.get_phylum_branches_to_analyze.outputs.branches }}
+      matrix: 
+        branch: ${{ fromJson(needs.phylum_analyze.outputs.branches) }}
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
