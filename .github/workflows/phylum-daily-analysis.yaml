@@ -58,6 +58,7 @@ jobs:
     strategy:
       matrix: 
         branch: ${{ fromJson(needs.get_phylum_branches_to_analyze.outputs.branches) }}
+    fail-fast: false 
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
