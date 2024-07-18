@@ -5,11 +5,5 @@ group_name: Protocol
 depfiles:
   - path: ./core/gradle.lockfile
     type: gradle
-  # - path: ./core-rust/gradle.lockfile
-  #   type: gradle
-  - path: ./core-rust-bridge/gradle.lockfile
-    type: gradle
-  - path: ./keygen/gradle.lockfile
-    type: gradle
-  - path: ./common/gradle.lockfile
-    type: gradle
+  - path: ./core-rust/Cargo.lock
+    type: cargo
