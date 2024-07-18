@@ -1,12 +1,9 @@
 name: Daily Analysis Phylum
 
 on:
-  # schedule:
-  #   # Runs at 14:00 UTC every day
-  #   - cron: '0 14 * * *'
-  push:
-    branches:
-      - DO-2628
+  schedule:
+    # Runs at 14:00 UTC every day
+    - cron: '0 14 * * *'
 jobs:
   analyze_branch_phylum:
     name: Analyze dependencies with Phylum
