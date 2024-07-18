@@ -54,8 +54,8 @@ pub fn most_recent_metadata_entry_history(postgres_db: &mut Client, lookup: &[Db
 
         let rows = postgres_db.query(
             r"
-            WITH variables (entity_id, key) AS (SELECT UNNEST($1::bigint[]), UNNEST($2::bytea[]))
-            SELECT mr.id, mr.from_state_version, mr.entity_id, mr.key, mr.value
+            WITH variables (entity_id, key) AS (SELECT UNNEST($1::bigint[]), UNNEST($2::text[]))
+            SELECT mr.id, mr.from_state_version, mr.entity_id, mr.key, mr.value, mr.is_deleted, mr.is_locked
             FROM variables var
             INNER JOIN LATERAL (
                 SELECT *
@@ -73,6 +73,8 @@ pub fn most_recent_metadata_entry_history(postgres_db: &mut Client, lookup: &[Db
                 entity_id: row.get(2),
                 key: row.get(3),
                 value: row.get(4),
+                is_deleted: row.get(5),
+                is_locked: row.get(6),
             };
 
             res.insert(value.to_lookup(), value);

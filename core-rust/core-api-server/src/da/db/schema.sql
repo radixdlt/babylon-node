@@ -31,8 +31,10 @@ create table public.metadata_entry_history
             primary key,
     from_state_version bigint  not null,
     entity_id          bigint  not null,
-    key                bytea   not null,
-    value              bytea
+    key                text    not null,
+    value              bytea,
+    is_deleted         boolean not null,
+    is_locked          boolean not null
 );
 
 alter table public.metadata_entry_history

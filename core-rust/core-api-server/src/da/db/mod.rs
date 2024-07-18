@@ -38,14 +38,16 @@ pub struct DbMetadataEntryHistory {
     pub id: i64,
     pub from_state_version: i64,
     pub entity_id: i64,
-    pub key: Vec<u8>,
-    pub value: Vec<u8>,
+    pub key: String,
+    pub value: Option<Vec<u8>>,
+    pub is_deleted: bool,
+    pub is_locked: bool,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct DbMetadataEntryHistoryLookup {
     pub entity_id: i64,
-    pub key: Vec<u8>,
+    pub key: String,
 }
 
 impl DbMetadataEntryHistory {
@@ -67,13 +69,13 @@ pub struct DbMetadataAggregateHistory {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct DbMetadataAggregateHistoryLookup {
-    pub id: i64,
+    pub entity_id: i64,
 }
 
 impl DbMetadataAggregateHistory {
     pub fn to_lookup(&self) -> DbMetadataAggregateHistoryLookup {
         DbMetadataAggregateHistoryLookup {
-            id: self.id,
+            entity_id: self.id,
         }
     }
 }

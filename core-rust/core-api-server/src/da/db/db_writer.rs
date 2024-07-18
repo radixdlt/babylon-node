@@ -42,11 +42,11 @@ pub fn persist_metadata_entry_history(postgres_db: &mut Transaction, db_entities
         return Ok(0);
     }
 
-    let sink = postgres_db.copy_in("COPY metadata_entry_history (id, from_state_version, entity_id, key, value) FROM STDIN (FORMAT BINARY)")?;
-    let mut writer = BinaryCopyInWriter::new(sink, &[Type::INT8, Type::INT8, Type::INT8, Type::BYTEA, Type::BYTEA]);
+    let sink = postgres_db.copy_in("COPY metadata_entry_history (id, from_state_version, entity_id, key, value, is_deleted, is_locked) FROM STDIN (FORMAT BINARY)")?;
+    let mut writer = BinaryCopyInWriter::new(sink, &[Type::INT8, Type::INT8, Type::INT8, Type::TEXT, Type::BYTEA, Type::BOOL, Type::BOOL]);
 
     for e in db_entities {
-        writer.write(&[&e.id, &e.from_state_version, &e.entity_id, &e.key, &e.value])?;
+        writer.write(&[&e.id, &e.from_state_version, &e.entity_id, &e.key, &e.value, &e.is_deleted, &e.is_locked])?;
     }
 
     Ok(writer.finish()?)
