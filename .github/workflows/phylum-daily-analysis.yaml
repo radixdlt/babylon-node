@@ -23,7 +23,7 @@ jobs:
           - branch: release/babylon
           - branch: release/anemone
           - branch: release/bottlenose
-    fail-fast: false 
+      fail-fast: false 
     steps:
       - uses: RDXWorks-actions/checkout@main
         with:
