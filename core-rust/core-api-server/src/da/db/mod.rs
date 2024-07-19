@@ -1,11 +1,15 @@
 mod db_reader;
 mod db_sequences;
 mod db_writer;
+mod role_assignment_aggregate_history;
+mod role_assignment_entry_history;
 
 use std::time::SystemTime;
 pub use db_reader::*;
 pub use db_sequences::*;
 pub use db_writer::*;
+pub use role_assignment_aggregate_history::*;
+pub use role_assignment_entry_history::*;
 
 #[derive(Debug)]
 pub struct DbLedgerTransaction {

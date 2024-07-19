@@ -85,7 +85,7 @@ impl MetadataProcessor {
             from_state_version: tx.state_version.number() as i64,
             entity_id: entity.id,
             key: entry_key.clone(),
-            value: value.map(|x_| vec![1, 2, 3]), // TODO implement
+            value: value.map(|_x| vec![1, 2, 3]), // TODO implement
             is_deleted: value.is_none(),
             is_locked: matches!(data.new_value.lock_status, LockStatus::Locked),
         };

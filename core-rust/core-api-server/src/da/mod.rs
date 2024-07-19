@@ -28,7 +28,8 @@ mod processing_context;
 // TODO #3: use separate channels for scanning and DB persistence; possibly use even separate channel for read rocksdb + create missing definitions?
 // TODO #4: eliminate all of those Box<dyn Error> and "bleee" errors
 // TODO #5: actually does it even makes sense to process TX stream in batches if we stream it from the database? on a one hand batching eliminates tone of network round-trips of "find existing/most-recent" queries but maybe it's not worth it after all? batch saves are definitely valuable!
-// TODO #6: implement From trait to simplify lookup type creation
+// TODO #6: refactor into the image of role_assignment: a) implement From trait to simplify lookup type creation, b) restructurize db module
+// TODO #7: seems that Core API relies more on SubstateValue rather SubstateKey, we should probably do the same
 
 pub fn da_main(core_api_state: CoreApiState) -> Result<(), Box<dyn Error>> {
     let mut postgres_db = Client::connect("host=localhost user=db_dev_superuser password=db_dev_password dbname=rust_agg", NoTls)?;
@@ -152,11 +153,15 @@ fn proc_execute_processors(pc: &mut ProcessingContext, seq: &DbSequences, transa
     pc.increases.push(Box::new(ep));
 
     // STEP 3 (inlined for now)
-    let most_recent_entries = &mut pc.most_recent_metadata_entry_hisotry;
-    let most_recent_aggregates = &mut pc.most_recent_metadata_aggregate_history;
+    let most_recent_metadata_entries = &mut pc.most_recent_metadata_entry_hisotry;
+    let most_recent_metadata_aggregates = &mut pc.most_recent_metadata_aggregate_history;
+    let most_recent_role_assignment_entries = &mut pc.most_recent_role_assignment_entry_hisotry;
+    let most_recent_role_assignment_aggregates = &mut pc.most_recent_role_assignment_aggregate_history;
 
     let mut metadata_aggregates_to_load = vec![];
     let mut metadata_entries_to_load = vec![];
+    let mut role_assignment_aggregates_to_load = vec![];
+    let mut role_assignment_entries_to_load = vec![];
 
     for observed in scan_result.metadata_aggregate_history {
         if let Some(ee) = existing_entities_by_address.get(&observed.0) {
@@ -173,16 +178,43 @@ fn proc_execute_processors(pc: &mut ProcessingContext, seq: &DbSequences, transa
         }
     }
 
+    for observed in scan_result.role_assignment_aggregate_history {
+        if let Some(ee) = existing_entities_by_address.get(&observed.0) {
+            role_assignment_aggregates_to_load.push(DbRoleAssignmentAggregateHistoryLookup {
+                entity_id: ee.id,
+            });
+        }
+    }
+
+    for observed in scan_result.role_assignment_entry_history {
+        if let Some(ee) = existing_entities_by_address.get(&observed.0) {
+            role_assignment_entries_to_load.push(DbRoleAssignmentEntryHistoryLookup {
+                entity_id: ee.id,
+                key_role: observed.1.clone(),
+                key_module: observed.2.clone(),
+            });
+        }
+    }
+
     for (lookup, aggregate) in most_recent_metadata_aggregate_history(&mut pc.db_conn, metadata_aggregates_to_load.as_slice())? {
-        most_recent_aggregates.put(lookup, Rc::new(RefCell::new(aggregate)));
+        most_recent_metadata_aggregates.put(lookup, Rc::new(RefCell::new(aggregate)));
     }
 
     for (lookup, aggregate) in most_recent_metadata_entry_history(&mut pc.db_conn, metadata_entries_to_load.as_slice())? {
-        most_recent_entries.put(lookup, Rc::new(aggregate));
+        most_recent_metadata_entries.put(lookup, Rc::new(aggregate));
+    }
+
+    for (lookup, aggregate) in most_recent_role_assignment_aggregate_history(&mut pc.db_conn, role_assignment_aggregates_to_load.as_slice())? {
+        most_recent_role_assignment_aggregates.put(lookup, Rc::new(RefCell::new(aggregate)));
+    }
+
+    for (lookup, aggregate) in most_recent_role_assignment_entry_history(&mut pc.db_conn, role_assignment_entries_to_load.as_slice())? {
+        most_recent_role_assignment_entries.put(lookup, Rc::new(aggregate));
     }
 
     let mut ltp = LedgerTransactionProcessor::new();
     let mut mp = MetadataProcessor::new();
+    let mut rap = RoleAssignmentProcessor::new();
     let mut new_tip = pc.ledger_tip;
 
     for tx in transaction_batch {
@@ -191,12 +223,14 @@ fn proc_execute_processors(pc: &mut ProcessingContext, seq: &DbSequences, transa
         ltp.process_tx(tx, seq)?;
 
         for change in &tx.substate_changes {
-            mp.process_change(change, tx, seq, existing_entities_by_address, most_recent_entries, most_recent_aggregates)?;
+            mp.process_change(change, tx, seq, existing_entities_by_address, most_recent_metadata_entries, most_recent_metadata_aggregates)?;
+            rap.process_change(change, tx, seq, existing_entities_by_address, most_recent_role_assignment_entries, most_recent_role_assignment_aggregates)?;
         }
     }
 
     pc.increases.push(Box::new(ltp));
     pc.increases.push(Box::new(mp));
+    pc.increases.push(Box::new(rap));
 
     let diff = new_tip - pc.ledger_tip;
     pc.ledger_tip = new_tip;
