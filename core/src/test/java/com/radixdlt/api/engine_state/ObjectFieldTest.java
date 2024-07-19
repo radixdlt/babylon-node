@@ -75,7 +75,9 @@ import com.radixdlt.api.core.generated.models.StreamProofsRequest;
 import com.radixdlt.api.engine_state.generated.models.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
 import java.util.List;
 import java.util.Map;
@@ -114,6 +116,26 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
                               "kind", "I32",
                               "type_name", "ProposerMinuteTimestampSubstate",
                               "value", "0"))));
+    }
+  }
+
+  @Test
+  public void engine_state_api_returns_object_field_for_uninstantiated_entity() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      final var uninstantiatedAccountAddress =
+          Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
+
+      final var response =
+          getObjectsApi()
+              .objectFieldPost(
+                  new ObjectFieldRequest()
+                      .entityAddress(uninstantiatedAccountAddress.encode(networkDefinition))
+                      .fieldName("deposit_rule"));
+
+      // we only care that some object is returned (the default):
+      assertThat(response.getContent().getProgrammaticJson()).isInstanceOf(Map.class);
     }
   }
 

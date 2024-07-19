@@ -6,6 +6,7 @@ use state_manager::historical_state::VersionScopingSupport;
 use state_manager::store::traits::indices::CreationId;
 use state_manager::store::traits::ConfigurableDatabase;
 
+use crate::engine_state_api::extras::{EngineEntityLister, EntitySummary};
 use state_manager::StateVersion;
 use std::ops::Deref;
 

@@ -2,6 +2,7 @@ use crate::engine_state_api::*;
 
 use crate::engine_prelude::*;
 
+use crate::engine_state_api::factories::EngineStateLoaderFactory;
 use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_kv_store_entry(
@@ -26,7 +27,9 @@ pub(crate) async fn handle_kv_store_entry(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let meta_loader = EngineStateMetaLoader::new(&database);
+    let loader_factory = EngineStateLoaderFactory::new(&database).ensure_instantiated(&node_id);
+
+    let meta_loader = loader_factory.create_meta_loader();
     let EntityMeta::KeyValueStore(kv_store_meta) = meta_loader.load_entity_meta(&node_id)? else {
         return Err(ResponseError::new(
             StatusCode::BAD_REQUEST,
@@ -37,7 +40,7 @@ pub(crate) async fn handle_kv_store_entry(
         }));
     };
 
-    let data_loader = EngineStateDataLoader::new(&database);
+    let data_loader = loader_factory.create_data_loader();
     let entry_data = data_loader.load_kv_store_entry(&node_id, &kv_store_meta, &key)?;
 
     let ledger_state = database.at_ledger_state();

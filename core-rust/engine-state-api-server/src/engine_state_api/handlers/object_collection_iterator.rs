@@ -4,6 +4,7 @@ use crate::engine_prelude::*;
 
 use crate::engine_state_api::handlers::HandlerPagingSupport;
 
+use crate::engine_state_api::factories::EngineStateLoaderFactory;
 use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_object_collection_iterator(
@@ -36,15 +37,16 @@ pub(crate) async fn handle_object_collection_iterator(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let meta_loader = EngineStateMetaLoader::new(&database);
+    let loader_factory = EngineStateLoaderFactory::new(&database).ensure_instantiated(&node_id);
+
+    let meta_loader = loader_factory.create_meta_loader();
     let module_state_meta = meta_loader.load_object_module_state_meta(&node_id, module_id)?;
     let collection_meta = match collection_input {
         RichIndexInput::Name(name) => module_state_meta.collection_by_name(name),
         RichIndexInput::Index(index) => module_state_meta.collection_by_index(index),
     }?;
 
-    let data_loader = EngineStateDataLoader::new(&database);
-
+    let data_loader = loader_factory.create_data_loader();
     let page = paging_support.get_page(|from| {
         data_loader.iter_object_collection_keys(&node_id, module_id, collection_meta, from)
     })?;

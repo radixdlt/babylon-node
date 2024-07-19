@@ -159,6 +159,24 @@ extern "system" fn Java_com_radixdlt_identifiers_Address_nativeVirtualAccountAdd
 }
 
 #[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Address_nativeVirtualIdentityAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |unchecked_public_key_bytes: [u8; Secp256k1PublicKey::LENGTH]| {
+            // Note: the bytes may represent a non-existent point on a curve (an invalid public key) -
+            // this is okay. We need to support this because there are such accounts on Olympia.
+            let public_key = Secp256k1PublicKey(unchecked_public_key_bytes);
+            ComponentAddress::virtual_identity_from_public_key(&public_key)
+        },
+    )
+}
+
+#[no_mangle]
 extern "system" fn Java_com_radixdlt_identifiers_Address_nativeGlobalFungible(
     env: JNIEnv,
     _class: JClass,

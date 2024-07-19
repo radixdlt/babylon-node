@@ -2,6 +2,7 @@ use crate::engine_state_api::*;
 
 use crate::engine_prelude::*;
 
+use crate::engine_state_api::factories::EngineStateLoaderFactory;
 use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_object_metadata_entry(
@@ -24,8 +25,11 @@ pub(crate) async fn handle_object_metadata_entry(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let loader = ObjectMetadataLoader::new(&database);
-    let metadata_value = loader.load_entry(&node_id, &MetadataKey::from(request.key))?;
+    let loader_factory = EngineStateLoaderFactory::new(&database).ensure_instantiated(&node_id);
+
+    let metadata_value = loader_factory
+        .create_object_metadata_loader()
+        .load_entry(&node_id, &MetadataKey::from(request.key))?;
 
     let ledger_state = database.at_ledger_state();
 

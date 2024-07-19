@@ -2,6 +2,7 @@ use crate::engine_state_api::*;
 
 use crate::engine_prelude::*;
 
+use crate::engine_state_api::factories::EngineStateLoaderFactory;
 use state_manager::historical_state::VersionScopingSupport;
 
 pub(crate) async fn handle_object_role_assignment(
@@ -24,12 +25,15 @@ pub(crate) async fn handle_object_role_assignment(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let loader = ObjectRoleAssignmentLoader::new(&database);
+    let loader_factory = EngineStateLoaderFactory::new(&database).ensure_instantiated(&node_id);
+
     let ObjectRoleAssignment {
         owner_role_entry,
         main_module_roles,
         attached_modules,
-    } = loader.load_role_assignment(&node_id)?;
+    } = loader_factory
+        .create_object_role_assignment_loader()
+        .load_role_assignment(&node_id)?;
 
     let ledger_state = database.at_ledger_state();
 
