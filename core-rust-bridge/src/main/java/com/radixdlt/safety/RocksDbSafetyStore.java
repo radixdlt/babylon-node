@@ -4,9 +4,11 @@ import static com.radixdlt.lang.Tuple.*;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.lang.Option;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
-import java.util.Optional;
+import com.radixdlt.sbor.NodeSborCodecs;
+import com.radixdlt.sbor.codec.Codec;
 
 public class RocksDbSafetyStore {
   static {
@@ -16,6 +18,8 @@ public class RocksDbSafetyStore {
   private static native byte[] upsert(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private static native byte[] get(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Codec<SafetyStateDTO> dtoCodec;
 
   public static RocksDbSafetyStore create(
       Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
@@ -32,16 +36,18 @@ public class RocksDbSafetyStore {
         Natives.builder(nodeRustEnvironment, RocksDbSafetyStore::get)
             .measure(timer.label(new Metrics.MethodId(RocksDbSafetyStore.class, "get")))
             .build(new TypeToken<>() {});
+
+    dtoCodec = NodeSborCodecs.resolveCodec(new TypeToken<>() {});
   }
 
   public void upsert(SafetyStateDTO state) {
     this.upsertFunc.call(state);
   }
 
-  public Optional<SafetyStateDTO> get() {
-    return Optional.ofNullable(this.getFunc.call(Tuple0.of()));
+  public Option<SafetyStateDTO> get() {
+    return this.getFunc.call(tuple()).map(value -> NodeSborCodecs.decode(value, dtoCodec));
   }
 
   private final Natives.Call1<SafetyStateDTO, Tuple0> upsertFunc;
-  private final Natives.Call1<Tuple0, SafetyStateDTO> getFunc;
+  private final Natives.Call1<Tuple0, Option<byte[]>> getFunc;
 }

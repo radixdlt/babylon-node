@@ -179,7 +179,7 @@ pub mod node {
         fn remove_one(&self, node_id: &AddressBookNodeId) -> bool;
         fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool;
         fn reset(&self);
-        fn get_all(&self, ) -> Vec<u8>;
+        fn get_all(&self, ) -> Vec<Vec<u8>>;
     }
 
     pub trait HighPriorityPeersStore {
@@ -189,11 +189,11 @@ pub mod node {
 
     pub trait SafetyStateStore {
         fn upsert_safety_state(&self, safety_state: &[u8]);
-        fn get_safety_state(&self) -> Vec<u8>;
+        fn get_safety_state(&self) -> Option<Vec<u8>>;
     }
     
     pub trait MigrationStore {
-        fn is_migration_required(&self, store_id: MigrationId) -> bool;
+        fn is_migration_done(&self, store_id: MigrationId) -> bool;
         fn migration_done(&self, store_id: MigrationId);
     }
 }

@@ -1,18 +1,18 @@
 use crate::engine_prelude::Sbor;
 
-/// Id of the node stored in the Address book (Secp256k1 public key)
+
+/// The ID of the node stored in the Address book (Secp256k1 public key)
 #[derive(Clone, Copy, Sbor)]
-#[sbor(transparent)]
 pub struct AddressBookNodeId(pub [u8; AddressBookNodeId::LENGTH]);
 
 impl AddressBookNodeId {
     pub const LENGTH: usize = 33;
 
-    pub fn new(id: [u8; 33]) -> Self {
+    pub fn new(id: [u8; Self::LENGTH]) -> Self {
         Self(id)
     }
 
-    pub fn as_bytes(&self) -> &[u8; AddressBookNodeId::LENGTH] {
+    pub fn as_bytes(&self) -> &[u8; Self::LENGTH] {
         &self.0
     }
 }

@@ -90,16 +90,16 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_upsertOne(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
-    node_data: jbyteArray,
+    address_entry: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_data, |request: AddressBookEntry| {
+    jni_sbor_coded_call(&env, address_entry, |request: AddressBookEntry| {
         // It should be safe to unwrap here, as this operation was already successful inside
         // jni_sbor_coded_call.
-        let entity = jni_jbytearray_to_vector(&env, node_data).unwrap();
+        let entity = jni_jbytearray_to_vector(&env, address_entry).unwrap();
 
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
-            .upsert_one(&request.node_id, &entity);
+            .upsert_one(&request.node_id, &entity)
     })
 }
 
@@ -110,7 +110,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_reset(
     j_rust_global_context: JObject,
     node_id: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |_ : Vec<u8>| -> Vec<u8> {
+    jni_sbor_coded_call(&env, node_id, |_: ()| -> Vec<u8> {
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
             .reset();
@@ -125,7 +125,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_getAll(
     j_rust_global_context: JObject,
     node_id: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |_ : Vec<u8>| -> Vec<u8> {
+    jni_sbor_coded_call(&env, node_id, |_: ()| -> Vec<Vec<u8>> {
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
             .get_all()

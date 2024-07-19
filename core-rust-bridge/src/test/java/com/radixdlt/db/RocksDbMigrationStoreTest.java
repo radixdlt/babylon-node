@@ -1,54 +1,37 @@
-package com.radixdlt.safety;
+package com.radixdlt.db;
 
-import com.google.common.primitives.Bytes;
-import com.radixdlt.crypto.ECKeyPair;
+import static org.junit.Assert.*;
+
 import com.radixdlt.environment.*;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
+import java.io.IOException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.IOException;
-import java.util.Collections;
+public class RocksDbMigrationStoreTest {
 
-import static org.junit.Assert.*;
-
-public class RocksDbSafetyStoreTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Test
-  public void test_safety_state_can_be_saved_and_restored() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
-      var safetyStore =
-          RocksDbSafetyStore.create(new MetricsInitializer().initialize(), nodeRustEnvironment);
-      var address =
-          new ComponentAddress(
-              Bytes.toArray(
-                  Collections.nCopies(
-                      ComponentAddress.BYTE_LENGTH,
-                      ComponentAddress.VALIDATOR_COMPONENT_ADDRESS_ENTITY_ID)));
+  public void migration_status_is_properly_reported() throws Exception {
+    var migrationStore =
+        RocksDbMigrationStore.create(
+            new MetricsInitializer().initialize(), createNodeRustEnvironment());
 
-      var originalSafetyState =
-          new SafetyStateDTO(
-              new BFTValidatorIdDTO(ECKeyPair.generateNew().getPublicKey(), address, "validator1"),
-              new RoundDTO(10L),
-              Option.none());
+    assertFalse(migrationStore.isMigrated(StoreId.SAFETY_STORE));
+    assertFalse(migrationStore.isMigrated(StoreId.ADDRESS_BOOK));
 
-      var empty = safetyStore.get();
-      assertTrue(empty.isEmpty());
+    migrationStore.migrationDone(StoreId.SAFETY_STORE);
+    assertTrue(migrationStore.isMigrated(StoreId.SAFETY_STORE));
 
-      safetyStore.upsert(originalSafetyState);
-      var present = safetyStore.get();
-
-      assertTrue(present.isPresent());
-      assertEquals(originalSafetyState, present.orElseThrow());
-    }
+    migrationStore.migrationDone(StoreId.ADDRESS_BOOK);
+    assertTrue(migrationStore.isMigrated(StoreId.ADDRESS_BOOK));
   }
 
   private NodeRustEnvironment createNodeRustEnvironment() throws IOException {
@@ -76,7 +59,7 @@ public class RocksDbSafetyStoreTest {
     return new NodeRustEnvironment(
         tx -> {}, // A no-op dispatcher of transactions to be relayed.
         () -> {}, // A no-op fatal panic handler. Please note that a JNI-invoking test (like this
-        // one) will observe
+                  // one) will observe
         // panics as runtime exceptions propagated up the stack (through JNI), which will fail the
         // test
         // gracefully anyway.

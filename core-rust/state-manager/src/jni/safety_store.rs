@@ -71,27 +71,28 @@ use jni::JNIEnv;
 use node_common::java::*;
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_p2p_RocksDbSafetyStore_upsert(
+extern "system" fn Java_com_radixdlt_safety_RocksDbSafetyStore_upsert(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
-    node_id: jbyteArray,
+    request: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |request: Vec<u8>| {
+    jni_raw_sbor_fallible_call(&env, request, |bytes| {
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
-            .upsert_safety_state(&request);
+            .upsert_safety_state(&bytes);
+        Ok(())
     })
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_p2p_RocksDbSafetyStore_get(
+extern "system" fn Java_com_radixdlt_safety_RocksDbSafetyStore_get(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
     node_id: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |_ : Vec<u8>| -> Vec<u8> {
+    jni_sbor_coded_call(&env, node_id, |_: ()| -> Option<Vec<u8>> {
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
             .get_safety_state()

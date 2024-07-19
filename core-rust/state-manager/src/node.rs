@@ -69,13 +69,3 @@ use crate::store::DatabaseBackendConfig;
 pub struct NodeConfig {
     pub database_backend_config: DatabaseBackendConfig,
 }
-
-impl NodeConfig {
-    pub fn new_for_testing(rocks_db_path: impl Into<String>) -> Self {
-        NodeConfig {
-            database_backend_config: DatabaseBackendConfig {
-                rocks_db_path: rocks_db_path.into(),
-            },
-        }
-    }
-}

@@ -63,7 +63,6 @@
  */
 
 use std::collections::HashSet;
-
 use crate::engine_prelude::*;
 use crate::store::traits::*;
 use crate::{
@@ -79,10 +78,8 @@ use rocksdb::{
 };
 
 use std::path::PathBuf;
-
 use node_common::locks::Snapshottable;
 use tracing::{error, info, warn};
-
 use super::traits::extensions::*;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::address_book_components::AddressBookNodeId;
@@ -431,11 +428,13 @@ impl<R: WriteableRocks> AddressBookStore for NodeDatabase<R> {
     }
 
     fn reset(&self) {
-        todo!("reset")
+        self.open_rw_context().cf(AddressBookCf).delete_all();
     }
 
-    fn get_all(&self) -> Vec<u8> {
-        todo!("get_all")
+    fn get_all(&self) -> Vec<Vec<u8>> {
+        self.open_rw_context()
+            .cf(AddressBookCf)
+            .get_all()
     }
 }
 
@@ -456,17 +455,16 @@ impl<R: WriteableRocks> SafetyStateStore for NodeDatabase<R> {
         self.open_rw_context().cf(SafetyStoreCf).put(&(), &safety_state.to_vec());
     }
 
-    fn get_safety_state(&self) -> Vec<u8> {
+    fn get_safety_state(&self) -> Option<Vec<u8>> {
         self.open_rw_context().cf(SafetyStoreCf)
             .get(&())
-            .unwrap_or_default()
     }
 }
 
 impl<R: WriteableRocks> MigrationStore for NodeDatabase<R> {
-    fn is_migration_required(&self, store_id: MigrationId) -> bool {
+    fn is_migration_done(&self, store_id: MigrationId) -> bool {
         self.open_rw_context().cf(MigrationStatusCf)
-            .get(&store_id).is_none()
+            .get(&store_id).is_some()
     }
 
     fn migration_done(&self, store_id: MigrationId) {

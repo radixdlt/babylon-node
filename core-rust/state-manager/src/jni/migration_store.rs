@@ -62,16 +62,18 @@
  * permissions under this License.
  */
 
-use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::traits::node::MigrationStore;
+use jni::JNIEnv;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
-use jni::JNIEnv;
+
 use node_common::java::*;
+
+use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::migration::MigrationId;
+use crate::traits::node::MigrationStore;
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_p2p_RocksDbMigrationStore_migrationDone(
+extern "system" fn Java_com_radixdlt_db_RocksDbMigrationStore_migrationDone(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
@@ -85,16 +87,16 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbMigrationStore_migrationDone(
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_p2p_RocksDbMigrationStore_isMigrated(
+extern "system" fn Java_com_radixdlt_db_RocksDbMigrationStore_isMigrated(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
     migration_id: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, migration_id, |migration_store_id: MigrationId| {
+    jni_sbor_coded_call(&env, migration_id, |migration_store_id: MigrationId| -> bool {
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
-            .is_migration_required(migration_store_id)
+            .is_migration_done(migration_store_id)
     })
 }
 

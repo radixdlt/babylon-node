@@ -211,12 +211,12 @@ public final class SafetyState {
   public Vote getSerializerLastVote() {
     return lastVote.orElse(null);
   }
-
-  public static SafetyState fromDto(Serialization serialization, SafetyStateDTO dto) throws DeserializeException {
-    return serialization.fromDson(dto.dsonEncodedContent(), SafetyState.class);
-  }
-
-  public static SafetyStateDTO toDto(Serialization serialization, SafetyState safetyState) {
-    return new SafetyStateDTO(serialization.toDson(safetyState, DsonOutput.Output.PERSIST));
-  }
+//
+//  public static SafetyState fromDto(Serialization serialization, SafetyStateDTO dto) throws DeserializeException {
+//    return serialization.fromDson(dto.dsonEncodedContent(), SafetyState.class);
+//  }
+//
+//  public static SafetyStateDTO toDto(Serialization serialization, SafetyState safetyState) {
+//    return new SafetyStateDTO(serialization.toDson(safetyState, DsonOutput.Output.PERSIST));
+//  }
 }

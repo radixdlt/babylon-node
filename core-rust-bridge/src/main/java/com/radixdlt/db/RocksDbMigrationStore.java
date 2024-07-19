@@ -2,6 +2,7 @@ package com.radixdlt.db;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.lang.Tuple.Tuple0;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
 
@@ -51,5 +52,5 @@ public class RocksDbMigrationStore {
   }
 
   private final Natives.Call1<StoreId, Boolean> isMigratedFunc;
-  private final Natives.Call1<StoreId, Void> migrationDoneFunc;
+  private final Natives.Call1<StoreId, Tuple0> migrationDoneFunc;
 }
