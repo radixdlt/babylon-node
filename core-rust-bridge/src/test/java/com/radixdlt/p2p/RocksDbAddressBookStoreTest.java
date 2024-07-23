@@ -1,5 +1,6 @@
 package com.radixdlt.p2p;
 
+import static com.radixdlt.lang.Option.none;
 import static com.radixdlt.lang.Option.some;
 import static org.junit.Assert.*;
 
@@ -22,22 +23,107 @@ public class RocksDbAddressBookStoreTest {
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Test
-    public void test_address_book_entry_can_be_saved_and_restored() throws Exception {
+    public void test_address_book_entries_can_be_saved_and_restored() throws Exception {
         try (var nodeRustEnvironment = createNodeRustEnvironment()) {
             var addressBookStore =
                 RocksDbAddressBookStore.create(new MetricsInitializer().initialize(), nodeRustEnvironment);
 
+            // New store is empty
             var empty = addressBookStore.getAllEntries();
             assertTrue(empty.isEmpty());
 
-            var nodeId = new NodeIdDTO(ECKeyPair.generateNew().getPublicKey());
-            var entry = new AddressBookEntryDTO(nodeId, some(123L), Set.of("addr1", "addr2"));
+            // Ensure keys are repeatable to make test deterministic
+            var nodeId1 = new NodeIdDTO(ECKeyPair.fromSeed(new byte[] {1}).getPublicKey());
+            var entry1 = new AddressBookEntryDTO(nodeId1, some(123L), Set.of("addr1", "addr2"));
 
-            addressBookStore.upsertEntry(entry);
+            addressBookStore.upsertEntry(entry1);
 
+            // Store now contains one entry
             var allEntries = addressBookStore.getAllEntries();
             assertEquals(1L, allEntries.size());
-            assertEquals(entry, allEntries.get(0));
+            assertEquals(entry1, allEntries.get(0));
+
+            // Ensure keys are repeatable to make test deterministic
+            var nodeId2 = new NodeIdDTO(ECKeyPair.fromSeed(new byte[] {2}).getPublicKey());
+            var entry2 = new AddressBookEntryDTO(nodeId2, none(), Set.of("addr3", "addr4", "addr5"));
+
+            // Add another entry
+            addressBookStore.upsertEntry(entry2);
+
+            allEntries = addressBookStore.getAllEntries();
+            assertEquals(2L, allEntries.size());
+            assertEquals(entry1, allEntries.get(0));
+            assertEquals(entry2, allEntries.get(1));
+        }
+    }
+
+    @Test
+    public void test_address_book_entry_can_be_added_and_removed() throws Exception {
+        try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+            var addressBookStore =
+                RocksDbAddressBookStore.create(new MetricsInitializer().initialize(), nodeRustEnvironment);
+
+            // New store is empty
+            var empty = addressBookStore.getAllEntries();
+            assertTrue(empty.isEmpty());
+
+            // Ensure keys are repeatable to make test deterministic
+            var nodeId1 = new NodeIdDTO(ECKeyPair.fromSeed(new byte[] {1}).getPublicKey());
+            var entry1 = new AddressBookEntryDTO(nodeId1, some(123L), Set.of("addr1", "addr2"));
+            var nodeId2 = new NodeIdDTO(ECKeyPair.fromSeed(new byte[] {2}).getPublicKey());
+            var entry2 = new AddressBookEntryDTO(nodeId2, none(), Set.of("addr3", "addr4", "addr5"));
+
+            addressBookStore.upsertEntry(entry1);
+            addressBookStore.upsertEntry(entry2);
+
+            // Check that entries were added
+            var allEntries = addressBookStore.getAllEntries();
+            assertEquals(2L, allEntries.size());
+            assertEquals(entry1, allEntries.get(0));
+            assertEquals(entry2, allEntries.get(1));
+
+            // Remove entry1
+            var removed = addressBookStore.removeEntry(nodeId1);
+            assertTrue(removed);
+
+            // Check that entry1 was removed
+            allEntries = addressBookStore.getAllEntries();
+            assertEquals(1L, allEntries.size());
+            assertEquals(entry2, allEntries.get(0));
+        }
+    }
+
+    @Test
+    public void test_address_book_can_be_reset() throws Exception {
+        try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+            var addressBookStore =
+                RocksDbAddressBookStore.create(new MetricsInitializer().initialize(), nodeRustEnvironment);
+
+            // New store is empty
+            var empty = addressBookStore.getAllEntries();
+            assertTrue(empty.isEmpty());
+
+            // Ensure keys are repeatable to make test deterministic
+            var nodeId1 = new NodeIdDTO(ECKeyPair.fromSeed(new byte[] {1}).getPublicKey());
+            var entry1 = new AddressBookEntryDTO(nodeId1, some(123L), Set.of("addr1", "addr2"));
+            var nodeId2 = new NodeIdDTO(ECKeyPair.fromSeed(new byte[] {2}).getPublicKey());
+            var entry2 = new AddressBookEntryDTO(nodeId2, none(), Set.of("addr3", "addr4", "addr5"));
+
+            addressBookStore.upsertEntry(entry1);
+            addressBookStore.upsertEntry(entry2);
+
+            // Check that entries were added
+            var allEntries = addressBookStore.getAllEntries();
+            assertEquals(2L, allEntries.size());
+            assertEquals(entry1, allEntries.get(0));
+            assertEquals(entry2, allEntries.get(1));
+
+            // Reset store
+            addressBookStore.reset();
+
+            // Check that entry1 was removed
+            empty = addressBookStore.getAllEntries();
+            assertTrue(empty.isEmpty());
         }
     }
 

@@ -245,7 +245,6 @@ impl<'r, 'w, KC: BoundedDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
     pub fn get_all(&self) -> Vec<CF::Value> {
         self.rocks
             .iterator_cf(self.cf.handle, IteratorMode::Start)
-            .into_iter()
             .map(|(_, value)| self.cf.value_codec.decode(value.as_ref()))
             .collect()
     }

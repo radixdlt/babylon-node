@@ -75,12 +75,16 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAll
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
-    node_id: jbyteArray,
+    payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |request: Vec<u8>| {
+    println!("Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers");
+    jni_raw_sbor_fallible_call(&env, payload, |bytes| {
+        println!("Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers: bytes: {:?}", bytes);
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
-            .upsert_all_peers(&request);
+            .upsert_all_peers(&bytes);
+        println!("Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers: done");
+        Ok(())
     })
 }
 
@@ -89,9 +93,9 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_getAllHig
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
-    node_id: jbyteArray,
+    payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |_ : Vec<u8>| -> Vec<u8> {
+    jni_sbor_coded_call(&env, payload, |_: ()| -> Option<Vec<u8>> {
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
             .get_all_peers()

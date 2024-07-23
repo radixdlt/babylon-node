@@ -184,7 +184,7 @@ pub mod node {
 
     pub trait HighPriorityPeersStore {
         fn upsert_all_peers(&self, peers: &[u8]);
-        fn get_all_peers(&self) -> Vec<u8>;
+        fn get_all_peers(&self) -> Option<Vec<u8>>;
     }
 
     pub trait SafetyStateStore {

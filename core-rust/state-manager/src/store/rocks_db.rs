@@ -147,10 +147,11 @@ const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 25] = [
     BlueprintAndCreationIndexedObjectsCf::VERSIONED_NAME,
 ];
 
-const ALL_NODE_COLUMN_FAMILIES: [&str; 3] = [
+const ALL_NODE_COLUMN_FAMILIES: [&str; 4] = [
     MigrationStatusCf::DEFAULT_NAME,
     AddressBookCf::DEFAULT_NAME,
     SafetyStoreCf::DEFAULT_NAME,
+    HighPriorityPeersCf::DEFAULT_NAME,
 ];
 
 /// A redefined RocksDB's "key and value bytes" tuple (the original one lives in a private module).
@@ -443,10 +444,9 @@ impl<R: WriteableRocks> HighPriorityPeersStore for NodeDatabase<R> {
         self.open_rw_context().cf(HighPriorityPeersCf).put(&(), &peers.to_vec());
     }
 
-    fn get_all_peers(&self) -> Vec<u8> {
+    fn get_all_peers(&self) -> Option<Vec<u8>> {
         self.open_rw_context().cf(HighPriorityPeersCf)
             .get(&())
-            .unwrap_or_default()
     }
 }
 
