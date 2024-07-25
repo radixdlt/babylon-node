@@ -70,7 +70,6 @@ import com.radixdlt.sbor.codec.StructCodec;
 public record NodeConfig(DatabaseBackendConfig databaseBackendConfig) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        NodeConfig.class,
-        codecs -> StructCodec.fromRecordComponents(NodeConfig.class, codecs));
+        NodeConfig.class, codecs -> StructCodec.fromRecordComponents(NodeConfig.class, codecs));
   }
 }

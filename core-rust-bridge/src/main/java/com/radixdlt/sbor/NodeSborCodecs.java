@@ -78,6 +78,7 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.message.*;
 import com.radixdlt.p2p.AddressBookEntryDTO;
 import com.radixdlt.p2p.NodeIdDTO;
+import com.radixdlt.p2p.PeerAddressEntryDTO;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.protocol.*;
@@ -225,6 +226,7 @@ public final class NodeSborCodecs {
     QuorumCertificateDTO.registerCodec(codecMap);
     RoundDTO.registerCodec(codecMap);
     SafetyStateDTO.registerCodec(codecMap);
+    PeerAddressEntryDTO.registerCodec(codecMap);
     TimeoutCertificateDTO.registerCodec(codecMap);
     TimestampedECDSASignatureDTO.registerCodec(codecMap);
     TimestampedECDSASignaturesDTO.registerCodec(codecMap);

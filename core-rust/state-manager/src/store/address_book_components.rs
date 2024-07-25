@@ -17,10 +17,24 @@ impl AddressBookNodeId {
     }
 }
 
+/// Peer address entry with all components
+#[derive(Clone, Sbor)]
+pub struct PeerAddress {
+    pub encoded_uri: Vec<u8>,
+    pub latest_connection_status: Option<ConnectionStatus>,
+    pub last_seen: Option<i64>,
+}
+
+#[derive(Clone, Copy, Sbor)]
+pub enum ConnectionStatus {
+    Connected,
+    Disconnected,
+}
+
 /// Address book entry
 #[derive(Clone, Sbor)]
 pub struct AddressBookEntry {
     pub node_id: AddressBookNodeId,
     pub banned_until: Option<i64>,
-    pub known_addresses: Vec<String>,
+    pub known_addresses: Vec<PeerAddress>,
 }

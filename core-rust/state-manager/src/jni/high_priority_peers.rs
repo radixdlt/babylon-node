@@ -62,13 +62,15 @@
  * permissions under this License.
  */
 
+use jni::JNIEnv;
+use jni::objects::{JClass, JObject};
+use jni::sys::jbyteArray;
+
+use node_common::java::*;
+
 use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::traits::node::HighPriorityPeersStore;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::*;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers(
@@ -77,13 +79,10 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAll
     j_rust_global_context: JObject,
     payload: jbyteArray,
 ) -> jbyteArray {
-    println!("Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers");
     jni_raw_sbor_fallible_call(&env, payload, |bytes| {
-        println!("Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers: bytes: {:?}", bytes);
         JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
             .lock()
             .upsert_all_peers(&bytes);
-        println!("Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers: done");
         Ok(())
     })
 }
@@ -101,5 +100,20 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_getAllHig
             .get_all_peers()
     })
 }
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_resetHighPriorityPeers(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_id: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_id, |_: ()| {
+        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
+            .lock()
+            .reset_high_priority_peers();
+    })
+}
+
 
 pub fn export_extern_functions() {}

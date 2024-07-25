@@ -64,88 +64,33 @@
 
 package com.radixdlt.p2p;
 
-import static java.util.Objects.requireNonNull;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
-import com.radixdlt.networks.Network;
-import com.radixdlt.serialization.DeserializeException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
+import com.radixdlt.lang.Option;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.EnumCodec;
+import com.radixdlt.sbor.codec.StructCodec;
+import java.util.Arrays;
 import java.util.Objects;
 
-public final class RadixNodeUri {
-  private final String host;
-  private final int port;
-  private final String networkNodeHrp;
-  private final NodeId nodeId;
+public record PeerAddressEntryDTO(
+    byte[] address,
+    Option<ConnectionStatus> latestConnectionStatus,
+    Option<Long> maybeFailedHandshake) {
+  public sealed interface ConnectionStatus {
+    record Success() implements ConnectionStatus {}
 
-  @JsonCreator
-  public static RadixNodeUri deserialize(byte[] uri)
-      throws URISyntaxException, DeserializeException {
-    return fromUri(new URI(new String(requireNonNull(uri))));
+    record Failure() implements ConnectionStatus {}
+
+    Success SUCCESS = new Success();
+    Failure FAILURE = new Failure();
   }
 
-  public static RadixNodeUri fromPubKeyAndAddress(
-      int networkId, ECDSASecp256k1PublicKey publicKey, String host, int port) {
-    var hrp = Network.ofIdOrThrow(networkId).getNodeHrp();
-    return new RadixNodeUri(host, port, hrp, NodeId.fromPublicKey(publicKey));
-  }
-
-  public static RadixNodeUri fromUri(URI uri) throws DeserializeException {
-    var hrpAndKey = Addressing.decodeNodeAddressUnknownHrp(uri.getUserInfo());
-    return new RadixNodeUri(
-        uri.getHost(),
-        uri.getPort(),
-        hrpAndKey.getFirst(),
-        NodeId.fromPublicKey(hrpAndKey.getSecond()));
-  }
-
-  private RadixNodeUri(String host, int port, String networkNodeHrp, NodeId nodeId) {
-    if (port <= 0) {
-      throw new IllegalArgumentException("Port must be a positive integer");
-    }
-    this.host = requireNonNull(host);
-    this.port = port;
-    this.networkNodeHrp = networkNodeHrp;
-    this.nodeId = requireNonNull(nodeId);
-  }
-
-  public String getHost() {
-    return host;
-  }
-
-  public int getPort() {
-    return port;
-  }
-
-  public NodeId getNodeId() {
-    return nodeId;
-  }
-
-  @JsonValue
-  public byte[] getSerializedValue() {
-    return getUriString().getBytes(StandardCharsets.UTF_8);
-  }
-
-  private String getUriString() {
-    return String.format("radix://%s@%s:%s", nodeAddress(), host, port);
-  }
-
-  public String nodeAddress() {
-    return Addressing.encodeNodeAddressWithHrp(networkNodeHrp, nodeId.getPublicKey());
-  }
-
-  public String getNetworkNodeHrp() {
-    return this.networkNodeHrp;
-  }
-
-  @Override
-  public String toString() {
-    return getUriString();
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        ConnectionStatus.class,
+        codecs -> EnumCodec.fromPermittedRecordSubclasses(ConnectionStatus.class, codecs));
+    codecMap.register(
+        PeerAddressEntryDTO.class,
+        codecs -> StructCodec.fromRecordComponents(PeerAddressEntryDTO.class, codecs));
   }
 
   @Override
@@ -153,18 +98,15 @@ public final class RadixNodeUri {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final var that = (RadixNodeUri) o;
-    return port == that.port
-        && Objects.equals(host, that.host)
-        && Objects.equals(nodeId, that.nodeId)
-        && Objects.equals(networkNodeHrp, that.networkNodeHrp);
+
+    return o instanceof PeerAddressEntryDTO that
+        && Objects.deepEquals(address, that.address)
+        && Objects.equals(maybeFailedHandshake, that.maybeFailedHandshake)
+        && Objects.equals(latestConnectionStatus, that.latestConnectionStatus);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(host, port, nodeId, networkNodeHrp);
+    return Objects.hash(Arrays.hashCode(address), latestConnectionStatus, maybeFailedHandshake);
   }
 }

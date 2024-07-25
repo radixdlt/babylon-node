@@ -131,7 +131,8 @@ public final class NodeRustEnvironment implements AutoCloseable {
     this.fatalPanicHandler.handleFatalPanic();
   }
 
-  private static native void init(NodeRustEnvironment nodeRustEnvironment, byte[] config, byte[] nodeConfig);
+  private static native void init(
+      NodeRustEnvironment nodeRustEnvironment, byte[] config, byte[] nodeConfig);
 
   private static native void cleanup(NodeRustEnvironment nodeRustEnvironment);
 }

@@ -176,7 +176,7 @@ pub trait ReadableRocks {
         &self,
         cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item = KVBytes> + '_>;
+    ) -> Box<dyn Iterator<Item=KVBytes> + '_>;
 
     /// Gets a single value by key.
     fn get_pinned_cf(
@@ -193,7 +193,7 @@ pub trait ReadableRocks {
     /// TODO(when the rustc feature mentioned above becomes stable): get rid of the `<'a>`.
     fn multi_get_cf<'a>(
         &'a self,
-        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
+        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
     ) -> Vec<Option<Vec<u8>>>;
 }
 
@@ -234,7 +234,7 @@ impl ReadableRocks for DirectRocks {
         &self,
         cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
+    ) -> Box<dyn Iterator<Item=KVBytes> + '_> {
         Box::new(
             self.db
                 .iterator_cf(cf, mode)
@@ -252,7 +252,7 @@ impl ReadableRocks for DirectRocks {
 
     fn multi_get_cf<'a>(
         &'a self,
-        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
+        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
     ) -> Vec<Option<Vec<u8>>> {
         self.db
             .multi_get_cf(keys)
@@ -320,7 +320,7 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
         &self,
         cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
+    ) -> Box<dyn Iterator<Item=KVBytes> + '_> {
         Box::new(
             self.snapshot
                 .iterator_cf(cf, mode)
@@ -340,7 +340,7 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
 
     fn multi_get_cf<'a>(
         &'a self,
-        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
+        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
     ) -> Vec<Option<Vec<u8>>> {
         self.snapshot
             .multi_get_cf(keys)
@@ -409,23 +409,21 @@ impl<R: WriteableRocks> AddressBookStore for NodeDatabase<R> {
     fn remove_one(&self, node_id: &AddressBookNodeId) -> bool {
         let binding = self.open_rw_context();
         let context = binding.cf(AddressBookCf);
-        let exists = context.get(node_id).is_some();
 
-        if exists {
+        if context.get(node_id).is_some() {
             context.delete(node_id);
         }
 
-        exists
+        true
     }
 
     fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool {
         let binding = self.open_rw_context();
         let context = binding.cf(AddressBookCf);
-        let exists = context.get(node_id).is_some();
 
         context.put(node_id, &entry.to_vec());
 
-        exists
+        true
     }
 
     fn reset(&self) {
@@ -447,6 +445,10 @@ impl<R: WriteableRocks> HighPriorityPeersStore for NodeDatabase<R> {
     fn get_all_peers(&self) -> Option<Vec<u8>> {
         self.open_rw_context().cf(HighPriorityPeersCf)
             .get(&())
+    }
+
+    fn reset_high_priority_peers(&self) {
+        self.open_rw_context().cf(HighPriorityPeersCf).delete(&());
     }
 }
 
@@ -544,7 +546,7 @@ impl ActualStateManagerDatabase {
             column_families,
             false,
         )
-        .unwrap();
+            .unwrap();
 
         StateManagerDatabase {
             config: DatabaseConfig {
@@ -579,7 +581,7 @@ impl ActualStateManagerDatabase {
             temp_path.as_path(),
             column_families,
         )
-        .unwrap();
+            .unwrap();
 
         StateManagerDatabase {
             config: DatabaseConfig {
@@ -1059,11 +1061,11 @@ impl<R: WriteableRocks> ExecutedScenarioStore for StateManagerDatabase<R> {
 
 pub struct RocksDBCommittedTransactionBundleIterator<'r> {
     state_version: StateVersion,
-    txns_iter: Box<dyn Iterator<Item = (StateVersion, RawLedgerTransaction)> + 'r>,
-    ledger_receipts_iter: Box<dyn Iterator<Item = (StateVersion, LedgerTransactionReceipt)> + 'r>,
-    local_executions_iter: Box<dyn Iterator<Item = (StateVersion, LocalTransactionExecution)> + 'r>,
+    txns_iter: Box<dyn Iterator<Item=(StateVersion, RawLedgerTransaction)> + 'r>,
+    ledger_receipts_iter: Box<dyn Iterator<Item=(StateVersion, LedgerTransactionReceipt)> + 'r>,
+    local_executions_iter: Box<dyn Iterator<Item=(StateVersion, LocalTransactionExecution)> + 'r>,
     identifiers_iter:
-        Box<dyn Iterator<Item = (StateVersion, CommittedTransactionIdentifiers)> + 'r>,
+        Box<dyn Iterator<Item=(StateVersion, CommittedTransactionIdentifiers)> + 'r>,
 }
 
 impl<'r> RocksDBCommittedTransactionBundleIterator<'r> {
@@ -1141,7 +1143,7 @@ impl<R: ReadableRocks> IterableTransactionStore for StateManagerDatabase<R> {
     fn get_committed_transaction_bundle_iter(
         &self,
         from_state_version: StateVersion,
-    ) -> Box<dyn Iterator<Item = CommittedTransactionBundle> + '_> {
+    ) -> Box<dyn Iterator<Item=CommittedTransactionBundle> + '_> {
         // This should not happen. This interface should be used after checking (e.g. `core-api-server/src/core-api/handlers/`).
         // However, with or without this debug_assert there would still be a panic if LocalTransactionExecution is missing.
         debug_assert!(self.is_local_transaction_execution_index_enabled());
@@ -1260,7 +1262,7 @@ impl<R: ReadableRocks> IterableProofStore for StateManagerDatabase<R> {
     fn get_proof_iter(
         &self,
         from_state_version: StateVersion,
-    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+    ) -> Box<dyn Iterator<Item=LedgerProof> + '_> {
         Box::new(
             self.open_read_context()
                 .cf(LedgerProofsCf)
@@ -1272,7 +1274,7 @@ impl<R: ReadableRocks> IterableProofStore for StateManagerDatabase<R> {
     fn get_next_epoch_proof_iter(
         &self,
         from_epoch: Epoch,
-    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+    ) -> Box<dyn Iterator<Item=LedgerProof> + '_> {
         Box::new(
             self.open_read_context()
                 .cf(EpochLedgerProofsCf)
@@ -1284,7 +1286,7 @@ impl<R: ReadableRocks> IterableProofStore for StateManagerDatabase<R> {
     fn get_protocol_update_init_proof_iter(
         &self,
         from_state_version: StateVersion,
-    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+    ) -> Box<dyn Iterator<Item=LedgerProof> + '_> {
         Box::new(
             self.open_read_context()
                 .cf(ProtocolUpdateInitLedgerProofsCf)
@@ -1296,7 +1298,7 @@ impl<R: ReadableRocks> IterableProofStore for StateManagerDatabase<R> {
     fn get_protocol_update_execution_proof_iter(
         &self,
         from_state_version: StateVersion,
-    ) -> Box<dyn Iterator<Item = LedgerProof> + '_> {
+    ) -> Box<dyn Iterator<Item=LedgerProof> + '_> {
         Box::new(
             self.open_read_context()
                 .cf(ProtocolUpdateExecutionLedgerProofsCf)
@@ -1377,8 +1379,8 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
                     'proof_txns_loop: while payload_size_including_next_proof_txns
                         <= max_payload_size_in_bytes
                         && (latest_usable_proof.is_none()
-                            || txns.len() + next_proof_txns.len()
-                                <= (max_number_of_txns_if_more_than_one_proof as usize))
+                        || txns.len() + next_proof_txns.len()
+                        <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         match txns_iter.next() {
                             Some((next_txn_state_version, next_txn)) => {
@@ -1404,8 +1406,8 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
                     // that they can all fit in the response (the last txn could have crossed the limit)
                     if payload_size_including_next_proof_txns <= max_payload_size_in_bytes
                         && (latest_usable_proof.is_none()
-                            || txns.len() + next_proof_txns.len()
-                                <= (max_number_of_txns_if_more_than_one_proof as usize))
+                        || txns.len() + next_proof_txns.len()
+                        <= (max_number_of_txns_if_more_than_one_proof as usize))
                     {
                         // Yup, all good, use next_proof as the result and add its txns
                         let next_proof_is_a_protocol_update =
@@ -1540,7 +1542,7 @@ impl<R: ReadableRocks> SubstateDatabase for StateManagerDatabase<R> {
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
-    ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
+    ) -> Box<dyn Iterator<Item=PartitionEntry> + '_> {
         let partition_key = partition_key.clone();
         let from_sort_key = from_sort_key.cloned().unwrap_or(DbSortKey(vec![]));
         Box::new(
@@ -1553,7 +1555,7 @@ impl<R: ReadableRocks> SubstateDatabase for StateManagerDatabase<R> {
 }
 
 impl<R: ReadableRocks> ListableSubstateDatabase for StateManagerDatabase<R> {
-    fn list_partition_keys(&self) -> Box<dyn Iterator<Item = DbPartitionKey> + '_> {
+    fn list_partition_keys(&self) -> Box<dyn Iterator<Item=DbPartitionKey> + '_> {
         self.open_read_context()
             .cf(SubstatesCf)
             .iterate_key_groups()
@@ -1563,7 +1565,7 @@ impl<R: ReadableRocks> ListableSubstateDatabase for StateManagerDatabase<R> {
 impl<R: ReadableRocks> SubstateNodeAncestryStore for StateManagerDatabase<R> {
     fn batch_get_ancestry<'a>(
         &self,
-        node_ids: impl IntoIterator<Item = &'a NodeId>,
+        node_ids: impl IntoIterator<Item=&'a NodeId>,
     ) -> Vec<Option<SubstateNodeAncestryRecord>> {
         self.open_read_context()
             .cf(SubstateNodeAncestryRecordsCf)
@@ -1580,7 +1582,7 @@ impl<R: ReadableRocks> ReadableTreeStore for StateManagerDatabase<R> {
 impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
     fn get_stale_tree_parts_iter(
         &self,
-    ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_> {
+    ) -> Box<dyn Iterator<Item=(StateVersion, StaleTreeParts)> + '_> {
         self.open_read_context()
             .cf(StaleStateTreePartsCf)
             .iterate(Direction::Forward)
@@ -1611,7 +1613,7 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
         );
     }
 
-    fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>) {
+    fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item=&'a StoredTreeNodeKey>) {
         let db_context = self.open_rw_context();
         let tree_nodes_cf = db_context.cf(StateTreeNodesCf);
         let associated_values_cf = db_context.cf(AssociatedStateTreeValuesCf);
@@ -1653,7 +1655,7 @@ impl<R: WriteableRocks> LedgerProofsGcStore for StateManagerDatabase<R> {
 }
 
 impl<R: ReadableRocks> ReadableAccuTreeStore<StateVersion, TransactionTreeHash>
-    for StateManagerDatabase<R>
+for StateManagerDatabase<R>
 {
     fn get_tree_slice(
         &self,
@@ -1667,7 +1669,7 @@ impl<R: ReadableRocks> ReadableAccuTreeStore<StateVersion, TransactionTreeHash>
 }
 
 impl<R: ReadableRocks> ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>
-    for StateManagerDatabase<R>
+for StateManagerDatabase<R>
 {
     fn get_tree_slice(&self, state_version: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.open_read_context()
@@ -1983,7 +1985,7 @@ impl<R: WriteableRocks> RestoreDecember2023LostSubstates for StateManagerDatabas
 
             let substates_cf = db_context.cf(SubstatesCf);
 
-            let receipts_iter: Box<dyn Iterator<Item = (StateVersion, LedgerTransactionReceipt)>> =
+            let receipts_iter: Box<dyn Iterator<Item=(StateVersion, LedgerTransactionReceipt)>> =
                 db_context
                     .cf(TransactionReceiptsCf)
                     .iterate_from(&StateVersion::of(1u64), Direction::Forward);
@@ -2037,7 +2039,7 @@ impl<R: ReadableRocks> IterableAccountChangeIndex for StateManagerDatabase<R> {
         &self,
         account: GlobalAddress,
         from_state_version: StateVersion,
-    ) -> Box<dyn Iterator<Item = StateVersion> + '_> {
+    ) -> Box<dyn Iterator<Item=StateVersion> + '_> {
         Box::new(
             self.open_read_context()
                 .cf(AccountChangeStateVersionsCf)
@@ -2053,7 +2055,7 @@ impl<R: ReadableRocks> EntityListingIndex for StateManagerDatabase<R> {
         &self,
         entity_type: EntityType,
         from_creation_id: Option<&CreationId>,
-    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+    ) -> Box<dyn Iterator<Item=(CreationId, EntityBlueprintId)> + '_> {
         let from_creation_id = from_creation_id.cloned().unwrap_or_else(CreationId::zero);
         Box::new(
             self.open_read_context()
@@ -2067,7 +2069,7 @@ impl<R: ReadableRocks> EntityListingIndex for StateManagerDatabase<R> {
         &self,
         blueprint_id: &BlueprintId,
         from_creation_id: Option<&CreationId>,
-    ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_> {
+    ) -> Box<dyn Iterator<Item=(CreationId, EntityBlueprintId)> + '_> {
         let BlueprintId {
             package_address,
             blueprint_name,

@@ -62,31 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.p2p;
+package com.radixdlt.p2p.addressbook;
 
-import static com.radixdlt.lang.Option.none;
 import static com.radixdlt.lang.Option.some;
 import static org.junit.Assert.*;
 
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.*;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.p2p.PeerAddressEntryDTO.ConnectionStatus;
+import com.radixdlt.p2p.*;
+import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
+import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.FailedHandshake;
+import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class RocksDbAddressBookStoreTest {
+public class RocksAddressBookStoreTest {
   private static final Random RANDOM = new Random();
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
@@ -97,99 +101,46 @@ public class RocksDbAddressBookStoreTest {
       var addressBookStore =
           RocksDbAddressBookStore.create(
               new MetricsInitializer().initialize(), nodeRustEnvironment);
-
-      // New store is empty
-      var empty = addressBookStore.getAllEntries();
-      assertTrue(empty.isEmpty());
-
-      // Ensure keys are repeatable to make test deterministic
-      var entry1 = newAddressBookEntry(1);
-
-      addressBookStore.upsertEntry(entry1);
-
-      // Store now contains one entry
-      var allEntries = addressBookStore.getAllEntries();
-      assertEquals(1L, allEntries.size());
-      assertEquals(entry1, allEntries.get(0));
-
-      // Ensure keys are repeatable to make test deterministic
-      var entry2 = newAddressBookEntry(2);
-
-      // Add another entry
-      addressBookStore.upsertEntry(entry2);
-
-      allEntries = addressBookStore.getAllEntries();
-      assertEquals(2L, allEntries.size());
-      assertEquals(entry1, allEntries.get(0));
-      assertEquals(entry2, allEntries.get(1));
-    }
-  }
-
-  @Test
-  public void test_address_book_entry_can_be_added_and_removed() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
-      var addressBookStore =
-          RocksDbAddressBookStore.create(
+      var highPriorityPeersStore =
+          RocksDbHighPriorityPeersStore.create(
               new MetricsInitializer().initialize(), nodeRustEnvironment);
+      try (var rocksAddressBookStore =
+          new RocksAddressBookStore(addressBookStore, highPriorityPeersStore)) {
 
-      // New store is empty
-      var empty = addressBookStore.getAllEntries();
-      assertTrue(empty.isEmpty());
+        // New store is empty
+        var empty = rocksAddressBookStore.getAllEntries();
+        assertTrue(empty.isEmpty());
 
-      // Ensure keys are repeatable to make test deterministic
-      var entry1 = newAddressBookEntry(1);
-      var entry2 = newAddressBookEntry(2);
+        // One entry can be stored and restored
+        var entry1 = newAddressBookEntry(1);
+        assertTrue(rocksAddressBookStore.upsertEntry(entry1));
 
-      addressBookStore.upsertEntry(entry1);
-      addressBookStore.upsertEntry(entry2);
+        var allEntries = rocksAddressBookStore.getAllEntries();
+        assertEquals(1L, allEntries.size());
+        assertEquals(entry1, allEntries.get(0));
 
-      // Check that entries were added
-      var allEntries = addressBookStore.getAllEntries();
-      assertEquals(2L, allEntries.size());
-      assertEquals(entry1, allEntries.get(0));
-      assertEquals(entry2, allEntries.get(1));
+        // Another entry can be stored and restored
+        var entry2 = newAddressBookEntry(2);
+        assertTrue(rocksAddressBookStore.upsertEntry(entry2));
 
-      // Remove entry1
-      var removed = addressBookStore.removeEntry(entry1.nodeId());
-      assertTrue(removed);
+        allEntries = rocksAddressBookStore.getAllEntries();
+        assertEquals(2L, allEntries.size());
+        assertEquals(entry1, allEntries.get(0));
+        assertEquals(entry2, allEntries.get(1));
 
-      // Check that entry1 was removed
-      allEntries = addressBookStore.getAllEntries();
-      assertEquals(1L, allEntries.size());
-      assertEquals(entry2, allEntries.get(0));
-    }
-  }
+        // An entry can be deleted
+        assertTrue(rocksAddressBookStore.removeEntry(entry1.getNodeId()));
 
-  @Test
-  public void test_address_book_can_be_reset() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
-      var addressBookStore =
-          RocksDbAddressBookStore.create(
-              new MetricsInitializer().initialize(), nodeRustEnvironment);
+        allEntries = rocksAddressBookStore.getAllEntries();
+        assertEquals(1L, allEntries.size());
+        assertEquals(entry2, allEntries.get(0));
 
-      // New store is empty
-      var empty = addressBookStore.getAllEntries();
-      assertTrue(empty.isEmpty());
+        // Address book can be reset
+        rocksAddressBookStore.reset();
 
-      // Ensure keys are repeatable to make test deterministic
-      var entry1 = newAddressBookEntry(1);
-      var entry2 = newAddressBookEntry(2);
-
-      addressBookStore.upsertEntry(entry1);
-      addressBookStore.upsertEntry(entry2);
-
-      // Check that entries were added
-      var allEntries = addressBookStore.getAllEntries();
-      assertEquals(2L, allEntries.size());
-      assertEquals(entry1, allEntries.get(0));
-      assertEquals(entry2, allEntries.get(1));
-
-      // Reset store
-      addressBookStore.reset();
-
-      // Check that entry1 was removed
-      empty = addressBookStore.getAllEntries();
-      assertTrue(empty.isEmpty());
+        empty = rocksAddressBookStore.getAllEntries();
+        assertTrue(empty.isEmpty());
+      }
     }
   }
 
@@ -226,27 +177,44 @@ public class RocksDbAddressBookStoreTest {
         new NodeConfig(nodeDbConfig));
   }
 
-  private static AddressBookEntryDTO newAddressBookEntry(int id) {
-    return new AddressBookEntryDTO(
-        new NodeIdDTO(ECKeyPair.fromSeed(new byte[] {(byte) id}).getPublicKey()),
-        RANDOM.nextBoolean() ? some(RANDOM.nextLong()) : none(),
-        peerAddresses());
+  private static AddressBookEntry newAddressBookEntry(int id) {
+    var pubKey = ECKeyPair.fromSeed(new byte[] {(byte) id}).getPublicKey();
+    var bannedUntil = newBannedUntil();
+
+    return new AddressBookEntry(
+        NodeId.fromPublicKey(pubKey), bannedUntil, newKnownAddresses(pubKey));
   }
 
-  private static Set<PeerAddressEntryDTO> peerAddresses() {
+  private static ImmutableSet<PeerAddressEntry> newKnownAddresses(ECDSASecp256k1PublicKey pubKey) {
     return IntStream.range(0, RANDOM.nextInt(3))
-        .mapToObj(__ -> newPeerAddressEntry())
-        .collect(Collectors.toSet());
+        .mapToObj(__ -> newPeerAddressEntry(pubKey))
+        .collect(ImmutableSet.toImmutableSet());
   }
 
-  private static PeerAddressEntryDTO newPeerAddressEntry() {
-    var pubKey = ECKeyPair.generateNew().getPublicKey().getBytes();
-    return new PeerAddressEntryDTO(pubKey, connectionStatus(), Option.some(RANDOM.nextLong()));
+  private static PeerAddressEntry newPeerAddressEntry(ECDSASecp256k1PublicKey pubKey) {
+    var failedHandshake = newFailedHandshake();
+    var latestConnectionStatus = newLatestConnectionStatus();
+    var uri = RadixNodeUri.fromPubKeyAndAddress(1, pubKey, "127.0.0.1", 30000);
+
+    return new PeerAddressEntry(uri, latestConnectionStatus, failedHandshake);
   }
 
-  private static Option<ConnectionStatus> connectionStatus() {
+  private static Optional<LatestConnectionStatus> newLatestConnectionStatus() {
     return RANDOM.nextBoolean()
-        ? Option.some(RANDOM.nextBoolean() ? ConnectionStatus.SUCCESS : ConnectionStatus.FAILURE)
-        : Option.none();
+        ? Optional.of(
+            RANDOM.nextBoolean() ? LatestConnectionStatus.FAILURE : LatestConnectionStatus.SUCCESS)
+        : Optional.empty();
+  }
+
+  private static Optional<Instant> newBannedUntil() {
+    return RANDOM.nextBoolean()
+        ? Optional.of(Instant.ofEpochMilli(Math.abs(RANDOM.nextLong())))
+        : Optional.empty();
+  }
+
+  private static Optional<FailedHandshake> newFailedHandshake() {
+    return RANDOM.nextBoolean()
+        ? Optional.of(new FailedHandshake(Instant.ofEpochMilli(Math.abs(RANDOM.nextLong()))))
+        : Optional.empty();
   }
 }

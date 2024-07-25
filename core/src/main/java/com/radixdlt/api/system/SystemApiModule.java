@@ -116,7 +116,8 @@ public class SystemApiModule extends AbstractModule {
   @Provides
   @Singleton
   public SystemApiConfig systemApiConfig(
-      RuntimeProperties runtimeProperties, @StateManagerStorageLocation String nodeStorageLocation) {
+      RuntimeProperties runtimeProperties,
+      @StateManagerStorageLocation String nodeStorageLocation) {
     final var dbCheckpointEnabled = runtimeProperties.get("api.system.enable_db_checkpoint", false);
     final var dbCheckpointsPath =
         runtimeProperties.get(
