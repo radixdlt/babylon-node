@@ -1321,6 +1321,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "node-radix-engine"
+version = "0.1.0"
+dependencies = [
+ "blake2",
+ "chrono",
+ "hex",
+ "im",
+ "itertools",
+ "jni",
+ "lru",
+ "prometheus",
+ "radix-common",
+ "radix-engine",
+ "radix-engine-interface",
+ "radix-rust",
+ "radix-substate-store-impls",
+ "radix-substate-store-interface",
+ "radix-substate-store-queries",
+ "radix-transaction-scenarios",
+ "radix-transactions",
+ "rand 0.8.5",
+ "rocksdb",
+ "sbor",
+ "slotmap",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2384,6 +2414,7 @@ dependencies = [
  "jni",
  "lru",
  "node-common",
+ "node-radix-engine",
  "prometheus",
  "radix-common",
  "radix-engine",

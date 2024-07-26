@@ -1,12 +1,9 @@
 [package]
-name = "state-manager"
+name = "node-radix-engine"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-node-common = { path = "../node-common" }
-node-radix-engine = { path = "../node-radix-engine" }
-
 sbor = { workspace = true }
 radix-transactions = { workspace = true }
 radix-transaction-scenarios = { workspace = true }
