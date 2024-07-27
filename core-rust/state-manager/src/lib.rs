@@ -96,6 +96,10 @@ pub use crate::store::*;
 pub use crate::system_executor::*;
 pub use crate::types::*;
 
+pub mod sbor {
+    pub use sbor::*;
+}
+
 pub mod engine_prelude {
     pub use node_radix_engine::engine_prelude::*;
 }
