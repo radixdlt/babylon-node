@@ -178,9 +178,10 @@ public final class RadixShell {
         dataDir = new File(Files.createTempDirectory("radix-shell-node-").toString());
       }
 
-      customProperties.build().forEach((k, v) -> properties.set(k, v));
+      customProperties.build().forEach(properties::set);
 
       properties.set("db.location", dataDir.toString());
+      properties.set("db.location.node", new File(dataDir, "node").toString());
 
       if (properties.get("node.key.path", "").isEmpty()) {
         properties.set("node.key.path", new File(dataDir, "node-keystore.ks").getAbsolutePath());
