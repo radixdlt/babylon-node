@@ -309,10 +309,7 @@ public final class P2PTestNetworkRunner {
   }
 
   public void cleanup() {
-    this.nodes.forEach(
-        node -> {
-          node.injector.getInstance(AddressBookPersistence.class).close();
-        });
+    this.nodes.forEach(node -> node.injector.getInstance(AddressBookPersistence.class).close());
   }
 
   public RadixNodeUri getUri(int nodeIndex) {
