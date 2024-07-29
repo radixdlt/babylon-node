@@ -62,18 +62,117 @@
  * permissions under this License.
  */
 
-package com.radixdlt.safety;
+package com.radixdlt.rev2.modules;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.RocksSafetyStateStore;
+import com.radixdlt.db.RocksDbMigrationStore;
+import com.radixdlt.db.StoreId;
+import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.p2p.RocksDbAddressBookStore;
+import com.radixdlt.p2p.RocksDbHighPriorityPeersStore;
+import com.radixdlt.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
+import com.radixdlt.p2p.addressbook.RocksAddressBookStore;
+import com.radixdlt.safety.RocksDbSafetyStore;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.BerkeleyDbDefaults;
+import com.radixdlt.store.StateManagerStorageLocation;
+import com.radixdlt.utils.properties.RuntimeProperties;
 
-public record HighQCDTO(
-    QuorumCertificateDTO highestQC,
-    QuorumCertificateDTO highestCommittedQC,
-    Option<TimeoutCertificateDTO> highestTC) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        HighQCDTO.class, codecs -> StructCodec.fromRecordComponents(HighQCDTO.class, codecs));
+public class NodePersistenceModule extends AbstractModule {
+  @Override
+  protected void configure() {}
+
+  @Provides
+  @Singleton
+  BerkeleySafetyStateStore bdbSafetyStateStore(
+      RuntimeProperties properties,
+      Serialization serialization,
+      Metrics metrics,
+      @StateManagerStorageLocation String nodeStorageLocation) {
+    return new BerkeleySafetyStateStore(
+        serialization,
+        metrics,
+        nodeStorageLocation,
+        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+  }
+
+  @Provides
+  @Singleton
+  BerkeleyAddressBookStore bdbAddressBookStore(
+      RuntimeProperties properties,
+      Serialization serialization,
+      Metrics metrics,
+      @StateManagerStorageLocation String nodeStorageLocation) {
+    return new BerkeleyAddressBookStore(
+        serialization,
+        metrics,
+        nodeStorageLocation,
+        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+  }
+
+  @Provides
+  @Singleton
+  RocksDbSafetyStore rocksDbSafetyStore(Metrics metrics, NodeRustEnvironment environment) {
+    return RocksDbSafetyStore.create(metrics, environment);
+  }
+
+  @Provides
+  @Singleton
+  RocksDbAddressBookStore rocksDbAddressBookStore(
+      Metrics metrics, NodeRustEnvironment environment) {
+    return RocksDbAddressBookStore.create(metrics, environment);
+  }
+
+  @Provides
+  @Singleton
+  RocksDbHighPriorityPeersStore rocksDbHighPriorityPeersStore(
+      Metrics metrics, NodeRustEnvironment environment) {
+    return RocksDbHighPriorityPeersStore.create(metrics, environment);
+  }
+
+  @Provides
+  @Singleton
+  RocksDbMigrationStore rocksDbMigrationStore(Metrics metrics, NodeRustEnvironment environment) {
+    return RocksDbMigrationStore.create(metrics, environment);
+  }
+
+  @Provides
+  @Singleton
+  AddressBookPersistence addressBookPersistence(
+      RocksDbMigrationStore migrationStore,
+      BerkeleyAddressBookStore berkeleyAddressBookStore,
+      RocksAddressBookStore addressBookStore) {
+
+    try (berkeleyAddressBookStore) {
+      if (!migrationStore.isMigrated(StoreId.ADDRESS_BOOK)) {
+        berkeleyAddressBookStore.getAllEntries().forEach(addressBookStore::upsertEntry);
+        addressBookStore.storeHighPriorityPeers(berkeleyAddressBookStore.getHighPriorityPeers());
+      }
+    }
+
+    return addressBookStore;
+  }
+
+  @Provides
+  @Singleton
+  PersistentSafetyStateStore persistentSafetyStateStore(
+      RocksDbMigrationStore migrationStore,
+      BerkeleySafetyStateStore berkeleySafetyStateStore,
+      RocksSafetyStateStore rocksSafetyStateStore) {
+
+    try (berkeleySafetyStateStore) {
+      if (!migrationStore.isMigrated(StoreId.SAFETY_STORE)) {
+        berkeleySafetyStateStore.get().ifPresent(rocksSafetyStateStore::commitState);
+      }
+    }
+
+    return rocksSafetyStateStore;
   }
 }

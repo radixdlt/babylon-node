@@ -62,18 +62,6 @@
  * permissions under this License.
  */
 
-package com.radixdlt.safety;
+package com.radixdlt.store;
 
-import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
-
-public record HighQCDTO(
-    QuorumCertificateDTO highestQC,
-    QuorumCertificateDTO highestCommittedQC,
-    Option<TimeoutCertificateDTO> highestTC) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        HighQCDTO.class, codecs -> StructCodec.fromRecordComponents(HighQCDTO.class, codecs));
-  }
-}
+public class SafetyStoreMigrator {}

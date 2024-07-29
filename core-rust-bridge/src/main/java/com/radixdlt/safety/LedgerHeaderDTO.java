@@ -67,13 +67,21 @@ package com.radixdlt.safety;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.statecomputer.commit.LedgerHashes;
 
-public record HighQCDTO(
-    QuorumCertificateDTO highestQC,
-    QuorumCertificateDTO highestCommittedQC,
-    Option<TimeoutCertificateDTO> highestTC) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        HighQCDTO.class, codecs -> StructCodec.fromRecordComponents(HighQCDTO.class, codecs));
-  }
+public record LedgerHeaderDTO(
+    long epoch,
+    RoundDTO round,
+    long stateVersion,
+    LedgerHashes hashes,
+    long consensusParentRoundTimestampMs,
+    long proposerTimestampMs,
+    Option<NextEpochDTO> nextEpoch,
+    Option<String> nextProtocolVersion
+) {
+    public static void registerCodec(CodecMap codecMap) {
+        codecMap.register(
+            LedgerHeaderDTO.class,
+            codecs -> StructCodec.fromRecordComponents(LedgerHeaderDTO.class, codecs));
+    }
 }

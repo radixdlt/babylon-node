@@ -263,7 +263,7 @@ public final class MultiNodeRebootTest {
 
   @Test
   public void restart_all_nodes_intermittently() {
-    runTest(new MixedLivenessEachRound(random, 0), SafetyRecoveryConfig.BERKELEY_DB);
+    runTest(new MixedLivenessEachRound(random, 0), SafetyRecoveryConfig.REAL);
   }
 
   @Test
@@ -279,15 +279,13 @@ public final class MultiNodeRebootTest {
             () ->
                 runTest(
                     new MixedLivenessEachRound(random, 0),
-                    SafetyRecoveryConfig.BERKELEY_DB,
+                    SafetyRecoveryConfig.REAL,
                     new MockedVertexStoreModule()))
         .isInstanceOf(DeterministicTest.NeverReachedStateException.class);
   }
 
   @Test
   public void restart_all_nodes_intermittently_while_f_nodes_down() {
-    runTest(
-        new MixedLivenessEachRound(random, (numValidators - 1) / 3),
-        SafetyRecoveryConfig.BERKELEY_DB);
+    runTest(new MixedLivenessEachRound(random, (numValidators - 1) / 3), SafetyRecoveryConfig.REAL);
   }
 }

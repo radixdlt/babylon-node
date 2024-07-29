@@ -99,7 +99,7 @@ public class RocksDbSafetyStoreTest {
 
       var originalSafetyState =
           new SafetyStateDTO(
-              new BFTValidatorIdDTO(ECKeyPair.generateNew().getPublicKey(), address, "validator1"),
+              new BFTValidatorIdDTO(ECKeyPair.generateNew().getPublicKey(), address),
               new RoundDTO(10L),
               Option.none());
 

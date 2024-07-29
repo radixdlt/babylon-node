@@ -106,7 +106,7 @@ public final class TransactionDBSizeStressTest {
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
                 false,
-                SafetyRecoveryConfig.BERKELEY_DB,
+                SafetyRecoveryConfig.REAL,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2()

@@ -73,11 +73,13 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import javax.inject.Inject;
 
 public class RocksAddressBookStore implements AddressBookPersistence {
   private final RocksDbAddressBookStore addressBookStore;
   private final RocksDbHighPriorityPeersStore highPriorityPeersStore;
 
+  @Inject
   public RocksAddressBookStore(
       RocksDbAddressBookStore addressBookStore,
       RocksDbHighPriorityPeersStore highPriorityPeersStore) {

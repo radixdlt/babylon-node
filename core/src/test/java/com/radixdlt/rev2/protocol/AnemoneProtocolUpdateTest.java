@@ -120,7 +120,7 @@ public final class AnemoneProtocolUpdateTest {
             new FunctionalRadixNodeModule(
                 FunctionalRadixNodeModule.NodeStorageConfig.tempFolder(folder),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2()

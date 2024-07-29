@@ -291,7 +291,7 @@ public final class ProtocolUpdateWithEpochBoundsTest {
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
                 true,
-                SafetyRecoveryConfig.BERKELEY_DB,
+                SafetyRecoveryConfig.REAL,
                 ConsensusConfig.of(200),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2()

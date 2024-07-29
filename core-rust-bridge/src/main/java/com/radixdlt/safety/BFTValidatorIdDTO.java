@@ -70,8 +70,7 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
 /** Representation of the validator suitable for Java-Rust exchange. */
-public record BFTValidatorIdDTO(
-    ECDSASecp256k1PublicKey key, ComponentAddress validatorAddress, String shortenedName) {
+public record BFTValidatorIdDTO(ECDSASecp256k1PublicKey key, ComponentAddress validatorAddress) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         BFTValidatorIdDTO.class,

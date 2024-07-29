@@ -73,6 +73,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.*;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
@@ -85,6 +86,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
@@ -96,52 +98,59 @@ public class RocksAddressBookStoreTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Test
-  public void test_address_book_entries_can_be_saved_and_restored() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
-      var addressBookStore =
-          RocksDbAddressBookStore.create(
-              new MetricsInitializer().initialize(), nodeRustEnvironment);
-      var highPriorityPeersStore =
-          RocksDbHighPriorityPeersStore.create(
-              new MetricsInitializer().initialize(), nodeRustEnvironment);
-      try (var rocksAddressBookStore =
-          new RocksAddressBookStore(addressBookStore, highPriorityPeersStore)) {
+  public void test_address_book_entries_can_be_saved_and_restored() {
+    runTest(
+        rocksAddressBookStore -> {
+          // New store is empty
+          var empty = rocksAddressBookStore.getAllEntries();
+          assertTrue(empty.isEmpty());
 
-        // New store is empty
-        var empty = rocksAddressBookStore.getAllEntries();
-        assertTrue(empty.isEmpty());
+          // One entry can be stored and restored
+          var entry1 = newAddressBookEntry(1);
+          assertTrue(rocksAddressBookStore.upsertEntry(entry1));
 
-        // One entry can be stored and restored
-        var entry1 = newAddressBookEntry(1);
-        assertTrue(rocksAddressBookStore.upsertEntry(entry1));
+          var allEntries = rocksAddressBookStore.getAllEntries();
+          assertEquals(1L, allEntries.size());
+          assertEquals(entry1, allEntries.get(0));
 
-        var allEntries = rocksAddressBookStore.getAllEntries();
-        assertEquals(1L, allEntries.size());
-        assertEquals(entry1, allEntries.get(0));
+          // Another entry can be stored and restored
+          var entry2 = newAddressBookEntry(2);
+          assertTrue(rocksAddressBookStore.upsertEntry(entry2));
 
-        // Another entry can be stored and restored
-        var entry2 = newAddressBookEntry(2);
-        assertTrue(rocksAddressBookStore.upsertEntry(entry2));
+          allEntries = rocksAddressBookStore.getAllEntries();
+          assertEquals(2L, allEntries.size());
+          assertEquals(entry1, allEntries.get(0));
+          assertEquals(entry2, allEntries.get(1));
 
-        allEntries = rocksAddressBookStore.getAllEntries();
-        assertEquals(2L, allEntries.size());
-        assertEquals(entry1, allEntries.get(0));
-        assertEquals(entry2, allEntries.get(1));
+          // An entry can be deleted
+          assertTrue(rocksAddressBookStore.removeEntry(entry1.getNodeId()));
 
-        // An entry can be deleted
-        assertTrue(rocksAddressBookStore.removeEntry(entry1.getNodeId()));
+          allEntries = rocksAddressBookStore.getAllEntries();
+          assertEquals(1L, allEntries.size());
+          assertEquals(entry2, allEntries.get(0));
 
-        allEntries = rocksAddressBookStore.getAllEntries();
-        assertEquals(1L, allEntries.size());
-        assertEquals(entry2, allEntries.get(0));
+          // Address book can be reset
+          rocksAddressBookStore.reset();
 
-        // Address book can be reset
-        rocksAddressBookStore.reset();
+          empty = rocksAddressBookStore.getAllEntries();
+          assertTrue(empty.isEmpty());
+        });
+  }
 
-        empty = rocksAddressBookStore.getAllEntries();
-        assertTrue(empty.isEmpty());
+  private void runTest(Consumer<RocksAddressBookStore> test) {
+    try (var environment = createNodeRustEnvironment()) {
+      var addressBook = RocksDbAddressBookStore.create(newMetrics(), environment);
+      var peersStore = RocksDbHighPriorityPeersStore.create(newMetrics(), environment);
+      try (var underTest = new RocksAddressBookStore(addressBook, peersStore)) {
+        test.accept(underTest);
       }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
+
+  private static Metrics newMetrics() {
+    return new MetricsInitializer().initialize();
   }
 
   private NodeRustEnvironment createNodeRustEnvironment() throws IOException {

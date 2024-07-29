@@ -74,10 +74,13 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
@@ -101,6 +104,8 @@ import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.store.BerkeleyDbDefaults;
+import com.radixdlt.store.StateManagerStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
@@ -188,6 +193,29 @@ public final class P2PTestNetworkRunner {
       throws ParseException {
     final var properties = RuntimeProperties.fromCommandLineArgs(new String[] {});
     return Guice.createInjector(
+        new AbstractModule() {
+          @Override
+          protected void configure() {
+            bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
+            Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
+                .addBinding()
+                .to(BerkeleySafetyStateStore.class);
+          }
+
+          @Provides
+          @Singleton
+          BerkeleySafetyStateStore safetyStateStore(
+              RuntimeProperties properties,
+              Serialization serialization,
+              Metrics metrics,
+              @StateManagerStorageLocation String nodeStorageLocation) {
+            return new BerkeleySafetyStateStore(
+                serialization,
+                metrics,
+                nodeStorageLocation,
+                BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+          }
+        },
         Modules.override(new P2PModule(properties))
             .with(
                 new AbstractModule() {

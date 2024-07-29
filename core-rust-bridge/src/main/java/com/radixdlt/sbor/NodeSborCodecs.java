@@ -221,8 +221,11 @@ public final class NodeSborCodecs {
     NodeConfig.registerCodec(codecMap);
 
     BFTHeaderDTO.registerCodec(codecMap);
+    BFTValidatorDTO.registerCodec(codecMap);
     BFTValidatorIdDTO.registerCodec(codecMap);
     HighQCDTO.registerCodec(codecMap);
+    LedgerHeaderDTO.registerCodec(codecMap);
+    NextEpochDTO.registerCodec(codecMap);
     QuorumCertificateDTO.registerCodec(codecMap);
     RoundDTO.registerCodec(codecMap);
     SafetyStateDTO.registerCodec(codecMap);

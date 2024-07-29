@@ -62,41 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.consensus.safety;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.StateManagerStorageLocation;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import java.util.Optional;
 
-public class BerkeleySafetyStoreModule extends AbstractModule {
+public class MigratingSafetyStore implements PersistentSafetyStateStore {
+
   @Override
-  protected void configure() {
-    bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-    Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
-        .addBinding()
-        .to(BerkeleySafetyStateStore.class);
-  }
+  public void commitState(SafetyState safetyState) {}
 
-  @Provides
-  @Singleton
-  BerkeleySafetyStateStore safetyStateStore(
-      RuntimeProperties properties,
-      Serialization serialization,
-      Metrics metrics,
-      @StateManagerStorageLocation String nodeStorageLocation) {
-    return new BerkeleySafetyStateStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+  @Override
+  public void close() {}
+
+  @Override
+  public Optional<SafetyState> get() {
+    return Optional.empty();
   }
 }

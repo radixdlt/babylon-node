@@ -64,16 +64,31 @@
 
 package com.radixdlt.safety;
 
-import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
-public record HighQCDTO(
-    QuorumCertificateDTO highestQC,
-    QuorumCertificateDTO highestCommittedQC,
-    Option<TimeoutCertificateDTO> highestTC) {
+import java.util.Arrays;
+import java.util.Objects;
+
+public record BFTValidatorDTO(byte[] power, BFTValidatorIdDTO validatorId) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        HighQCDTO.class, codecs -> StructCodec.fromRecordComponents(HighQCDTO.class, codecs));
+        BFTValidatorDTO.class,
+        codecs -> StructCodec.fromRecordComponents(BFTValidatorDTO.class, codecs));
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    return o instanceof BFTValidatorDTO that
+        && Objects.deepEquals(power, that.power)
+        && Objects.equals(validatorId, that.validatorId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(Arrays.hashCode(power), validatorId);
   }
 }

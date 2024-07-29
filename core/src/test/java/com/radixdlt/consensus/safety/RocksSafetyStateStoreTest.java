@@ -62,18 +62,96 @@
  * permissions under this License.
  */
 
-package com.radixdlt.safety;
+package com.radixdlt.consensus.safety;
 
+import static com.radixdlt.lang.Option.some;
+import static org.junit.Assert.*;
+
+import com.radixdlt.consensus.bft.BFTValidatorId;
+import com.radixdlt.environment.*;
 import com.radixdlt.lang.Option;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.safety.RocksDbSafetyStore;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
+import java.io.IOException;
+import java.util.Random;
+import java.util.function.Consumer;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public record HighQCDTO(
-    QuorumCertificateDTO highestQC,
-    QuorumCertificateDTO highestCommittedQC,
-    Option<TimeoutCertificateDTO> highestTC) {
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        HighQCDTO.class, codecs -> StructCodec.fromRecordComponents(HighQCDTO.class, codecs));
+public class RocksSafetyStateStoreTest {
+  private static final Random RANDOM = new Random();
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  @Test
+  public void test_address_book_entries_can_be_saved_and_restored() {
+    runTest(
+        safetyStore -> {
+          // Fresh store is empty
+          assertTrue(safetyStore.get().isEmpty());
+
+          // Save a safety state
+          var safetyState = SafetyState.initialState(BFTValidatorId.random());
+          safetyStore.commitState(safetyState);
+
+          // Retrieve the saved safety state
+          var restoredSafetyState = safetyStore.get();
+          assertTrue(restoredSafetyState.isPresent());
+          assertEquals(safetyState, restoredSafetyState.get());
+        });
+  }
+
+  private void runTest(Consumer<RocksSafetyStateStore> test) {
+    try (var environment = createNodeRustEnvironment()) {
+      var safetyStore = RocksDbSafetyStore.create(newMetrics(), environment);
+      try (var underTest = new RocksSafetyStateStore(safetyStore)) {
+        test.accept(underTest);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static Metrics newMetrics() {
+    return new MetricsInitializer().initialize();
+  }
+
+  private NodeRustEnvironment createNodeRustEnvironment() throws IOException {
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
+    final var stateManagerDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
+    final var nodeDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
+
+    final var config =
+        new StateManagerConfig(
+            NetworkDefinition.INT_TEST_NET,
+            some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
+            stateManagerDbConfig,
+            new DatabaseConfig(false, false, false, false),
+            LoggingConfig.getDefault(),
+            StateTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefault(),
+            false,
+            ScenariosExecutionConfig.NONE);
+
+    return new NodeRustEnvironment(
+        tx -> {}, // A no-op dispatcher of transactions to be relayed.
+        () -> {}, // A no-op fatal panic handler. Please note that a JNI-invoking test (like this
+        // one) will observe
+        // panics as runtime exceptions propagated up the stack (through JNI), which will fail the
+        // test
+        // gracefully anyway.
+        config,
+        new NodeConfig(nodeDbConfig));
   }
 }

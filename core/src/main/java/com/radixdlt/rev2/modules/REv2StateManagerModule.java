@@ -117,6 +117,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final ProtocolConfig protocolConfig;
   private final boolean noFees;
   private final ScenariosExecutionConfig scenariosExecutionConfig;
+  private final boolean installPersistence;
 
   private REv2StateManagerModule(
       ProposalLimitsConfig proposalLimitsConfig,
@@ -129,7 +130,8 @@ public final class REv2StateManagerModule extends AbstractModule {
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
       boolean noFees,
-      ScenariosExecutionConfig scenariosExecutionConfig) {
+      ScenariosExecutionConfig scenariosExecutionConfig,
+      boolean installPersistence) {
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
     this.databaseConfig = databaseConfig;
@@ -141,6 +143,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.protocolConfig = protocolConfig;
     this.noFees = noFees;
     this.scenariosExecutionConfig = scenariosExecutionConfig;
+    this.installPersistence = installPersistence;
   }
 
   public static REv2StateManagerModule create(
@@ -164,7 +167,8 @@ public final class REv2StateManagerModule extends AbstractModule {
         ledgerSyncLimitsConfig,
         protocolConfig,
         false,
-        scenariosExecutionConfig);
+        scenariosExecutionConfig,
+        true);
   }
 
   public static REv2StateManagerModule createForTesting(
@@ -189,7 +193,8 @@ public final class REv2StateManagerModule extends AbstractModule {
         ledgerSyncLimitsConfig,
         protocolConfig,
         noFees,
-        scenariosExecutionConfig);
+        scenariosExecutionConfig,
+        false);
   }
 
   @Override
@@ -325,6 +330,11 @@ public final class REv2StateManagerModule extends AbstractModule {
           .to(RustMempool.class);
       bind(new Key<MempoolInserter<RawNotarizedTransaction>>() {}).to(RustMempool.class);
       bind(MempoolReevaluator.class).to(RustMempool.class);
+    }
+
+    if (installPersistence) {
+      // Moved here for convenience performing migration
+      install(new NodePersistenceModule());
     }
   }
 
