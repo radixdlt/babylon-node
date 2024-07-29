@@ -154,6 +154,7 @@ public class NodePersistenceModule extends AbstractModule {
       if (!migrationStore.isMigrated(StoreId.ADDRESS_BOOK)) {
         berkeleyAddressBookStore.getAllEntries().forEach(addressBookStore::upsertEntry);
         addressBookStore.storeHighPriorityPeers(berkeleyAddressBookStore.getHighPriorityPeers());
+        migrationStore.migrationDone(StoreId.ADDRESS_BOOK);
       }
     }
 
@@ -170,6 +171,7 @@ public class NodePersistenceModule extends AbstractModule {
     try (berkeleySafetyStateStore) {
       if (!migrationStore.isMigrated(StoreId.SAFETY_STORE)) {
         berkeleySafetyStateStore.get().ifPresent(rocksSafetyStateStore::commitState);
+        migrationStore.migrationDone(StoreId.SAFETY_STORE);
       }
     }
 
