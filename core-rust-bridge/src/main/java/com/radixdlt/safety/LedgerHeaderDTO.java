@@ -77,11 +77,10 @@ public record LedgerHeaderDTO(
     long consensusParentRoundTimestampMs,
     long proposerTimestampMs,
     Option<NextEpochDTO> nextEpoch,
-    Option<String> nextProtocolVersion
-) {
-    public static void registerCodec(CodecMap codecMap) {
-        codecMap.register(
-            LedgerHeaderDTO.class,
-            codecs -> StructCodec.fromRecordComponents(LedgerHeaderDTO.class, codecs));
-    }
+    Option<String> nextProtocolVersion) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        LedgerHeaderDTO.class,
+        codecs -> StructCodec.fromRecordComponents(LedgerHeaderDTO.class, codecs));
+  }
 }

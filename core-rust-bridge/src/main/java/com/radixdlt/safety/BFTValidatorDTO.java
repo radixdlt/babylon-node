@@ -66,7 +66,6 @@ package com.radixdlt.safety;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-
 import java.util.Arrays;
 import java.util.Objects;
 

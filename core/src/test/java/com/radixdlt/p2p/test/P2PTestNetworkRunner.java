@@ -97,6 +97,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.protocol.NewestProtocolVersion;
@@ -196,6 +197,7 @@ public final class P2PTestNetworkRunner {
         new AbstractModule() {
           @Override
           protected void configure() {
+            bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
             bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
             Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
                 .addBinding()
@@ -210,6 +212,20 @@ public final class P2PTestNetworkRunner {
               Metrics metrics,
               @StateManagerStorageLocation String nodeStorageLocation) {
             return new BerkeleySafetyStateStore(
+                serialization,
+                metrics,
+                nodeStorageLocation,
+                BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+          }
+
+          @Provides
+          @Singleton
+          BerkeleyAddressBookStore bdbAddressBookStore(
+              RuntimeProperties properties,
+              Serialization serialization,
+              Metrics metrics,
+              @StateManagerStorageLocation String nodeStorageLocation) {
+            return new BerkeleyAddressBookStore(
                 serialization,
                 metrics,
                 nodeStorageLocation,
