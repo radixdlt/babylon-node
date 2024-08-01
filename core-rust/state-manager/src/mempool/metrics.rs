@@ -74,7 +74,7 @@ pub struct MempoolMetrics {
 }
 
 pub struct MempoolManagerMetrics {
-    pub submission_rejected: IntCounterVec,
+    pub submission_attempt: HistogramVec,
     pub from_local_api_to_commit_wait: Histogram,
 }
 
@@ -106,12 +106,15 @@ impl MempoolMetrics {
 impl MempoolManagerMetrics {
     pub fn new(registry: &Registry) -> Self {
         Self {
-            submission_rejected: IntCounterVec::new(
+            submission_attempt: new_timer_vec(
                 opts(
-                    "mempool_submission_rejected_total",
-                    "Count of the submissions rejected by the mempool.",
+                    "mempool_submission_attempt",
+                    "Time spent successfully/unsuccessfully adding a transaction to mempool.",
                 ),
-                &["source", "rejection_reason"],
+                &["source", "result"],
+                vec![
+                    0.0001, 0.0005, 0.002, 0.01, 0.05, 0.2, 1.0, 5.0,
+                ],
             ).registered_at(registry),
             from_local_api_to_commit_wait: new_timer(
                 opts(
@@ -135,18 +138,27 @@ impl MetricLabel for MempoolAddSource {
     }
 }
 
-impl MetricLabel for MempoolAddError {
+pub struct MempoolAddResult(Option<MempoolAddError>);
+
+impl MempoolAddResult {
+    pub fn new<T>(result: &std::result::Result<T, MempoolAddError>) -> Self {
+        Self(result.as_ref().err().cloned())
+    }
+}
+
+impl MetricLabel for MempoolAddResult {
     type StringReturnType = &'static str;
 
     fn prometheus_label_name(&self) -> Self::StringReturnType {
-        match self {
-            MempoolAddError::PriorityThresholdNotMet { .. } => "PriorityThresholdNotMet",
-            MempoolAddError::Rejected(rejection) => match &rejection.reason {
+        match &self.0 {
+            None => "Added",
+            Some(MempoolAddError::PriorityThresholdNotMet { .. }) => "PriorityThresholdNotMet",
+            Some(MempoolAddError::Rejected(rejection)) => match &rejection.reason {
                 MempoolRejectionReason::AlreadyCommitted(_) => "AlreadyCommitted",
                 MempoolRejectionReason::FromExecution(_) => "ExecutionError",
                 MempoolRejectionReason::ValidationError(_) => "ValidationError",
             },
-            MempoolAddError::Duplicate(_) => "Duplicate",
+            Some(MempoolAddError::Duplicate(_)) => "Duplicate",
         }
     }
 }
