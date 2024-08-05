@@ -74,7 +74,7 @@ pub enum MempoolAddSource {
     MempoolSync,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MempoolAddError {
     PriorityThresholdNotMet {
         min_tip_percentage_required: Option<u16>,
@@ -84,7 +84,7 @@ pub enum MempoolAddError {
     Rejected(MempoolAddRejection),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MempoolAddRejection {
     pub reason: MempoolRejectionReason,
     pub against_state: AtState,

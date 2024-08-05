@@ -75,6 +75,7 @@ use std::time::Instant;
 
 use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
 
+use crate::mempool::metrics::MempoolAddResult;
 use crate::transaction::{CachedCommittabilityValidator, ForceRecalculation};
 use node_common::locks::RwLock;
 use tracing::warn;
@@ -210,16 +211,12 @@ impl MempoolManager {
         raw_transaction: RawNotarizedTransaction,
         force_recalculate: bool,
     ) -> Result<Arc<MempoolTransaction>, MempoolAddError> {
+        let start = Instant::now();
         let result = self.add_if_committable_internal(source, raw_transaction, force_recalculate);
-        match &result {
-            Ok(_) => {}
-            Err(error) => {
-                self.metrics
-                    .submission_rejected
-                    .with_two_labels(source, error)
-                    .inc();
-            }
-        }
+        self.metrics
+            .submission_attempt
+            .with_two_labels(source, MempoolAddResult::new(&result))
+            .observe(start.elapsed().as_secs_f64());
         result
     }
 
