@@ -272,6 +272,7 @@ impl CommittabilityValidator {
                 // The transaction aborted after the fee loan was repaid - meaning the transaction result would get committed
                 match abort_result.reason {
                     AbortReason::ConfiguredAbortTriggeredOnFeeLoanRepayment => Ok(()),
+                    AbortReason::ConfiguredAbortTriggeredOnLockFee => Ok(()),
                 }
             }
         };
