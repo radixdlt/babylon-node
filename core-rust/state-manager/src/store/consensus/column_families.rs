@@ -1,14 +1,22 @@
-use crate::p2p::address_book_components::AddressBookNodeId;
-use crate::store::p2p::migration::{MigrationId, MigrationStatus};
-use crate::store::codecs::{
-    BlueprintAndCreationIndexKeyDbCodec, EpochDbCodec, HashDbCodec, NodeIdDbCodec,
-    PrefixGlobalAddressDbCodec, RawLedgerTransactionDbCodec, ScenarioSequenceNumberDbCodec,
-    StateVersionDbCodec, StoredTreeNodeKeyDbCodec, SubstateKeyDbCodec,
-    TypeAndCreationIndexKeyDbCodec,
+use std::fmt;
+
+use radix_common::crypto::Hash;
+use radix_common::prelude::{EntityType, Epoch, GlobalAddress, NodeId, PackageAddress};
+use radix_substate_store_impls::state_tree::tree_store::{
+    StoredTreeNodeKey, TreeNode, VersionedTreeNode,
 };
-use crate::store::typed_cf_api::{
-    AddressBookNodeIdDbCodec, DefaultCf, DirectDbCodec, MigrationIdDbCodec, MigrationStatusDbCodec,
-    PredefinedDbCodec, TypedCf, UnitDbCodec, VersionedCf,
+use radix_substate_store_interface::interface::{DbSubstateKey, DbSubstateValue};
+use radix_transactions::model::{IntentHash, NotarizedTransactionHash};
+
+use crate::{
+    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
+    LocalTransactionExecution, StateVersion, VersionedCommittedTransactionIdentifiers,
+    VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
+};
+use crate::consensus::traits::{
+    ReceiptAccuTreeSlice, StaleTreeParts, SubstateNodeAncestryRecord, TransactionAccuTreeSlice,
+    VersionedReceiptAccuTreeSlice, VersionedStaleTreeParts, VersionedSubstateNodeAncestryRecord,
+    VersionedTransactionAccuTreeSlice, VersionedVertexStoreBlob, VertexStoreBlob,
 };
 use crate::consensus::traits::gc::{LedgerProofsGcProgress, VersionedLedgerProofsGcProgress};
 use crate::consensus::traits::indices::{
@@ -18,25 +26,17 @@ use crate::consensus::traits::indices::{
 use crate::consensus::traits::scenario::{
     ExecutedScenario, ScenarioSequenceNumber, VersionedExecutedScenario,
 };
-use crate::consensus::traits::{
-    ReceiptAccuTreeSlice, StaleTreeParts, SubstateNodeAncestryRecord, TransactionAccuTreeSlice,
-    VersionedReceiptAccuTreeSlice, VersionedStaleTreeParts, VersionedSubstateNodeAncestryRecord,
-    VersionedTransactionAccuTreeSlice, VersionedVertexStoreBlob, VertexStoreBlob,
+use crate::store::codecs::{
+    BlueprintAndCreationIndexKeyDbCodec, EpochDbCodec, HashDbCodec, NodeIdDbCodec,
+    PrefixGlobalAddressDbCodec, RawLedgerTransactionDbCodec, ScenarioSequenceNumberDbCodec,
+    StateVersionDbCodec, StoredTreeNodeKeyDbCodec, SubstateKeyDbCodec,
+    TypeAndCreationIndexKeyDbCodec,
+};
+use crate::store::typed_cf_api::{
+    DefaultCf, DirectDbCodec,
+    PredefinedDbCodec, TypedCf, UnitDbCodec, VersionedCf,
 };
 use crate::transaction::{LedgerTransactionHash, RawLedgerTransaction};
-use crate::{
-    CommittedTransactionIdentifiers, LedgerProof, LedgerTransactionReceipt,
-    LocalTransactionExecution, StateVersion, VersionedCommittedTransactionIdentifiers,
-    VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
-};
-use radix_common::crypto::Hash;
-use radix_common::prelude::{EntityType, Epoch, GlobalAddress, NodeId, PackageAddress};
-use radix_substate_store_impls::state_tree::tree_store::{
-    StoredTreeNodeKey, TreeNode, VersionedTreeNode,
-};
-use radix_substate_store_interface::interface::{DbSubstateKey, DbSubstateValue};
-use radix_transactions::model::{IntentHash, NotarizedTransactionHash};
-use std::fmt;
 
 /// Committed transactions.
 /// Schema: `StateVersion.to_bytes()` -> `RawLedgerTransaction.as_ref::<[u8]>()`
@@ -424,48 +424,5 @@ impl DefaultCf for AssociatedStateTreeValuesCf {
 
     const DEFAULT_NAME: &'static str = "associated_state_tree_values";
     type KeyCodec = StoredTreeNodeKeyDbCodec;
-    type ValueCodec = DirectDbCodec;
-}
-
-/// Address book and safety state store migration status. Filled once during the migration.
-pub struct MigrationStatusCf;
-impl DefaultCf for MigrationStatusCf {
-    type Key = MigrationId;
-    type Value = MigrationStatus;
-
-    const DEFAULT_NAME: &'static str = "migration_status";
-    type KeyCodec = MigrationIdDbCodec;
-    type ValueCodec = MigrationStatusDbCodec;
-}
-
-/// Address book
-pub struct AddressBookCf;
-impl DefaultCf for AddressBookCf {
-    type Key = AddressBookNodeId;
-    type Value = Vec<u8>;
-
-    const DEFAULT_NAME: &'static str = "address_book";
-    type KeyCodec = AddressBookNodeIdDbCodec;
-    type ValueCodec = DirectDbCodec;
-}
-
-/// Safety store
-pub struct SafetyStoreCf;
-impl DefaultCf for SafetyStoreCf {
-    type Key = ();
-    type Value = Vec<u8>;
-
-    const DEFAULT_NAME: &'static str = "safety_store";
-    type KeyCodec = UnitDbCodec;
-    type ValueCodec = DirectDbCodec;
-}
-
-pub struct HighPriorityPeersCf;
-impl DefaultCf for HighPriorityPeersCf {
-    type Key = ();
-    type Value = Vec<u8>;
-
-    const DEFAULT_NAME: &'static str = "high_priority_peers";
-    type KeyCodec = UnitDbCodec;
     type ValueCodec = DirectDbCodec;
 }

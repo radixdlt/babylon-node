@@ -74,7 +74,6 @@ use crate::RawDbMetrics;
 pub use crate::store::consensus::traits::DatabaseConfig;
 use crate::store::consensus::traits::measurement::MeasurableDatabase;
 
-pub mod column_families;
 pub mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;

@@ -63,29 +63,28 @@
  */
 
 use std::collections::HashSet;
-use crate::engine_prelude::*;
-use crate::store::common::rocks_db::*;
-use crate::store::consensus::traits::*;
+use std::path::PathBuf;
+
+use rocksdb::{
+    ColumnFamilyDescriptor, DB, Direction, IteratorMode, Options,
+};
+use tracing::{error, info, warn};
+
+use node_common::locks::Snapshottable;
+use node_common::utils::IsAccountExt;
+
 use crate::{
     BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin,
     LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash,
     StateVersion, SubstateChangeAction, TransactionTreeHash,
 };
-use node_common::utils::IsAccountExt;
-use rocksdb::{
-    ColumnFamilyDescriptor, Direction, IteratorMode, Options, DB,
-};
-
-use std::path::PathBuf;
-use node_common::locks::Snapshottable;
-use tracing::{error, info, warn};
-use crate::store::consensus::traits::extensions::*;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::p2p::address_book_components::AddressBookNodeId;
-use crate::column_families::*;
-use crate::store::p2p::migration::{MigrationId, MigrationStatus};
+use crate::consensus::column_families::*;
+use crate::engine_prelude::*;
 use crate::query::TransactionIdentifierLoader;
-use crate::store::historical_state::StateTreeBasedSubstateDatabase;
+use crate::store::common::rocks_db::*;
+use crate::store::consensus::traits::*;
+use crate::store::consensus::traits::extensions::*;
 use crate::store::consensus::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
 use crate::store::consensus::traits::indices::{
     CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintNameV1,
@@ -94,8 +93,8 @@ use crate::store::consensus::traits::measurement::{CategoryDbVolumeStatistic, Me
 use crate::store::consensus::traits::scenario::{
     ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber,
 };
+use crate::store::historical_state::StateTreeBasedSubstateDatabase;
 use crate::store::typed_cf_api::*;
-use crate::p2p::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
 use crate::transaction::{
     LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
 };
@@ -146,15 +145,7 @@ const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 25] = [
     BlueprintAndCreationIndexedObjectsCf::VERSIONED_NAME,
 ];
 
-const ALL_NODE_COLUMN_FAMILIES: [&str; 4] = [
-    MigrationStatusCf::DEFAULT_NAME,
-    AddressBookCf::DEFAULT_NAME,
-    SafetyStoreCf::DEFAULT_NAME,
-    HighPriorityPeersCf::DEFAULT_NAME,
-];
-
 pub type ActualStateManagerDatabase = StateManagerDatabase<DirectRocks>;
-pub type ActualNodeDatabase = NodeDatabase<DirectRocks>;
 
 impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
     type Snapshot = StateManagerDatabase<SnapshotRocks<'db>>;
@@ -172,109 +163,6 @@ impl<'db> Snapshottable<'db> for StateManagerDatabase<DirectRocks> {
             config: config.clone(),
             rocks: rocks.snapshot(),
         }
-    }
-}
-
-/// A RocksDB-backed persistence layer for node-specific address book and safety store.
-pub struct NodeDatabase<R> {
-    /// Underlying RocksDB instance.
-    rocks: R,
-}
-
-impl ActualNodeDatabase {
-    pub fn new(
-        root_path: PathBuf,
-    ) -> ActualNodeDatabase {
-        let mut db_opts = Options::default();
-        db_opts.create_if_missing(true);
-        db_opts.create_missing_column_families(true);
-
-        let column_families: Vec<ColumnFamilyDescriptor> = ALL_NODE_COLUMN_FAMILIES
-            .iter()
-            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
-            .collect();
-
-        let db = DB::open_cf_descriptors(&db_opts, root_path.as_path(), column_families).unwrap();
-
-        NodeDatabase {
-            rocks: DirectRocks { db },
-        }
-    }
-}
-
-impl<R: WriteableRocks> NodeDatabase<R> {
-    fn open_rw_context(&self) -> TypedDbContext<R, BufferedWriteSupport<R>> {
-        TypedDbContext::new(&self.rocks, BufferedWriteSupport::new(&self.rocks))
-    }
-}
-
-impl<R: WriteableRocks> AddressBookStore for NodeDatabase<R> {
-    fn remove_one(&self, node_id: &AddressBookNodeId) -> bool {
-        let binding = self.open_rw_context();
-        let context = binding.cf(AddressBookCf);
-
-        if context.get(node_id).is_some() {
-            context.delete(node_id);
-        }
-
-        true
-    }
-
-    fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool {
-        let binding = self.open_rw_context();
-        let context = binding.cf(AddressBookCf);
-
-        context.put(node_id, &entry.to_vec());
-
-        true
-    }
-
-    fn reset(&self) {
-        self.open_rw_context().cf(AddressBookCf).delete_all();
-    }
-
-    fn get_all(&self) -> Vec<Vec<u8>> {
-        self.open_rw_context()
-            .cf(AddressBookCf)
-            .get_all()
-    }
-}
-
-impl<R: WriteableRocks> HighPriorityPeersStore for NodeDatabase<R> {
-    fn upsert_all_peers(&self, peers: &[u8]) {
-        self.open_rw_context().cf(HighPriorityPeersCf).put(&(), &peers.to_vec());
-    }
-
-    fn get_all_peers(&self) -> Option<Vec<u8>> {
-        self.open_rw_context().cf(HighPriorityPeersCf)
-            .get(&())
-    }
-
-    fn reset_high_priority_peers(&self) {
-        self.open_rw_context().cf(HighPriorityPeersCf).delete(&());
-    }
-}
-
-impl<R: WriteableRocks> SafetyStateStore for NodeDatabase<R> {
-    fn upsert_safety_state(&self, safety_state: &[u8]) {
-        self.open_rw_context().cf(SafetyStoreCf).put(&(), &safety_state.to_vec());
-    }
-
-    fn get_safety_state(&self) -> Option<Vec<u8>> {
-        self.open_rw_context().cf(SafetyStoreCf)
-            .get(&())
-    }
-}
-
-impl<R: WriteableRocks> MigrationStore for NodeDatabase<R> {
-    fn is_migration_done(&self, store_id: MigrationId) -> bool {
-        self.open_rw_context().cf(MigrationStatusCf)
-            .get(&store_id).is_some()
-    }
-
-    fn migration_done(&self, store_id: MigrationId) {
-        self.open_rw_context().cf(MigrationStatusCf)
-            .put(&store_id, &MigrationStatus::Completed)
     }
 }
 
