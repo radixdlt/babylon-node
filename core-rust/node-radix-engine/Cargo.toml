@@ -27,7 +27,7 @@ rand = { workspace = true }
 
 rocksdb = { version = "=0.21.0" }
 lru = { version = "=0.8.1", default-features = false }
-slotmap = { version = "=1.0.6" }
+slotmap = { version = "=1.0.7" }
 im = { version = "=15.1.0" }
 
 [dev-dependencies]
