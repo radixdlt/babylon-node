@@ -50,14 +50,14 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 # - https://packages.debian.org/bookworm/openjdk-17-jdk
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    docker.io=20.10.24+dfsg1-1+b3 \
-    libssl-dev=3.0.13-1~deb12u1 \
-    pkg-config=1.8.1-1 \
-    unzip=6.0-28 \
-    wget=${WGET_VERSION} \
-    software-properties-common=0.99.30-4 \
+    docker.io \
+    libssl-dev \
+    pkg-config \
+    unzip \
+    wget \
+    software-properties-common \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=${OPENJDK_17_VERSION} \
+    openjdk-17-jdk \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -125,15 +125,14 @@ WORKDIR /app
 RUN apt-get update \
   && apt-get -y --no-install-recommends install \
     ca-certificates \
-    build-essential=12.9 \
-    # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u6 \
+    build-essential \
+    curl \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
-    libc6-dev-arm64-cross=2.36-8cross1 \
-    libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.13-1~deb12u1 \
-    pkg-config=1.8.1-1 \
+    libc6-dev-arm64-cross \
+    libclang-dev \
+    libssl-dev \
+    pkg-config \
   && rm -rf /var/lib/apt/lists/*
 
 # We fix the version of Rust here to ensure that we can update it without having
@@ -259,16 +258,11 @@ ARG OPENJDK_17_VERSION="17.0.11+9-1~deb12u1"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=${OPENJDK_17_VERSION} \
-    # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u6 \
-    gettext-base=0.21-12 \
-    daemontools=1:0.76-8.1 \
-    # https://security-tracker.debian.org/tracker/CVE-2023-4911
-    # Fixes CVE-2023-4911 can be removed when we update the base OS image to include this fix
-    # docker run -it debian:12.1-slim ldd --version
-    # This fix can be removed as long as the version printed in the above command is 2.36-9+deb12u3 or above
-    libc6=2.36-9+deb12u4 \
+    openjdk-17-jre-headless \
+    curl \
+    gettext-base \
+    daemontools \
+    libc6 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
