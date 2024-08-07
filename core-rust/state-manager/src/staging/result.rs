@@ -79,8 +79,8 @@ use crate::staging::ReadableStore;
 
 use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
 use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
-use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use crate::traits::{ConfigurableDatabase, LeafSubstateKeyAssociation};
+use crate::store::consensus::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use crate::consensus::traits::{ConfigurableDatabase, LeafSubstateKeyAssociation};
 use node_common::utils::IsAccountExt;
 
 pub enum ProcessedTransactionReceipt {

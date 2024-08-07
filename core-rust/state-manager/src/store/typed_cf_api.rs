@@ -62,10 +62,10 @@
  * permissions under this License.
  */
 
-use crate::address_book_components::AddressBookNodeId;
+use crate::p2p::address_book_components::AddressBookNodeId;
 use crate::engine_prelude::*;
-use crate::migration::{MigrationId, MigrationStatus};
-use crate::store::rocks_db::{ReadableRocks, WriteableRocks};
+use crate::store::p2p::migration::{MigrationId, MigrationStatus};
+use crate::store::common::rocks_db::{ReadableRocks, WriteableRocks};
 use itertools::Itertools;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch};
 use std::ops::Range;

@@ -87,7 +87,7 @@ use crate::priority_mempool::PriorityMempool;
 use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolManager;
-use crate::rocks_db::{ActualNodeDatabase, ActualStateManagerDatabase};
+use crate::store::consensus::rocks_db::{ActualNodeDatabase, ActualStateManagerDatabase};
 use crate::transaction::Preparator;
 use crate::{Committer, LedgerMetrics, SystemExecutor};
 use crate::{StateManager, StateManagerConfig};

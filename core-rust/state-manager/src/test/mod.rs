@@ -1,6 +1,6 @@
 use crate::engine_prelude::*;
 use crate::query::TransactionIdentifierLoader;
-use crate::traits::QueryableProofStore;
+use crate::store::consensus::traits::QueryableProofStore;
 use crate::{
     CommitRequest, CommitSummary, LedgerHeader, LedgerProof, LedgerProofOrigin, PrepareRequest,
     PrepareResult, RoundHistory, StateManager, StateManagerConfig,

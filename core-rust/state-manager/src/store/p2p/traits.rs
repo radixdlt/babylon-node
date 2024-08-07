@@ -62,42 +62,34 @@
  * permissions under this License.
  */
 
-use jni::JNIEnv;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
+use crate::engine_prelude::*;
 
-use node_common::java::*;
+pub mod node {
+    use crate::p2p::address_book_components::AddressBookNodeId;
+    use crate::p2p::migration::MigrationId;
 
-use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::store::p2p::migration::MigrationId;
-use crate::p2p::traits::node::MigrationStore;
+    use super::*;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_db_RocksDbMigrationStore_migrationDone(
-    env: JNIEnv,
-    _class: JClass,
-    j_rust_global_context: JObject,
-    migration_id: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, migration_id, |migration_store_id: MigrationId| {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
-            .migration_done(migration_store_id);
-    })
+    pub trait AddressBookStore {
+        fn remove_one(&self, node_id: &AddressBookNodeId) -> bool;
+        fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool;
+        fn reset(&self);
+        fn get_all(&self, ) -> Vec<Vec<u8>>;
+    }
+
+    pub trait HighPriorityPeersStore {
+        fn upsert_all_peers(&self, peers: &[u8]);
+        fn get_all_peers(&self) -> Option<Vec<u8>>;
+        fn reset_high_priority_peers(&self);
+    }
+
+    pub trait SafetyStateStore {
+        fn upsert_safety_state(&self, safety_state: &[u8]);
+        fn get_safety_state(&self) -> Option<Vec<u8>>;
+    }
+    
+    pub trait MigrationStore {
+        fn is_migration_done(&self, store_id: MigrationId) -> bool;
+        fn migration_done(&self, store_id: MigrationId);
+    }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_db_RocksDbMigrationStore_isMigrated(
-    env: JNIEnv,
-    _class: JClass,
-    j_rust_global_context: JObject,
-    migration_id: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, migration_id, |migration_store_id: MigrationId| -> bool {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
-            .is_migration_done(migration_store_id)
-    })
-}
-
-pub fn export_extern_functions() {}

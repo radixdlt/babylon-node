@@ -3,7 +3,7 @@ use std::any::type_name;
 use std::ops::RangeInclusive;
 
 use crate::engine_prelude::*;
-use state_manager::store::traits::scenario::ScenarioSequenceNumber;
+use state_manager::store::consensus::traits::scenario::ScenarioSequenceNumber;
 use state_manager::StateVersion;
 
 use crate::core_api::models;

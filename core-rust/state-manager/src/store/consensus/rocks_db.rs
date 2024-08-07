@@ -64,39 +64,38 @@
 
 use std::collections::HashSet;
 use crate::engine_prelude::*;
-use crate::store::traits::*;
+use crate::store::common::rocks_db::*;
+use crate::store::consensus::traits::*;
 use crate::{
     BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin,
     LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash,
     StateVersion, SubstateChangeAction, TransactionTreeHash,
 };
 use node_common::utils::IsAccountExt;
-use rocksdb::checkpoint::Checkpoint;
 use rocksdb::{
-    AsColumnFamilyRef, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice, Direction,
-    IteratorMode, Options, Snapshot, WriteBatch, DB,
+    ColumnFamilyDescriptor, Direction, IteratorMode, Options, DB,
 };
 
 use std::path::PathBuf;
 use node_common::locks::Snapshottable;
 use tracing::{error, info, warn};
-use super::traits::extensions::*;
+use crate::store::consensus::traits::extensions::*;
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::address_book_components::AddressBookNodeId;
+use crate::p2p::address_book_components::AddressBookNodeId;
 use crate::column_families::*;
-use crate::migration::{MigrationId, MigrationStatus};
+use crate::store::p2p::migration::{MigrationId, MigrationStatus};
 use crate::query::TransactionIdentifierLoader;
 use crate::store::historical_state::StateTreeBasedSubstateDatabase;
-use crate::store::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
-use crate::store::traits::indices::{
+use crate::store::consensus::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
+use crate::store::consensus::traits::indices::{
     CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintNameV1,
 };
-use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
-use crate::store::traits::scenario::{
+use crate::store::consensus::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
+use crate::store::consensus::traits::scenario::{
     ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber,
 };
 use crate::store::typed_cf_api::*;
-use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
+use crate::p2p::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
 use crate::transaction::{
     LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
 };
@@ -153,202 +152,6 @@ const ALL_NODE_COLUMN_FAMILIES: [&str; 4] = [
     SafetyStoreCf::DEFAULT_NAME,
     HighPriorityPeersCf::DEFAULT_NAME,
 ];
-
-/// A redefined RocksDB's "key and value bytes" tuple (the original one lives in a private module).
-pub type KVBytes = (Box<[u8]>, Box<[u8]>);
-
-/// A trait capturing the common read methods present both in a "direct" RocksDB instance and in its
-/// snapshots.
-///
-/// The library we use (a thin C wrapper, really) does not introduce this trivial and natural trait
-/// itself, while we desperately need it to abstract the DB-reading code from the actual source of
-/// data.
-///
-/// A note on changed error handling:
-/// The original methods typically return [`Result`]s. Our trait assumes panics instead, since we
-/// treat all database access errors as fatal anyways.
-pub trait ReadableRocks {
-    /// Resolves the column family by name.
-    fn cf_handle(&self, name: &str) -> &ColumnFamily;
-
-    /// Starts iteration over key-value pairs, according to the given [`IteratorMode`].
-    fn iterator_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item=KVBytes> + '_>;
-
-    /// Gets a single value by key.
-    fn get_pinned_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice>;
-
-    /// Gets multiple values by keys.
-    ///
-    /// Syntax note:
-    /// The `<'a>` here is not special at all: it could technically be 100% inferred. Just the
-    /// compiler feature allowing to skip it from within the `<Item = &...>` is not yet stable.
-    /// TODO(when the rustc feature mentioned above becomes stable): get rid of the `<'a>`.
-    fn multi_get_cf<'a>(
-        &'a self,
-        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
-    ) -> Vec<Option<Vec<u8>>>;
-}
-
-/// A write-supporting extension of the [`ReadableRocks`].
-///
-/// Naturally, it is expected that only a "direct" RocksDB instance can implement this one.
-pub trait WriteableRocks: ReadableRocks {
-    /// Atomically writes the given batch of updates.
-    fn write(&self, batch: WriteBatch);
-
-    /// Returns a snapshot of the current state.
-    fn snapshot(&self) -> SnapshotRocks;
-}
-
-/// A [`ReadableRocks`] instance opened as secondary instance.
-pub trait SecondaryRocks: ReadableRocks {
-    /// Tries to catch up with the primary by reading as much as possible from the
-    /// log files.
-    fn try_catchup_with_primary(&self);
-}
-
-/// RocksDB checkpoint support.
-pub trait CheckpointableRocks {
-    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error>;
-}
-
-/// Direct RocksDB instance.
-pub struct DirectRocks {
-    db: DB,
-}
-
-impl ReadableRocks for DirectRocks {
-    fn cf_handle(&self, name: &str) -> &ColumnFamily {
-        self.db.cf_handle(name).expect(name)
-    }
-
-    fn iterator_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item=KVBytes> + '_> {
-        Box::new(
-            self.db
-                .iterator_cf(cf, mode)
-                .map(|result| result.expect("reading from DB iterator")),
-        )
-    }
-
-    fn get_pinned_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice> {
-        self.db.get_pinned_cf(cf, key).expect("DB get by key")
-    }
-
-    fn multi_get_cf<'a>(
-        &'a self,
-        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
-    ) -> Vec<Option<Vec<u8>>> {
-        self.db
-            .multi_get_cf(keys)
-            .into_iter()
-            .map(|result| result.expect("batch DB get by key"))
-            .collect()
-    }
-}
-
-impl WriteableRocks for DirectRocks {
-    fn write(&self, batch: WriteBatch) {
-        self.db.write(batch).expect("DB write batch");
-    }
-
-    fn snapshot(&self) -> SnapshotRocks {
-        SnapshotRocks {
-            db: &self.db,
-            snapshot: self.db.snapshot(),
-        }
-    }
-}
-
-impl SecondaryRocks for DirectRocks {
-    fn try_catchup_with_primary(&self) {
-        self.db
-            .try_catch_up_with_primary()
-            .expect("secondary DB catchup");
-    }
-}
-
-impl CheckpointableRocks for DirectRocks {
-    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
-        create_checkpoint(&self.db, checkpoint_path)
-    }
-}
-
-impl<'db> CheckpointableRocks for SnapshotRocks<'db> {
-    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
-        create_checkpoint(self.db, checkpoint_path)
-    }
-}
-
-fn create_checkpoint(db: &DB, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
-    let checkpoint = Checkpoint::new(db)?;
-    checkpoint.create_checkpoint(checkpoint_path)?;
-    Ok(())
-}
-
-/// Snapshot of RocksDB.
-///
-/// Implementation note:
-/// The original [`DB`] reference is interestingly kept internally by the [`Snapshot`] as well.
-/// However, we need direct access to it for the [`Self::cf_handle()`] reasons.
-pub struct SnapshotRocks<'db> {
-    db: &'db DB,
-    snapshot: Snapshot<'db>,
-}
-
-impl<'db> ReadableRocks for SnapshotRocks<'db> {
-    fn cf_handle(&self, name: &str) -> &ColumnFamily {
-        self.db.cf_handle(name).expect(name)
-    }
-
-    fn iterator_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item=KVBytes> + '_> {
-        Box::new(
-            self.snapshot
-                .iterator_cf(cf, mode)
-                .map(|result| result.expect("reading from snapshot DB iterator")),
-        )
-    }
-
-    fn get_pinned_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice> {
-        self.snapshot
-            .get_pinned_cf(cf, key)
-            .expect("snapshot DB get by key")
-    }
-
-    fn multi_get_cf<'a>(
-        &'a self,
-        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
-    ) -> Vec<Option<Vec<u8>>> {
-        self.snapshot
-            .multi_get_cf(keys)
-            .into_iter()
-            .map(|result| result.expect("batch snapshot DB get by key"))
-            .collect()
-    }
-}
 
 pub type ActualStateManagerDatabase = StateManagerDatabase<DirectRocks>;
 pub type ActualNodeDatabase = NodeDatabase<DirectRocks>;

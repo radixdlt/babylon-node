@@ -63,7 +63,7 @@
  */
 
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::store::traits::{RecoverableVertexStore, VertexStoreBlobV1, WriteableVertexStore};
+use crate::store::consensus::traits::{RecoverableVertexStore, VertexStoreBlobV1, WriteableVertexStore};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;

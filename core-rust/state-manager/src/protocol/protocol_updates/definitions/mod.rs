@@ -12,7 +12,7 @@ pub use test_definition::*;
 
 use crate::engine_prelude::*;
 use crate::protocol::*;
-use crate::rocks_db::ActualStateManagerDatabase;
+use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::*;
 use node_common::locks::DbLock;
 use std::ops::Deref;

@@ -2,7 +2,7 @@ use crate::core_api::*;
 
 use crate::engine_prelude::*;
 
-use state_manager::store::traits::scenario::{
+use state_manager::store::consensus::traits::scenario::{
     ExecutedScenario, ExecutedScenarioStore, ExecutedScenarioTransaction, ScenarioSequenceNumber,
 };
 

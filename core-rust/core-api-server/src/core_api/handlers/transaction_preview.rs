@@ -1,7 +1,7 @@
 use crate::core_api::*;
 use crate::engine_prelude::*;
 
-use state_manager::rocks_db::ActualStateManagerDatabase;
+use state_manager::store::consensus::rocks_db::ActualStateManagerDatabase;
 use state_manager::transaction::ProcessedPreviewResult;
 use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
 

@@ -1,5 +1,5 @@
-use crate::address_book_components::AddressBookNodeId;
-use crate::migration::{MigrationId, MigrationStatus};
+use crate::p2p::address_book_components::AddressBookNodeId;
+use crate::store::p2p::migration::{MigrationId, MigrationStatus};
 use crate::store::codecs::{
     BlueprintAndCreationIndexKeyDbCodec, EpochDbCodec, HashDbCodec, NodeIdDbCodec,
     PrefixGlobalAddressDbCodec, RawLedgerTransactionDbCodec, ScenarioSequenceNumberDbCodec,
@@ -10,15 +10,15 @@ use crate::store::typed_cf_api::{
     AddressBookNodeIdDbCodec, DefaultCf, DirectDbCodec, MigrationIdDbCodec, MigrationStatusDbCodec,
     PredefinedDbCodec, TypedCf, UnitDbCodec, VersionedCf,
 };
-use crate::traits::gc::{LedgerProofsGcProgress, VersionedLedgerProofsGcProgress};
-use crate::traits::indices::{
+use crate::consensus::traits::gc::{LedgerProofsGcProgress, VersionedLedgerProofsGcProgress};
+use crate::consensus::traits::indices::{
     CreationId, EntityBlueprintId, ObjectBlueprintName, VersionedEntityBlueprintId,
     VersionedObjectBlueprintName,
 };
-use crate::traits::scenario::{
+use crate::consensus::traits::scenario::{
     ExecutedScenario, ScenarioSequenceNumber, VersionedExecutedScenario,
 };
-use crate::traits::{
+use crate::consensus::traits::{
     ReceiptAccuTreeSlice, StaleTreeParts, SubstateNodeAncestryRecord, TransactionAccuTreeSlice,
     VersionedReceiptAccuTreeSlice, VersionedStaleTreeParts, VersionedSubstateNodeAncestryRecord,
     VersionedTransactionAccuTreeSlice, VersionedVertexStoreBlob, VertexStoreBlob,

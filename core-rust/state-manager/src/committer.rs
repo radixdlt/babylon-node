@@ -64,7 +64,7 @@
 
 use crate::mempool_manager::MempoolManager;
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
-use crate::store::traits::*;
+use crate::store::consensus::traits::*;
 use crate::transaction::*;
 use crate::types::CommitRequest;
 use crate::*;
@@ -80,7 +80,7 @@ use crate::system_commits::*;
 
 use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 
-use crate::rocks_db::ActualStateManagerDatabase;
+use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::SystemTime;

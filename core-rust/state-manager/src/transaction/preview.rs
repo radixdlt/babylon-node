@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::historical_state::{StateHistoryError, VersionScopingSupport};
 
-use crate::rocks_db::ActualStateManagerDatabase;
+use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::*;
 use crate::{
     GlobalBalanceSummary, LedgerStateChanges, LedgerStateSummary, PreviewRequest,

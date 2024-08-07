@@ -3,7 +3,7 @@ use crate::core_api::*;
 use crate::engine_prelude::*;
 
 use state_manager::query::TransactionIdentifierLoader;
-use state_manager::store::traits::*;
+use state_manager::store::consensus::traits::*;
 use state_manager::{LedgerHashes, LedgerProof, LedgerStateSummary, StateVersion};
 
 #[tracing::instrument(skip(state))]

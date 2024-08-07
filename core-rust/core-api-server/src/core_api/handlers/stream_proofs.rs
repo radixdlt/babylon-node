@@ -1,8 +1,9 @@
 use crate::core_api::*;
 
 use crate::engine_prelude::*;
-use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
-use state_manager::store::traits::*;
+use state_manager::common::rocks_db::ReadableRocks;
+use state_manager::consensus::rocks_db::StateManagerDatabase;
+use state_manager::store::consensus::traits::*;
 use state_manager::{LedgerProof, LedgerProofOrigin, StateVersion};
 
 #[tracing::instrument(skip(state))]

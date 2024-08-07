@@ -64,12 +64,12 @@
 
 use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::traits::node::AddressBookStore;
+use crate::p2p::traits::node::AddressBookStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
-use crate::address_book_components::{AddressBookEntry, AddressBookNodeId};
+use crate::p2p::address_book_components::{AddressBookEntry, AddressBookNodeId};
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_removeOne(

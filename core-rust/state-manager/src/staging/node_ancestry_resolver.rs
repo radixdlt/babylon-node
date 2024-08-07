@@ -63,7 +63,7 @@
  */
 
 use crate::engine_prelude::*;
-use crate::store::traits::*;
+use crate::store::consensus::traits::*;
 use crate::{SubstateChangeAction, SubstateReference};
 use std::borrow::Borrow;
 use std::collections::hash_map::Entry;

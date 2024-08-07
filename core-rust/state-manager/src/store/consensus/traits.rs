@@ -169,36 +169,6 @@ pub struct LeafSubstateKeyAssociation {
     pub substate_value: Vec<u8>,
 }
 
-pub mod node {
-    use crate::address_book_components::AddressBookNodeId;
-    use crate::migration::MigrationId;
-
-    use super::*;
-
-    pub trait AddressBookStore {
-        fn remove_one(&self, node_id: &AddressBookNodeId) -> bool;
-        fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool;
-        fn reset(&self);
-        fn get_all(&self, ) -> Vec<Vec<u8>>;
-    }
-
-    pub trait HighPriorityPeersStore {
-        fn upsert_all_peers(&self, peers: &[u8]);
-        fn get_all_peers(&self) -> Option<Vec<u8>>;
-        fn reset_high_priority_peers(&self);
-    }
-
-    pub trait SafetyStateStore {
-        fn upsert_safety_state(&self, safety_state: &[u8]);
-        fn get_safety_state(&self) -> Option<Vec<u8>>;
-    }
-    
-    pub trait MigrationStore {
-        fn is_migration_done(&self, store_id: MigrationId) -> bool;
-        fn migration_done(&self, store_id: MigrationId);
-    }
-}
-
 pub mod vertex {
     use super::*;
 
@@ -294,7 +264,7 @@ pub mod substate {
 pub mod transactions {
     use super::*;
 
-    use crate::store::traits::CommittedTransactionBundle;
+    use crate::store::consensus::traits::CommittedTransactionBundle;
     use crate::{
         CommittedTransactionIdentifiers, LedgerHashes, LedgerTransactionReceipt,
         LocalTransactionExecution, LocalTransactionReceipt,
