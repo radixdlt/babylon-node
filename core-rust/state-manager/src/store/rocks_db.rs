@@ -77,7 +77,7 @@ use crate::{
 use node_common::utils::IsAccountExt;
 use rocksdb::checkpoint::Checkpoint;
 use rocksdb::{
-    AsColumnFamilyRef, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice, Direction,
+    AsColumnFamilyRef, Cache, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice, Direction,
     IteratorMode, Options, Snapshot, WriteBatch, DB,
 };
 
@@ -781,6 +781,7 @@ impl ActualStateManagerDatabase {
         let mut db_opts = Options::default();
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
+        db_opts.set_row_cache(&Cache::new_lru_cache(1024 * 1024 * 1024));
 
         let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
             .iter()
