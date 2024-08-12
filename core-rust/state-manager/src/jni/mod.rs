@@ -62,22 +62,19 @@
  * permissions under this License.
  */
 
-pub mod address_book;
 pub mod db_checkpoints;
 pub mod fatal_panic_handler;
-pub mod high_priority_peers;
 pub mod mempool;
-pub mod migration_store;
 pub mod node_rust_environment;
 pub mod prometheus;
 pub mod protocol_update;
-pub mod safety_store;
 pub mod state_computer;
 pub mod state_reader;
 pub mod test_state_reader;
 pub mod transaction_preparer;
 pub mod transaction_store;
 pub mod vertex_store_recovery;
+pub mod p2p;
 
 use crate::engine_prelude::*;
 
