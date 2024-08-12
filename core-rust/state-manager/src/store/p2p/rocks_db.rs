@@ -74,7 +74,7 @@ use crate::p2p::column_families::{AddressBookCf, HighPriorityPeersCf, MigrationS
 use crate::p2p::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
 use crate::store::common::rocks_db::*;
 use crate::store::p2p::migration::{MigrationId, MigrationStatus};
-use crate::store::typed_cf_api::*;
+use crate::store::common::typed_cf_api::*;
 
 /// A listing of all column family names used by the Node.
 ///

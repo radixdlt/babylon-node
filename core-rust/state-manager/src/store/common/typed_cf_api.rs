@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use crate::p2p::address_book_components::AddressBookNodeId;
 use crate::engine_prelude::*;
-use crate::store::p2p::migration::{MigrationId, MigrationStatus};
 use crate::store::common::rocks_db::{ReadableRocks, WriteableRocks};
 use itertools::Itertools;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch};
@@ -732,25 +730,6 @@ impl DbCodec<Vec<u8>> for DirectDbCodec {
     }
 }
 
-#[derive(Clone, Default)]
-pub struct AddressBookNodeIdDbCodec {}
-
-impl DbCodec<AddressBookNodeId> for AddressBookNodeIdDbCodec {
-    fn encode(&self, value: &AddressBookNodeId) -> Vec<u8> {
-        value.as_bytes().to_vec()
-    }
-
-    fn decode(&self, bytes: &[u8]) -> AddressBookNodeId {
-        AddressBookNodeId::new(bytes.try_into().expect("Invalid NodeId"))
-    }
-}
-
-impl BoundedDbCodec for AddressBookNodeIdDbCodec {
-    fn upper_bound_encoding(&self) -> Vec<u8> {
-        vec![0xFF; AddressBookNodeId::LENGTH]
-    }
-}
-
 /// A [`DbCodec]` capable of representing only a unit `()` (as an empty array).
 /// This is useful e.g. for "single-row" column families (which do not need keys), or "key-only"
 /// column families (which do not need values).
@@ -764,41 +743,6 @@ impl DbCodec<()> for UnitDbCodec {
 
     fn decode(&self, bytes: &[u8]) {
         assert_eq!(bytes.len(), 0);
-    }
-}
-
-/// A [`DbCodec]` capable of representing [`MigrationId]`.
-#[derive(Clone, Default)]
-pub struct MigrationIdDbCodec;
-
-impl DbCodec<MigrationId> for MigrationIdDbCodec {
-    fn encode(&self, key: &MigrationId) -> Vec<u8> {
-        vec![*key as u8]
-    }
-
-    fn decode(&self, bytes: &[u8]) -> MigrationId {
-        match bytes[0] {
-            0 => MigrationId::AddressBook,
-            1 => MigrationId::SafetyState,
-            _ => panic!("Invalid MigrationId"),
-        }
-    }
-}
-
-/// A [`DbCodec]` capable of representing [`MigrationStatus]`.
-#[derive(Clone, Default)]
-pub struct MigrationStatusDbCodec;
-
-impl DbCodec<MigrationStatus> for MigrationStatusDbCodec {
-    fn encode(&self, key: &MigrationStatus) -> Vec<u8> {
-        vec![*key as u8]
-    }
-
-    fn decode(&self, bytes: &[u8]) -> MigrationStatus {
-        match bytes[0] {
-            0 => MigrationStatus::Completed,
-            _ => panic!("Invalid MigrationId"),
-        }
     }
 }
 

@@ -69,7 +69,7 @@ use crate::engine_prelude::*;
 
 use crate::store::consensus::traits::indices::CreationId;
 use crate::store::consensus::traits::scenario::ScenarioSequenceNumber;
-use crate::store::typed_cf_api::*;
+use crate::store::common::typed_cf_api::*;
 use crate::transaction::RawLedgerTransaction;
 use crate::StateVersion;
 

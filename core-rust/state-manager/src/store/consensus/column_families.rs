@@ -32,7 +32,7 @@ use crate::store::codecs::{
     StateVersionDbCodec, StoredTreeNodeKeyDbCodec, SubstateKeyDbCodec,
     TypeAndCreationIndexKeyDbCodec,
 };
-use crate::store::typed_cf_api::{
+use crate::store::common::typed_cf_api::{
     DefaultCf, DirectDbCodec,
     PredefinedDbCodec, TypedCf, UnitDbCodec, VersionedCf,
 };

@@ -94,7 +94,7 @@ use crate::store::consensus::traits::scenario::{
     ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber,
 };
 use crate::store::historical_state::StateTreeBasedSubstateDatabase;
-use crate::store::typed_cf_api::*;
+use crate::store::common::typed_cf_api::*;
 use crate::transaction::{
     LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
 };

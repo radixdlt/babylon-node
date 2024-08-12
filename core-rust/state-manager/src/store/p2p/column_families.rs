@@ -1,9 +1,11 @@
+use crate::store::common::typed_cf_api::{
+    DefaultCf, DirectDbCodec, UnitDbCodec,
+};
+use crate::store::p2p::typed_cf_api::{
+    AddressBookNodeIdDbCodec, MigrationIdDbCodec, MigrationStatusDbCodec,
+};
 use crate::store::p2p::address_book_components::AddressBookNodeId;
 use crate::store::p2p::migration::{MigrationId, MigrationStatus};
-use crate::store::typed_cf_api::{
-    AddressBookNodeIdDbCodec, DefaultCf, DirectDbCodec, MigrationIdDbCodec, MigrationStatusDbCodec
-    , UnitDbCodec,
-};
 
 /// Address book and safety state store migration status. Filled once during the migration.
 pub struct MigrationStatusCf;

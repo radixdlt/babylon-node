@@ -62,53 +62,61 @@
  * permissions under this License.
  */
 
-use std::sync::Arc;
+use crate::p2p::address_book_components::AddressBookNodeId;
+use crate::engine_prelude::*;
+use crate::store::p2p::migration::{MigrationId, MigrationStatus};
+use crate::store::common::typed_cf_api::{ DbCodec, BoundedDbCodec};
 
-use prometheus::Registry;
-use sbor::{Categorize, Decode, Encode};
+#[derive(Clone, Default)]
+pub struct AddressBookNodeIdDbCodec {}
 
-use node_common::locks::DbLock;
-use consensus::rocks_db::ActualStateManagerDatabase;
-
-use crate::RawDbMetrics;
-pub use crate::store::consensus::traits::DatabaseConfig;
-use crate::store::consensus::traits::measurement::MeasurableDatabase;
-
-pub mod historical_state;
-pub mod jmt_gc;
-pub mod proofs_gc;
-mod codecs;
-pub mod p2p;
-pub mod consensus;
-pub mod common;
-
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub struct DatabaseBackendConfig {
-    pub rocks_db_path: String,
-}
-
-/// A synchronous collector of costly (I/O-intensive) raw DB metrics.
-pub struct RawDbMetricsCollector {
-    database: Arc<DbLock<ActualStateManagerDatabase>>,
-    raw_db_metrics: RawDbMetrics,
-}
-
-impl RawDbMetricsCollector {
-    /// Creates a collector measuring the given DB and updating the metrics in the given registry.
-    pub fn new(
-        database: Arc<DbLock<ActualStateManagerDatabase>>,
-        metric_registry: &Registry,
-    ) -> Self {
-        Self {
-            database,
-            raw_db_metrics: RawDbMetrics::new(metric_registry),
-        }
+impl DbCodec<AddressBookNodeId> for AddressBookNodeIdDbCodec {
+    fn encode(&self, value: &AddressBookNodeId) -> Vec<u8> {
+        value.as_bytes().to_vec()
     }
 
-    /// Performs a single "collect measurements + update metric primitives" run.
-    /// Should be called periodically.
-    pub fn run(&self) {
-        let statistics = self.database.access_direct().get_data_volume_statistics();
-        self.raw_db_metrics.update(statistics);
+    fn decode(&self, bytes: &[u8]) -> AddressBookNodeId {
+        AddressBookNodeId::new(bytes.try_into().expect("Invalid NodeId"))
+    }
+}
+
+impl BoundedDbCodec for AddressBookNodeIdDbCodec {
+    fn upper_bound_encoding(&self) -> Vec<u8> {
+        vec![0xFF; AddressBookNodeId::LENGTH]
+    }
+}
+
+/// A [`DbCodec]` capable of representing [`MigrationId]`.
+#[derive(Clone, Default)]
+pub struct MigrationIdDbCodec;
+
+impl DbCodec<MigrationId> for MigrationIdDbCodec {
+    fn encode(&self, key: &MigrationId) -> Vec<u8> {
+        vec![*key as u8]
+    }
+
+    fn decode(&self, bytes: &[u8]) -> MigrationId {
+        match bytes[0] {
+            0 => MigrationId::AddressBook,
+            1 => MigrationId::SafetyState,
+            _ => panic!("Invalid MigrationId"),
+        }
+    }
+}
+
+/// A [`DbCodec]` capable of representing [`MigrationStatus]`.
+#[derive(Clone, Default)]
+pub struct MigrationStatusDbCodec;
+
+impl DbCodec<MigrationStatus> for MigrationStatusDbCodec {
+    fn encode(&self, key: &MigrationStatus) -> Vec<u8> {
+        vec![*key as u8]
+    }
+
+    fn decode(&self, bytes: &[u8]) -> MigrationStatus {
+        match bytes[0] {
+            0 => MigrationStatus::Completed,
+            _ => panic!("Invalid MigrationId"),
+        }
     }
 }
