@@ -79,8 +79,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_removeOne(
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |request: AddressBookNodeId| -> bool {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
             .remove_one(&request)
     })
 }
@@ -97,8 +96,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_upsertOne(
         // jni_sbor_coded_call.
         let entity = jni_jbytearray_to_vector(&env, address_entry).unwrap();
 
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
             .upsert_one(&request.node_id, &entity)
     })
 }
@@ -111,8 +109,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_reset(
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |_: ()| {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
             .reset();
     })
 }
@@ -125,8 +122,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_getAll(
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |_: ()| -> Vec<Vec<u8>> {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
             .get_all()
     })
 }

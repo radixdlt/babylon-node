@@ -98,7 +98,6 @@ import com.radixdlt.rev2.modules.REv2StateManagerModule;
 import com.radixdlt.statecomputer.commit.ActiveValidatorInfo;
 import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.store.NodeStorageLocation;
-import com.radixdlt.store.StateManagerStorageLocation;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -163,11 +162,8 @@ public class REv2StateComputerTest {
                     new SelfValidatorInfo(
                         ONLY_VALIDATOR_ID.getKey(), Optional.of(ONLY_VALIDATOR_ID)));
             bind(String.class)
-                .annotatedWith(StateManagerStorageLocation.class)
-                .toInstance(folder.getRoot().getAbsolutePath());
-            bind(String.class)
                 .annotatedWith(NodeStorageLocation.class)
-                .toInstance(folder.getRoot().getAbsolutePath() + "/NODE");
+                .toInstance(folder.getRoot().getAbsolutePath());
             bind(FatalPanicHandler.class).toInstance(() -> {});
           }
 

@@ -95,51 +95,89 @@ use crate::store::common::typed_cf_api::*;
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
 
-const ALL_NODE_COLUMN_FAMILIES: [&str; 4] = [
-    MigrationStatusCf::DEFAULT_NAME,
+const ALL_ADDRESS_BOOK_COLUMN_FAMILIES: [&str; 2] = [
     AddressBookCf::DEFAULT_NAME,
-    SafetyStoreCf::DEFAULT_NAME,
     HighPriorityPeersCf::DEFAULT_NAME,
 ];
+const ALL_SAFETY_STORE_COLUMN_FAMILIES: [&str; 1] = [
+    SafetyStoreCf::DEFAULT_NAME,
+];
+const ALL_MIGRATION_STORE_COLUMN_FAMILIES: [&str; 1] = [
+    MigrationStatusCf::DEFAULT_NAME,
+];
 
-pub type ActualNodeDatabase = NodeDatabase<DirectRocks>;
+pub type ActualAddressBookDatabase = AddressBookDatabase<DirectRocks>;
+pub type ActualSafetyStoreDatabase = SafetyStoreDatabase<DirectRocks>;
+pub type ActualMigrationDatabase = MigrationDatabase<DirectRocks>;
 
-/// A RocksDB-backed persistence layer for node-specific address book and safety store.
-pub struct NodeDatabase<R> {
+/// A RocksDB-backed persistence layer for address book.
+pub struct AddressBookDatabase<R> {
     /// Underlying RocksDB instance.
     rocks: R,
 }
 
-impl ActualNodeDatabase {
+/// A RocksDB-backed persistence layer for safety store.
+pub struct SafetyStoreDatabase<R> {
+    /// Underlying RocksDB instance.
+    rocks: R,
+}
+
+/// A RocksDB-backed persistence layer for migration database.
+pub struct MigrationDatabase<R> {
+    /// Underlying RocksDB instance.
+    rocks: R,
+}
+
+fn new_rocks_db(root_path: PathBuf, column_families: &[&str]) -> DB {
+    let mut db_opts = Options::default();
+    db_opts.create_if_missing(true);
+    db_opts.create_missing_column_families(true);
+
+    let column_families: Vec<ColumnFamilyDescriptor> = column_families
+        .iter()
+        .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+        .collect();
+
+    DB::open_cf_descriptors(&db_opts, root_path.as_path(), column_families).unwrap()
+}
+
+fn open_rw_context<R: WriteableRocks>(db: &R) -> TypedDbContext<R, BufferedWriteSupport<R>> {
+    TypedDbContext::new(db, BufferedWriteSupport::new(db))
+}
+
+impl ActualAddressBookDatabase {
     pub fn new(
         root_path: PathBuf,
-    ) -> ActualNodeDatabase {
-        let mut db_opts = Options::default();
-        db_opts.create_if_missing(true);
-        db_opts.create_missing_column_families(true);
-
-        let column_families: Vec<ColumnFamilyDescriptor> = ALL_NODE_COLUMN_FAMILIES
-            .iter()
-            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
-            .collect();
-
-        let db = DB::open_cf_descriptors(&db_opts, root_path.as_path(), column_families).unwrap();
-
-        NodeDatabase {
-            rocks: DirectRocks { db },
+    ) -> ActualAddressBookDatabase {
+        AddressBookDatabase {
+            rocks: DirectRocks { db: new_rocks_db(root_path, &ALL_ADDRESS_BOOK_COLUMN_FAMILIES) },
         }
     }
 }
 
-impl<R: WriteableRocks> NodeDatabase<R> {
-    fn open_rw_context(&self) -> TypedDbContext<R, BufferedWriteSupport<R>> {
-        TypedDbContext::new(&self.rocks, BufferedWriteSupport::new(&self.rocks))
+impl ActualSafetyStoreDatabase {
+    pub fn new(
+        root_path: PathBuf,
+    ) -> ActualSafetyStoreDatabase {
+        ActualSafetyStoreDatabase {
+            rocks: DirectRocks { db: new_rocks_db(root_path, &ALL_SAFETY_STORE_COLUMN_FAMILIES) },
+        }
     }
 }
 
-impl<R: WriteableRocks> AddressBookStore for NodeDatabase<R> {
+impl ActualMigrationDatabase {
+    pub fn new(
+        root_path: PathBuf,
+    ) -> ActualMigrationDatabase {
+        ActualMigrationDatabase {
+            rocks: DirectRocks { db: new_rocks_db(root_path, &ALL_MIGRATION_STORE_COLUMN_FAMILIES) },
+        }
+    }
+}
+
+impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
     fn remove_one(&self, node_id: &AddressBookNodeId) -> bool {
-        let binding = self.open_rw_context();
+        let binding = open_rw_context(&self.rocks);
         let context = binding.cf(AddressBookCf);
 
         if context.get(node_id).is_some() {
@@ -150,7 +188,7 @@ impl<R: WriteableRocks> AddressBookStore for NodeDatabase<R> {
     }
 
     fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool {
-        let binding = self.open_rw_context();
+        let binding = open_rw_context(&self.rocks);
         let context = binding.cf(AddressBookCf);
 
         context.put(node_id, &entry.to_vec());
@@ -159,50 +197,49 @@ impl<R: WriteableRocks> AddressBookStore for NodeDatabase<R> {
     }
 
     fn reset(&self) {
-        self.open_rw_context().cf(AddressBookCf).delete_all();
+        open_rw_context(&self.rocks).cf(AddressBookCf).delete_all();
     }
 
     fn get_all(&self) -> Vec<Vec<u8>> {
-        self.open_rw_context()
-            .cf(AddressBookCf)
+        open_rw_context(&self.rocks).cf(AddressBookCf)
             .get_all()
     }
 }
 
-impl<R: WriteableRocks> HighPriorityPeersStore for NodeDatabase<R> {
+impl<R: WriteableRocks> HighPriorityPeersStore for AddressBookDatabase<R> {
     fn upsert_all_peers(&self, peers: &[u8]) {
-        self.open_rw_context().cf(HighPriorityPeersCf).put(&(), &peers.to_vec());
+        open_rw_context(&self.rocks).cf(HighPriorityPeersCf).put(&(), &peers.to_vec());
     }
 
     fn get_all_peers(&self) -> Option<Vec<u8>> {
-        self.open_rw_context().cf(HighPriorityPeersCf)
+        open_rw_context(&self.rocks).cf(HighPriorityPeersCf)
             .get(&())
     }
 
     fn reset_high_priority_peers(&self) {
-        self.open_rw_context().cf(HighPriorityPeersCf).delete(&());
+        open_rw_context(&self.rocks).cf(HighPriorityPeersCf).delete(&());
     }
 }
 
-impl<R: WriteableRocks> SafetyStateStore for NodeDatabase<R> {
+impl<R: WriteableRocks> SafetyStateStore for SafetyStoreDatabase<R> {
     fn upsert_safety_state(&self, safety_state: &[u8]) {
-        self.open_rw_context().cf(SafetyStoreCf).put(&(), &safety_state.to_vec());
+        open_rw_context(&self.rocks).cf(SafetyStoreCf).put(&(), &safety_state.to_vec());
     }
 
     fn get_safety_state(&self) -> Option<Vec<u8>> {
-        self.open_rw_context().cf(SafetyStoreCf)
+        open_rw_context(&self.rocks).cf(SafetyStoreCf)
             .get(&())
     }
 }
 
-impl<R: WriteableRocks> MigrationStore for NodeDatabase<R> {
+impl<R: WriteableRocks> MigrationStore for MigrationDatabase<R> {
     fn is_migration_done(&self, store_id: MigrationId) -> bool {
-        self.open_rw_context().cf(MigrationStatusCf)
+        open_rw_context(&self.rocks).cf(MigrationStatusCf)
             .get(&store_id).is_some()
     }
 
     fn migration_done(&self, store_id: MigrationId) {
-        self.open_rw_context().cf(MigrationStatusCf)
+        open_rw_context(&self.rocks).cf(MigrationStatusCf)
             .put(&store_id, &MigrationStatus::Completed)
     }
 }

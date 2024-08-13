@@ -61,9 +61,8 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-
 use std::ops::Deref;
-use std::path::PathBuf;
+use std::path::{MAIN_SEPARATOR, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -72,7 +71,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::environment::setup_tracing;
-use node_common::java::{jni_call, jni_jbytearray_to_vector, StructFromJava};
+use node_common::java::{jni_call, jni_jbytearray_to_vector};
 use node_common::locks::*;
 use prometheus::Registry;
 
@@ -87,12 +86,12 @@ use crate::priority_mempool::PriorityMempool;
 use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolManager;
-use crate::store::p2p::rocks_db::ActualNodeDatabase;
+use crate::store::p2p::rocks_db::ActualAddressBookDatabase;
 use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::Preparator;
-use crate::{Committer, LedgerMetrics, SystemExecutor};
+use crate::{Committer, DatabaseBackendConfig, LedgerMetrics, SystemExecutor};
 use crate::{StateManager, StateManagerConfig};
-use crate::node::NodeConfig;
+use crate::p2p::rocks_db::{ActualMigrationDatabase, ActualSafetyStoreDatabase};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -102,10 +101,9 @@ extern "system" fn Java_com_radixdlt_environment_NodeRustEnvironment_init(
     _class: JClass,
     j_node_rust_env: JObject,
     j_config: jbyteArray,
-    j_node_config: jbyteArray,
 ) {
     jni_call(&env, || {
-        JNINodeRustEnvironment::init(&env, j_node_rust_env, j_config, j_node_config)
+        JNINodeRustEnvironment::init(&env, j_node_rust_env, j_config)
     });
 }
 
@@ -126,18 +124,15 @@ pub struct JNINodeRustEnvironment {
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
     pub running_task_tracker: UntilDropTracker,
-    pub node_store: Arc<DbLock<ActualNodeDatabase>>,
+    pub address_book_store: Arc<ActualAddressBookDatabase>,
+    pub safety_store_store: Arc<ActualSafetyStoreDatabase>,
+    pub migration_store: Arc<ActualMigrationDatabase>,
 }
 
 impl JNINodeRustEnvironment {
-    pub fn init(env: &JNIEnv, j_node_rust_env: JObject, j_config: jbyteArray, j_node_config: jbyteArray) {
-        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
-        let config = StateManagerConfig::valid_from_java(&config_bytes).unwrap();
-
-        let db_config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_node_config).unwrap();
-        let node_config = NodeConfig::from_java(&db_config_bytes).unwrap();
+    pub fn init(env: &JNIEnv, j_node_rust_env: JObject, j_config: jbyteArray) {
+        let (base_path, config) = Self::prepare_config(&jni_jbytearray_to_vector(env, j_config).unwrap());
         let network = config.network_definition.clone();
-
         let runtime = Arc::new(Runtime::new().unwrap());
 
         setup_tracing(
@@ -159,7 +154,7 @@ impl JNINodeRustEnvironment {
             .use_tokio(runtime.deref())
             .track_running_tasks()
             .measured(metric_registry.deref());
-
+        
         let state_manager = StateManager::new(
             config,
             Some(MempoolRelayDispatcher::new(env, j_node_rust_env).unwrap()),
@@ -169,10 +164,10 @@ impl JNINodeRustEnvironment {
         );
 
         let running_task_tracker = scheduler.into_task_tracker();
-        
-        let node_db_path = PathBuf::from(node_config.database_backend_config.rocks_db_path);
-        let raw_node_db = ActualNodeDatabase::new(node_db_path);
-        let node_store = Arc::new(lock_factory.named("node_database").new_db_lock(raw_node_db));
+
+        let address_book_db_path = Self::combine(&base_path, "address_book");
+        let safety_store_db_path = Self::combine(&base_path, "safety_store");
+        let migration_store_db_path = Self::combine(&base_path, "migration_store");
 
         let jni_node_rust_env = JNINodeRustEnvironment {
             runtime,
@@ -180,11 +175,39 @@ impl JNINodeRustEnvironment {
             state_manager,
             metric_registry,
             running_task_tracker,
-            node_store,
+            address_book_store: Arc::new(ActualAddressBookDatabase::new(address_book_db_path)),
+            safety_store_store: Arc::new(ActualSafetyStoreDatabase::new(safety_store_db_path)),
+            migration_store: Arc::new(ActualMigrationDatabase::new(migration_store_db_path)),
         };
 
         env.set_rust_field(j_node_rust_env, POINTER_JNI_FIELD_NAME, jni_node_rust_env)
             .unwrap();
+    }
+
+    fn prepare_config(config_bytes: &[u8]) -> (String, StateManagerConfig) {
+        let config = StateManagerConfig::valid_from_java(config_bytes).unwrap();
+        let base_path = config.database_backend_config.rocks_db_path.clone();
+        let mut state_manager_db_path = config.database_backend_config.rocks_db_path.clone();
+
+        state_manager_db_path.push(MAIN_SEPARATOR);
+        state_manager_db_path.push_str("state_manager");
+
+        let config = StateManagerConfig {
+            database_backend_config: DatabaseBackendConfig {
+                rocks_db_path: state_manager_db_path
+            },
+            ..config
+        };
+        
+        (base_path, config)
+    }
+
+    fn combine(base: &String, ext: &str) -> PathBuf {
+        let mut path = base.clone();
+        path.push(MAIN_SEPARATOR);
+        path.push_str(ext);
+        
+        PathBuf::from(path)
     }
 
     pub fn cleanup(env: &JNIEnv, j_node_rust_env: JObject) {
@@ -219,16 +242,28 @@ impl JNINodeRustEnvironment {
             .database
             .clone()
     }
-    
-    pub fn get_node_database(
+
+    pub fn get_address_book_database(
         env: &JNIEnv,
         j_node_rust_env: JObject,
-    ) -> Arc<DbLock<ActualNodeDatabase>> {
-        Self::get(env, j_node_rust_env)
-            .node_store
-            .clone()
+    ) -> Arc<ActualAddressBookDatabase> {
+        Self::get(env, j_node_rust_env).address_book_store.clone()
     }
 
+    pub fn get_safety_store_database(
+        env: &JNIEnv,
+        j_node_rust_env: JObject,
+    ) -> Arc<ActualSafetyStoreDatabase> {
+        Self::get(env, j_node_rust_env).safety_store_store.clone()
+    }
+
+    pub fn get_migration_database(
+        env: &JNIEnv,
+        j_node_rust_env: JObject,
+    ) -> Arc<ActualMigrationDatabase> {
+        Self::get(env, j_node_rust_env).migration_store.clone()
+    }
+    
     pub fn get_mempool(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<RwLock<PriorityMempool>> {
         Self::get(env, j_node_rust_env)
             .state_manager

@@ -96,7 +96,7 @@ import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
 import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
-import com.radixdlt.store.StateManagerStorageLocation;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
@@ -341,7 +341,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 RuntimeProperties properties,
                 Serialization serialization,
                 Metrics metrics,
-                @StateManagerStorageLocation String nodeStorageLocation) {
+                @NodeStorageLocation String nodeStorageLocation) {
               return new BerkeleySafetyStateStore(
                   serialization,
                   metrics,

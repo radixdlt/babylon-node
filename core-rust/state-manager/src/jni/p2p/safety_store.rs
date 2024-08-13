@@ -78,8 +78,7 @@ extern "system" fn Java_com_radixdlt_safety_RocksDbSafetyStore_upsert(
     request: jbyteArray,
 ) -> jbyteArray {
     jni_raw_sbor_fallible_call(&env, request, |bytes| {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_safety_store_database(&env, j_rust_global_context)
             .upsert_safety_state(&bytes);
         Ok(())
     })
@@ -93,8 +92,7 @@ extern "system" fn Java_com_radixdlt_safety_RocksDbSafetyStore_get(
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |_: ()| -> Option<Vec<u8>> {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_safety_store_database(&env, j_rust_global_context)
             .get_safety_state()
     })
 }

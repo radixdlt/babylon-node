@@ -78,15 +78,12 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.safety.RocksDbSafetyStore;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import java.io.IOException;
-import java.util.Random;
 import java.util.function.Consumer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class RocksSafetyStateStoreTest {
-  private static final Random RANDOM = new Random();
-
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Test
@@ -126,7 +123,6 @@ public class RocksSafetyStateStoreTest {
     final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
     final var mempoolMaxTransactionCount = 20;
     final var stateManagerDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
-    final var nodeDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
 
     final var config =
         new StateManagerConfig(
@@ -151,7 +147,6 @@ public class RocksSafetyStateStoreTest {
         // panics as runtime exceptions propagated up the stack (through JNI), which will fail the
         // test
         // gracefully anyway.
-        config,
-        new NodeConfig(nodeDbConfig));
+        config);
   }
 }

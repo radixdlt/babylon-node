@@ -306,7 +306,6 @@ public final class RustMempoolTest {
     final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
     final var mempoolMaxTransactionCount = 20;
     final var stateManagerDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
-    final var nodeDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
 
     final var config =
         new StateManagerConfig(
@@ -331,8 +330,7 @@ public final class RustMempoolTest {
         // panics as runtime exceptions propagated up the stack (through JNI), which will fail the
         // test
         // gracefully anyway.
-        config,
-        new NodeConfig(nodeDbConfig));
+        config);
   }
 
   private static void initStateComputer(NodeRustEnvironment nodeRustEnvironment) {

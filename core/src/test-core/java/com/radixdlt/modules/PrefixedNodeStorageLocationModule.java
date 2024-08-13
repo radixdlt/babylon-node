@@ -70,7 +70,6 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.store.NodeStorageLocation;
-import com.radixdlt.store.StateManagerStorageLocation;
 import java.io.File;
 
 /**
@@ -86,15 +85,8 @@ public final class PrefixedNodeStorageLocationModule extends AbstractModule {
 
   @Provides
   @Singleton
-  @StateManagerStorageLocation
+  @NodeStorageLocation
   private String stateManagerStorageLocation(@Self ECDSASecp256k1PublicKey publicKey) {
     return new File(baseLocation, publicKey.toHex()).getPath();
-  }
-
-  @Provides
-  @Singleton
-  @NodeStorageLocation
-  private String nodeStorageLocation(@Self ECDSASecp256k1PublicKey publicKey) {
-    return new File(new File(baseLocation, publicKey.toHex()), "node").getPath();
   }
 }

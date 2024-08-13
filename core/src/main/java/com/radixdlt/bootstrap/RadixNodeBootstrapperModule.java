@@ -74,7 +74,7 @@ import com.radixdlt.lang.Either;
 import com.radixdlt.modules.CryptoModule;
 import com.radixdlt.modules.MetricsModule;
 import com.radixdlt.networks.Network;
-import com.radixdlt.store.StateManagerStorageLocation;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.store.StorageLocationFromPropertiesModule;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
@@ -103,7 +103,7 @@ public final class RadixNodeBootstrapperModule extends AbstractModule {
 
   @Provides
   @Singleton
-  GenesisStore genesisStore(@StateManagerStorageLocation String nodeStorageLocation) {
+  GenesisStore genesisStore(@NodeStorageLocation String nodeStorageLocation) {
     return new GenesisFileStore(new File(nodeStorageLocation, "executed_genesis"));
   }
 

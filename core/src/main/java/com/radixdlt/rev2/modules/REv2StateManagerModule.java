@@ -94,7 +94,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.store.NodeStorageLocation;
-import com.radixdlt.store.StateManagerStorageLocation;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
@@ -102,7 +101,6 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.io.File;
 
 public final class REv2StateManagerModule extends AbstractModule {
 
@@ -211,19 +209,10 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          @StateManagerStorageLocation
-          DatabaseBackendConfig stateManagerDatabaseBackendConfig(
-              @StateManagerStorageLocation String nodeStorageLocation) {
-            return new DatabaseBackendConfig(
-                new File(nodeStorageLocation, "state_manager").getPath());
-          }
-
-          @Provides
-          @Singleton
           @NodeStorageLocation
-          DatabaseBackendConfig NodeDatabaseBackendConfig(
+          DatabaseBackendConfig stateManagerDatabaseBackendConfig(
               @NodeStorageLocation String nodeStorageLocation) {
-            return new DatabaseBackendConfig(new File(nodeStorageLocation, "node").getPath());
+            return new DatabaseBackendConfig(nodeStorageLocation);
           }
 
           @Provides
@@ -232,7 +221,6 @@ public final class REv2StateManagerModule extends AbstractModule {
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
               FatalPanicHandler fatalPanicHandler,
               Network network,
-              @StateManagerStorageLocation DatabaseBackendConfig stateManagerDatabaseBackendConfig,
               @NodeStorageLocation DatabaseBackendConfig nodeDatabaseBackendConfig,
               DatabaseConfig databaseConfig) {
             return new NodeRustEnvironment(
@@ -242,7 +230,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     NetworkDefinition.from(network),
                     mempoolConfig,
                     vertexLimitsConfigOpt,
-                    stateManagerDatabaseBackendConfig,
+                    nodeDatabaseBackendConfig,
                     databaseConfig,
                     getLoggingConfig(),
                     stateTreeGcConfig,
@@ -250,8 +238,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     ledgerSyncLimitsConfig,
                     protocolConfig,
                     noFees,
-                    scenariosExecutionConfig),
-                new NodeConfig(nodeDatabaseBackendConfig));
+                    scenariosExecutionConfig));
           }
 
           @Provides

@@ -80,8 +80,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAll
     payload: jbyteArray,
 ) -> jbyteArray {
     jni_raw_sbor_fallible_call(&env, payload, |bytes| {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
             .upsert_all_peers(&bytes);
         Ok(())
     })
@@ -95,8 +94,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_getAllHig
     payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, payload, |_: ()| -> Option<Vec<u8>> {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
             .get_all_peers()
     })
 }
@@ -109,8 +107,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_resetHigh
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |_: ()| {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
             .reset_high_priority_peers();
     })
 }

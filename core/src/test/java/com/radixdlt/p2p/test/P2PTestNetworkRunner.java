@@ -106,7 +106,7 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.StateManagerStorageLocation;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Objects;
@@ -210,7 +210,7 @@ public final class P2PTestNetworkRunner {
               RuntimeProperties properties,
               Serialization serialization,
               Metrics metrics,
-              @StateManagerStorageLocation String nodeStorageLocation) {
+              @NodeStorageLocation String nodeStorageLocation) {
             return new BerkeleySafetyStateStore(
                 serialization,
                 metrics,
@@ -224,7 +224,7 @@ public final class P2PTestNetworkRunner {
               RuntimeProperties properties,
               Serialization serialization,
               Metrics metrics,
-              @StateManagerStorageLocation String nodeStorageLocation) {
+              @NodeStorageLocation String nodeStorageLocation) {
             return new BerkeleyAddressBookStore(
                 serialization,
                 metrics,

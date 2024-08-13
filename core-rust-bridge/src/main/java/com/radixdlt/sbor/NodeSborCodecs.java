@@ -218,7 +218,6 @@ public final class NodeSborCodecs {
     StateTreeGcConfig.registerCodec(codecMap);
     LedgerProofsGcConfig.registerCodec(codecMap);
     LedgerSyncLimitsConfig.registerCodec(codecMap);
-    NodeConfig.registerCodec(codecMap);
 
     BFTHeaderDTO.registerCodec(codecMap);
     BFTValidatorDTO.registerCodec(codecMap);

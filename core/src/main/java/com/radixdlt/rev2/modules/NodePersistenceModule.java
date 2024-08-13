@@ -82,7 +82,7 @@ import com.radixdlt.p2p.addressbook.RocksAddressBookStore;
 import com.radixdlt.safety.RocksDbSafetyStore;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.StateManagerStorageLocation;
+import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public class NodePersistenceModule extends AbstractModule {
@@ -95,7 +95,7 @@ public class NodePersistenceModule extends AbstractModule {
       RuntimeProperties properties,
       Serialization serialization,
       Metrics metrics,
-      @StateManagerStorageLocation String nodeStorageLocation) {
+      @NodeStorageLocation String nodeStorageLocation) {
     return new BerkeleySafetyStateStore(
         serialization,
         metrics,
@@ -109,7 +109,7 @@ public class NodePersistenceModule extends AbstractModule {
       RuntimeProperties properties,
       Serialization serialization,
       Metrics metrics,
-      @StateManagerStorageLocation String nodeStorageLocation) {
+      @NodeStorageLocation String nodeStorageLocation) {
     return new BerkeleyAddressBookStore(
         serialization,
         metrics,

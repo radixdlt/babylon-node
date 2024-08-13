@@ -80,8 +80,7 @@ extern "system" fn Java_com_radixdlt_db_RocksDbMigrationStore_migrationDone(
     migration_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, migration_id, |migration_store_id: MigrationId| {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_migration_database(&env, j_rust_global_context)
             .migration_done(migration_store_id);
     })
 }
@@ -94,8 +93,7 @@ extern "system" fn Java_com_radixdlt_db_RocksDbMigrationStore_isMigrated(
     migration_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, migration_id, |migration_store_id: MigrationId| -> bool {
-        JNINodeRustEnvironment::get_node_database(&env, j_rust_global_context)
-            .lock()
+        JNINodeRustEnvironment::get_migration_database(&env, j_rust_global_context)
             .is_migration_done(migration_store_id)
     })
 }

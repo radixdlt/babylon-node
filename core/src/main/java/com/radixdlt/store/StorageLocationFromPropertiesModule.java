@@ -73,15 +73,8 @@ import com.radixdlt.utils.properties.RuntimeProperties;
 public final class StorageLocationFromPropertiesModule extends AbstractModule {
   @Provides
   @Singleton
-  @StateManagerStorageLocation
-  private String stateManagerStorageLocation(RuntimeProperties properties) {
-    return properties.get("db.location", ".//RADIXDB");
-  }
-
-  @Provides
-  @Singleton
   @NodeStorageLocation
   private String nodeStorageLocation(RuntimeProperties properties) {
-    return properties.get("db.location.node", ".//RADIXDB/node");
+    return properties.get("db.location", ".//RADIXDB");
   }
 }
