@@ -64,7 +64,6 @@
 
 use crate::p2p::address_book_components::AddressBookNodeId;
 use crate::engine_prelude::*;
-use crate::store::p2p::migration::{MigrationId, MigrationStatus};
 use crate::store::common::typed_cf_api::{ DbCodec, BoundedDbCodec};
 
 #[derive(Clone, Default)]
@@ -83,40 +82,5 @@ impl DbCodec<AddressBookNodeId> for AddressBookNodeIdDbCodec {
 impl BoundedDbCodec for AddressBookNodeIdDbCodec {
     fn upper_bound_encoding(&self) -> Vec<u8> {
         vec![0xFF; AddressBookNodeId::LENGTH]
-    }
-}
-
-/// A [`DbCodec]` capable of representing [`MigrationId]`.
-#[derive(Clone, Default)]
-pub struct MigrationIdDbCodec;
-
-impl DbCodec<MigrationId> for MigrationIdDbCodec {
-    fn encode(&self, key: &MigrationId) -> Vec<u8> {
-        vec![*key as u8]
-    }
-
-    fn decode(&self, bytes: &[u8]) -> MigrationId {
-        match bytes[0] {
-            0 => MigrationId::AddressBook,
-            1 => MigrationId::SafetyState,
-            _ => panic!("Invalid MigrationId"),
-        }
-    }
-}
-
-/// A [`DbCodec]` capable of representing [`MigrationStatus]`.
-#[derive(Clone, Default)]
-pub struct MigrationStatusDbCodec;
-
-impl DbCodec<MigrationStatus> for MigrationStatusDbCodec {
-    fn encode(&self, key: &MigrationStatus) -> Vec<u8> {
-        vec![*key as u8]
-    }
-
-    fn decode(&self, bytes: &[u8]) -> MigrationStatus {
-        match bytes[0] {
-            0 => MigrationStatus::Completed,
-            _ => panic!("Invalid MigrationId"),
-        }
     }
 }

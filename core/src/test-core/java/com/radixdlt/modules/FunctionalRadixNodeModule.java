@@ -74,13 +74,10 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
+import com.radixdlt.consensus.safety.RocksSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.radixdlt.environment.ScenariosExecutionConfig;
+import com.radixdlt.environment.*;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
@@ -89,16 +86,13 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.modules.StateComputerConfig.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev2.modules.*;
-import com.radixdlt.serialization.Serialization;
+import com.radixdlt.safety.RocksDbSafetyStore;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
 import com.radixdlt.statecomputer.RandomTransactionGenerator;
-import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.store.InMemoryCommittedReaderModule;
-import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.File;
 import java.time.Duration;
 import org.junit.rules.TemporaryFolder;
@@ -329,24 +323,17 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           new AbstractModule() {
             @Override
             protected void configure() {
-              bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
+              bind(PersistentSafetyStateStore.class).to(RocksSafetyStateStore.class);
               Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
                   .addBinding()
-                  .to(BerkeleySafetyStateStore.class);
+                  .to(RocksSafetyStateStore.class);
             }
 
             @Provides
             @Singleton
-            BerkeleySafetyStateStore safetyStateStore(
-                RuntimeProperties properties,
-                Serialization serialization,
-                Metrics metrics,
-                @NodeStorageLocation String nodeStorageLocation) {
-              return new BerkeleySafetyStateStore(
-                  serialization,
-                  metrics,
-                  nodeStorageLocation,
-                  BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+            RocksDbSafetyStore rocksDbSafetyStore(
+                Metrics metrics, NodeRustEnvironment environment) {
+              return RocksDbSafetyStore.create(metrics, environment);
             }
           });
     }
