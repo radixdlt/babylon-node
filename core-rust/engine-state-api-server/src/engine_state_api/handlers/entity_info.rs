@@ -2,7 +2,7 @@ use crate::engine_prelude::*;
 use crate::engine_state_api::factories::EngineStateLoaderFactory;
 use crate::engine_state_api::*;
 use state_manager::historical_state::VersionScopingSupport;
-use state_manager::store::consensus::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use state_manager::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
 
 pub(crate) async fn handle_entity_info(
     state: State<EngineStateApiState>,

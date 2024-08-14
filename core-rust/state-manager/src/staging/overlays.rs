@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use std::hash::Hash;
 use std::iter::Peekable;
 
-use crate::store::consensus::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
 
 pub struct SubstateOverlayIterator<'a> {
     root_db: Peekable<Box<dyn Iterator<Item = PartitionEntry> + 'a>>,

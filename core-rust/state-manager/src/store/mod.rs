@@ -68,18 +68,20 @@ use prometheus::Registry;
 use sbor::{Categorize, Decode, Encode};
 
 use node_common::locks::DbLock;
-use consensus::rocks_db::ActualStateManagerDatabase;
+use rocks_db::ActualStateManagerDatabase;
 
 use crate::RawDbMetrics;
-pub use crate::store::consensus::traits::DatabaseConfig;
-use crate::store::consensus::traits::measurement::MeasurableDatabase;
+pub use traits::DatabaseConfig;
+use traits::measurement::MeasurableDatabase;
 
 pub mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;
 mod codecs;
 pub mod p2p;
-pub mod consensus;
+pub mod column_families;
+pub mod rocks_db;
+pub mod traits;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct DatabaseBackendConfig {

@@ -64,7 +64,7 @@
 
 use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
 
-use crate::store::consensus::traits::*;
+use crate::store::traits::*;
 use crate::transaction::*;
 
 use crate::*;

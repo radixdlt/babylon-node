@@ -86,9 +86,9 @@ use crate::{
 use im::hashmap::HashMap as ImmutableHashMap;
 use itertools::Itertools;
 
-use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
-use crate::store::consensus::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use crate::store::consensus::traits::{ConfigurableDatabase, QueryableProofStore};
+use crate::store::rocks_db::ActualStateManagerDatabase;
+use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use crate::store::traits::{ConfigurableDatabase, QueryableProofStore};
 use node_common::locks::{DbLock, LockFactory, Mutex};
 use slotmap::SecondaryMap;
 

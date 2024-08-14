@@ -2,7 +2,7 @@
 
 use crate::engine_prelude::*;
 use crate::protocol::*;
-use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
+use crate::store::rocks_db::ActualStateManagerDatabase;
 use node_common::locks::DbLock;
 use std::sync::Arc;
 

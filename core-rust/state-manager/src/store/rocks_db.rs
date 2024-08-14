@@ -79,18 +79,18 @@ use crate::{
     StateVersion, SubstateChangeAction, TransactionTreeHash,
 };
 use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::consensus::column_families::*;
+use crate::store::column_families::*;
 use crate::engine_prelude::*;
 use crate::query::TransactionIdentifierLoader;
 use node_common::store::rocks_db::*;
-use crate::store::consensus::traits::*;
-use crate::store::consensus::traits::extensions::*;
-use crate::store::consensus::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
-use crate::store::consensus::traits::indices::{
+use crate::store::traits::*;
+use crate::store::traits::extensions::*;
+use crate::store::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
+use crate::store::traits::indices::{
     CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintNameV1,
 };
-use crate::store::consensus::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
-use crate::store::consensus::traits::scenario::{
+use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
+use crate::store::traits::scenario::{
     ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber,
 };
 use crate::store::historical_state::StateTreeBasedSubstateDatabase;

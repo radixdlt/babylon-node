@@ -2,7 +2,7 @@ use crate::engine_prelude::*;
 
 use itertools::Itertools;
 
-use state_manager::store::consensus::traits::indices::{
+use state_manager::store::traits::indices::{
     CreationId, EntityBlueprintId, EntityBlueprintIdV1, EntityListingIndex,
 };
 

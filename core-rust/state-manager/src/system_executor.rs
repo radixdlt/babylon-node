@@ -64,7 +64,7 @@
 
 use crate::query::*;
 
-use crate::store::consensus::traits::*;
+use crate::store::traits::*;
 use crate::transaction::*;
 
 use crate::*;
@@ -75,14 +75,14 @@ use node_common::locks::DbLock;
 
 use tracing::info;
 
-use crate::store::consensus::traits::scenario::{
+use crate::store::traits::scenario::{
     DescribedAddressRendering, ExecutedScenario, ExecutedScenarioStore, ExecutedScenarioTransaction,
 };
 use crate::system_commits::*;
 
 use crate::protocol::{ProtocolUpdateNodeBatch, ProtocolVersionName};
-use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
-use crate::consensus::traits::scenario::ExecutedScenarioV1;
+use crate::store::rocks_db::ActualStateManagerDatabase;
+use crate::store::traits::scenario::ExecutedScenarioV1;
 use radix_transaction_scenarios::scenarios::ALL_SCENARIOS;
 use std::sync::Arc;
 use std::time::Instant;

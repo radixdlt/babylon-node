@@ -67,8 +67,8 @@ use std::ops::Range;
 
 use crate::engine_prelude::*;
 
-use crate::store::consensus::traits::indices::CreationId;
-use crate::store::consensus::traits::scenario::ScenarioSequenceNumber;
+use crate::store::traits::indices::CreationId;
+use crate::store::traits::scenario::ScenarioSequenceNumber;
 use node_common::store::typed_cf_api::*;
 use crate::transaction::RawLedgerTransaction;
 use crate::StateVersion;

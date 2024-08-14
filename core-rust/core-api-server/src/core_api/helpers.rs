@@ -1,8 +1,8 @@
 use crate::engine_prelude::*;
 use serde::Serialize;
 use node_common::store::rocks_db::ReadableRocks;
-use state_manager::consensus::rocks_db::StateManagerDatabase;
-use state_manager::store::consensus::traits::*;
+use state_manager::store::rocks_db::StateManagerDatabase;
+use state_manager::store::traits::*;
 use state_manager::LedgerHeader;
 use std::io::Write;
 

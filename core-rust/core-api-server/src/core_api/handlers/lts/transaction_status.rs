@@ -9,7 +9,7 @@ use state_manager::{
 
 use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
 use state_manager::query::StateManagerSubstateQueries;
-use state_manager::store::consensus::traits::*;
+use state_manager::store::traits::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_transaction_status(

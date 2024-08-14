@@ -13,17 +13,17 @@ use crate::{
     LocalTransactionExecution, StateVersion, VersionedCommittedTransactionIdentifiers,
     VersionedLedgerProof, VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
-use crate::consensus::traits::{
+use crate::store::traits::{
     ReceiptAccuTreeSlice, StaleTreeParts, SubstateNodeAncestryRecord, TransactionAccuTreeSlice,
     VersionedReceiptAccuTreeSlice, VersionedStaleTreeParts, VersionedSubstateNodeAncestryRecord,
     VersionedTransactionAccuTreeSlice, VersionedVertexStoreBlob, VertexStoreBlob,
 };
-use crate::consensus::traits::gc::{LedgerProofsGcProgress, VersionedLedgerProofsGcProgress};
-use crate::consensus::traits::indices::{
+use crate::store::traits::gc::{LedgerProofsGcProgress, VersionedLedgerProofsGcProgress};
+use crate::store::traits::indices::{
     CreationId, EntityBlueprintId, ObjectBlueprintName, VersionedEntityBlueprintId,
     VersionedObjectBlueprintName,
 };
-use crate::consensus::traits::scenario::{
+use crate::store::traits::scenario::{
     ExecutedScenario, ScenarioSequenceNumber, VersionedExecutedScenario,
 };
 use crate::store::codecs::{

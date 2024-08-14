@@ -68,9 +68,9 @@ use crate::engine_prelude::entity_tier::EntityTier;
 use crate::engine_prelude::*;
 use crate::query::StateManagerSubstateQueries;
 use node_common::store::rocks_db::ReadableRocks;
-use crate::store::consensus::rocks_db::StateManagerDatabase;
-use crate::store::consensus::traits::*;
-use crate::consensus::traits::indices::{CreationId, EntityBlueprintId, EntityListingIndex};
+use crate::store::rocks_db::StateManagerDatabase;
+use crate::store::traits::*;
+use crate::store::traits::indices::{CreationId, EntityBlueprintId, EntityListingIndex};
 use crate::{CommittedTransactionIdentifiers, LedgerStateSummary, StateVersion};
 
 /// An implementation of a [`SubstateDatabase`] viewed at a specific [`StateVersion`].

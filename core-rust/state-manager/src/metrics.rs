@@ -80,8 +80,8 @@ use crate::engine_prelude::*;
 use crate::protocol::{
     PendingProtocolUpdateState, ProtocolState, ProtocolUpdateEnactmentCondition,
 };
-use crate::store::consensus::traits::measurement::CategoryDbVolumeStatistic;
-use crate::consensus::traits::QueryableProofStore;
+use crate::store::traits::measurement::CategoryDbVolumeStatistic;
+use crate::store::traits::QueryableProofStore;
 
 pub struct LedgerMetrics {
     address_encoder: AddressBech32Encoder, // for label rendering only

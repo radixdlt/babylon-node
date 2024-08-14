@@ -69,15 +69,15 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::{error, info};
 
-use crate::store::consensus::traits::gc::{
+use crate::store::traits::gc::{
     LedgerProofsGcProgress, LedgerProofsGcProgressV1, LedgerProofsGcStore,
 };
-use crate::store::consensus::traits::proofs::QueryableProofStore;
+use crate::store::traits::proofs::QueryableProofStore;
 
 use crate::jni::LedgerSyncLimitsConfig;
-use crate::store::consensus::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
+use crate::store::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
 use node_common::store::rocks_db::ReadableRocks;
-use crate::consensus::traits::GetSyncableTxnsAndProofError::{
+use crate::store::traits::GetSyncableTxnsAndProofError::{
     FailedToPrepareAResponseWithinLimits, NothingToServeAtTheGivenStateVersion,
     RefusedToServeGenesis, RefusedToServeProtocolUpdate,
 };
@@ -312,9 +312,9 @@ mod tests {
     use crate::jni::LedgerSyncLimitsConfig;
     use crate::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
     use crate::protocol::*;
-    use crate::store::consensus::traits::proofs::QueryableProofStore;
+    use crate::store::traits::proofs::QueryableProofStore;
     use crate::test::{commit_round_updates_until_epoch, create_state_manager};
-    use crate::consensus::traits::GetSyncableTxnsAndProofError;
+    use crate::store::traits::GetSyncableTxnsAndProofError;
     use crate::{StateManagerConfig, StateVersion};
 
     use std::time::Duration;

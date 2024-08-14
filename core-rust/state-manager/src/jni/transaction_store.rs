@@ -66,7 +66,7 @@ use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::epoch_change_iter;
-use crate::store::consensus::traits::*;
+use crate::store::traits::*;
 use crate::{LedgerProof, StateVersion};
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;

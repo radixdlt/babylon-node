@@ -1,7 +1,7 @@
 use crate::core_api::handlers::to_api_committed_transaction;
 use crate::core_api::*;
 
-use state_manager::store::consensus::traits::*;
+use state_manager::store::traits::*;
 use state_manager::transaction::*;
 
 #[tracing::instrument(skip(state))]

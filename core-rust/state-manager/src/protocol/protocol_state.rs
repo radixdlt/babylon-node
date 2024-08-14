@@ -8,9 +8,9 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::protocol::*;
-use crate::consensus::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
+use crate::store::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
 
-use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
+use crate::store::rocks_db::ActualStateManagerDatabase;
 use crate::{
     LocalTransactionReceipt, ProtocolMetrics, ScenariosExecutionConfig, StateVersion,
     SystemExecutor,

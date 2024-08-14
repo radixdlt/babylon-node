@@ -1,5 +1,5 @@
 use crate::core_api::*;
-use state_manager::store::consensus::traits::{
+use state_manager::store::traits::{
     extensions::IterableAccountChangeIndex, ConfigurableDatabase, QueryableProofStore,
     QueryableTransactionStore,
 };

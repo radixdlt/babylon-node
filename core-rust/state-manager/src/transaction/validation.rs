@@ -7,9 +7,9 @@ use crate::engine_prelude::*;
 
 use crate::query::StateManagerSubstateQueries;
 
-use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
-use crate::store::consensus::traits::transactions::QueryableTransactionStore;
-use crate::store::consensus::traits::{QueryableProofStore, TransactionIndex};
+use crate::store::rocks_db::ActualStateManagerDatabase;
+use crate::store::traits::transactions::QueryableTransactionStore;
+use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};
 use crate::{
     AlreadyCommittedError, AtSpecificState, AtState, ExecutionRejectionReason,

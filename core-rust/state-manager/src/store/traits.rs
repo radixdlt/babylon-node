@@ -264,7 +264,7 @@ pub mod substate {
 pub mod transactions {
     use super::*;
 
-    use crate::store::consensus::traits::CommittedTransactionBundle;
+    use crate::store::traits::CommittedTransactionBundle;
     use crate::{
         CommittedTransactionIdentifiers, LedgerHashes, LedgerTransactionReceipt,
         LocalTransactionExecution, LocalTransactionReceipt,

@@ -87,7 +87,7 @@ use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolManager;
 use crate::store::p2p::rocks_db::ActualAddressBookDatabase;
-use crate::store::consensus::rocks_db::ActualStateManagerDatabase;
+use crate::store::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::Preparator;
 use crate::{Committer, DatabaseBackendConfig, LedgerMetrics, SystemExecutor};
 use crate::{StateManager, StateManagerConfig};

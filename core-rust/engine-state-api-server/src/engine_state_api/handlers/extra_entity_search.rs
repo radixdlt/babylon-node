@@ -3,8 +3,8 @@ use crate::engine_state_api::*;
 use crate::engine_prelude::*;
 
 use state_manager::historical_state::VersionScopingSupport;
-use state_manager::store::consensus::traits::indices::CreationId;
-use state_manager::store::consensus::traits::ConfigurableDatabase;
+use state_manager::store::traits::indices::CreationId;
+use state_manager::store::traits::ConfigurableDatabase;
 
 use crate::engine_state_api::extras::{EngineEntityLister, EntitySummary};
 use state_manager::StateVersion;

@@ -71,7 +71,7 @@ use crate::commit_bundle::CommitBundleBuilder;
 use crate::protocol::*;
 use crate::query::*;
 use crate::staging::ReadableStore;
-use crate::store::consensus::traits::*;
+use crate::store::traits::*;
 use crate::transaction::*;
 use crate::*;
 
