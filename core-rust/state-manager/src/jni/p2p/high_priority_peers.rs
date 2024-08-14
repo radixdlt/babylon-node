@@ -70,7 +70,7 @@ use node_common::java::*;
 
 use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::p2p::traits::node::HighPriorityPeersStore;
+use p2p::traits::node::HighPriorityPeersStore;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers(

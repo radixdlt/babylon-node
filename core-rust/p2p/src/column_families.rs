@@ -2,9 +2,9 @@ use node_common::store::typed_cf_api::SborDbCodec;
 use node_common::store::typed_cf_api::{
     DefaultCf, DirectDbCodec, UnitDbCodec,
 };
-use crate::store::p2p::address_book_components::AddressBookNodeId;
-use crate::store::p2p::migration::{MigrationId, MigrationStatus};
-use crate::store::p2p::typed_cf_api::AddressBookNodeIdDbCodec;
+use crate::address_book_components::AddressBookNodeId;
+use crate::migration::{MigrationId, MigrationStatus};
+use crate::typed_cf_api::AddressBookNodeIdDbCodec;
 
 /// Address book and safety state store migration status. Filled once during the migration.
 pub struct MigrationStatusCf;

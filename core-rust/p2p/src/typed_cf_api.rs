@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::p2p::address_book_components::AddressBookNodeId;
+use crate::address_book_components::AddressBookNodeId;
 use crate::engine_prelude::*;
 use node_common::store::typed_cf_api::{DbCodec, BoundedDbCodec};
 

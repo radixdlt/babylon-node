@@ -69,8 +69,8 @@ use jni::sys::jbyteArray;
 use node_common::java::*;
 
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::store::p2p::migration::MigrationId;
-use crate::p2p::traits::node::MigrationStore;
+use p2p::migration::MigrationId;
+use p2p::traits::node::MigrationStore;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_db_RocksDbMigrationStore_migrationDone(

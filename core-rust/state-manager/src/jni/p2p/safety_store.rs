@@ -64,7 +64,7 @@
 
 use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::store::p2p::traits::node::SafetyStateStore;
+use p2p::traits::node::SafetyStateStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;

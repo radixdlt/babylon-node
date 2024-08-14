@@ -65,8 +65,8 @@
 use crate::engine_prelude::*;
 
 pub mod node {
-    use crate::p2p::address_book_components::AddressBookNodeId;
-    use crate::p2p::migration::MigrationId;
+    use crate::address_book_components::AddressBookNodeId;
+    use crate::migration::MigrationId;
 
     use super::*;
 

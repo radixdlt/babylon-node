@@ -78,7 +78,6 @@ pub mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;
 mod codecs;
-pub mod p2p;
 pub mod column_families;
 pub mod rocks_db;
 pub mod traits;

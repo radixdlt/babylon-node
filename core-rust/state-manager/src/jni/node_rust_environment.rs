@@ -86,12 +86,12 @@ use crate::priority_mempool::PriorityMempool;
 use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolManager;
-use crate::store::p2p::rocks_db::ActualAddressBookDatabase;
+use p2p::rocks_db::ActualAddressBookDatabase;
 use crate::store::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::Preparator;
 use crate::{Committer, DatabaseBackendConfig, LedgerMetrics, SystemExecutor};
 use crate::{StateManager, StateManagerConfig};
-use crate::p2p::rocks_db::{ActualMigrationDatabase, ActualSafetyStoreDatabase};
+use p2p::rocks_db::{ActualMigrationDatabase, ActualSafetyStoreDatabase};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 

@@ -69,11 +69,11 @@ use node_common::rocksdb::{
 };
 
 use crate::engine_prelude::*;
-use crate::p2p::address_book_components::AddressBookNodeId;
-use crate::p2p::column_families::{AddressBookCf, HighPriorityPeersCf, MigrationStatusCf, SafetyStoreCf};
-use crate::p2p::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
+use crate::address_book_components::AddressBookNodeId;
+use crate::column_families::{AddressBookCf, HighPriorityPeersCf, MigrationStatusCf, SafetyStoreCf};
+use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
+use crate::migration::{MigrationId, MigrationStatus};
 use node_common::store::rocks_db::*;
-use crate::store::p2p::migration::{MigrationId, MigrationStatus};
 use node_common::store::typed_cf_api::*;
 
 /// A listing of all column family names used by the Node.
