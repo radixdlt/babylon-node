@@ -76,7 +76,7 @@ use crate::store::consensus::traits::proofs::QueryableProofStore;
 
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::store::consensus::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
-use crate::store::common::rocks_db::ReadableRocks;
+use node_common::store::rocks_db::ReadableRocks;
 use crate::consensus::traits::GetSyncableTxnsAndProofError::{
     FailedToPrepareAResponseWithinLimits, NothingToServeAtTheGivenStateVersion,
     RefusedToServeGenesis, RefusedToServeProtocolUpdate,

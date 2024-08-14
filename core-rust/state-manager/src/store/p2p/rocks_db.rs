@@ -64,7 +64,7 @@
 
 use std::path::PathBuf;
 
-use rocksdb::{
+use node_common::rocksdb::{
     ColumnFamilyDescriptor, DB, Options,
 };
 
@@ -72,9 +72,9 @@ use crate::engine_prelude::*;
 use crate::p2p::address_book_components::AddressBookNodeId;
 use crate::p2p::column_families::{AddressBookCf, HighPriorityPeersCf, MigrationStatusCf, SafetyStoreCf};
 use crate::p2p::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
-use crate::store::common::rocks_db::*;
+use node_common::store::rocks_db::*;
 use crate::store::p2p::migration::{MigrationId, MigrationStatus};
-use crate::store::common::typed_cf_api::*;
+use node_common::store::typed_cf_api::*;
 
 /// A listing of all column family names used by the Node.
 ///

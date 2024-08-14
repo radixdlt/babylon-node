@@ -27,7 +27,7 @@ blake2 = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
 
-rocksdb = { version = "=0.21.0" }
+#rocksdb = { version = "=0.21.0" }
 lru = { version = "=0.8.1", default-features = false }
 slotmap = { version = "=1.0.6" }
 im = { version = "=15.1.0" }

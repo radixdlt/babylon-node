@@ -71,6 +71,8 @@ pub mod locks;
 pub mod metrics;
 pub mod scheduler;
 pub mod utils;
+pub mod store;
+pub use rocksdb;
 
 pub(crate) mod engine_prelude {
     pub use radix_common::prelude::*;

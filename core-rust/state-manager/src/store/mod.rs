@@ -80,7 +80,6 @@ pub mod proofs_gc;
 mod codecs;
 pub mod p2p;
 pub mod consensus;
-pub mod common;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct DatabaseBackendConfig {

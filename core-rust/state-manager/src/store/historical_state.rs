@@ -67,7 +67,7 @@ use std::ops::Deref;
 use crate::engine_prelude::entity_tier::EntityTier;
 use crate::engine_prelude::*;
 use crate::query::StateManagerSubstateQueries;
-use crate::store::common::rocks_db::ReadableRocks;
+use node_common::store::rocks_db::ReadableRocks;
 use crate::store::consensus::rocks_db::StateManagerDatabase;
 use crate::store::consensus::traits::*;
 use crate::consensus::traits::indices::{CreationId, EntityBlueprintId, EntityListingIndex};

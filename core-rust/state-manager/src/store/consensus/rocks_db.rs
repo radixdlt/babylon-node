@@ -65,7 +65,7 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-use rocksdb::{
+use node_common::rocksdb::{
     ColumnFamilyDescriptor, DB, Direction, IteratorMode, Options,
 };
 use tracing::{error, info, warn};
@@ -82,7 +82,7 @@ use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::consensus::column_families::*;
 use crate::engine_prelude::*;
 use crate::query::TransactionIdentifierLoader;
-use crate::store::common::rocks_db::*;
+use node_common::store::rocks_db::*;
 use crate::store::consensus::traits::*;
 use crate::store::consensus::traits::extensions::*;
 use crate::store::consensus::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
@@ -94,7 +94,7 @@ use crate::store::consensus::traits::scenario::{
     ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber,
 };
 use crate::store::historical_state::StateTreeBasedSubstateDatabase;
-use crate::store::common::typed_cf_api::*;
+use node_common::store::typed_cf_api::*;
 use crate::transaction::{
     LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
 };

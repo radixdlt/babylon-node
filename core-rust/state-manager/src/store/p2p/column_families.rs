@@ -1,5 +1,5 @@
-use crate::common::typed_cf_api::SborDbCodec;
-use crate::store::common::typed_cf_api::{
+use node_common::store::typed_cf_api::SborDbCodec;
+use node_common::store::typed_cf_api::{
     DefaultCf, DirectDbCodec, UnitDbCodec,
 };
 use crate::store::p2p::address_book_components::AddressBookNodeId;

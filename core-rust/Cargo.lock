@@ -1299,6 +1299,7 @@ version = "0.1.0"
 dependencies = [
  "bech32",
  "blake2",
+ "itertools",
  "jni",
  "opentelemetry",
  "opentelemetry-jaeger",
@@ -1312,6 +1313,7 @@ dependencies = [
  "radix-substate-store-interface",
  "radix-substate-store-queries",
  "radix-transactions",
+ "rocksdb",
  "sbor",
  "tokio",
  "tokio-util",
@@ -2395,7 +2397,6 @@ dependencies = [
  "radix-transaction-scenarios",
  "radix-transactions",
  "rand 0.8.5",
- "rocksdb",
  "sbor",
  "slotmap",
  "tempfile",

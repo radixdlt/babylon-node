@@ -2,7 +2,7 @@ use crate::core_api::*;
 use crate::engine_prelude::*;
 
 use state_manager::protocol::ProtocolVersionName;
-use state_manager::common::rocks_db::ReadableRocks;
+use node_common::store::rocks_db::ReadableRocks;
 use state_manager::consensus::rocks_db::StateManagerDatabase;
 use std::ops::Deref;
 

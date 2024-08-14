@@ -63,7 +63,7 @@
  */
 
 use crate::engine_prelude::*;
-use crate::store::common::rocks_db::{ReadableRocks, WriteableRocks};
+use crate::store::rocks_db::{ReadableRocks, WriteableRocks};
 use itertools::Itertools;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch};
 use std::ops::Range;

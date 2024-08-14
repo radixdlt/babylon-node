@@ -1,5 +1,5 @@
 use crate::engine_prelude::*;
-use state_manager::common::rocks_db::ReadableRocks;
+use node_common::store::rocks_db::ReadableRocks;
 use state_manager::consensus::rocks_db::StateManagerDatabase;
 use state_manager::store::consensus::traits::SubstateNodeAncestryStore;
 use state_manager::{
