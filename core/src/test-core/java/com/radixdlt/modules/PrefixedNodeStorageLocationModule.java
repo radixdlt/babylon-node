@@ -86,7 +86,7 @@ public final class PrefixedNodeStorageLocationModule extends AbstractModule {
   @Provides
   @Singleton
   @NodeStorageLocation
-  private String stateManagerStorageLocation(@Self ECDSASecp256k1PublicKey publicKey) {
+  private String nodeStorageLocation(@Self ECDSASecp256k1PublicKey publicKey) {
     return new File(baseLocation, publicKey.toHex()).getPath();
   }
 }

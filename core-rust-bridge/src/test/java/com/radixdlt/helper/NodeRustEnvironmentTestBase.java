@@ -62,20 +62,55 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.safety;
+package com.radixdlt.helper;
 
-import java.util.Optional;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.environment.*;
+import com.radixdlt.lang.Option;
+import com.radixdlt.mempool.RustMempoolConfig;
+import com.radixdlt.p2p.NodeIdDTO;
+import com.radixdlt.protocol.ProtocolConfig;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.transaction.LedgerSyncLimitsConfig;
+import java.io.IOException;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
-public class MigratingSafetyStore implements PersistentSafetyStateStore {
+public abstract class NodeRustEnvironmentTestBase {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  @Override
-  public void commitState(SafetyState safetyState) {}
+  protected NodeRustEnvironment createNodeRustEnvironment() throws IOException {
+    final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
+    final var mempoolMaxTransactionCount = 20;
+    final var stateManagerDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
 
-  @Override
-  public void close() {}
+    final var config =
+        new StateManagerConfig(
+            NetworkDefinition.INT_TEST_NET,
+            Option.some(
+                new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
+            Option.none(),
+            stateManagerDbConfig,
+            new DatabaseConfig(false, false, false, false),
+            LoggingConfig.getDefault(),
+            StateTreeGcConfig.forTesting(),
+            LedgerProofsGcConfig.forTesting(),
+            LedgerSyncLimitsConfig.defaults(),
+            ProtocolConfig.testingDefault(),
+            false,
+            ScenariosExecutionConfig.NONE);
 
-  @Override
-  public Optional<SafetyState> get() {
-    return Optional.empty();
+    return new NodeRustEnvironment(
+        tx -> {}, // A no-op dispatcher of transactions to be relayed.
+        () -> {}, // A no-op fatal panic handler. Please note that a JNI-invoking test (like this
+        // one) will observe
+        // panics as runtime exceptions propagated up the stack (through JNI), which will fail the
+        // test
+        // gracefully anyway.
+        config);
+  }
+
+  protected static NodeIdDTO newNodeId() {
+    return new NodeIdDTO(ECKeyPair.generateNew().getPublicKey());
   }
 }

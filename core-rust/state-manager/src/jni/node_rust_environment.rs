@@ -166,7 +166,7 @@ impl JNINodeRustEnvironment {
         let running_task_tracker = scheduler.into_task_tracker();
 
         let address_book_db_path = Self::combine(&base_path, "address_book");
-        let safety_store_db_path = Self::combine(&base_path, "safety_store");
+        let safety_store_db_path = Self::combine(&base_path, "consensus_safety_store");
         let migration_store_db_path = Self::combine(&base_path, "migration_store");
 
         let jni_node_rust_env = JNINodeRustEnvironment {
