@@ -83,6 +83,11 @@ public class RocksDbSafetyStore {
 
   private static native byte[] get(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
+  private static native byte[] markAsMigrated(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private static native byte[] isMigrated(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
   private final Codec<SafetyStateDTO> dtoCodec;
 
   public static RocksDbSafetyStore create(
@@ -100,6 +105,14 @@ public class RocksDbSafetyStore {
         Natives.builder(nodeRustEnvironment, RocksDbSafetyStore::get)
             .measure(timer.label(new Metrics.MethodId(RocksDbSafetyStore.class, "get")))
             .build(new TypeToken<>() {});
+    markAsMigratedFunc =
+        Natives.builder(nodeRustEnvironment, RocksDbSafetyStore::markAsMigrated)
+            .measure(timer.label(new Metrics.MethodId(RocksDbSafetyStore.class, "markAsMigrated")))
+            .build(new TypeToken<>() {});
+    isMigratedFunc =
+        Natives.builder(nodeRustEnvironment, RocksDbSafetyStore::isMigrated)
+            .measure(timer.label(new Metrics.MethodId(RocksDbSafetyStore.class, "isMigrated")))
+            .build(new TypeToken<>() {});
 
     dtoCodec = NodeSborCodecs.resolveCodec(new TypeToken<>() {});
   }
@@ -112,6 +125,16 @@ public class RocksDbSafetyStore {
     return this.getFunc.call(tuple()).map(value -> NodeSborCodecs.decode(value, dtoCodec));
   }
 
+  public boolean isMigrated() {
+    return this.isMigratedFunc.call(tuple());
+  }
+
+  public void markAsMigrated() {
+    this.markAsMigratedFunc.call(tuple());
+  }
+
   private final Natives.Call1<SafetyStateDTO, Tuple0> upsertFunc;
   private final Natives.Call1<Tuple0, Option<byte[]>> getFunc;
+  private final Natives.Call1<Tuple0, Boolean> isMigratedFunc;
+  private final Natives.Call1<Tuple0, Tuple0> markAsMigratedFunc;
 }

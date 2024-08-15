@@ -3,17 +3,17 @@ use node_common::store::typed_cf_api::{
     DefaultCf, DirectDbCodec, UnitDbCodec,
 };
 use crate::address_book_components::AddressBookNodeId;
-use crate::migration::{MigrationId, MigrationStatus};
+use crate::migration::MigrationStatus;
 use crate::typed_cf_api::AddressBookNodeIdDbCodec;
 
 /// Address book and safety state store migration status. Filled once during the migration.
 pub struct MigrationStatusCf;
 impl DefaultCf for MigrationStatusCf {
-    type Key = MigrationId;
+    type Key = ();
     type Value = MigrationStatus;
 
     const DEFAULT_NAME: &'static str = "migration_status";
-    type KeyCodec = SborDbCodec<MigrationId>;
+    type KeyCodec = UnitDbCodec;
     type ValueCodec = SborDbCodec<MigrationStatus>;
 }
 

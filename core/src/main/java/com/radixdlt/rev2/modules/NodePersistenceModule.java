@@ -70,8 +70,6 @@ import com.google.inject.Singleton;
 import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
 import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.consensus.safety.RocksSafetyStateStore;
-import com.radixdlt.db.RocksDbMigrationStore;
-import com.radixdlt.db.StoreId;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.RocksDbAddressBookStore;
@@ -91,70 +89,29 @@ public class NodePersistenceModule extends AbstractModule {
 
   @Provides
   @Singleton
-  BerkeleySafetyStateStore bdbSafetyStateStore(
-      RuntimeProperties properties,
-      Serialization serialization,
-      Metrics metrics,
-      @NodeStorageLocation String nodeStorageLocation) {
-    return new BerkeleySafetyStateStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-  }
-
-  @Provides
-  @Singleton
-  BerkeleyAddressBookStore bdbAddressBookStore(
-      RuntimeProperties properties,
-      Serialization serialization,
-      Metrics metrics,
-      @NodeStorageLocation String nodeStorageLocation) {
-    return new BerkeleyAddressBookStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-  }
-
-  @Provides
-  @Singleton
-  RocksDbSafetyStore rocksDbSafetyStore(Metrics metrics, NodeRustEnvironment environment) {
-    return RocksDbSafetyStore.create(metrics, environment);
-  }
-
-  @Provides
-  @Singleton
-  RocksDbAddressBookStore rocksDbAddressBookStore(
-      Metrics metrics, NodeRustEnvironment environment) {
-    return RocksDbAddressBookStore.create(metrics, environment);
-  }
-
-  @Provides
-  @Singleton
-  RocksDbHighPriorityPeersStore rocksDbHighPriorityPeersStore(
-      Metrics metrics, NodeRustEnvironment environment) {
-    return RocksDbHighPriorityPeersStore.create(metrics, environment);
-  }
-
-  @Provides
-  @Singleton
-  RocksDbMigrationStore rocksDbMigrationStore(Metrics metrics, NodeRustEnvironment environment) {
-    return RocksDbMigrationStore.create(metrics, environment);
-  }
-
-  @Provides
-  @Singleton
   AddressBookPersistence addressBookPersistence(
-      RocksDbMigrationStore migrationStore,
-      BerkeleyAddressBookStore berkeleyAddressBookStore,
-      RocksAddressBookStore addressBookStore) {
+      RuntimeProperties properties,
+      Serialization serialization,
+      Metrics metrics,
+      @NodeStorageLocation String nodeStorageLocation,
+      NodeRustEnvironment environment) {
+    var berkeleyAddressBookStore =
+        new BerkeleyAddressBookStore(
+            serialization,
+            metrics,
+            nodeStorageLocation,
+            BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+
+    var addressBookStore =
+        new RocksAddressBookStore(
+            RocksDbAddressBookStore.create(metrics, environment),
+            RocksDbHighPriorityPeersStore.create(metrics, environment));
 
     try (berkeleyAddressBookStore) {
-      if (!migrationStore.isMigrated(StoreId.ADDRESS_BOOK)) {
+      if (!addressBookStore.isMigrated()) {
         berkeleyAddressBookStore.getAllEntries().forEach(addressBookStore::upsertEntry);
         addressBookStore.storeHighPriorityPeers(berkeleyAddressBookStore.getHighPriorityPeers());
-        migrationStore.migrationDone(StoreId.ADDRESS_BOOK);
+        addressBookStore.markAsMigrated();
       }
     }
 
@@ -164,14 +121,26 @@ public class NodePersistenceModule extends AbstractModule {
   @Provides
   @Singleton
   PersistentSafetyStateStore persistentSafetyStateStore(
-      RocksDbMigrationStore migrationStore,
-      BerkeleySafetyStateStore berkeleySafetyStateStore,
-      RocksSafetyStateStore rocksSafetyStateStore) {
+      RuntimeProperties properties,
+      Serialization serialization,
+      Metrics metrics,
+      @NodeStorageLocation String nodeStorageLocation,
+      NodeRustEnvironment environment) {
+
+    var berkeleySafetyStateStore =
+        new BerkeleySafetyStateStore(
+            serialization,
+            metrics,
+            nodeStorageLocation,
+            BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+
+    var rocksSafetyStateStore =
+        new RocksSafetyStateStore(RocksDbSafetyStore.create(metrics, environment));
 
     try (berkeleySafetyStateStore) {
-      if (!migrationStore.isMigrated(StoreId.SAFETY_STORE)) {
+      if (!rocksSafetyStateStore.isMigrated()) {
         berkeleySafetyStateStore.get().ifPresent(rocksSafetyStateStore::commitState);
-        migrationStore.migrationDone(StoreId.SAFETY_STORE);
+        rocksSafetyStateStore.markAsMigrated();
       }
     }
 

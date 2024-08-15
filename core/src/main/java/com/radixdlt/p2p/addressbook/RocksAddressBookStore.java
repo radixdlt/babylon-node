@@ -124,6 +124,14 @@ public class RocksAddressBookStore implements AddressBookPersistence {
         .collect(ImmutableList.toImmutableList());
   }
 
+  public boolean isMigrated() {
+    return addressBookStore.isMigrated();
+  }
+
+  public void markAsMigrated() {
+    addressBookStore.markAsMigrated();
+  }
+
   private static AddressBookEntryDTO toDTO(AddressBookEntry entry) {
     return new AddressBookEntryDTO(
         new NodeIdDTO(entry.getNodeId().getPublicKey()),

@@ -66,7 +66,6 @@ use crate::engine_prelude::*;
 
 pub mod node {
     use crate::address_book_components::AddressBookNodeId;
-    use crate::migration::MigrationId;
 
     use super::*;
 
@@ -75,8 +74,11 @@ pub mod node {
         fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool;
         fn reset(&self);
         fn get_all(&self, ) -> Vec<Vec<u8>>;
+        fn is_migrated(&self) -> bool;
+        fn mark_as_migrated(&self);
     }
 
+    // At Java side it is represented as part of AddressBookStore
     pub trait HighPriorityPeersStore {
         fn upsert_all_peers(&self, peers: &[u8]);
         fn get_all_peers(&self) -> Option<Vec<u8>>;
@@ -86,10 +88,7 @@ pub mod node {
     pub trait SafetyStateStore {
         fn upsert_safety_state(&self, safety_state: &[u8]);
         fn get_safety_state(&self) -> Option<Vec<u8>>;
-    }
-    
-    pub trait MigrationStore {
-        fn is_migration_done(&self, store_id: MigrationId) -> bool;
-        fn migration_done(&self, store_id: MigrationId);
+        fn is_migrated(&self) -> bool;
+        fn mark_as_migrated(&self);
     }
 }

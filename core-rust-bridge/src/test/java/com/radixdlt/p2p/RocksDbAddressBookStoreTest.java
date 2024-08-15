@@ -83,6 +83,21 @@ public class RocksDbAddressBookStoreTest extends NodeRustEnvironmentTestBase {
   private static final Random RANDOM = new Random();
 
   @Test
+  public void test_address_book_can_be_marked_as_migrated() throws Exception {
+    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+      var addressBookStore =
+          RocksDbAddressBookStore.create(
+              new MetricsInitializer().initialize(), nodeRustEnvironment);
+
+      assertFalse(addressBookStore.isMigrated());
+
+      addressBookStore.markAsMigrated();
+
+      assertTrue(addressBookStore.isMigrated());
+    }
+  }
+
+  @Test
   public void test_address_book_entries_can_be_saved_and_restored() throws Exception {
     try (var nodeRustEnvironment = createNodeRustEnvironment()) {
       var addressBookStore =

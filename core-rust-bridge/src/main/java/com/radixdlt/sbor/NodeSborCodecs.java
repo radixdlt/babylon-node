@@ -67,7 +67,6 @@ package com.radixdlt.sbor;
 import com.google.common.hash.HashCode;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.crypto.*;
-import com.radixdlt.db.StoreId;
 import com.radixdlt.environment.*;
 import com.radixdlt.exceptions.StateManagerRuntimeError;
 import com.radixdlt.genesis.*;
@@ -238,7 +237,6 @@ public final class NodeSborCodecs {
 
     AddressBookEntryDTO.registerCodec(codecMap);
     NodeIdDTO.registerCodec(codecMap);
-    StoreId.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

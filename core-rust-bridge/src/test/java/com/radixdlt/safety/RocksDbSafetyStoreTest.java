@@ -77,6 +77,20 @@ import org.junit.Test;
 
 public class RocksDbSafetyStoreTest extends NodeRustEnvironmentTestBase {
   @Test
+  public void test_safety_store_can_be_marked_as_migrated() throws Exception {
+    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+      var safetyStore =
+          RocksDbSafetyStore.create(new MetricsInitializer().initialize(), nodeRustEnvironment);
+
+      assertFalse(safetyStore.isMigrated());
+
+      safetyStore.markAsMigrated();
+
+      assertTrue(safetyStore.isMigrated());
+    }
+  }
+
+  @Test
   public void test_safety_state_can_be_saved_and_restored() throws Exception {
     try (var nodeRustEnvironment = createNodeRustEnvironment()) {
       var safetyStore =

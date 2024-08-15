@@ -127,4 +127,30 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_getAll(
     })
 }
 
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_markAsMigrated(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_id: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_id, |_: ()| {
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
+            .mark_as_migrated();
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_isMigrated(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    node_id: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, node_id, |_: ()| -> bool {
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
+            .is_migrated()
+    })
+}
+
 pub fn export_extern_functions() {}

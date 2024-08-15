@@ -71,8 +71,8 @@ use node_common::rocksdb::{
 use crate::engine_prelude::*;
 use crate::address_book_components::AddressBookNodeId;
 use crate::column_families::{AddressBookCf, HighPriorityPeersCf, MigrationStatusCf, SafetyStoreCf};
-use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, MigrationStore, SafetyStateStore};
-use crate::migration::{MigrationId, MigrationStatus};
+use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, SafetyStateStore};
+use crate::migration::MigrationStatus;
 use node_common::store::rocks_db::*;
 use node_common::store::typed_cf_api::*;
 
@@ -95,20 +95,19 @@ use node_common::store::typed_cf_api::*;
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
 
-const ALL_ADDRESS_BOOK_COLUMN_FAMILIES: [&str; 2] = [
+const ALL_ADDRESS_BOOK_COLUMN_FAMILIES: [&str; 3] = [
     AddressBookCf::DEFAULT_NAME,
     HighPriorityPeersCf::DEFAULT_NAME,
+    MigrationStatusCf::DEFAULT_NAME,
 ];
-const ALL_SAFETY_STORE_COLUMN_FAMILIES: [&str; 1] = [
+
+const ALL_SAFETY_STORE_COLUMN_FAMILIES: [&str; 2] = [
     SafetyStoreCf::DEFAULT_NAME,
-];
-const ALL_MIGRATION_STORE_COLUMN_FAMILIES: [&str; 1] = [
     MigrationStatusCf::DEFAULT_NAME,
 ];
 
 pub type ActualAddressBookDatabase = AddressBookDatabase<DirectRocks>;
 pub type ActualSafetyStoreDatabase = SafetyStoreDatabase<DirectRocks>;
-pub type ActualMigrationDatabase = MigrationDatabase<DirectRocks>;
 
 /// A RocksDB-backed persistence layer for address book.
 pub struct AddressBookDatabase<R> {
@@ -118,12 +117,6 @@ pub struct AddressBookDatabase<R> {
 
 /// A RocksDB-backed persistence layer for safety store.
 pub struct SafetyStoreDatabase<R> {
-    /// Underlying RocksDB instance.
-    rocks: R,
-}
-
-/// A RocksDB-backed persistence layer for migration database.
-pub struct MigrationDatabase<R> {
     /// Underlying RocksDB instance.
     rocks: R,
 }
@@ -165,16 +158,6 @@ impl ActualSafetyStoreDatabase {
     }
 }
 
-impl ActualMigrationDatabase {
-    pub fn new(
-        root_path: PathBuf,
-    ) -> ActualMigrationDatabase {
-        ActualMigrationDatabase {
-            rocks: DirectRocks { db: new_rocks_db(root_path, &ALL_MIGRATION_STORE_COLUMN_FAMILIES) },
-        }
-    }
-}
-
 impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
     fn remove_one(&self, node_id: &AddressBookNodeId) -> bool {
         let binding = open_rw_context(&self.rocks);
@@ -204,6 +187,16 @@ impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
         open_rw_context(&self.rocks).cf(AddressBookCf)
             .get_all()
     }
+    
+    fn is_migrated(&self) -> bool {
+        open_rw_context(&self.rocks).cf(MigrationStatusCf)
+            .get(&()).is_some()
+    }
+    
+    fn mark_as_migrated(&self) {
+        open_rw_context(&self.rocks).cf(MigrationStatusCf)
+            .put(&(), &MigrationStatus::Completed)
+    }
 }
 
 impl<R: WriteableRocks> HighPriorityPeersStore for AddressBookDatabase<R> {
@@ -230,16 +223,14 @@ impl<R: WriteableRocks> SafetyStateStore for SafetyStoreDatabase<R> {
         open_rw_context(&self.rocks).cf(SafetyStoreCf)
             .get(&())
     }
-}
 
-impl<R: WriteableRocks> MigrationStore for MigrationDatabase<R> {
-    fn is_migration_done(&self, store_id: MigrationId) -> bool {
+    fn is_migrated(&self) -> bool {
         open_rw_context(&self.rocks).cf(MigrationStatusCf)
-            .get(&store_id).is_some()
+            .get(&()).is_some()
     }
-
-    fn migration_done(&self, store_id: MigrationId) {
+    
+    fn mark_as_migrated(&self) {
         open_rw_context(&self.rocks).cf(MigrationStatusCf)
-            .put(&store_id, &MigrationStatus::Completed)
+            .put(&(), &MigrationStatus::Completed)
     }
 }

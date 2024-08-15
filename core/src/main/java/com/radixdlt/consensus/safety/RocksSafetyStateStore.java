@@ -100,6 +100,14 @@ public class RocksSafetyStateStore implements PersistentSafetyStateStore {
     return rocksDbSafetyStore.get().map(RocksSafetyStateStore::fromDTO).toOptional();
   }
 
+  public boolean isMigrated() {
+    return rocksDbSafetyStore.isMigrated();
+  }
+
+  public void markAsMigrated() {
+    rocksDbSafetyStore.markAsMigrated();
+  }
+
   // -------------------------------------------------------------------------------------
   // Conversion to DTO
   // -------------------------------------------------------------------------------------

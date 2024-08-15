@@ -88,6 +88,11 @@ public class RocksDbAddressBookStore {
 
   private static native byte[] getAll(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
+  private static native byte[] markAsMigrated(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private static native byte[] isMigrated(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
   private final Codec<AddressBookEntryDTO> dtoCodec;
 
   public static RocksDbAddressBookStore create(
@@ -113,6 +118,15 @@ public class RocksDbAddressBookStore {
         Natives.builder(nodeRustEnvironment, RocksDbAddressBookStore::getAll)
             .measure(timer.label(new Metrics.MethodId(RocksDbAddressBookStore.class, "getAll")))
             .build(new TypeToken<>() {});
+    markAsMigratedFunc =
+        Natives.builder(nodeRustEnvironment, RocksDbAddressBookStore::markAsMigrated)
+            .measure(
+                timer.label(new Metrics.MethodId(RocksDbAddressBookStore.class, "markAsMigrated")))
+            .build(new TypeToken<>() {});
+    isMigratedFunc =
+        Natives.builder(nodeRustEnvironment, RocksDbAddressBookStore::isMigrated)
+            .measure(timer.label(new Metrics.MethodId(RocksDbAddressBookStore.class, "isMigrated")))
+            .build(new TypeToken<>() {});
 
     dtoCodec = NodeSborCodecs.resolveCodec(new TypeToken<>() {});
   }
@@ -135,8 +149,18 @@ public class RocksDbAddressBookStore {
         .collect(ImmutableList.toImmutableList());
   }
 
+  public boolean isMigrated() {
+    return this.isMigratedFunc.call(tuple());
+  }
+
+  public void markAsMigrated() {
+    this.markAsMigratedFunc.call(tuple());
+  }
+
   private final Natives.Call1<NodeIdDTO, Boolean> removeOneFunc;
   private final Natives.Call1<AddressBookEntryDTO, Boolean> upsertOneFunc;
   private final Natives.Call1<Tuple0, Tuple0> resetFunc;
   private final Natives.Call1<Tuple0, List<byte[]>> getAllFunc;
+  private final Natives.Call1<Tuple0, Boolean> isMigratedFunc;
+  private final Natives.Call1<Tuple0, Tuple0> markAsMigratedFunc;
 }
