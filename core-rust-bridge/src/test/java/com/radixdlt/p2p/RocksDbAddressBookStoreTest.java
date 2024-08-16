@@ -69,7 +69,7 @@ import static com.radixdlt.lang.Option.some;
 import static org.junit.Assert.*;
 
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.helper.NodeRustEnvironmentTestBase;
+import com.radixdlt.helper.NodeRustEnvironmentBuilder;
 import com.radixdlt.lang.Option;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.PeerAddressEntryDTO.ConnectionStatus;
@@ -77,14 +77,19 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class RocksDbAddressBookStoreTest extends NodeRustEnvironmentTestBase {
+public class RocksDbAddressBookStoreTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private static final Random RANDOM = new Random();
 
   @Test
   public void test_address_book_can_be_marked_as_migrated() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+    try (var nodeRustEnvironment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var addressBookStore =
           RocksDbAddressBookStore.create(
               new MetricsInitializer().initialize(), nodeRustEnvironment);
@@ -99,7 +104,8 @@ public class RocksDbAddressBookStoreTest extends NodeRustEnvironmentTestBase {
 
   @Test
   public void test_address_book_entries_can_be_saved_and_restored() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+    try (var nodeRustEnvironment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var addressBookStore =
           RocksDbAddressBookStore.create(
               new MetricsInitializer().initialize(), nodeRustEnvironment);
@@ -133,7 +139,8 @@ public class RocksDbAddressBookStoreTest extends NodeRustEnvironmentTestBase {
 
   @Test
   public void test_address_book_entry_can_be_added_and_removed() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+    try (var nodeRustEnvironment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var addressBookStore =
           RocksDbAddressBookStore.create(
               new MetricsInitializer().initialize(), nodeRustEnvironment);
@@ -168,7 +175,8 @@ public class RocksDbAddressBookStoreTest extends NodeRustEnvironmentTestBase {
 
   @Test
   public void test_address_book_can_be_reset() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+    try (var nodeRustEnvironment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var addressBookStore =
           RocksDbAddressBookStore.create(
               new MetricsInitializer().initialize(), nodeRustEnvironment);

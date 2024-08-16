@@ -66,15 +66,21 @@ package com.radixdlt.p2p;
 
 import static org.junit.Assert.*;
 
-import com.radixdlt.helper.NodeRustEnvironmentTestBase;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.helper.NodeRustEnvironmentBuilder;
 import com.radixdlt.monitoring.MetricsInitializer;
 import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class RocksDbHighPriorityPeersStoreTest extends NodeRustEnvironmentTestBase {
+public class RocksDbHighPriorityPeersStoreTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   @Test
   public void test_high_priority_peers_can_be_saved_and_restored() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+    try (var nodeRustEnvironment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var highPriorityPeersStore =
           RocksDbHighPriorityPeersStore.create(
               new MetricsInitializer().initialize(), nodeRustEnvironment);
@@ -111,5 +117,9 @@ public class RocksDbHighPriorityPeersStoreTest extends NodeRustEnvironmentTestBa
       empty = highPriorityPeersStore.getHighPriorityPeers();
       assertTrue(empty.isEmpty());
     }
+  }
+
+  private static NodeIdDTO newNodeId() {
+    return new NodeIdDTO(ECKeyPair.generateNew().getPublicKey());
   }
 }

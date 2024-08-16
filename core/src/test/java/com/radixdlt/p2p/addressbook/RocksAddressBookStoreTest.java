@@ -69,22 +69,26 @@ import static org.junit.Assert.*;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.helper.NodeRustEnvironmentTestBase;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.FailedHandshake;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
+import com.radixdlt.rev2.NodeRustEnvironmentBuilder;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class RocksAddressBookStoreTest extends NodeRustEnvironmentTestBase {
+public class RocksAddressBookStoreTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private static final Random RANDOM = new Random();
 
   @Test
@@ -128,7 +132,8 @@ public class RocksAddressBookStoreTest extends NodeRustEnvironmentTestBase {
   }
 
   private void runTest(Consumer<RocksAddressBookStore> test) {
-    try (var environment = createNodeRustEnvironment()) {
+    try (var environment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var addressBook = RocksDbAddressBookStore.create(newMetrics(), environment);
       var peersStore = RocksDbHighPriorityPeersStore.create(newMetrics(), environment);
       try (var underTest = new RocksAddressBookStore(addressBook, peersStore)) {

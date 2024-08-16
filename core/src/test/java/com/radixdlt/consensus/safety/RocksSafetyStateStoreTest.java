@@ -67,15 +67,19 @@ package com.radixdlt.consensus.safety;
 import static org.junit.Assert.*;
 
 import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.helper.NodeRustEnvironmentTestBase;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
+import com.radixdlt.rev2.NodeRustEnvironmentBuilder;
 import com.radixdlt.safety.RocksDbSafetyStore;
 import java.io.IOException;
 import java.util.function.Consumer;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class RocksSafetyStateStoreTest extends NodeRustEnvironmentTestBase {
+public class RocksSafetyStateStoreTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   @Test
   public void test_address_book_entries_can_be_saved_and_restored() {
     runTest(
@@ -95,7 +99,8 @@ public class RocksSafetyStateStoreTest extends NodeRustEnvironmentTestBase {
   }
 
   private void runTest(Consumer<RocksSafetyStateStore> test) {
-    try (var environment = createNodeRustEnvironment()) {
+    try (var environment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var safetyStore = RocksDbSafetyStore.create(newMetrics(), environment);
       try (var underTest = new RocksSafetyStateStore(safetyStore)) {
         test.accept(underTest);

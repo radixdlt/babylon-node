@@ -62,27 +62,19 @@
  * permissions under this License.
  */
 
-package com.radixdlt.helper;
+package com.radixdlt.rev2;
 
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.*;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
-import com.radixdlt.p2p.NodeIdDTO;
 import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
-import java.io.IOException;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 
-public abstract class NodeRustEnvironmentTestBase {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  protected NodeRustEnvironment createNodeRustEnvironment() throws IOException {
+public class NodeRustEnvironmentBuilder {
+  public static NodeRustEnvironment createNodeRustEnvironment(String dbPath) {
     final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
     final var mempoolMaxTransactionCount = 20;
-    final var stateManagerDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
+    final var stateManagerDbConfig = new DatabaseBackendConfig(dbPath);
 
     final var config =
         new StateManagerConfig(
@@ -108,9 +100,5 @@ public abstract class NodeRustEnvironmentTestBase {
         // test
         // gracefully anyway.
         config);
-  }
-
-  protected static NodeIdDTO newNodeId() {
-    return new NodeIdDTO(ECKeyPair.generateNew().getPublicKey());
   }
 }

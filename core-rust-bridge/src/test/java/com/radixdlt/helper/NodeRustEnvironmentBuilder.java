@@ -70,17 +70,16 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
-import java.io.IOException;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 
-public abstract class NodeRustEnvironmentTestBase {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+public final class NodeRustEnvironmentBuilder {
+  private NodeRustEnvironmentBuilder() {
+    throw new IllegalStateException("Can't construct");
+  }
 
-  protected NodeRustEnvironment createNodeRustEnvironment() throws IOException {
+  public static NodeRustEnvironment createNodeRustEnvironment(String dbPath) {
     final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
     final var mempoolMaxTransactionCount = 20;
-    final var stateManagerDbConfig = new DatabaseBackendConfig(folder.newFolder().getPath());
+    final var stateManagerDbConfig = new DatabaseBackendConfig(dbPath);
 
     final var config =
         new StateManagerConfig(

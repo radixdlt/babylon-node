@@ -68,17 +68,22 @@ import static org.junit.Assert.*;
 
 import com.google.common.primitives.Bytes;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.helper.NodeRustEnvironmentTestBase;
+import com.radixdlt.helper.NodeRustEnvironmentBuilder;
 import com.radixdlt.lang.Option;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.rev2.ComponentAddress;
 import java.util.Collections;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public class RocksDbSafetyStoreTest extends NodeRustEnvironmentTestBase {
+public class RocksDbSafetyStoreTest {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   @Test
   public void test_safety_store_can_be_marked_as_migrated() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+    try (var nodeRustEnvironment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var safetyStore =
           RocksDbSafetyStore.create(new MetricsInitializer().initialize(), nodeRustEnvironment);
 
@@ -92,7 +97,8 @@ public class RocksDbSafetyStoreTest extends NodeRustEnvironmentTestBase {
 
   @Test
   public void test_safety_state_can_be_saved_and_restored() throws Exception {
-    try (var nodeRustEnvironment = createNodeRustEnvironment()) {
+    try (var nodeRustEnvironment =
+        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var safetyStore =
           RocksDbSafetyStore.create(new MetricsInitializer().initialize(), nodeRustEnvironment);
       var address =
