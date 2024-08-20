@@ -56,7 +56,7 @@ RUN apt-get update \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.11+9-1~deb12u1 \
+    openjdk-17-jdk=17.0.12+7-2~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -256,7 +256,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.11+9-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.12+7-2~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u6 \
     gettext-base=0.21-12 \
