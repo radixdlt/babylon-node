@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -194,7 +195,7 @@ public class RocksSafetyStateStore implements PersistentSafetyStateStore {
         epoch.getEpoch(),
         epoch.getValidators().stream()
             .map(RocksSafetyStateStore::toDTO)
-            .collect(Collectors.toSet()));
+            .collect(ImmutableSet.toImmutableSet()));
   }
 
   private static BFTValidatorDTO toDTO(BFTValidator bftValidator) {
@@ -278,7 +279,7 @@ public class RocksSafetyStateStore implements PersistentSafetyStateStore {
   private static NextEpoch fromDTO(NextEpochDTO dto) {
     return NextEpoch.create(
         dto.epoch(),
-        dto.validators().stream().map(RocksSafetyStateStore::fromDTO).collect(Collectors.toSet()));
+        dto.validators().stream().map(RocksSafetyStateStore::fromDTO).collect(ImmutableSet.toImmutableSet()));
   }
 
   private static BFTValidator fromDTO(BFTValidatorDTO dto) {
