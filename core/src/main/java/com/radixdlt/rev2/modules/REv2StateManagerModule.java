@@ -321,7 +321,7 @@ public final class REv2StateManagerModule extends AbstractModule {
 
     if (installPersistence) {
       // Moved here for convenience performing migration
-      install(new NodePersistenceModule());
+      install(new NodePersistenceModule(NodePersistenceModule.AddressBookPolicy.ENABLED));
     }
   }
 

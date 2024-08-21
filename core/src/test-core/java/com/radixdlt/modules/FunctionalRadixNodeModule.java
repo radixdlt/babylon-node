@@ -66,16 +66,12 @@ package com.radixdlt.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.RocksSafetyStateStore;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.*;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
@@ -84,9 +80,7 @@ import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.*;
 import com.radixdlt.modules.StateComputerConfig.*;
-import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev2.modules.*;
-import com.radixdlt.safety.RocksDbSafetyStore;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerWithEpochsModule;
@@ -127,6 +121,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   public enum SafetyRecoveryConfig {
     MOCKED,
     REAL,
+    REAL_WITH_ADDRESS_BOOK
   }
 
   public static final class ConsensusConfig {
@@ -320,22 +315,9 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
     switch (this.safetyRecoveryConfig) {
       case MOCKED -> install(new MockedSafetyStoreModule());
       case REAL -> install(
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bind(PersistentSafetyStateStore.class).to(RocksSafetyStateStore.class);
-              Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
-                  .addBinding()
-                  .to(RocksSafetyStateStore.class);
-            }
-
-            @Provides
-            @Singleton
-            RocksDbSafetyStore rocksDbSafetyStore(
-                Metrics metrics, NodeRustEnvironment environment) {
-              return RocksDbSafetyStore.create(metrics, environment);
-            }
-          });
+          new NodePersistenceModule(NodePersistenceModule.AddressBookPolicy.DISABLED));
+      case REAL_WITH_ADDRESS_BOOK -> install(
+          new NodePersistenceModule(NodePersistenceModule.AddressBookPolicy.ENABLED));
     }
 
     // Consensus

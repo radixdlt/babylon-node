@@ -67,62 +67,47 @@ package com.radixdlt.rev2.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
-import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
-import com.radixdlt.consensus.safety.RocksSafetyStateStore;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.monitoring.Metrics;
-import com.radixdlt.safety.RocksDbSafetyStore;
+import com.radixdlt.p2p.RocksDbAddressBookStore;
+import com.radixdlt.p2p.RocksDbHighPriorityPeersStore;
+import com.radixdlt.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
+import com.radixdlt.p2p.addressbook.RocksAddressBookStore;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
-public class NodePersistenceModule extends AbstractModule {
-  private final AddressBookPolicy policy;
-
-  public enum AddressBookPolicy {
-    ENABLED,
-    DISABLED
-  }
-
-  public NodePersistenceModule(AddressBookPolicy policy) {
-    this.policy = policy;
-  }
-
-  @Override
-  protected void configure() {
-    if (policy == AddressBookPolicy.ENABLED) {
-      install(new AddressBookModule());
-    }
-  }
-
+public class AddressBookModule extends AbstractModule {
   @Provides
   @Singleton
-  PersistentSafetyStateStore persistentSafetyStateStore(
+  AddressBookPersistence addressBookPersistence(
       RuntimeProperties properties,
       Serialization serialization,
       Metrics metrics,
       @NodeStorageLocation String nodeStorageLocation,
       NodeRustEnvironment environment) {
-
-    var berkeleySafetyStateStore =
-        new BerkeleySafetyStateStore(
+    var berkeleyAddressBookStore =
+        new BerkeleyAddressBookStore(
             serialization,
             metrics,
             nodeStorageLocation,
             BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
 
-    var rocksSafetyStateStore =
-        new RocksSafetyStateStore(RocksDbSafetyStore.create(metrics, environment));
+    var addressBookStore =
+        new RocksAddressBookStore(
+            RocksDbAddressBookStore.create(metrics, environment),
+            RocksDbHighPriorityPeersStore.create(metrics, environment));
 
-    try (berkeleySafetyStateStore) {
-      if (!rocksSafetyStateStore.isMigrated()) {
-        berkeleySafetyStateStore.get().ifPresent(rocksSafetyStateStore::commitState);
-        rocksSafetyStateStore.markAsMigrated();
+    try (berkeleyAddressBookStore) {
+      if (!addressBookStore.isMigrated()) {
+        berkeleyAddressBookStore.getAllEntries().forEach(addressBookStore::upsertEntry);
+        addressBookStore.storeHighPriorityPeers(berkeleyAddressBookStore.getHighPriorityPeers());
+        addressBookStore.markAsMigrated();
       }
     }
 
-    return rocksSafetyStateStore;
+    return addressBookStore;
   }
 }
