@@ -154,7 +154,6 @@ public class SafetyStoreMigrationTest {
             new NodePersistenceModule(AddressBookPolicy.DISABLED),
             createBerkeleyModule());
     var safetyState = SafetyState.initialState(BFTValidatorId.random());
-    ;
 
     // Create some entries in the Berkeley safety store
     try (var berkeleySafetyStateStore = injector.getInstance(BerkeleySafetyStateStore.class)) {
