@@ -148,7 +148,7 @@ public class RocksAddressBookStoreTest {
     return new MetricsInitializer().initialize();
   }
 
-  private static AddressBookEntry newAddressBookEntry(int id) {
+  public static AddressBookEntry newAddressBookEntry(int id) {
     var pubKey = ECKeyPair.fromSeed(new byte[] {(byte) id}).getPublicKey();
     var bannedUntil = newBannedUntil();
 
