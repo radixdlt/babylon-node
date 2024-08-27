@@ -121,7 +121,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   public enum SafetyRecoveryConfig {
     MOCKED,
     REAL,
-    REAL_WITH_ADDRESS_BOOK
   }
 
   public static final class ConsensusConfig {
@@ -314,10 +313,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     switch (this.safetyRecoveryConfig) {
       case MOCKED -> install(new MockedSafetyStoreModule());
-      case REAL -> install(
-          new NodePersistenceModule(NodePersistenceModule.AddressBookPolicy.DISABLED));
-      case REAL_WITH_ADDRESS_BOOK -> install(
-          new NodePersistenceModule(NodePersistenceModule.AddressBookPolicy.ENABLED));
+      case REAL -> install(new PersistentSafetyStateStoreModule());
     }
 
     // Consensus

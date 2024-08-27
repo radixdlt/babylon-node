@@ -129,7 +129,8 @@ pub struct JNINodeRustEnvironment {
 
 impl JNINodeRustEnvironment {
     pub fn init(env: &JNIEnv, j_node_rust_env: JObject, j_config: jbyteArray) {
-        let (base_path, config) = Self::prepare_config(&jni_jbytearray_to_vector(env, j_config).unwrap());
+        let (base_path, config) =
+            Self::prepare_config(&jni_jbytearray_to_vector(env, j_config).unwrap());
         let network = config.network_definition.clone();
         let runtime = Arc::new(Runtime::new().unwrap());
 
@@ -189,7 +190,7 @@ impl JNINodeRustEnvironment {
 
         let config = StateManagerConfig {
             database_backend_config: DatabaseBackendConfig {
-                rocks_db_path: state_manager_db_path
+                rocks_db_path: state_manager_db_path,
             },
             ..config
         };

@@ -123,8 +123,7 @@ pub fn jni_raw_sbor_fallible_call<Response: ScryptoEncode>(
     method: impl FnOnce(Vec<u8>) -> JavaResult<Response>,
 ) -> jbyteArray {
     jni_call(env, || {
-        let result = jni_jbytearray_to_vector(env, encoded_request)
-            .and_then(method);
+        let result = jni_jbytearray_to_vector(env, encoded_request).and_then(method);
         jni_slice_to_jbytearray(env, &result.to_java().unwrap())
     })
     .unwrap_or_else(std::ptr::null_mut)

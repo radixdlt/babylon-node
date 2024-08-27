@@ -64,11 +64,11 @@
 
 use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use p2p::traits::node::SafetyStateStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
+use p2p::traits::node::SafetyStateStore;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_safety_RocksDbSafetyStore_upsert(
@@ -118,8 +118,7 @@ extern "system" fn Java_com_radixdlt_safety_RocksDbSafetyStore_isMigrated(
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |_: ()| -> bool {
-        JNINodeRustEnvironment::get_safety_store_database(&env, j_rust_global_context)
-            .is_migrated()
+        JNINodeRustEnvironment::get_safety_store_database(&env, j_rust_global_context).is_migrated()
     })
 }
 

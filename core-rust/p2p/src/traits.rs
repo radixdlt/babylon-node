@@ -73,15 +73,15 @@ pub mod node {
         fn remove_one(&self, node_id: &AddressBookNodeId) -> bool;
         fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool;
         fn reset(&self);
-        fn get_all(&self, ) -> Vec<Vec<u8>>;
+        fn get_all(&self) -> Vec<Vec<u8>>;
         fn is_migrated(&self) -> bool;
         fn mark_as_migrated(&self);
     }
 
     // At Java side it is represented as part of AddressBookStore
     pub trait HighPriorityPeersStore {
-        fn upsert_all_peers(&self, peers: &[u8]);
-        fn get_all_peers(&self) -> Option<Vec<u8>>;
+        fn upsert_all_high_priority_peers(&self, peers: &[u8]);
+        fn get_all_high_priority_peers(&self) -> Option<Vec<u8>>;
         fn reset_high_priority_peers(&self);
     }
 

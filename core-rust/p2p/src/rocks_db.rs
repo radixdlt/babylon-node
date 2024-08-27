@@ -64,15 +64,15 @@
 
 use std::path::PathBuf;
 
-use node_common::rocksdb::{
-    ColumnFamilyDescriptor, DB, Options,
-};
+use node_common::rocksdb::{ColumnFamilyDescriptor, Options, DB};
 
-use crate::engine_prelude::*;
 use crate::address_book_components::AddressBookNodeId;
-use crate::column_families::{AddressBookCf, HighPriorityPeersCf, MigrationStatusCf, SafetyStoreCf};
-use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, SafetyStateStore};
+use crate::column_families::{
+    AddressBookCf, HighPriorityPeersCf, MigrationStatusCf, SafetyStoreCf,
+};
+use crate::engine_prelude::*;
 use crate::migration::MigrationStatus;
+use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, SafetyStateStore};
 use node_common::store::rocks_db::*;
 use node_common::store::typed_cf_api::*;
 
@@ -101,10 +101,8 @@ const ALL_ADDRESS_BOOK_COLUMN_FAMILIES: [&str; 3] = [
     MigrationStatusCf::DEFAULT_NAME,
 ];
 
-const ALL_SAFETY_STORE_COLUMN_FAMILIES: [&str; 2] = [
-    SafetyStoreCf::DEFAULT_NAME,
-    MigrationStatusCf::DEFAULT_NAME,
-];
+const ALL_SAFETY_STORE_COLUMN_FAMILIES: [&str; 2] =
+    [SafetyStoreCf::DEFAULT_NAME, MigrationStatusCf::DEFAULT_NAME];
 
 pub type ActualAddressBookDatabase = AddressBookDatabase<DirectRocks>;
 pub type ActualSafetyStoreDatabase = SafetyStoreDatabase<DirectRocks>;
@@ -139,21 +137,21 @@ fn open_rw_context<R: WriteableRocks>(db: &R) -> TypedDbContext<R, BufferedWrite
 }
 
 impl ActualAddressBookDatabase {
-    pub fn new(
-        root_path: PathBuf,
-    ) -> ActualAddressBookDatabase {
+    pub fn new(root_path: PathBuf) -> ActualAddressBookDatabase {
         AddressBookDatabase {
-            rocks: DirectRocks { db: new_rocks_db(root_path, &ALL_ADDRESS_BOOK_COLUMN_FAMILIES) },
+            rocks: DirectRocks {
+                db: new_rocks_db(root_path, &ALL_ADDRESS_BOOK_COLUMN_FAMILIES),
+            },
         }
     }
 }
 
 impl ActualSafetyStoreDatabase {
-    pub fn new(
-        root_path: PathBuf,
-    ) -> ActualSafetyStoreDatabase {
+    pub fn new(root_path: PathBuf) -> ActualSafetyStoreDatabase {
         ActualSafetyStoreDatabase {
-            rocks: DirectRocks { db: new_rocks_db(root_path, &ALL_SAFETY_STORE_COLUMN_FAMILIES) },
+            rocks: DirectRocks {
+                db: new_rocks_db(root_path, &ALL_SAFETY_STORE_COLUMN_FAMILIES),
+            },
         }
     }
 }
@@ -184,53 +182,64 @@ impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
     }
 
     fn get_all(&self) -> Vec<Vec<u8>> {
-        open_rw_context(&self.rocks).cf(AddressBookCf)
-            .get_all()
+        open_rw_context(&self.rocks).cf(AddressBookCf).get_all()
     }
-    
+
     fn is_migrated(&self) -> bool {
-        open_rw_context(&self.rocks).cf(MigrationStatusCf)
-            .get(&()).is_some()
+        open_rw_context(&self.rocks)
+            .cf(MigrationStatusCf)
+            .get(&())
+            .is_some()
     }
-    
+
     fn mark_as_migrated(&self) {
-        open_rw_context(&self.rocks).cf(MigrationStatusCf)
+        open_rw_context(&self.rocks)
+            .cf(MigrationStatusCf)
             .put(&(), &MigrationStatus::Completed)
     }
 }
 
 impl<R: WriteableRocks> HighPriorityPeersStore for AddressBookDatabase<R> {
-    fn upsert_all_peers(&self, peers: &[u8]) {
-        open_rw_context(&self.rocks).cf(HighPriorityPeersCf).put(&(), &peers.to_vec());
+    fn upsert_all_high_priority_peers(&self, peers: &[u8]) {
+        open_rw_context(&self.rocks)
+            .cf(HighPriorityPeersCf)
+            .put(&(), &peers.to_vec());
     }
 
-    fn get_all_peers(&self) -> Option<Vec<u8>> {
-        open_rw_context(&self.rocks).cf(HighPriorityPeersCf)
+    fn get_all_high_priority_peers(&self) -> Option<Vec<u8>> {
+        open_rw_context(&self.rocks)
+            .cf(HighPriorityPeersCf)
             .get(&())
     }
 
     fn reset_high_priority_peers(&self) {
-        open_rw_context(&self.rocks).cf(HighPriorityPeersCf).delete(&());
+        open_rw_context(&self.rocks)
+            .cf(HighPriorityPeersCf)
+            .delete(&());
     }
 }
 
 impl<R: WriteableRocks> SafetyStateStore for SafetyStoreDatabase<R> {
     fn upsert_safety_state(&self, safety_state: &[u8]) {
-        open_rw_context(&self.rocks).cf(SafetyStoreCf).put(&(), &safety_state.to_vec());
+        open_rw_context(&self.rocks)
+            .cf(SafetyStoreCf)
+            .put(&(), &safety_state.to_vec());
     }
 
     fn get_safety_state(&self) -> Option<Vec<u8>> {
-        open_rw_context(&self.rocks).cf(SafetyStoreCf)
-            .get(&())
+        open_rw_context(&self.rocks).cf(SafetyStoreCf).get(&())
     }
 
     fn is_migrated(&self) -> bool {
-        open_rw_context(&self.rocks).cf(MigrationStatusCf)
-            .get(&()).is_some()
+        open_rw_context(&self.rocks)
+            .cf(MigrationStatusCf)
+            .get(&())
+            .is_some()
     }
-    
+
     fn mark_as_migrated(&self) {
-        open_rw_context(&self.rocks).cf(MigrationStatusCf)
+        open_rw_context(&self.rocks)
+            .cf(MigrationStatusCf)
             .put(&(), &MigrationStatus::Completed)
     }
 }

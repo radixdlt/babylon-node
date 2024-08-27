@@ -67,23 +67,20 @@ package com.radixdlt.p2p.addressbook;
 import static com.radixdlt.p2p.addressbook.RocksAddressBookStoreTest.*;
 import static org.junit.Assert.assertEquals;
 
-import com.google.inject.*;
-import com.google.inject.Module;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.rev2.NodeRustEnvironmentBuilder;
+import com.radixdlt.p2p.RocksDbAddressBookStore;
+import com.radixdlt.p2p.RocksDbHighPriorityPeersStore;
+import com.radixdlt.rev2.NodeRustEnvironmentHelper;
 import com.radixdlt.rev2.modules.AddressBookModule;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
 import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import org.apache.commons.cli.ParseException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -92,73 +89,80 @@ import org.junit.rules.TemporaryFolder;
 public class AddressBookMigrationTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private Module createCommonModule() {
-    return new AbstractModule() {
-      @Provides
-      @Singleton
-      @NodeStorageLocation
-      String nodeStorageLocation() {
-        return folder.getRoot().getPath();
-      }
+  record TestEnvironment(
+      String nodeStorageLocation,
+      NodeRustEnvironment nodeRustEnvironment,
+      Metrics metrics,
+      Serialization serialization,
+      RuntimeProperties properties) {
+    public RocksAddressBookStore rocksAddressBookPersistence() {
+      return new RocksAddressBookStore(
+          RocksDbAddressBookStore.create(metrics, nodeRustEnvironment),
+          RocksDbHighPriorityPeersStore.create(metrics, nodeRustEnvironment));
+    }
 
-      @Provides
-      @Singleton
-      NodeRustEnvironment nodeRustEnvironment() throws IOException {
-        return NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath());
-      }
-
-      @Provides
-      @Singleton
-      Metrics metrics() {
-        return new MetricsInitializer().initialize();
-      }
-
-      @Provides
-      @Singleton
-      Serialization serialization() {
-        return Serialization.create(
-            ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
-      }
-
-      @Provides
-      @Singleton
-      RuntimeProperties properties() throws ParseException {
-        return RuntimeProperties.defaultWithOverrides(Map.of());
-      }
-    };
+    public BerkeleyAddressBookStore berkeleyAddressBookPersistence() {
+      return new BerkeleyAddressBookStore(
+          serialization,
+          metrics,
+          nodeStorageLocation,
+          BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+    }
   }
 
-  private Module createBerkeleyModule() {
-    return new AbstractModule() {
-      @Provides
-      @Singleton
-      BerkeleyAddressBookStore addressBookPersistence(
-          RuntimeProperties properties,
-          Serialization serialization,
-          Metrics metrics,
-          @NodeStorageLocation String nodeStorageLocation) {
-        return new BerkeleyAddressBookStore(
-            serialization,
-            metrics,
-            nodeStorageLocation,
-            BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-      }
-    };
+  private TestEnvironment createTestEnvironment() throws IOException, ParseException {
+    return new TestEnvironment(
+        folder.getRoot().getPath(),
+        NodeRustEnvironmentHelper.createNodeRustEnvironment(folder.newFolder().getPath()),
+        new MetricsInitializer().initialize(),
+        Serialization.create(
+            ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create()),
+        RuntimeProperties.defaultWithOverrides(Map.of()));
   }
 
   @Test
-  public void address_book_migrates_successfully() {
-    var injector =
-        Guice.createInjector(createCommonModule(), new AddressBookModule(), createBerkeleyModule());
+  public void address_book_migrates_successfully() throws IOException, ParseException {
+    var environment = createTestEnvironment();
     var addresses = Set.of(newAddressBookEntry(1), newAddressBookEntry(2), newAddressBookEntry(3));
 
     // Create some entries in the Berkeley address book
-    try (var berkeleyAddressBook = injector.getInstance(BerkeleyAddressBookStore.class)) {
+    try (var berkeleyAddressBook = environment.berkeleyAddressBookPersistence()) {
       addresses.forEach(berkeleyAddressBook::upsertEntry);
     }
 
-    // Instantiation of the AddressBook will trigger the migration
-    var addressBook = injector.getInstance(AddressBookPersistence.class);
-    assertEquals(new HashSet<>(addressBook.getAllEntries()), addresses);
+    // Perform the migration and check content
+    try (var addressBook = environment.rocksAddressBookPersistence()) {
+      AddressBookModule.ensureMigrated(
+          addressBook,
+          environment.properties,
+          environment.serialization,
+          environment.metrics,
+          environment.nodeStorageLocation);
+
+      assertEquals(new HashSet<>(addressBook.getAllEntries()), addresses);
+    }
+  }
+
+  @Test
+  public void high_priority_peers_migrate_successfully() throws IOException, ParseException {
+    var environment = createTestEnvironment();
+    var highPriorityPeers = List.of(newNodeId(21), newNodeId(32), newNodeId(43));
+
+    // Create some entries in the Berkeley address book
+    try (var berkeleyAddressBook = environment.berkeleyAddressBookPersistence()) {
+      berkeleyAddressBook.storeHighPriorityPeers(highPriorityPeers);
+    }
+
+    // Perform the migration and check content
+    try (var addressBook = environment.rocksAddressBookPersistence()) {
+      AddressBookModule.ensureMigrated(
+          addressBook,
+          environment.properties,
+          environment.serialization,
+          environment.metrics,
+          environment.nodeStorageLocation);
+
+      assertEquals(highPriorityPeers, addressBook.getHighPriorityPeers());
+    }
   }
 }

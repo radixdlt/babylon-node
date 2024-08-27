@@ -64,6 +64,7 @@
 
 package com.radixdlt.rev2.modules;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -78,25 +79,7 @@ import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
-public class NodePersistenceModule extends AbstractModule {
-  private final AddressBookPolicy policy;
-
-  public enum AddressBookPolicy {
-    ENABLED,
-    DISABLED
-  }
-
-  public NodePersistenceModule(AddressBookPolicy policy) {
-    this.policy = policy;
-  }
-
-  @Override
-  protected void configure() {
-    if (policy == AddressBookPolicy.ENABLED) {
-      install(new AddressBookModule());
-    }
-  }
-
+public class PersistentSafetyStateStoreModule extends AbstractModule {
   @Provides
   @Singleton
   PersistentSafetyStateStore persistentSafetyStateStore(
@@ -106,23 +89,32 @@ public class NodePersistenceModule extends AbstractModule {
       @NodeStorageLocation String nodeStorageLocation,
       NodeRustEnvironment environment) {
 
-    var berkeleySafetyStateStore =
-        new BerkeleySafetyStateStore(
-            serialization,
-            metrics,
-            nodeStorageLocation,
-            BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-
     var rocksSafetyStateStore =
         new RocksSafetyStateStore(RocksDbSafetyStore.create(metrics, environment));
 
-    try (berkeleySafetyStateStore) {
-      if (!rocksSafetyStateStore.isMigrated()) {
+    ensureMigrated(rocksSafetyStateStore, properties, serialization, metrics, nodeStorageLocation);
+
+    return rocksSafetyStateStore;
+  }
+
+  @VisibleForTesting
+  public static void ensureMigrated(
+      RocksSafetyStateStore rocksSafetyStateStore,
+      RuntimeProperties properties,
+      Serialization serialization,
+      Metrics metrics,
+      String nodeStorageLocation) {
+    if (!rocksSafetyStateStore.isMigrated()) {
+      var berkeleySafetyStateStore =
+          new BerkeleySafetyStateStore(
+              serialization,
+              metrics,
+              nodeStorageLocation,
+              BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+      try (berkeleySafetyStateStore) {
         berkeleySafetyStateStore.get().ifPresent(rocksSafetyStateStore::commitState);
         rocksSafetyStateStore.markAsMigrated();
       }
     }
-
-    return rocksSafetyStateStore;
   }
 }

@@ -1,6 +1,5 @@
 use crate::engine_prelude::Sbor;
 
-
 /// The ID of the node stored in the Address book (Secp256k1 public key)
 #[derive(Clone, Copy, Sbor)]
 pub struct AddressBookNodeId(pub [u8; AddressBookNodeId::LENGTH]);
@@ -18,8 +17,8 @@ impl AddressBookNodeId {
 }
 
 /// Timestamp of the various peer-related events
-// At present it's just an alias for i64. Later we may want to replace it with struct using crono crate and 
-// do something like shown below to transparently convert to/from internal representation 
+// At present it's just an alias for i64. Later we may want to replace it with struct using crono crate and
+// do something like shown below to transparently convert to/from internal representation
 // (once there will be real usage at Rust side).
 // #[sbor(
 //     as_type = "i64",

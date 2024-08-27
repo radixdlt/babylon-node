@@ -69,9 +69,9 @@ use crate::engine_prelude::*;
 
 use crate::store::traits::indices::CreationId;
 use crate::store::traits::scenario::ScenarioSequenceNumber;
-use node_common::store::typed_cf_api::*;
 use crate::transaction::RawLedgerTransaction;
 use crate::StateVersion;
+use node_common::store::typed_cf_api::*;
 
 #[derive(Default)]
 pub struct StateVersionDbCodec {}

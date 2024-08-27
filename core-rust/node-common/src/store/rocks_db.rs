@@ -65,8 +65,7 @@
 use crate::engine_prelude::*;
 use rocksdb::checkpoint::Checkpoint;
 use rocksdb::{
-    AsColumnFamilyRef, ColumnFamily, DBPinnableSlice,
-    IteratorMode, Snapshot, WriteBatch, DB,
+    AsColumnFamilyRef, ColumnFamily, DBPinnableSlice, IteratorMode, Snapshot, WriteBatch, DB,
 };
 
 use std::path::PathBuf;
@@ -93,7 +92,7 @@ pub trait ReadableRocks {
         &self,
         cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item=KVBytes> + '_>;
+    ) -> Box<dyn Iterator<Item = KVBytes> + '_>;
 
     /// Gets a single value by key.
     fn get_pinned_cf(
@@ -110,7 +109,7 @@ pub trait ReadableRocks {
     /// TODO(when the rustc feature mentioned above becomes stable): get rid of the `<'a>`.
     fn multi_get_cf<'a>(
         &'a self,
-        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
+        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
     ) -> Vec<Option<Vec<u8>>>;
 }
 
@@ -151,7 +150,7 @@ impl ReadableRocks for DirectRocks {
         &self,
         cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item=KVBytes> + '_> {
+    ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
         Box::new(
             self.db
                 .iterator_cf(cf, mode)
@@ -169,7 +168,7 @@ impl ReadableRocks for DirectRocks {
 
     fn multi_get_cf<'a>(
         &'a self,
-        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
+        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
     ) -> Vec<Option<Vec<u8>>> {
         self.db
             .multi_get_cf(keys)
@@ -237,7 +236,7 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
         &self,
         cf: &impl AsColumnFamilyRef,
         mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item=KVBytes> + '_> {
+    ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
         Box::new(
             self.snapshot
                 .iterator_cf(cf, mode)
@@ -257,7 +256,7 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
 
     fn multi_get_cf<'a>(
         &'a self,
-        keys: impl IntoIterator<Item=(&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
+        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
     ) -> Vec<Option<Vec<u8>>> {
         self.snapshot
             .multi_get_cf(keys)

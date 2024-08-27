@@ -72,9 +72,9 @@ use crate::jni::LedgerSyncLimitsConfig;
 use crate::protocol::{
     ProtocolConfig, ProtocolManager, ProtocolUpdateExecutor, ProtocolVersionName,
 };
-use crate::store::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
 use crate::store::jmt_gc::StateTreeGcConfig;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
+use crate::store::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
 use crate::store::traits::proofs::QueryableProofStore;
 use crate::store::traits::DatabaseConfigValidationError;
 use crate::transaction::{

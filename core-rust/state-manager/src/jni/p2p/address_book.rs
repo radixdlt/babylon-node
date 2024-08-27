@@ -64,12 +64,12 @@
 
 use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use p2p::traits::node::AddressBookStore;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
 use p2p::address_book_components::{AddressBookEntry, AddressBookNodeId};
+use p2p::traits::node::AddressBookStore;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_removeOne(
@@ -109,8 +109,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_reset(
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |_: ()| {
-        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
-            .reset();
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context).reset();
     })
 }
 
@@ -122,8 +121,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_getAll(
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |_: ()| -> Vec<Vec<u8>> {
-        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
-            .get_all()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context).get_all()
     })
 }
 
@@ -148,8 +146,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_isMigrated(
     node_id: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, node_id, |_: ()| -> bool {
-        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
-            .is_migrated()
+        JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context).is_migrated()
     })
 }
 

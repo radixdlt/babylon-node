@@ -64,6 +64,7 @@
 
 package com.radixdlt.rev2.modules;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -88,6 +89,28 @@ public class AddressBookModule extends AbstractModule {
       Metrics metrics,
       @NodeStorageLocation String nodeStorageLocation,
       NodeRustEnvironment environment) {
+
+    var addressBookStore =
+        new RocksAddressBookStore(
+            RocksDbAddressBookStore.create(metrics, environment),
+            RocksDbHighPriorityPeersStore.create(metrics, environment));
+
+    ensureMigrated(addressBookStore, properties, serialization, metrics, nodeStorageLocation);
+
+    return addressBookStore;
+  }
+
+  @VisibleForTesting
+  public static void ensureMigrated(
+      RocksAddressBookStore addressBookStore,
+      RuntimeProperties properties,
+      Serialization serialization,
+      Metrics metrics,
+      String nodeStorageLocation) {
+    if (addressBookStore.isMigrated()) {
+      return;
+    }
+
     var berkeleyAddressBookStore =
         new BerkeleyAddressBookStore(
             serialization,
@@ -95,19 +118,10 @@ public class AddressBookModule extends AbstractModule {
             nodeStorageLocation,
             BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
 
-    var addressBookStore =
-        new RocksAddressBookStore(
-            RocksDbAddressBookStore.create(metrics, environment),
-            RocksDbHighPriorityPeersStore.create(metrics, environment));
-
     try (berkeleyAddressBookStore) {
-      if (!addressBookStore.isMigrated()) {
-        berkeleyAddressBookStore.getAllEntries().forEach(addressBookStore::upsertEntry);
-        addressBookStore.storeHighPriorityPeers(berkeleyAddressBookStore.getHighPriorityPeers());
-        addressBookStore.markAsMigrated();
-      }
+      berkeleyAddressBookStore.getAllEntries().forEach(addressBookStore::upsertEntry);
+      addressBookStore.storeHighPriorityPeers(berkeleyAddressBookStore.getHighPriorityPeers());
+      addressBookStore.markAsMigrated();
     }
-
-    return addressBookStore;
   }
 }

@@ -71,14 +71,14 @@ use node_common::locks::DbLock;
 use rocks_db::ActualStateManagerDatabase;
 
 use crate::RawDbMetrics;
-pub use traits::DatabaseConfig;
 use traits::measurement::MeasurableDatabase;
+pub use traits::DatabaseConfig;
 
+mod codecs;
+pub mod column_families;
 pub mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;
-mod codecs;
-pub mod column_families;
 pub mod rocks_db;
 pub mod traits;
 

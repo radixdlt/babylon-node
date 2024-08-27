@@ -69,7 +69,7 @@ import static org.junit.Assert.*;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.rev2.NodeRustEnvironmentBuilder;
+import com.radixdlt.rev2.NodeRustEnvironmentHelper;
 import com.radixdlt.safety.RocksDbSafetyStore;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -100,7 +100,7 @@ public class RocksSafetyStateStoreTest {
 
   private void runTest(Consumer<RocksSafetyStateStore> test) {
     try (var environment =
-        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
+        NodeRustEnvironmentHelper.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var safetyStore = RocksDbSafetyStore.create(newMetrics(), environment);
       try (var underTest = new RocksSafetyStateStore(safetyStore)) {
         test.accept(underTest);

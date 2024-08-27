@@ -64,7 +64,7 @@
 
 use crate::address_book_components::AddressBookNodeId;
 use crate::engine_prelude::*;
-use node_common::store::typed_cf_api::{DbCodec, BoundedDbCodec};
+use node_common::store::typed_cf_api::{BoundedDbCodec, DbCodec};
 
 #[derive(Clone, Default)]
 pub struct AddressBookNodeIdDbCodec {}

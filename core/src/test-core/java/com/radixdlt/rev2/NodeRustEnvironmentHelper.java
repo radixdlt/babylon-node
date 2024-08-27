@@ -70,7 +70,7 @@ import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 
-public class NodeRustEnvironmentBuilder {
+public class NodeRustEnvironmentHelper {
   public static NodeRustEnvironment createNodeRustEnvironment(String dbPath) {
     final var mempoolMaxTotalTransactionsSize = 10 * 1024 * 1024;
     final var mempoolMaxTransactionCount = 20;

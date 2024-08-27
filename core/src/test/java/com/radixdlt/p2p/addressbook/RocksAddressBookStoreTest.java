@@ -75,9 +75,10 @@ import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.FailedHandshake;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
-import com.radixdlt.rev2.NodeRustEnvironmentBuilder;
+import com.radixdlt.rev2.NodeRustEnvironmentHelper;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -131,9 +132,29 @@ public class RocksAddressBookStoreTest {
         });
   }
 
+  @Test
+  public void test_high_priority_peers_can_be_saved_and_restored() {
+    runTest(
+        rocksAddressBookStore -> {
+          var peers = List.of(newNodeId(11), newNodeId(12), newNodeId(13));
+
+          // New store is empty
+          var empty = rocksAddressBookStore.getHighPriorityPeers();
+          assertTrue(empty.isEmpty());
+
+          // Peers can be stored and restored
+          rocksAddressBookStore.storeHighPriorityPeers(peers);
+
+          var allPeers = rocksAddressBookStore.getHighPriorityPeers();
+
+          assertEquals(3L, allPeers.size());
+          assertEquals(peers, allPeers);
+        });
+  }
+
   private void runTest(Consumer<RocksAddressBookStore> test) {
     try (var environment =
-        NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath())) {
+        NodeRustEnvironmentHelper.createNodeRustEnvironment(folder.newFolder().getPath())) {
       var addressBook = RocksDbAddressBookStore.create(newMetrics(), environment);
       var peersStore = RocksDbHighPriorityPeersStore.create(newMetrics(), environment);
       try (var underTest = new RocksAddressBookStore(addressBook, peersStore)) {
@@ -149,11 +170,19 @@ public class RocksAddressBookStoreTest {
   }
 
   public static AddressBookEntry newAddressBookEntry(int id) {
-    var pubKey = ECKeyPair.fromSeed(new byte[] {(byte) id}).getPublicKey();
+    var pubKey = newPubKey((byte) id);
     var bannedUntil = newBannedUntil();
 
     return new AddressBookEntry(
         NodeId.fromPublicKey(pubKey), bannedUntil, newKnownAddresses(pubKey));
+  }
+
+  public static NodeId newNodeId(int id) {
+    return NodeId.fromPublicKey(newPubKey((byte) id));
+  }
+
+  private static ECDSASecp256k1PublicKey newPubKey(byte id) {
+    return ECKeyPair.fromSeed(new byte[] {id}).getPublicKey();
   }
 
   private static ImmutableSet<PeerAddressEntry> newKnownAddresses(ECDSASecp256k1PublicKey pubKey) {

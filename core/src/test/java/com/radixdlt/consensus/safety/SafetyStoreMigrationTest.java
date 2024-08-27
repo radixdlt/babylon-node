@@ -67,20 +67,17 @@ package com.radixdlt.consensus.safety;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.google.inject.*;
-import com.google.inject.Module;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
-import com.radixdlt.rev2.NodeRustEnvironmentBuilder;
-import com.radixdlt.rev2.modules.NodePersistenceModule;
-import com.radixdlt.rev2.modules.NodePersistenceModule.AddressBookPolicy;
+import com.radixdlt.rev2.NodeRustEnvironmentHelper;
+import com.radixdlt.rev2.modules.PersistentSafetyStateStoreModule;
+import com.radixdlt.safety.RocksDbSafetyStore;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
 import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
 import java.util.Map;
@@ -92,79 +89,58 @@ import org.junit.rules.TemporaryFolder;
 public class SafetyStoreMigrationTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private Module createCommonModule() {
-    return new AbstractModule() {
-      @Provides
-      @Singleton
-      @NodeStorageLocation
-      String nodeStorageLocation() {
-        return folder.getRoot().getPath();
-      }
+  record TestEnvironment(
+      String nodeStorageLocation,
+      NodeRustEnvironment nodeRustEnvironment,
+      Metrics metrics,
+      Serialization serialization,
+      RuntimeProperties properties) {
+    public RocksSafetyStateStore rocksSafetyStateStore() {
+      return new RocksSafetyStateStore(RocksDbSafetyStore.create(metrics, nodeRustEnvironment));
+    }
 
-      @Provides
-      @Singleton
-      NodeRustEnvironment nodeRustEnvironment() throws IOException {
-        return NodeRustEnvironmentBuilder.createNodeRustEnvironment(folder.newFolder().getPath());
-      }
-
-      @Provides
-      @Singleton
-      Metrics metrics() {
-        return new MetricsInitializer().initialize();
-      }
-
-      @Provides
-      @Singleton
-      Serialization serialization() {
-        return Serialization.create(
-            ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
-      }
-
-      @Provides
-      @Singleton
-      RuntimeProperties properties() throws ParseException {
-        return RuntimeProperties.defaultWithOverrides(Map.of());
-      }
-    };
+    public BerkeleySafetyStateStore berkeleySafetyStateStore() {
+      return new BerkeleySafetyStateStore(
+          serialization,
+          metrics,
+          nodeStorageLocation,
+          BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+    }
   }
 
-  private Module createBerkeleyModule() {
-    return new AbstractModule() {
-      @Provides
-      @Singleton
-      BerkeleySafetyStateStore safetyStore(
-          RuntimeProperties properties,
-          Serialization serialization,
-          Metrics metrics,
-          @NodeStorageLocation String nodeStorageLocation) {
-        return new BerkeleySafetyStateStore(
-            serialization,
-            metrics,
-            nodeStorageLocation,
-            BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-      }
-    };
+  private TestEnvironment createTestEnvironment() throws IOException, ParseException {
+    return new TestEnvironment(
+        folder.getRoot().getPath(),
+        NodeRustEnvironmentHelper.createNodeRustEnvironment(folder.newFolder().getPath()),
+        new MetricsInitializer().initialize(),
+        Serialization.create(
+            ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create()),
+        RuntimeProperties.defaultWithOverrides(Map.of()));
   }
 
   @Test
-  public void address_book_migrates_successfully() {
-    var injector =
-        Guice.createInjector(
-            createCommonModule(),
-            new NodePersistenceModule(AddressBookPolicy.DISABLED),
-            createBerkeleyModule());
+  public void safety_store_migrates_successfully() throws IOException, ParseException {
+    var injector = createTestEnvironment();
     var safetyState = SafetyState.initialState(BFTValidatorId.random());
 
     // Create some entries in the Berkeley safety store
-    try (var berkeleySafetyStateStore = injector.getInstance(BerkeleySafetyStateStore.class)) {
+    try (var berkeleySafetyStateStore = injector.berkeleySafetyStateStore()) {
       berkeleySafetyStateStore.commitState(safetyState);
     }
 
-    // Instantiation of the PersistentSafetyStateStore will trigger the migration
-    var safetyStateStore = injector.getInstance(PersistentSafetyStateStore.class);
-    var storedState = safetyStateStore.get();
+    // Perform the migration and check content
+    try (var safetyStateStore = injector.rocksSafetyStateStore()) {
+      PersistentSafetyStateStoreModule.ensureMigrated(
+          safetyStateStore,
+          injector.properties,
+          injector.serialization,
+          injector.metrics,
+          injector.nodeStorageLocation);
 
-    assertTrue(storedState.isPresent());
-    assertEquals(safetyState, storedState.get());
+      var storedState = safetyStateStore.get();
+
+      assertTrue(storedState.isPresent());
+      assertEquals(safetyState, storedState.get());
+    }
   }
 }

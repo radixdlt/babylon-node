@@ -195,6 +195,10 @@ public final class P2PTestNetworkRunner {
     final var properties = RuntimeProperties.fromCommandLineArgs(new String[] {});
     return Guice.createInjector(
         new AbstractModule() {
+
+          // FIXME: Replacing implementation with the RocksDB version does not work out of the box
+          // because NodeRustEnvironment can't
+          // be properly instantiated (error on Rust side).
           @Override
           protected void configure() {
             bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
