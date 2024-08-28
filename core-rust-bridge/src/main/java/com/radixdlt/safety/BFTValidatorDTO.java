@@ -90,4 +90,12 @@ public record BFTValidatorDTO(byte[] power, BFTValidatorIdDTO validatorId) {
   public int hashCode() {
     return Objects.hash(Arrays.hashCode(power), validatorId);
   }
+
+  @Override
+  public String toString() {
+    return "BFTValidatorDTO{" +
+           "power=" + Arrays.toString(power) +
+           ", validatorId=" + validatorId +
+           '}';
+  }
 }

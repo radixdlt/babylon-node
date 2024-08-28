@@ -109,4 +109,13 @@ public record PeerAddressEntryDTO(
   public int hashCode() {
     return Objects.hash(Arrays.hashCode(address), latestConnectionStatus, maybeFailedHandshake);
   }
+
+  @Override
+  public String toString() {
+    return "PeerAddressEntryDTO{" +
+           "address=" + Arrays.toString(address) +
+           ", latestConnectionStatus=" + latestConnectionStatus +
+           ", maybeFailedHandshake=" + maybeFailedHandshake +
+           '}';
+  }
 }
