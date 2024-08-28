@@ -112,10 +112,13 @@ public record PeerAddressEntryDTO(
 
   @Override
   public String toString() {
-    return "PeerAddressEntryDTO{" +
-           "address=" + Arrays.toString(address) +
-           ", latestConnectionStatus=" + latestConnectionStatus +
-           ", maybeFailedHandshake=" + maybeFailedHandshake +
-           '}';
+    return "PeerAddressEntryDTO{"
+        + "address="
+        + Arrays.toString(address)
+        + ", latestConnectionStatus="
+        + latestConnectionStatus
+        + ", maybeFailedHandshake="
+        + maybeFailedHandshake
+        + '}';
   }
 }

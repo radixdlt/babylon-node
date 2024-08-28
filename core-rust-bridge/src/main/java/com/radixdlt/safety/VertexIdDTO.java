@@ -94,9 +94,7 @@ public record VertexIdDTO(byte[] idBytes) {
 
   @Override
   public String toString() {
-    return "VertexIdDTO{" +
-           "idBytes=" + Arrays.toString(idBytes) +
-           '}';
+    return "VertexIdDTO{" + "idBytes=" + Arrays.toString(idBytes) + '}';
   }
 
   public static void registerCodec(CodecMap codecMap) {

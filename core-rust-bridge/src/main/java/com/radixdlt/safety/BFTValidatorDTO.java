@@ -93,9 +93,11 @@ public record BFTValidatorDTO(byte[] power, BFTValidatorIdDTO validatorId) {
 
   @Override
   public String toString() {
-    return "BFTValidatorDTO{" +
-           "power=" + Arrays.toString(power) +
-           ", validatorId=" + validatorId +
-           '}';
+    return "BFTValidatorDTO{"
+        + "power="
+        + Arrays.toString(power)
+        + ", validatorId="
+        + validatorId
+        + '}';
   }
 }
