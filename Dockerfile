@@ -182,7 +182,7 @@ RUN USER=root "$HOME/.cargo/bin/cargo" init --lib --name dummy --vcs none . \
   && touch ./engine-state-api-server/src/lib.rs \
   && touch ./jni-export/src/lib.rs \
   && touch ./node-common/src/lib.rs \
-  && touch ./state-manager/src/lib.rs
+  && touch ./state-manager/src/lib.rs \
   && touch ./p2p/src/lib.rs
 COPY core-rust/Cargo.toml ./
 COPY core-rust/Cargo.lock ./
