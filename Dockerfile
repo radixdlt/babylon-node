@@ -177,11 +177,13 @@ RUN USER=root "$HOME/.cargo/bin/cargo" init --lib --name dummy --vcs none . \
   && mkdir -p ./jni-export/src \
   && mkdir -p ./node-common/src \
   && mkdir -p ./state-manager/src \
+  && mkdir -p ./p2p/src \
   && touch ./core-api-server/src/lib.rs \
   && touch ./engine-state-api-server/src/lib.rs \
   && touch ./jni-export/src/lib.rs \
   && touch ./node-common/src/lib.rs \
   && touch ./state-manager/src/lib.rs
+  && touch ./p2p/src/lib.rs
 COPY core-rust/Cargo.toml ./
 COPY core-rust/Cargo.lock ./
 COPY core-rust/core-api-server/Cargo.toml ./core-api-server
@@ -189,6 +191,7 @@ COPY core-rust/engine-state-api-server/Cargo.toml ./engine-state-api-server
 COPY core-rust/jni-export/Cargo.toml ./jni-export
 COPY core-rust/node-common/Cargo.toml ./node-common
 COPY core-rust/state-manager/Cargo.toml ./state-manager
+COPY core-rust/p2p/Cargo.toml ./p2p
 
 COPY docker/build_scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
 
