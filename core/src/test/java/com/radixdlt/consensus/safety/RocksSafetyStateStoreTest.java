@@ -81,7 +81,7 @@ public class RocksSafetyStateStoreTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Test
-  public void test_address_book_entries_can_be_saved_and_restored() {
+  public void test_safety_state_can_be_saved_and_restored() {
     runTest(
         safetyStore -> {
           // Fresh store is empty

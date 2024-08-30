@@ -65,29 +65,30 @@
 use crate::engine_prelude::*;
 
 pub mod node {
-    use crate::address_book_components::AddressBookNodeId;
-
     use super::*;
+    use crate::address_book_components::*;
+    use crate::components::RawPublicKey;
+    use crate::safety_store_components::SafetyState;
 
     pub trait AddressBookStore {
-        fn remove_one(&self, node_id: &AddressBookNodeId) -> bool;
-        fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool;
+        fn remove_one(&self, node_id: &RawPublicKey) -> bool;
+        fn upsert_one(&self, node_id: &RawPublicKey, entry: &AddressBookEntry) -> bool;
         fn reset(&self);
-        fn get_all(&self) -> Vec<Vec<u8>>;
+        fn get_all(&self) -> Vec<AddressBookEntry>;
         fn is_migrated(&self) -> bool;
         fn mark_as_migrated(&self);
     }
 
     // At Java side it is represented as part of AddressBookStore
     pub trait HighPriorityPeersStore {
-        fn upsert_all_high_priority_peers(&self, peers: &[u8]);
-        fn get_all_high_priority_peers(&self) -> Option<Vec<u8>>;
+        fn upsert_all_high_priority_peers(&self, peers: &HighPriorityPeers);
+        fn get_all_high_priority_peers(&self) -> Option<HighPriorityPeers>;
         fn reset_high_priority_peers(&self);
     }
 
     pub trait SafetyStateStore {
-        fn upsert_safety_state(&self, safety_state: &[u8]);
-        fn get_safety_state(&self) -> Option<Vec<u8>>;
+        fn upsert_safety_state(&self, safety_state: &SafetyState);
+        fn get_safety_state(&self) -> Option<SafetyState>;
         fn is_migrated(&self) -> bool;
         fn mark_as_migrated(&self);
     }

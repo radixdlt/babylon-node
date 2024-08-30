@@ -68,7 +68,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
-use p2p::address_book_components::{AddressBookEntry, AddressBookNodeId};
+use p2p::address_book_components::{AddressBookEntry, NodeIdDTO};
 use p2p::traits::node::AddressBookStore;
 
 #[no_mangle]
@@ -78,9 +78,9 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_removeOne(
     j_rust_global_context: JObject,
     node_id: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |request: AddressBookNodeId| -> bool {
+    jni_sbor_coded_call(&env, node_id, |request: NodeIdDTO| -> bool {
         JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
-            .remove_one(&request)
+            .remove_one(&request.key)
     })
 }
 
@@ -92,12 +92,8 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_upsertOne(
     address_entry: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, address_entry, |request: AddressBookEntry| -> bool {
-        // It should be safe to unwrap here, as this operation was already successful inside
-        // jni_sbor_coded_call.
-        let entity = jni_jbytearray_to_vector(&env, address_entry).unwrap();
-
         JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
-            .upsert_one(&request.node_id, &entity)
+            .upsert_one(&request.node_id.key, &request)
     })
 }
 
@@ -120,7 +116,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_getAll(
     j_rust_global_context: JObject,
     node_id: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |_: ()| -> Vec<Vec<u8>> {
+    jni_sbor_coded_call(&env, node_id, |_: ()| -> Vec<AddressBookEntry> {
         JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context).get_all()
     })
 }

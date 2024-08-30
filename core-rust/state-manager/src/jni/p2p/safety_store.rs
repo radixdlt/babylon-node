@@ -68,6 +68,7 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 use node_common::java::*;
+use p2p::safety_store_components::SafetyState;
 use p2p::traits::node::SafetyStateStore;
 
 #[no_mangle]
@@ -77,10 +78,9 @@ extern "system" fn Java_com_radixdlt_safety_RocksDbSafetyStore_upsert(
     j_rust_global_context: JObject,
     request: jbyteArray,
 ) -> jbyteArray {
-    jni_raw_sbor_fallible_call(&env, request, |bytes| {
+    jni_sbor_coded_call(&env, request, |safety_state| {
         JNINodeRustEnvironment::get_safety_store_database(&env, j_rust_global_context)
-            .upsert_safety_state(&bytes);
-        Ok(())
+            .upsert_safety_state(&safety_state)
     })
 }
 
@@ -91,7 +91,7 @@ extern "system" fn Java_com_radixdlt_safety_RocksDbSafetyStore_get(
     j_rust_global_context: JObject,
     node_id: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, node_id, |_: ()| -> Option<Vec<u8>> {
+    jni_sbor_coded_call(&env, node_id, |_: ()| -> Option<SafetyState> {
         JNINodeRustEnvironment::get_safety_store_database(&env, j_rust_global_context)
             .get_safety_state()
     })

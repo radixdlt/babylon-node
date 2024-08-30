@@ -62,12 +62,26 @@
  * permissions under this License.
  */
 
-use crate::components;
+use crate::components::{RawPublicKey, Signature};
 use crate::engine_prelude::*;
-use crate::engine_prelude::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use sbor::define_single_versioned;
 
-/// Timestamp of the various peer-related events
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct SafetyStateV1 {
+    validator_id: BFTValidatorId,
+    round: Round,
+    last_vote: Option<Vote>,
+}
+
+define_single_versioned! {
+    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    pub VersionedSafetyState(SafetyStateVersions) => SafetyState = SafetyStateV1
+}
+
+/// Safety state components. Note that these structs are intended only for proper encoding/deconding
+/// of the safety state. They may repeat existing structs defined elsewhere.
+
+/// Timestamp of the various safety state components.
 // At present it's just an alias for i64. Later we may want to replace it with struct using crono crate and
 // do something like shown below to transparently convert to/from internal representation
 // (once there will be real usage at Rust side).
@@ -76,44 +90,114 @@ use sbor::define_single_versioned;
 //     as_ref = "self.timestamp()",
 //     from_value = "Self(DateTime::from_timestamp(value, 0))"
 // )]
-type PeerTimestamp = i64;
+type SafetyStateTimestamp = i64;
 
-/// Peer address entry with all components
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct PeerAddress {
-    pub encoded_uri: Vec<u8>,
-    pub latest_connection_status: Option<ConnectionStatus>,
-    pub last_seen: Option<PeerTimestamp>,
+pub struct BFTHeader {
+    round: Round,
+    vertex_id: VertexId,
+    ledger_header: LedgerHeader,
+}
+
+#[derive(
+    Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Ord, PartialOrd, Eq, PartialEq,
+)]
+pub struct BFTValidator {
+    power: Vec<u8>,
+    validator_id: BFTValidatorId,
+}
+
+#[derive(
+    Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Ord, PartialOrd, Eq, PartialEq,
+)]
+pub struct BFTValidatorId {
+    key: RawPublicKey,
+    validator_address: ComponentAddress,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum ConnectionStatus {
-    Connected,
-    Disconnected,
+pub struct HighQC {
+    highest_quorum_certificate: QuorumCertificate,
+    highest_committed_quorum_certificate: QuorumCertificate,
+    highest_timeout_certificate: Option<TimeoutCertificate>,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct NodeIdDTO {
-    pub key: components::RawPublicKey,
-}
-
-/// Address book entry
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AddressBookEntryV1 {
-    pub node_id: NodeIdDTO,
-    pub banned_until: Option<PeerTimestamp>,
-    pub known_addresses: Vec<PeerAddress>,
-}
-
-define_single_versioned! {
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub VersionedAddressBookEntry(AddressBookEntryVersions) => AddressBookEntry = AddressBookEntryV1
+pub struct LedgerHeader {
+    epoch: i64,
+    round: Round,
+    state_version: i64,
+    hashes: LedgerHashes,
+    consensus_parent_round_timestamp_ms: SafetyStateTimestamp,
+    proposer_timestamp_ms: SafetyStateTimestamp,
+    next_epoch: Option<NextEpoch>,
+    next_protocol_version: Option<String>,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct HighPriorityPeersV1(Vec<NodeIdDTO>);
+pub struct LedgerHashes {
+    pub state_root: RawHash,
+    pub transaction_root: RawHash,
+    pub receipt_root: RawHash,
+}
 
-define_single_versioned! {
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub VersionedHighPriorityPeers(HighPriorityPeersVersions) => HighPriorityPeers = HighPriorityPeersV1
+define_wrapped_hash! {
+    RawHash
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct NextEpoch {
+    epoch: i64,
+    validators: BTreeSet<BFTValidator>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct QuorumCertificate {
+    signatures: TimestampedECDSASignatures,
+    vote_data: VoteData,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct Round {
+    round: i64,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct TimeoutCertificate {
+    epoch: i64,
+    round: Round,
+    signatures: TimestampedECDSASignatures,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct TimestampedECDSASignature {
+    timestamp: SafetyStateTimestamp,
+    signature: Signature,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct TimestampedECDSASignatures {
+    node_to_timestamped_signature: BTreeMap<BFTValidatorId, TimestampedECDSASignature>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct VertexId {
+    id_bytes: Vec<u8>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct Vote {
+    author: BFTValidatorId,
+    high_quorum_certificate: HighQC,
+    vote_data: VoteData,
+    timestamp: SafetyStateTimestamp,
+    signature: Signature,
+    timeout_signature: Option<Signature>,
+}
+
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct VoteData {
+    proposed: BFTHeader,
+    parent: BFTHeader,
+    committed: Option<BFTHeader>,
 }

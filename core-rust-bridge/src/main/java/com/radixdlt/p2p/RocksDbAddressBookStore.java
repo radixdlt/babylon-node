@@ -71,8 +71,6 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.sbor.NodeSborCodecs;
-import com.radixdlt.sbor.codec.Codec;
 import java.util.List;
 
 public class RocksDbAddressBookStore {
@@ -92,8 +90,6 @@ public class RocksDbAddressBookStore {
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private static native byte[] isMigrated(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
-  private final Codec<AddressBookEntryDTO> dtoCodec;
 
   public static RocksDbAddressBookStore create(
       Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
@@ -127,8 +123,6 @@ public class RocksDbAddressBookStore {
         Natives.builder(nodeRustEnvironment, RocksDbAddressBookStore::isMigrated)
             .measure(timer.label(new Metrics.MethodId(RocksDbAddressBookStore.class, "isMigrated")))
             .build(new TypeToken<>() {});
-
-    dtoCodec = NodeSborCodecs.resolveCodec(new TypeToken<>() {});
   }
 
   public boolean upsertEntry(AddressBookEntryDTO entry) {
@@ -144,9 +138,7 @@ public class RocksDbAddressBookStore {
   }
 
   public ImmutableList<AddressBookEntryDTO> getAllEntries() {
-    return this.getAllFunc.call(tuple()).stream()
-        .map(value -> NodeSborCodecs.decode(value, dtoCodec))
-        .collect(ImmutableList.toImmutableList());
+    return this.getAllFunc.call(tuple()).stream().collect(ImmutableList.toImmutableList());
   }
 
   public boolean isMigrated() {
@@ -160,7 +152,7 @@ public class RocksDbAddressBookStore {
   private final Natives.Call1<NodeIdDTO, Boolean> removeOneFunc;
   private final Natives.Call1<AddressBookEntryDTO, Boolean> upsertOneFunc;
   private final Natives.Call1<Tuple0, Tuple0> resetFunc;
-  private final Natives.Call1<Tuple0, List<byte[]>> getAllFunc;
+  private final Natives.Call1<Tuple0, List<AddressBookEntryDTO>> getAllFunc;
   private final Natives.Call1<Tuple0, Boolean> isMigratedFunc;
   private final Natives.Call1<Tuple0, Tuple0> markAsMigratedFunc;
 }

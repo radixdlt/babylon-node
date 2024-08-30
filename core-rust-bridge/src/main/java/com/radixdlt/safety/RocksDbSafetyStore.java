@@ -71,8 +71,6 @@ import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Option;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.sbor.NodeSborCodecs;
-import com.radixdlt.sbor.codec.Codec;
 
 public class RocksDbSafetyStore {
   static {
@@ -87,8 +85,6 @@ public class RocksDbSafetyStore {
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private static native byte[] isMigrated(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
-  private final Codec<SafetyStateDTO> dtoCodec;
 
   public static RocksDbSafetyStore create(
       Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
@@ -113,8 +109,6 @@ public class RocksDbSafetyStore {
         Natives.builder(nodeRustEnvironment, RocksDbSafetyStore::isMigrated)
             .measure(timer.label(new Metrics.MethodId(RocksDbSafetyStore.class, "isMigrated")))
             .build(new TypeToken<>() {});
-
-    dtoCodec = NodeSborCodecs.resolveCodec(new TypeToken<>() {});
   }
 
   public void upsert(SafetyStateDTO state) {
@@ -122,7 +116,7 @@ public class RocksDbSafetyStore {
   }
 
   public Option<SafetyStateDTO> get() {
-    return this.getFunc.call(tuple()).map(value -> NodeSborCodecs.decode(value, dtoCodec));
+    return this.getFunc.call(tuple());
   }
 
   public boolean isMigrated() {
@@ -134,7 +128,7 @@ public class RocksDbSafetyStore {
   }
 
   private final Natives.Call1<SafetyStateDTO, Tuple0> upsertFunc;
-  private final Natives.Call1<Tuple0, Option<byte[]>> getFunc;
+  private final Natives.Call1<Tuple0, Option<SafetyStateDTO>> getFunc;
   private final Natives.Call1<Tuple0, Boolean> isMigratedFunc;
   private final Natives.Call1<Tuple0, Tuple0> markAsMigratedFunc;
 }

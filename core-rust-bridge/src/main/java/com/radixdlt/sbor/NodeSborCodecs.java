@@ -78,6 +78,7 @@ import com.radixdlt.message.*;
 import com.radixdlt.p2p.AddressBookEntryDTO;
 import com.radixdlt.p2p.NodeIdDTO;
 import com.radixdlt.p2p.PeerAddressEntryDTO;
+import com.radixdlt.p2p.RocksDbHighPriorityPeersStore.HighPriorityPeers;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.protocol.*;
@@ -222,6 +223,7 @@ public final class NodeSborCodecs {
     BFTValidatorDTO.registerCodec(codecMap);
     BFTValidatorIdDTO.registerCodec(codecMap);
     HighQCDTO.registerCodec(codecMap);
+    HighPriorityPeers.registerCodec(codecMap);
     LedgerHeaderDTO.registerCodec(codecMap);
     NextEpochDTO.registerCodec(codecMap);
     QuorumCertificateDTO.registerCodec(codecMap);

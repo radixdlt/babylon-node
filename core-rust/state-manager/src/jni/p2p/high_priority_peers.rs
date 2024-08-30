@@ -66,10 +66,10 @@ use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
 
-use node_common::java::*;
-
 use crate::engine_prelude::*;
 use crate::jni::node_rust_environment::JNINodeRustEnvironment;
+use node_common::java::*;
+use p2p::address_book_components::HighPriorityPeers;
 use p2p::traits::node::HighPriorityPeersStore;
 
 #[no_mangle]
@@ -79,10 +79,9 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAll
     j_rust_global_context: JObject,
     payload: jbyteArray,
 ) -> jbyteArray {
-    jni_raw_sbor_fallible_call(&env, payload, |bytes| {
+    jni_sbor_coded_call(&env, payload, |bytes| {
         JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
-            .upsert_all_high_priority_peers(&bytes);
-        Ok(())
+            .upsert_all_high_priority_peers(&bytes)
     })
 }
 
@@ -93,7 +92,7 @@ extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_getAllHig
     j_rust_global_context: JObject,
     payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, payload, |_: ()| -> Option<Vec<u8>> {
+    jni_sbor_coded_call(&env, payload, |_: ()| -> Option<HighPriorityPeers> {
         JNINodeRustEnvironment::get_address_book_database(&env, j_rust_global_context)
             .get_all_high_priority_peers()
     })

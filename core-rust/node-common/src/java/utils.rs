@@ -115,20 +115,6 @@ pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode
     .unwrap_or_else(std::ptr::null_mut)
 }
 
-/// A convenience method for the case when input should remain in the form of raw byte array
-/// (i.e. no SBOR decoding is needed). Output is still properly encoded with SBOR.
-pub fn jni_raw_sbor_fallible_call<Response: ScryptoEncode>(
-    env: &JNIEnv,
-    encoded_request: jbyteArray,
-    method: impl FnOnce(Vec<u8>) -> JavaResult<Response>,
-) -> jbyteArray {
-    jni_call(env, || {
-        let result = jni_jbytearray_to_vector(env, encoded_request).and_then(method);
-        jni_slice_to_jbytearray(env, &result.to_java().unwrap())
-    })
-    .unwrap_or_else(std::ptr::null_mut)
-}
-
 /// Executes the given function in a way that is panic-safe on a JNI-originating stack.
 /// This is achieved by intercepting any panic (i.e. `catch_unwind()`) and throwing a Java-side
 /// `RustPanicException` instead.

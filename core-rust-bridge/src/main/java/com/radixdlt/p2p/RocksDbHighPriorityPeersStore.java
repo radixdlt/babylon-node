@@ -71,13 +71,21 @@ import com.radixdlt.environment.NodeRustEnvironment;
 import com.radixdlt.lang.Option;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
-import com.radixdlt.sbor.NodeSborCodecs;
-import com.radixdlt.sbor.codec.Codec;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 import java.util.List;
 
 public class RocksDbHighPriorityPeersStore {
   static {
     System.loadLibrary("corerust");
+  }
+
+  public record HighPriorityPeers(List<NodeIdDTO> ids) {
+    public static void registerCodec(CodecMap codecMap) {
+      codecMap.register(
+          HighPriorityPeers.class,
+          codecs -> StructCodec.fromRecordComponents(HighPriorityPeers.class, codecs));
+    }
   }
 
   private static native byte[] upsertAllHighPriorityPeers(
@@ -88,8 +96,6 @@ public class RocksDbHighPriorityPeersStore {
 
   private static native byte[] resetHighPriorityPeers(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
-
-  private final Codec<List<NodeIdDTO>> dtoCodec;
 
   public static RocksDbHighPriorityPeersStore create(
       Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
@@ -120,26 +126,21 @@ public class RocksDbHighPriorityPeersStore {
                     new Metrics.MethodId(
                         RocksDbHighPriorityPeersStore.class, "resetHighPriorityPeers")))
             .build(new TypeToken<>() {});
-
-    dtoCodec = NodeSborCodecs.resolveCodec(new TypeToken<>() {});
   }
 
   public void storeHighPriorityPeers(List<NodeIdDTO> ids) {
-    this.upsertAllHighPriorityPeersFunc.call(ids);
+    this.upsertAllHighPriorityPeersFunc.call(new HighPriorityPeers(ids));
   }
 
   public List<NodeIdDTO> getHighPriorityPeers() {
-    return this.getAllHighPriorityPeersFunc
-        .call(tuple())
-        .map(value -> NodeSborCodecs.decode(value, dtoCodec))
-        .or(List.of());
+    return this.getAllHighPriorityPeersFunc.call(tuple()).map(HighPriorityPeers::ids).or(List.of());
   }
 
   public void reset() {
     this.resetFunc.call(tuple());
   }
 
-  private final Natives.Call1<List<NodeIdDTO>, Tuple0> upsertAllHighPriorityPeersFunc;
-  private final Natives.Call1<Tuple0, Option<byte[]>> getAllHighPriorityPeersFunc;
+  private final Natives.Call1<HighPriorityPeers, Tuple0> upsertAllHighPriorityPeersFunc;
+  private final Natives.Call1<Tuple0, Option<HighPriorityPeers>> getAllHighPriorityPeersFunc;
   private final Natives.Call1<Tuple0, Tuple0> resetFunc;
 }

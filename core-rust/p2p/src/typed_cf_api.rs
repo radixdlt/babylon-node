@@ -62,25 +62,24 @@
  * permissions under this License.
  */
 
-use crate::address_book_components::AddressBookNodeId;
-use crate::engine_prelude::*;
+use crate::components::RawPublicKey;
 use node_common::store::typed_cf_api::{BoundedDbCodec, DbCodec};
 
 #[derive(Clone, Default)]
-pub struct AddressBookNodeIdDbCodec {}
+pub struct RawPublicKeyDbCodec {}
 
-impl DbCodec<AddressBookNodeId> for AddressBookNodeIdDbCodec {
-    fn encode(&self, value: &AddressBookNodeId) -> Vec<u8> {
+impl DbCodec<RawPublicKey> for RawPublicKeyDbCodec {
+    fn encode(&self, value: &RawPublicKey) -> Vec<u8> {
         value.as_bytes().to_vec()
     }
 
-    fn decode(&self, bytes: &[u8]) -> AddressBookNodeId {
-        AddressBookNodeId::new(bytes.try_into().expect("Invalid NodeId"))
+    fn decode(&self, bytes: &[u8]) -> RawPublicKey {
+        RawPublicKey::new(bytes.try_into().expect("Invalid NodeId"))
     }
 }
 
-impl BoundedDbCodec for AddressBookNodeIdDbCodec {
+impl BoundedDbCodec for RawPublicKeyDbCodec {
     fn upper_bound_encoding(&self) -> Vec<u8> {
-        vec![0xFF; AddressBookNodeId::LENGTH]
+        vec![0xFF; RawPublicKey::LENGTH]
     }
 }

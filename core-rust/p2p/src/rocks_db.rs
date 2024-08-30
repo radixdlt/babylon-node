@@ -66,12 +66,12 @@ use std::path::PathBuf;
 
 use node_common::rocksdb::{ColumnFamilyDescriptor, Options, DB};
 
-use crate::address_book_components::AddressBookNodeId;
-use crate::column_families::{
-    AddressBookCf, HighPriorityPeersCf, MigrationStatusCf, SafetyStoreCf,
-};
+use crate::address_book_components::*;
+use crate::column_families::*;
+use crate::components::RawPublicKey;
 use crate::engine_prelude::*;
 use crate::migration::MigrationStatus;
+use crate::safety_store_components::SafetyState;
 use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, SafetyStateStore};
 use node_common::store::rocks_db::*;
 use node_common::store::typed_cf_api::*;
@@ -96,8 +96,8 @@ use node_common::store::typed_cf_api::*;
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
 
 const ALL_ADDRESS_BOOK_COLUMN_FAMILIES: [&str; 3] = [
-    AddressBookCf::DEFAULT_NAME,
-    HighPriorityPeersCf::DEFAULT_NAME,
+    AddressBookCf::VERSIONED_NAME,
+    HighPriorityPeersCf::VERSIONED_NAME,
     MigrationStatusCf::DEFAULT_NAME,
 ];
 
@@ -157,7 +157,7 @@ impl ActualSafetyStoreDatabase {
 }
 
 impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
-    fn remove_one(&self, node_id: &AddressBookNodeId) -> bool {
+    fn remove_one(&self, node_id: &RawPublicKey) -> bool {
         let binding = open_rw_context(&self.rocks);
         let context = binding.cf(AddressBookCf);
 
@@ -168,11 +168,11 @@ impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
         true
     }
 
-    fn upsert_one(&self, node_id: &AddressBookNodeId, entry: &[u8]) -> bool {
+    fn upsert_one(&self, node_id: &RawPublicKey, entry: &AddressBookEntry) -> bool {
         let binding = open_rw_context(&self.rocks);
         let context = binding.cf(AddressBookCf);
 
-        context.put(node_id, &entry.to_vec());
+        context.put(node_id, &entry);
 
         true
     }
@@ -181,7 +181,7 @@ impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
         open_rw_context(&self.rocks).cf(AddressBookCf).delete_all();
     }
 
-    fn get_all(&self) -> Vec<Vec<u8>> {
+    fn get_all(&self) -> Vec<AddressBookEntry> {
         open_rw_context(&self.rocks).cf(AddressBookCf).get_all()
     }
 
@@ -200,13 +200,13 @@ impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
 }
 
 impl<R: WriteableRocks> HighPriorityPeersStore for AddressBookDatabase<R> {
-    fn upsert_all_high_priority_peers(&self, peers: &[u8]) {
+    fn upsert_all_high_priority_peers(&self, peers: &HighPriorityPeers) {
         open_rw_context(&self.rocks)
             .cf(HighPriorityPeersCf)
-            .put(&(), &peers.to_vec());
+            .put(&(), &peers);
     }
 
-    fn get_all_high_priority_peers(&self) -> Option<Vec<u8>> {
+    fn get_all_high_priority_peers(&self) -> Option<HighPriorityPeers> {
         open_rw_context(&self.rocks)
             .cf(HighPriorityPeersCf)
             .get(&())
@@ -220,13 +220,13 @@ impl<R: WriteableRocks> HighPriorityPeersStore for AddressBookDatabase<R> {
 }
 
 impl<R: WriteableRocks> SafetyStateStore for SafetyStoreDatabase<R> {
-    fn upsert_safety_state(&self, safety_state: &[u8]) {
+    fn upsert_safety_state(&self, safety_state: &SafetyState) {
         open_rw_context(&self.rocks)
             .cf(SafetyStoreCf)
-            .put(&(), &safety_state.to_vec());
+            .put(&(), safety_state);
     }
 
-    fn get_safety_state(&self) -> Option<Vec<u8>> {
+    fn get_safety_state(&self) -> Option<SafetyState> {
         open_rw_context(&self.rocks).cf(SafetyStoreCf).get(&())
     }
 
