@@ -348,16 +348,14 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .nonce(10L)
               .flags(
                   new TransactionPreviewRequestFlags()
-                    .useFreeCredit(true)
-                    .assumeAllSignatureProofs(true)
-                    .skipEpochCheck(true))
+                      .useFreeCredit(true)
+                      .assumeAllSignatureProofs(true)
+                      .skipEpochCheck(true))
               .manifest(manifest);
 
-
       // Ask for a preview of the manifest
-      var previewResponse = getTransactionApi()
-          .transactionPreviewPost(request)
-          .getRadixEngineToolkitReceipt();
+      var previewResponse =
+          getTransactionApi().transactionPreviewPost(request).getRadixEngineToolkitReceipt();
 
       // Message should be included
       assertThat(previewResponse).isNull();
@@ -373,28 +371,23 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
       // Prepare a request with the RET receipt opt-ins
       var manifest = Manifest.valid().apply(new Manifest.Parameters(networkDefinition));
       var request =
-              new TransactionPreviewRequest()
-                  .network(networkLogicalName)
-                  .startEpochInclusive(0L)
-                  .endEpochExclusive(100L)
-                  .tipPercentage(1)
-                  .nonce(10L)
-                  .flags(
-                      new TransactionPreviewRequestFlags()
-                          .useFreeCredit(true)
-                          .assumeAllSignatureProofs(true)
-                          .skipEpochCheck(true))
-                  .manifest(manifest)
-                  .optIns(
-                      new TransactionPreviewRequestOptIns()
-                          .requestRadixEngineToolkitReceipt(true)
-                  );
-
+          new TransactionPreviewRequest()
+              .network(networkLogicalName)
+              .startEpochInclusive(0L)
+              .endEpochExclusive(100L)
+              .tipPercentage(1)
+              .nonce(10L)
+              .flags(
+                  new TransactionPreviewRequestFlags()
+                      .useFreeCredit(true)
+                      .assumeAllSignatureProofs(true)
+                      .skipEpochCheck(true))
+              .manifest(manifest)
+              .optIns(new TransactionPreviewRequestOptIns().requestRadixEngineToolkitReceipt(true));
 
       // Ask for a preview of the manifest
-      var previewResponse = getTransactionApi()
-          .transactionPreviewPost(request)
-          .getRadixEngineToolkitReceipt();
+      var previewResponse =
+          getTransactionApi().transactionPreviewPost(request).getRadixEngineToolkitReceipt();
 
       // Message should be included
       assertThat(previewResponse).isNotNull();
