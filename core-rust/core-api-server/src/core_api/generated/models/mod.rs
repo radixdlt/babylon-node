@@ -1146,6 +1146,8 @@ pub mod transaction_preview_request;
 pub use self::transaction_preview_request::TransactionPreviewRequest;
 pub mod transaction_preview_request_flags;
 pub use self::transaction_preview_request_flags::TransactionPreviewRequestFlags;
+pub mod transaction_preview_request_opt_ins;
+pub use self::transaction_preview_request_opt_ins::TransactionPreviewRequestOptIns;
 pub mod transaction_preview_response;
 pub use self::transaction_preview_response::TransactionPreviewResponse;
 pub mod transaction_preview_response_logs_inner;

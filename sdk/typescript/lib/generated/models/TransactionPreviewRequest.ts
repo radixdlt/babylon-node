@@ -37,6 +37,12 @@ import {
     TransactionPreviewRequestFlagsFromJSONTyped,
     TransactionPreviewRequestFlagsToJSON,
 } from './TransactionPreviewRequestFlags';
+import type { TransactionPreviewRequestOptIns } from './TransactionPreviewRequestOptIns';
+import {
+    TransactionPreviewRequestOptInsFromJSON,
+    TransactionPreviewRequestOptInsFromJSONTyped,
+    TransactionPreviewRequestOptInsToJSON,
+} from './TransactionPreviewRequestOptIns';
 
 /**
  * 
@@ -118,6 +124,12 @@ export interface TransactionPreviewRequest {
     message?: TransactionMessage;
     /**
      * 
+     * @type {TransactionPreviewRequestOptIns}
+     * @memberof TransactionPreviewRequest
+     */
+    opt_ins?: TransactionPreviewRequestOptIns;
+    /**
+     * 
      * @type {TransactionPreviewRequestFlags}
      * @memberof TransactionPreviewRequest
      */
@@ -163,6 +175,7 @@ export function TransactionPreviewRequestFromJSONTyped(json: any, ignoreDiscrimi
         'nonce': json['nonce'],
         'signer_public_keys': ((json['signer_public_keys'] as Array<any>).map(PublicKeyFromJSON)),
         'message': !exists(json, 'message') ? undefined : TransactionMessageFromJSON(json['message']),
+        'opt_ins': !exists(json, 'opt_ins') ? undefined : TransactionPreviewRequestOptInsFromJSON(json['opt_ins']),
         'flags': TransactionPreviewRequestFlagsFromJSON(json['flags']),
     };
 }
@@ -188,6 +201,7 @@ export function TransactionPreviewRequestToJSON(value?: TransactionPreviewReques
         'nonce': value.nonce,
         'signer_public_keys': ((value.signer_public_keys as Array<any>).map(PublicKeyToJSON)),
         'message': TransactionMessageToJSON(value.message),
+        'opt_ins': TransactionPreviewRequestOptInsToJSON(value.opt_ins),
         'flags': TransactionPreviewRequestFlagsToJSON(value.flags),
     };
 }

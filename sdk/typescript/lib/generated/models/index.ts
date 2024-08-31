@@ -626,6 +626,7 @@ export * from './TransactionPayloadDetails';
 export * from './TransactionPayloadStatus';
 export * from './TransactionPreviewRequest';
 export * from './TransactionPreviewRequestFlags';
+export * from './TransactionPreviewRequestOptIns';
 export * from './TransactionPreviewResponse';
 export * from './TransactionPreviewResponseLogsInner';
 export * from './TransactionReceipt';

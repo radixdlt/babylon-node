@@ -7441,6 +7441,9 @@ components:
         message:
           description: An optional transaction message. Only affects the costing.
           $ref: "#/components/schemas/TransactionMessage"
+        opt_ins:
+          description: A set of opt-ins that allow the client to request additional information from the API.
+          $ref: "#/components/schemas/TransactionPreviewRequestOptIns"
         flags:
           type: object
           required:
@@ -7475,6 +7478,15 @@ components:
                 because the blueprint code relies on the total supply of the pool units to calculate their
                 redemption worth, and you've just inflated the total supply through the mint operation.
               type: boolean
+    TransactionPreviewRequestOptIns:
+      type: object
+      properties:
+        request_radix_engine_toolkit_receipt:
+          type: boolean
+          description: | 
+            This flag controls whether the preview response will include a Radix Engine Toolkit serializable
+            receipt or not. If not provided, this defaults to `false` and no toolkit receipt is provided in
+            the response.
     TransactionPreviewResponse:
       type: object
       required:
@@ -7489,9 +7501,30 @@ components:
           description: A summarized state of the ledger on top of which the preview was performed.
         encoded_receipt:
           type: string
-          description: The hex-sbor-encoded receipt
+          description: | 
+            The hex-sbor-encoded receipt.
+
+            This field is deprecated and will be removed from the API with the release of the next 
+            protocol update, cuttlefish. This field was provided primarily for use with the Radix 
+            Engine Toolkit and its execution summary functionality. If you still wish to use this 
+            functionality update your Radix Engine Toolkit and use the receipt provided in the 
+            `radix_engine_toolkit_receipt` field of this response.
+          deprecated: true
         receipt:
           $ref: "#/components/schemas/TransactionReceipt"
+        radix_engine_toolkit_receipt:
+          type: object
+          description: |
+            An optional field which is only provided if the `request_radix_engine_toolkit_receipt`
+            flag is set to true when requesting a transaction preview from the API.
+
+            This receipt is primarily intended for use with the toolkit and may contain information 
+            that is already available in the receipt provided in the `receipt` field of this 
+            response.
+
+            A typical client of this API is not expected to use this receipt. The primary clients 
+            this receipt is intended for is the Radix wallet or any client that needs to perform 
+            execution summaries on their transactions.
         instruction_resource_changes:
           type: array
           items:
