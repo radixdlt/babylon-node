@@ -66,12 +66,13 @@ package com.radixdlt.consensus.safety;
 
 import static org.junit.Assert.*;
 
-import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.rev2.NodeRustEnvironmentHelper;
 import com.radixdlt.safety.RocksDbSafetyStore;
+import com.radixdlt.utils.SerializerTestDataGenerator;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,7 +89,7 @@ public class RocksSafetyStateStoreTest {
           assertTrue(safetyStore.get().isEmpty());
 
           // Save a safety state
-          var safetyState = SafetyState.initialState(BFTValidatorId.random());
+          var safetyState = createSafetyState();
           safetyStore.commitState(safetyState);
 
           // Retrieve the saved safety state
@@ -96,6 +97,11 @@ public class RocksSafetyStateStoreTest {
           assertTrue(restoredSafetyState.isPresent());
           assertEquals(safetyState, restoredSafetyState.get());
         });
+  }
+
+  private static SafetyState createSafetyState() {
+    var vote = SerializerTestDataGenerator.randomVote();
+    return SafetyState.create(vote.getAuthor(), vote.getRound(), Optional.of(vote));
   }
 
   private void runTest(Consumer<RocksSafetyStateStore> test) {

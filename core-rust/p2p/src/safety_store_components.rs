@@ -148,7 +148,7 @@ define_wrapped_hash! {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NextEpoch {
     epoch: i64,
-    validators: BTreeSet<BFTValidator>,
+    validators: Vec<BFTValidator>,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

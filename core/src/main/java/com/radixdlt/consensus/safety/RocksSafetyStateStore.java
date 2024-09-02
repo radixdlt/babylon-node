@@ -193,9 +193,7 @@ public class RocksSafetyStateStore implements PersistentSafetyStateStore {
   private static NextEpochDTO toDTO(NextEpoch epoch) {
     return new NextEpochDTO(
         epoch.getEpoch(),
-        epoch.getValidators().stream()
-            .map(RocksSafetyStateStore::toDTO)
-            .collect(ImmutableSet.toImmutableSet()));
+        epoch.getValidators().stream().map(RocksSafetyStateStore::toDTO).toList());
   }
 
   private static BFTValidatorDTO toDTO(BFTValidator bftValidator) {

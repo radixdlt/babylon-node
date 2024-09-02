@@ -66,9 +66,9 @@ package com.radixdlt.safety;
 
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import java.util.Set;
+import java.util.List;
 
-public record NextEpochDTO(long epoch, Set<BFTValidatorDTO> validators) {
+public record NextEpochDTO(long epoch, List<BFTValidatorDTO> validators) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         NextEpochDTO.class, codecs -> StructCodec.fromRecordComponents(NextEpochDTO.class, codecs));
