@@ -7,7 +7,7 @@ pub fn to_api_package_royalty_accumulator_substate(
     context: &MappingContext,
     substate: &PackageRoyaltyAccumulatorFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         PackageFieldRoyaltyAccumulator,
         PackageRoyaltyAccumulator { royalty_vault },
@@ -34,7 +34,7 @@ pub fn to_api_package_code_vm_type_entry_substate(
         ))
     );
 
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         PackageCodeVmTypeEntry,
         models::PackageCodeKey {
@@ -63,7 +63,7 @@ pub fn to_api_package_code_original_code_entry_substate(
         ))
     );
 
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         PackageCodeOriginalCodeEntry,
         models::PackageCodeKey {
@@ -89,7 +89,7 @@ pub fn to_api_package_code_instrumented_code_entry_substate(
         ))
     );
 
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         PackageCodeInstrumentedCodeEntry,
         models::PackageCodeKey {
@@ -111,7 +111,7 @@ pub fn to_api_schema_entry_substate(
         TypedSubstateKey::Schema(TypedSchemaSubstateKey::SchemaKey(hash))
     );
 
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         SchemaEntry,
         models::SchemaKey {
@@ -139,7 +139,7 @@ pub fn to_api_package_blueprint_definition_entry(
         ))
     );
 
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         PackageBlueprintDefinitionEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
@@ -165,7 +165,7 @@ pub fn to_api_package_blueprint_dependencies_entry(
         ))
     );
 
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         PackageBlueprintDependenciesEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
@@ -191,7 +191,7 @@ pub fn to_api_package_blueprint_royalty_entry(
         ))
     );
 
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         PackageBlueprintRoyaltyEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,
@@ -239,7 +239,7 @@ pub fn to_api_package_auth_template_entry(
             )
         ))
     );
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         PackageBlueprintAuthTemplateEntry,
         to_api_blueprint_version_key(context, blueprint_version_key)?,

@@ -18,7 +18,7 @@ pub fn to_api_account_locker_account_claim_entry(
             )
         ))
     );
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         AccountLockerAccountClaimsEntry,
         models::AccountAddressKey {

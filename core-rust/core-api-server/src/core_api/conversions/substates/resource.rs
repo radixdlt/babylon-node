@@ -7,7 +7,7 @@ pub fn to_api_fungible_vault_balance_substate(
     _context: &MappingContext,
     substate: &FungibleVaultBalanceFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         FungibleVaultFieldBalance,
         balance,
@@ -21,7 +21,7 @@ pub fn to_api_fungible_vault_frozen_status_substate(
     _context: &MappingContext,
     substate: &FungibleVaultFreezeStatusFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         FungibleVaultFieldFrozenStatus,
         VaultFrozenFlag { frozen },
@@ -46,7 +46,7 @@ pub fn to_api_non_fungible_vault_balance_substate(
     _context: &MappingContext,
     substate: &NonFungibleVaultBalanceFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         NonFungibleVaultFieldBalance,
         NonFungibleVaultBalance { amount },
@@ -60,7 +60,7 @@ pub fn to_api_non_fungible_vault_frozen_status_substate(
     _context: &MappingContext,
     substate: &NonFungibleVaultFreezeStatusFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         FungibleVaultFieldFrozenStatus,
         VaultFrozenFlag { frozen },
@@ -100,7 +100,7 @@ pub fn to_api_non_fungible_vault_contents_entry_substate(
 pub fn to_api_fungible_resource_manager_divisibility_substate(
     substate: &FungibleResourceManagerDivisibilityFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         FungibleResourceManagerFieldDivisibility,
         divisibility,
@@ -113,7 +113,7 @@ pub fn to_api_fungible_resource_manager_divisibility_substate(
 pub fn to_api_fungible_resource_manager_total_supply_substate(
     substate: &FungibleResourceManagerTotalSupplyFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         FungibleResourceManagerFieldTotalSupply,
         total_supply,
@@ -126,7 +126,7 @@ pub fn to_api_fungible_resource_manager_total_supply_substate(
 pub fn to_api_non_fungible_resource_manager_id_type_substate(
     substate: &NonFungibleResourceManagerIdTypeFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         NonFungibleResourceManagerFieldIdType,
         non_fungible_id_type,
@@ -139,7 +139,7 @@ pub fn to_api_non_fungible_resource_manager_id_type_substate(
 pub fn to_api_non_fungible_resource_manager_total_supply_substate(
     substate: &NonFungibleResourceManagerTotalSupplyFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         NonFungibleResourceManagerFieldTotalSupply,
         total_supply,
@@ -153,7 +153,7 @@ pub fn to_api_non_fungible_resource_manager_mutable_fields_substate(
     context: &MappingContext,
     substate: &NonFungibleResourceManagerMutableFieldsFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         NonFungibleResourceManagerFieldMutableFields,
         NonFungibleResourceManagerMutableFields {
