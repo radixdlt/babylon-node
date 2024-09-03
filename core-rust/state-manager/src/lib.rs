@@ -125,12 +125,12 @@ pub mod engine_prelude {
     pub use radix_transaction_scenarios::scenario::*;
 
     pub use radix_transactions::builder::*;
+    pub use radix_transactions::define_raw_transaction_payload;
     pub use radix_transactions::errors::*;
     pub use radix_transactions::manifest::*;
     pub use radix_transactions::model::*;
     pub use radix_transactions::prelude::*;
     pub use radix_transactions::validation::*;
-    pub use radix_transactions::*;
 
     // Note: plain `pub use radix_engine::track::*` would clash with the top-level `utils::prelude`
     // (because it contains a private module of the same name)
