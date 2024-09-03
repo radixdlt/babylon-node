@@ -24,9 +24,9 @@ pub(crate) async fn handle_transaction_preview(
         .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
     let should_produce_toolkit_receipt = request
-        .opt_ins
+        .options
         .as_ref()
-        .and_then(|opt_ins| opt_ins.request_radix_engine_toolkit_receipt)
+        .and_then(|opt_ins| opt_ins.radix_engine_toolkit_receipt)
         .unwrap_or(false);
     let preview_request = extract_preview_request(&state.network, request)?;
 

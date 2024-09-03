@@ -14,45 +14,45 @@
 
 import { exists, mapValues } from '../runtime';
 /**
- * 
+ * A set of flags to configure the response of the transaction preview.
  * @export
- * @interface TransactionPreviewRequestOptIns
+ * @interface TransactionPreviewResponseOptions
  */
-export interface TransactionPreviewRequestOptIns {
+export interface TransactionPreviewResponseOptions {
     /**
      * This flag controls whether the preview response will include a Radix Engine Toolkit serializable
      * receipt or not. If not provided, this defaults to `false` and no toolkit receipt is provided in
      * the response.
      * @type {boolean}
-     * @memberof TransactionPreviewRequestOptIns
+     * @memberof TransactionPreviewResponseOptions
      */
-    request_radix_engine_toolkit_receipt?: boolean;
+    radix_engine_toolkit_receipt?: boolean;
 }
 
 /**
- * Check if a given object implements the TransactionPreviewRequestOptIns interface.
+ * Check if a given object implements the TransactionPreviewResponseOptions interface.
  */
-export function instanceOfTransactionPreviewRequestOptIns(value: object): boolean {
+export function instanceOfTransactionPreviewResponseOptions(value: object): boolean {
     let isInstance = true;
 
     return isInstance;
 }
 
-export function TransactionPreviewRequestOptInsFromJSON(json: any): TransactionPreviewRequestOptIns {
-    return TransactionPreviewRequestOptInsFromJSONTyped(json, false);
+export function TransactionPreviewResponseOptionsFromJSON(json: any): TransactionPreviewResponseOptions {
+    return TransactionPreviewResponseOptionsFromJSONTyped(json, false);
 }
 
-export function TransactionPreviewRequestOptInsFromJSONTyped(json: any, ignoreDiscriminator: boolean): TransactionPreviewRequestOptIns {
+export function TransactionPreviewResponseOptionsFromJSONTyped(json: any, ignoreDiscriminator: boolean): TransactionPreviewResponseOptions {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'request_radix_engine_toolkit_receipt': !exists(json, 'request_radix_engine_toolkit_receipt') ? undefined : json['request_radix_engine_toolkit_receipt'],
+        'radix_engine_toolkit_receipt': !exists(json, 'radix_engine_toolkit_receipt') ? undefined : json['radix_engine_toolkit_receipt'],
     };
 }
 
-export function TransactionPreviewRequestOptInsToJSON(value?: TransactionPreviewRequestOptIns | null): any {
+export function TransactionPreviewResponseOptionsToJSON(value?: TransactionPreviewResponseOptions | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -61,7 +61,7 @@ export function TransactionPreviewRequestOptInsToJSON(value?: TransactionPreview
     }
     return {
         
-        'request_radix_engine_toolkit_receipt': value.request_radix_engine_toolkit_receipt,
+        'radix_engine_toolkit_receipt': value.radix_engine_toolkit_receipt,
     };
 }
 

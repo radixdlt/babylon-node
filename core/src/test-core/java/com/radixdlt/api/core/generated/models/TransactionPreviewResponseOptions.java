@@ -28,47 +28,48 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * TransactionPreviewRequestOptIns
+ * A set of flags to configure the response of the transaction preview.
  */
+@ApiModel(description = "A set of flags to configure the response of the transaction preview.")
 @JsonPropertyOrder({
-  TransactionPreviewRequestOptIns.JSON_PROPERTY_REQUEST_RADIX_ENGINE_TOOLKIT_RECEIPT
+  TransactionPreviewResponseOptions.JSON_PROPERTY_RADIX_ENGINE_TOOLKIT_RECEIPT
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class TransactionPreviewRequestOptIns {
-  public static final String JSON_PROPERTY_REQUEST_RADIX_ENGINE_TOOLKIT_RECEIPT = "request_radix_engine_toolkit_receipt";
-  private Boolean requestRadixEngineToolkitReceipt;
+public class TransactionPreviewResponseOptions {
+  public static final String JSON_PROPERTY_RADIX_ENGINE_TOOLKIT_RECEIPT = "radix_engine_toolkit_receipt";
+  private Boolean radixEngineToolkitReceipt;
 
-  public TransactionPreviewRequestOptIns() { 
+  public TransactionPreviewResponseOptions() { 
   }
 
-  public TransactionPreviewRequestOptIns requestRadixEngineToolkitReceipt(Boolean requestRadixEngineToolkitReceipt) {
-    this.requestRadixEngineToolkitReceipt = requestRadixEngineToolkitReceipt;
+  public TransactionPreviewResponseOptions radixEngineToolkitReceipt(Boolean radixEngineToolkitReceipt) {
+    this.radixEngineToolkitReceipt = radixEngineToolkitReceipt;
     return this;
   }
 
    /**
    * This flag controls whether the preview response will include a Radix Engine Toolkit serializable receipt or not. If not provided, this defaults to &#x60;false&#x60; and no toolkit receipt is provided in the response. 
-   * @return requestRadixEngineToolkitReceipt
+   * @return radixEngineToolkitReceipt
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "This flag controls whether the preview response will include a Radix Engine Toolkit serializable receipt or not. If not provided, this defaults to `false` and no toolkit receipt is provided in the response. ")
-  @JsonProperty(JSON_PROPERTY_REQUEST_RADIX_ENGINE_TOOLKIT_RECEIPT)
+  @JsonProperty(JSON_PROPERTY_RADIX_ENGINE_TOOLKIT_RECEIPT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public Boolean getRequestRadixEngineToolkitReceipt() {
-    return requestRadixEngineToolkitReceipt;
+  public Boolean getRadixEngineToolkitReceipt() {
+    return radixEngineToolkitReceipt;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_REQUEST_RADIX_ENGINE_TOOLKIT_RECEIPT)
+  @JsonProperty(JSON_PROPERTY_RADIX_ENGINE_TOOLKIT_RECEIPT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setRequestRadixEngineToolkitReceipt(Boolean requestRadixEngineToolkitReceipt) {
-    this.requestRadixEngineToolkitReceipt = requestRadixEngineToolkitReceipt;
+  public void setRadixEngineToolkitReceipt(Boolean radixEngineToolkitReceipt) {
+    this.radixEngineToolkitReceipt = radixEngineToolkitReceipt;
   }
 
 
   /**
-   * Return true if this TransactionPreviewRequestOptIns object is equal to o.
+   * Return true if this TransactionPreviewResponseOptions object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -78,20 +79,20 @@ public class TransactionPreviewRequestOptIns {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    TransactionPreviewRequestOptIns transactionPreviewRequestOptIns = (TransactionPreviewRequestOptIns) o;
-    return Objects.equals(this.requestRadixEngineToolkitReceipt, transactionPreviewRequestOptIns.requestRadixEngineToolkitReceipt);
+    TransactionPreviewResponseOptions transactionPreviewResponseOptions = (TransactionPreviewResponseOptions) o;
+    return Objects.equals(this.radixEngineToolkitReceipt, transactionPreviewResponseOptions.radixEngineToolkitReceipt);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(requestRadixEngineToolkitReceipt);
+    return Objects.hash(radixEngineToolkitReceipt);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class TransactionPreviewRequestOptIns {\n");
-    sb.append("    requestRadixEngineToolkitReceipt: ").append(toIndentedString(requestRadixEngineToolkitReceipt)).append("\n");
+    sb.append("class TransactionPreviewResponseOptions {\n");
+    sb.append("    radixEngineToolkitReceipt: ").append(toIndentedString(radixEngineToolkitReceipt)).append("\n");
     sb.append("}");
     return sb.toString();
   }

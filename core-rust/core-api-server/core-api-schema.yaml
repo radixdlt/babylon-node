@@ -7441,9 +7441,9 @@ components:
         message:
           description: An optional transaction message. Only affects the costing.
           $ref: "#/components/schemas/TransactionMessage"
-        opt_ins:
-          description: A set of opt-ins that allow the client to request additional information from the API.
-          $ref: "#/components/schemas/TransactionPreviewRequestOptIns"
+        options:
+          description: A set of flags to configure the response of the transaction preview.
+          $ref: "#/components/schemas/TransactionPreviewResponseOptions"
         flags:
           type: object
           required:
@@ -7478,10 +7478,11 @@ components:
                 because the blueprint code relies on the total supply of the pool units to calculate their
                 redemption worth, and you've just inflated the total supply through the mint operation.
               type: boolean
-    TransactionPreviewRequestOptIns:
+    TransactionPreviewResponseOptions:
       type: object
+      description: A set of flags to configure the response of the transaction preview.
       properties:
-        request_radix_engine_toolkit_receipt:
+        radix_engine_toolkit_receipt:
           type: boolean
           description: | 
             This flag controls whether the preview response will include a Radix Engine Toolkit serializable

@@ -383,7 +383,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
                       .assumeAllSignatureProofs(true)
                       .skipEpochCheck(true))
               .manifest(manifest)
-              .optIns(new TransactionPreviewRequestOptIns().requestRadixEngineToolkitReceipt(true));
+              .options(new TransactionPreviewResponseOptions().radixEngineToolkitReceipt(true));
 
       // Ask for a preview of the manifest
       var previewResponse =

@@ -26,7 +26,7 @@ import com.radixdlt.api.core.generated.models.LedgerStateSelector;
 import com.radixdlt.api.core.generated.models.PublicKey;
 import com.radixdlt.api.core.generated.models.TransactionMessage;
 import com.radixdlt.api.core.generated.models.TransactionPreviewRequestFlags;
-import com.radixdlt.api.core.generated.models.TransactionPreviewRequestOptIns;
+import com.radixdlt.api.core.generated.models.TransactionPreviewResponseOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   TransactionPreviewRequest.JSON_PROPERTY_NONCE,
   TransactionPreviewRequest.JSON_PROPERTY_SIGNER_PUBLIC_KEYS,
   TransactionPreviewRequest.JSON_PROPERTY_MESSAGE,
-  TransactionPreviewRequest.JSON_PROPERTY_OPT_INS,
+  TransactionPreviewRequest.JSON_PROPERTY_OPTIONS,
   TransactionPreviewRequest.JSON_PROPERTY_FLAGS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
@@ -91,8 +91,8 @@ public class TransactionPreviewRequest {
   public static final String JSON_PROPERTY_MESSAGE = "message";
   private TransactionMessage message;
 
-  public static final String JSON_PROPERTY_OPT_INS = "opt_ins";
-  private TransactionPreviewRequestOptIns optIns;
+  public static final String JSON_PROPERTY_OPTIONS = "options";
+  private TransactionPreviewResponseOptions options;
 
   public static final String JSON_PROPERTY_FLAGS = "flags";
   private TransactionPreviewRequestFlags flags;
@@ -433,29 +433,29 @@ public class TransactionPreviewRequest {
   }
 
 
-  public TransactionPreviewRequest optIns(TransactionPreviewRequestOptIns optIns) {
-    this.optIns = optIns;
+  public TransactionPreviewRequest options(TransactionPreviewResponseOptions options) {
+    this.options = options;
     return this;
   }
 
    /**
-   * Get optIns
-   * @return optIns
+   * Get options
+   * @return options
   **/
   @javax.annotation.Nullable
   @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_OPT_INS)
+  @JsonProperty(JSON_PROPERTY_OPTIONS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public TransactionPreviewRequestOptIns getOptIns() {
-    return optIns;
+  public TransactionPreviewResponseOptions getOptions() {
+    return options;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_OPT_INS)
+  @JsonProperty(JSON_PROPERTY_OPTIONS)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setOptIns(TransactionPreviewRequestOptIns optIns) {
-    this.optIns = optIns;
+  public void setOptions(TransactionPreviewResponseOptions options) {
+    this.options = options;
   }
 
 
@@ -509,13 +509,13 @@ public class TransactionPreviewRequest {
         Objects.equals(this.nonce, transactionPreviewRequest.nonce) &&
         Objects.equals(this.signerPublicKeys, transactionPreviewRequest.signerPublicKeys) &&
         Objects.equals(this.message, transactionPreviewRequest.message) &&
-        Objects.equals(this.optIns, transactionPreviewRequest.optIns) &&
+        Objects.equals(this.options, transactionPreviewRequest.options) &&
         Objects.equals(this.flags, transactionPreviewRequest.flags);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(network, atLedgerState, manifest, blobsHex, startEpochInclusive, endEpochExclusive, notaryPublicKey, notaryIsSignatory, tipPercentage, nonce, signerPublicKeys, message, optIns, flags);
+    return Objects.hash(network, atLedgerState, manifest, blobsHex, startEpochInclusive, endEpochExclusive, notaryPublicKey, notaryIsSignatory, tipPercentage, nonce, signerPublicKeys, message, options, flags);
   }
 
   @Override
@@ -534,7 +534,7 @@ public class TransactionPreviewRequest {
     sb.append("    nonce: ").append(toIndentedString(nonce)).append("\n");
     sb.append("    signerPublicKeys: ").append(toIndentedString(signerPublicKeys)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
-    sb.append("    optIns: ").append(toIndentedString(optIns)).append("\n");
+    sb.append("    options: ").append(toIndentedString(options)).append("\n");
     sb.append("    flags: ").append(toIndentedString(flags)).append("\n");
     sb.append("}");
     return sb.toString();
