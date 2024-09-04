@@ -51,9 +51,16 @@ export interface TransactionPreviewResponse {
      */
     at_ledger_state: LedgerStateSummary;
     /**
-     * The hex-sbor-encoded receipt
+     * The hex-sbor-encoded receipt.
+     * 
+     * This field is deprecated and will be removed from the API with the release of the next 
+     * protocol update, cuttlefish. This field was provided primarily for use with the Radix 
+     * Engine Toolkit and its execution summary functionality. If you still wish to use this 
+     * functionality update your Radix Engine Toolkit and use the receipt provided in the 
+     * `radix_engine_toolkit_receipt` field of this response.
      * @type {string}
      * @memberof TransactionPreviewResponse
+     * @deprecated
      */
     encoded_receipt: string;
     /**
@@ -62,6 +69,21 @@ export interface TransactionPreviewResponse {
      * @memberof TransactionPreviewResponse
      */
     receipt: TransactionReceipt;
+    /**
+     * An optional field which is only provided if the `request_radix_engine_toolkit_receipt`
+     * flag is set to true when requesting a transaction preview from the API.
+     * 
+     * This receipt is primarily intended for use with the toolkit and may contain information 
+     * that is already available in the receipt provided in the `receipt` field of this 
+     * response.
+     * 
+     * A typical client of this API is not expected to use this receipt. The primary clients 
+     * this receipt is intended for is the Radix wallet or any client that needs to perform 
+     * execution summaries on their transactions.
+     * @type {object}
+     * @memberof TransactionPreviewResponse
+     */
+    radix_engine_toolkit_receipt?: object;
     /**
      * 
      * @type {Array<InstructionResourceChanges>}
@@ -103,6 +125,7 @@ export function TransactionPreviewResponseFromJSONTyped(json: any, ignoreDiscrim
         'at_ledger_state': LedgerStateSummaryFromJSON(json['at_ledger_state']),
         'encoded_receipt': json['encoded_receipt'],
         'receipt': TransactionReceiptFromJSON(json['receipt']),
+        'radix_engine_toolkit_receipt': !exists(json, 'radix_engine_toolkit_receipt') ? undefined : json['radix_engine_toolkit_receipt'],
         'instruction_resource_changes': ((json['instruction_resource_changes'] as Array<any>).map(InstructionResourceChangesFromJSON)),
         'logs': ((json['logs'] as Array<any>).map(TransactionPreviewResponseLogsInnerFromJSON)),
     };
@@ -120,6 +143,7 @@ export function TransactionPreviewResponseToJSON(value?: TransactionPreviewRespo
         'at_ledger_state': LedgerStateSummaryToJSON(value.at_ledger_state),
         'encoded_receipt': value.encoded_receipt,
         'receipt': TransactionReceiptToJSON(value.receipt),
+        'radix_engine_toolkit_receipt': value.radix_engine_toolkit_receipt,
         'instruction_resource_changes': ((value.instruction_resource_changes as Array<any>).map(InstructionResourceChangesToJSON)),
         'logs': ((value.logs as Array<any>).map(TransactionPreviewResponseLogsInnerToJSON)),
     };

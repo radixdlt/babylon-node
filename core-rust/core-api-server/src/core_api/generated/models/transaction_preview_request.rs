@@ -46,6 +46,8 @@ pub struct TransactionPreviewRequest {
     pub signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>,
     #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
     pub message: Option<Box<crate::core_api::generated::models::TransactionMessage>>,
+    #[serde(rename = "options", skip_serializing_if = "Option::is_none")]
+    pub options: Option<Box<crate::core_api::generated::models::TransactionPreviewResponseOptions>>,
     #[serde(rename = "flags")]
     pub flags: Box<crate::core_api::generated::models::TransactionPreviewRequestFlags>,
 }
@@ -65,6 +67,7 @@ impl TransactionPreviewRequest {
             nonce,
             signer_public_keys,
             message: None,
+            options: None,
             flags: Box::new(flags),
         }
     }
