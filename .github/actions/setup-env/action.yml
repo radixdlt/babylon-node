@@ -1,0 +1,40 @@
+name: 'Setup build environment'
+description: 'Common GH action to setup job environment'
+inputs:
+  cross-compile-to-windows:
+    description: "If 'true' then do some additional build environment setup"
+    required: false
+    default: "false" # or "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Rust toolchain
+      uses: RDXWorks-actions/toolchain@master
+      with:
+        # IMPORTANT: This version should match the version in radixdlt-scrypto on respective branch
+        toolchain: 1.80.1
+        default: true
+        target: ${{inputs.cross-compile-to-windows == 'true' && 'x86_64-pc-windows-msvc' || ''}}
+
+    - name: Set up JDK 17
+      if: ${{ inputs.cross-compile-to-windows == 'false' }}
+      uses: RDXWorks-actions/setup-java@main
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Install libclang-dev
+      if: ${{ inputs.cross-compile-to-windows == 'false' }}
+      run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+      shell: bash
+
+    ## Steps for cross-compilation to Windows
+    - name: Update clang version to 17
+      if: ${{ inputs.cross-compile-to-windows == 'true' }}
+      run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 17 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-17 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-17 /usr/bin/clang++ && sudo apt-get install -y libclang-dev llvm llvm-dev
+      shell: bash
+    - name: Install cargo-xwin
+      if: ${{ inputs.cross-compile-to-windows == 'true' }}
+      run: cargo install cargo-xwin --version 0.17.1 --locked
+      shell: bash
