@@ -8,7 +8,6 @@ Once you have read the [contributing guide](../CONTRIBUTING.md), if you want to 
 > As of 2024-05-15, the strictly ordered list of supported base branches, starting from earliest/furthest upstream, is:
 > 
 > * `release/bottlenose` - This is currently running on mainnet.
-> * `release/anemone`
 > * `main`
 > * `develop`
 > 
