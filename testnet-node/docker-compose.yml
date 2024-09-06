@@ -4,7 +4,7 @@ services:
   core:
     container_name: radixdlt-stokenet-node
     #### Chose to either uncomment "image" or "build" to either pull the image from dockerhub or build locally from source
-    image: radixdlt/babylon-node:v1.3.0
+    image: radixdlt/babylon-node:v1.2.2
     # build:
     #   context: ..
     #   dockerfile: Dockerfile

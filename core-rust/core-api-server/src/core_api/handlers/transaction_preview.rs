@@ -3,6 +3,7 @@ use crate::engine_prelude::*;
 
 use std::ops::Range;
 
+use radix_engine_toolkit::receipt::RuntimeToolkitTransactionReceipt;
 use state_manager::transaction::ProcessedPreviewResult;
 use state_manager::{
     ActualStateManagerDatabase, ExecutionFeeData, LocalTransactionReceipt, PreviewRequest,
@@ -22,6 +23,11 @@ pub(crate) async fn handle_transaction_preview(
         .transpose()
         .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
+    let should_produce_toolkit_receipt = request
+        .options
+        .as_ref()
+        .and_then(|opt_ins| opt_ins.radix_engine_toolkit_receipt)
+        .unwrap_or(false);
     let preview_request = extract_preview_request(&state.network, request)?;
 
     let result = state
@@ -29,7 +35,7 @@ pub(crate) async fn handle_transaction_preview(
         .transaction_previewer
         .preview(preview_request, at_state_version)?;
 
-    to_api_response(&mapping_context, result).map(Json)
+    to_api_response(&mapping_context, result, should_produce_toolkit_receipt).map(Json)
 }
 
 fn extract_preview_request(
@@ -93,12 +99,32 @@ fn extract_preview_request(
 fn to_api_response(
     context: &MappingContext,
     result: ProcessedPreviewResult,
+    should_include_toolkit_receipt: bool,
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let engine_receipt = result.receipt;
     let versioned_engine_receipt = engine_receipt.clone().into_versioned();
 
-    // This is interpreted by the toolkit in the wallet
+    // This is interpreted by the toolkit in the wallet. This will be removed with the release of
+    // the cuttlefish protocol update.
     let encoded_receipt = to_hex(scrypto_encode(&versioned_engine_receipt).unwrap());
+
+    // Produce a toolkit transaction receipt for the transaction preview if it was requested in the
+    // request opt-ins.
+    let toolkit_receipt = if should_include_toolkit_receipt {
+        Some(
+            RuntimeToolkitTransactionReceipt::try_from(versioned_engine_receipt.clone())
+                .ok()
+                .and_then(|value| {
+                    value
+                        .into_serializable_receipt(&context.address_encoder)
+                        .ok()
+                })
+                .and_then(|value| serde_json::to_value(&value).ok())
+                .ok_or(server_error("Can't produce toolkit transaction receipt."))?,
+        )
+    } else {
+        None
+    };
 
     let at_ledger_state = Box::new(to_api_ledger_state_summary(
         context,
@@ -172,6 +198,7 @@ fn to_api_response(
                     context,
                     local_receipt,
                 )?),
+                radix_engine_toolkit_receipt: toolkit_receipt,
                 instruction_resource_changes,
                 logs,
             }
@@ -198,6 +225,7 @@ fn to_api_response(
                 next_epoch: None,
                 error_message: Some(format!("{reject_result:?}")),
             }),
+            radix_engine_toolkit_receipt: toolkit_receipt,
             instruction_resource_changes: vec![],
             logs: vec![],
         },
