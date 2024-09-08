@@ -1,0 +1,54 @@
+name: Docker v2
+
+on:
+  pull_request:
+  # release:
+  #   types: [published]
+  # push:
+  #   branches:
+  #     - develop
+  #     - main
+  #     - release\/*
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !contains(github.ref, 'release/')}}
+
+# TODO: Configure the ARM build with a matrix
+
+jobs:
+  build_java:
+    name: Build the Java App
+    runs-on: ubuntu-latest-8-cores
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+      - name: Set up JDK 17
+        uses: RDXWorks-actions/setup-java@main
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - uses: RDXWorks-actions/gradle-cache-action@v2
+        name: Build
+        env:
+          SKIP_NATIVE_RUST_BUILD: "TRUE"
+          JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF8"
+        with:
+          job-id: jdk17
+          arguments: clean build -x test
+          gradle-version: wrapper
+          # Properties are passed as -Pname=value
+          properties: |
+            ci=true
+            rustBinaryBuildType=release
+      - name: Extract artifacts
+        run: |
+          cd core/build/distributions
+          unzip -j *.zip
+      - name: Upload artifacts
+        uses: RDXWorks-actions/upload-artifact-v4@main
+        with:
+          name: java-build-jars
+          path: core/build/distributions/*
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: false
