@@ -8,7 +8,7 @@
 # LAYER: app-container
 # The application container which will actually run the application
 # =================================================================================================
-FROM debian:12.1-slim AS app-container
+FROM ubuntu:22.04 AS app-container
 
 LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
