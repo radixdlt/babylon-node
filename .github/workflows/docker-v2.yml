@@ -49,7 +49,15 @@ jobs:
         uses: RDXWorks-actions/upload-artifact-v4@main
         with:
           name: java-build-jars
-          path: core/build/distributions/**
+          path: core/build/distributions/*.jar
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: false
+      - name: Upload core script
+        uses: RDXWorks-actions/upload-artifact-v4@main
+        with:
+          name: java-build-core
+          path: core/build/distributions/core
           if-no-files-found: error
           retention-days: 1
           include-hidden-files: false
@@ -94,8 +102,22 @@ jobs:
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
-      - uses: RDXWorks-actions/download-artifact@main
-        name: Download all artifacts
+      - uses: RDXWorks-actions/download-artifact-v4@main
+        name: Download java artifacts
         with:
-          path: artifacts
-      - run: ls -l artifacts
+          name: java-build-jars
+          path: out-java-lib
+      - uses: RDXWorks-actions/download-artifact-v4@main
+        name: Download core script
+        with:
+          name: java-build-core
+          path: out-java-core
+      - uses: RDXWorks-actions/download-artifact-v4@main
+        name: Download rust artifacts
+        with:
+          name: rust-build-library
+          path: out-rust
+      - run: |
+          ls -l out-java-lib
+          ls -l out-java-core
+          ls -l out-rust

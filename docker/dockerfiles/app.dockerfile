@@ -8,7 +8,7 @@
 # LAYER: app-container
 # The application container which will actually run the application
 # =================================================================================================
-FROM ubuntu:22.04 AS app-container
+FROM debian:12.1-slim AS java-build-stage
 
 LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
@@ -90,6 +90,8 @@ ENV RADIXDLT_HOME=/home/radixdlt \
 COPY artifacts/*.jar /opt/radixdlt/lib/
 COPY artifacts/core /opt/radixdlt/bin/core
 COPY artifacts/libcorerust.so /usr/lib/jni/libcorerust.so
+
+RUN chmod +x /opt/radixdlt/bin/core
 
 # Create configuration automatically when starting
 COPY docker/build_scripts/config_radixdlt.sh /opt/radixdlt/config_radixdlt.sh
