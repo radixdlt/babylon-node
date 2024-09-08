@@ -61,6 +61,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           include-hidden-files: false
+
   build_rust:
     name: Build libcorerust
     runs-on: ubuntu-latest-8-cores
@@ -93,6 +94,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           include-hidden-files: false
+
   build_docker:
     name: Build docker image
     runs-on: ubuntu-latest
@@ -102,6 +104,19 @@ jobs:
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
+      - name: Docker meta
+        id: meta
+        uses: RDXWorks-actions/metadata-action@v5
+        with:
+          images: radixdlt/babylon-node-test
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
       - uses: RDXWorks-actions/download-artifact-v4@main
         name: Download java artifacts
         with:
@@ -117,7 +132,13 @@ jobs:
         with:
           name: rust-build-library
           path: artifacts
-      # - run: |
-      #     ls -l out-java-lib
-      #     ls -l out-java-core
-      #     ls -l out-rust
+      - run: |
+          ls -l artifacts
+      - name: Build and push
+        uses: RDXWorks-actions/build-push-action@v6
+        with:
+          file: ./docker/dockerfiles/app.dockerfile
+          context: .
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: false
