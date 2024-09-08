@@ -106,18 +106,18 @@ jobs:
         name: Download java artifacts
         with:
           name: java-build-jars
-          path: out-java-lib
+          path: artifacts
       - uses: RDXWorks-actions/download-artifact-v4@main
         name: Download core script
         with:
           name: java-build-core
-          path: out-java-core
+          path: artifacts
       - uses: RDXWorks-actions/download-artifact-v4@main
         name: Download rust artifacts
         with:
           name: rust-build-library
-          path: out-rust
-      - run: |
-          ls -l out-java-lib
-          ls -l out-java-core
-          ls -l out-rust
+          path: artifacts
+      # - run: |
+      #     ls -l out-java-lib
+      #     ls -l out-java-core
+      #     ls -l out-rust
