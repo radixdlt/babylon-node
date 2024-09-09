@@ -34,4 +34,15 @@ RUN apt-get update \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
+# We fix the version of Rust here to ensure that we can update it without having
+# issues with the caching layers containing outdated versions which aren't compatible.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
+  && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu --default-toolchain 1.77.2
+
+RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
+
+ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
+ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+
 USER root
