@@ -67,12 +67,12 @@ use crate::engine_prelude::*;
 pub mod node {
     use super::*;
     use crate::address_book_components::*;
-    use crate::components::RawPublicKey;
+    use crate::components::NodeSecp256k1PublicKey;
     use crate::safety_store_components::SafetyState;
 
     pub trait AddressBookStore {
-        fn remove_one(&self, node_id: &RawPublicKey) -> bool;
-        fn upsert_one(&self, node_id: &RawPublicKey, entry: &AddressBookEntry) -> bool;
+        fn remove_one(&self, node_id: &NodeSecp256k1PublicKey) -> bool;
+        fn upsert_one(&self, node_id: &NodeSecp256k1PublicKey, entry: &AddressBookEntry) -> bool;
         fn reset(&self);
         fn get_all(&self) -> Vec<AddressBookEntry>;
         fn is_migrated(&self) -> bool;

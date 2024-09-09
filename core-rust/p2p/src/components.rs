@@ -5,9 +5,9 @@ use crate::engine_prelude::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
     Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, PartialOrd, Ord, PartialEq, Eq,
 )]
 #[sbor(transparent)]
-pub struct RawPublicKey(pub [u8; RawPublicKey::LENGTH]);
+pub struct NodeSecp256k1PublicKey(pub [u8; NodeSecp256k1PublicKey::LENGTH]);
 
-impl RawPublicKey {
+impl NodeSecp256k1PublicKey {
     pub const LENGTH: usize = 33;
 
     pub fn new(id: [u8; Self::LENGTH]) -> Self {
@@ -21,9 +21,9 @@ impl RawPublicKey {
 
 /// The Secp256K1 signature
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct Signature(pub [u8; Signature::LENGTH]);
+pub struct NodeSignature(pub [u8; NodeSignature::LENGTH]);
 
-impl Signature {
+impl NodeSignature {
     pub const LENGTH: usize = 65; // v(1) + r(32) + s(32)
 
     pub fn new(signature: [u8; Self::LENGTH]) -> Self {

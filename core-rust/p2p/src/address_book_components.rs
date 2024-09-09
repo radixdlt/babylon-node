@@ -68,7 +68,7 @@ use crate::engine_prelude::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
 use sbor::define_single_versioned;
 
 /// Timestamp of the various peer-related events
-// At present it's just an alias for i64. Later we may want to replace it with struct using crono crate and
+// At present, it's just an alias for i64. Later we may want to replace it with struct using crono crate and
 // do something like shown below to transparently convert to/from internal representation
 // (once there will be real usage at Rust side).
 // #[sbor(
@@ -94,7 +94,7 @@ pub enum ConnectionStatus {
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NodeIdDTO {
-    pub key: components::RawPublicKey,
+    pub key: components::NodeSecp256k1PublicKey,
 }
 
 /// Address book entry

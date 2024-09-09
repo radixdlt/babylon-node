@@ -106,8 +106,8 @@ import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import com.sleepycat.je.EnvironmentConfig;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Function;
@@ -203,37 +203,16 @@ public final class P2PTestNetworkRunner {
           protected void configure() {
             bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
             bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
-            Multibinder.newSetBinder(binder(), NodeAutoCloseable.class)
-                .addBinding()
-                .to(BerkeleySafetyStateStore.class);
+
+            var binder = Multibinder.newSetBinder(binder(), NodeAutoCloseable.class);
+            binder.addBinding().to(PersistentSafetyStateStore.class);
+            binder.addBinding().to(AddressBookPersistence.class);
           }
 
           @Provides
           @Singleton
-          BerkeleySafetyStateStore safetyStateStore(
-              RuntimeProperties properties,
-              Serialization serialization,
-              Metrics metrics,
-              @NodeStorageLocation String nodeStorageLocation) {
-            return new BerkeleySafetyStateStore(
-                serialization,
-                metrics,
-                nodeStorageLocation,
-                BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-          }
-
-          @Provides
-          @Singleton
-          BerkeleyAddressBookStore bdbAddressBookStore(
-              RuntimeProperties properties,
-              Serialization serialization,
-              Metrics metrics,
-              @NodeStorageLocation String nodeStorageLocation) {
-            return new BerkeleyAddressBookStore(
-                serialization,
-                metrics,
-                nodeStorageLocation,
-                BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
+          EnvironmentConfig environmentConfig(RuntimeProperties properties) {
+            return BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties);
           }
         },
         Modules.override(new P2PModule(properties))

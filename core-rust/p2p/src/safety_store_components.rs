@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::components::{RawPublicKey, Signature};
+use crate::components::{NodeSecp256k1PublicKey, NodeSignature};
 use crate::engine_prelude::*;
 use sbor::define_single_versioned;
 
@@ -111,7 +111,7 @@ pub struct BFTValidator {
     Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Ord, PartialOrd, Eq, PartialEq,
 )]
 pub struct BFTValidatorId {
-    key: RawPublicKey,
+    key: NodeSecp256k1PublicKey,
     validator_address: ComponentAddress,
 }
 
@@ -122,6 +122,9 @@ pub struct HighQC {
     highest_timeout_certificate: Option<TimeoutCertificate>,
 }
 
+// FIXME: A duplicate of LedgerHeader from StateManager.
+// Made separate te reference only types within this module. De-duplication requires
+// careful merging of the other referenced types as well.
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LedgerHeader {
     epoch: i64,
@@ -172,7 +175,7 @@ pub struct TimeoutCertificate {
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TimestampedECDSASignature {
     timestamp: SafetyStateTimestamp,
-    signature: Signature,
+    signature: NodeSignature,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -191,8 +194,8 @@ pub struct Vote {
     high_quorum_certificate: HighQC,
     vote_data: VoteData,
     timestamp: SafetyStateTimestamp,
-    signature: Signature,
-    timeout_signature: Option<Signature>,
+    signature: NodeSignature,
+    timeout_signature: Option<NodeSignature>,
 }
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

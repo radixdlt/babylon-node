@@ -390,6 +390,10 @@ public final class RadixNodeModule extends AbstractModule {
             protocolConfig,
             ScenariosExecutionConfig.resolveForNetwork(network)));
 
+    // Persistence
+    install(new PersistentSafetyStateStoreModule());
+    install(new AddressBookModule());
+
     // Recovery
     install(new EpochsSafetyRecoveryModule());
     install(new REv2LedgerRecoveryModule());

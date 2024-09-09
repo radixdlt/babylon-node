@@ -68,7 +68,7 @@ use node_common::rocksdb::{ColumnFamilyDescriptor, Options, DB};
 
 use crate::address_book_components::*;
 use crate::column_families::*;
-use crate::components::RawPublicKey;
+use crate::components::NodeSecp256k1PublicKey;
 use crate::engine_prelude::*;
 use crate::migration::MigrationStatus;
 use crate::safety_store_components::SafetyState;
@@ -157,7 +157,7 @@ impl ActualSafetyStoreDatabase {
 }
 
 impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
-    fn remove_one(&self, node_id: &RawPublicKey) -> bool {
+    fn remove_one(&self, node_id: &NodeSecp256k1PublicKey) -> bool {
         let binding = open_rw_context(&self.rocks);
         let context = binding.cf(AddressBookCf);
 
@@ -168,7 +168,7 @@ impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
         true
     }
 
-    fn upsert_one(&self, node_id: &RawPublicKey, entry: &AddressBookEntry) -> bool {
+    fn upsert_one(&self, node_id: &NodeSecp256k1PublicKey, entry: &AddressBookEntry) -> bool {
         let binding = open_rw_context(&self.rocks);
         let context = binding.cf(AddressBookCf);
 

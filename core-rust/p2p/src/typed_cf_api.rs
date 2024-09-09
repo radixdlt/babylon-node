@@ -62,24 +62,24 @@
  * permissions under this License.
  */
 
-use crate::components::RawPublicKey;
+use crate::components::NodeSecp256k1PublicKey;
 use node_common::store::typed_cf_api::{BoundedDbCodec, DbCodec};
 
 #[derive(Clone, Default)]
 pub struct RawPublicKeyDbCodec {}
 
-impl DbCodec<RawPublicKey> for RawPublicKeyDbCodec {
-    fn encode(&self, value: &RawPublicKey) -> Vec<u8> {
+impl DbCodec<NodeSecp256k1PublicKey> for RawPublicKeyDbCodec {
+    fn encode(&self, value: &NodeSecp256k1PublicKey) -> Vec<u8> {
         value.as_bytes().to_vec()
     }
 
-    fn decode(&self, bytes: &[u8]) -> RawPublicKey {
-        RawPublicKey::new(bytes.try_into().expect("Invalid NodeId"))
+    fn decode(&self, bytes: &[u8]) -> NodeSecp256k1PublicKey {
+        NodeSecp256k1PublicKey::new(bytes.try_into().expect("Invalid NodeId"))
     }
 }
 
 impl BoundedDbCodec for RawPublicKeyDbCodec {
     fn upper_bound_encoding(&self) -> Vec<u8> {
-        vec![0xFF; RawPublicKey::LENGTH]
+        vec![0xFF; NodeSecp256k1PublicKey::LENGTH]
     }
 }

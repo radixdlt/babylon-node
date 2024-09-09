@@ -63,7 +63,7 @@
  */
 
 use crate::address_book_components::*;
-use crate::components::RawPublicKey;
+use crate::components::NodeSecp256k1PublicKey;
 use crate::migration::MigrationStatus;
 use crate::safety_store_components::{SafetyState, VersionedSafetyState};
 use crate::typed_cf_api::RawPublicKeyDbCodec;
@@ -83,7 +83,7 @@ impl DefaultCf for MigrationStatusCf {
 /// Address book
 pub struct AddressBookCf;
 impl VersionedCf for AddressBookCf {
-    type Key = RawPublicKey;
+    type Key = NodeSecp256k1PublicKey;
     type Value = AddressBookEntry;
 
     const VERSIONED_NAME: &'static str = "address_book";

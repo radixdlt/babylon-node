@@ -199,11 +199,7 @@ impl JNINodeRustEnvironment {
     }
 
     fn combine(base: &String, ext: &str) -> PathBuf {
-        let mut path = base.clone();
-        path.push(MAIN_SEPARATOR);
-        path.push_str(ext);
-
-        PathBuf::from(path)
+        [base, ext].iter().collect()
     }
 
     pub fn cleanup(env: &JNIEnv, j_node_rust_env: JObject) {
