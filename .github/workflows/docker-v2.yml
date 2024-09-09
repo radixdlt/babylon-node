@@ -61,12 +61,10 @@ jobs:
   build_rust:
     name: Build libcorerust
     runs-on: ubuntu-latest-8-cores
-    container: radixdlt/build-layers:java
+    container: radixdlt/build-layers:rust
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
-      - name: Setup rust toolchain
-        uses: RDXWorks-actions/rust-toolchain@1.77
       - name: Setup rust cache
         uses: RDXWorks-actions/rust-cache@master
         with:
