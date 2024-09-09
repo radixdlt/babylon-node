@@ -20,14 +20,10 @@ jobs:
   build_java:
     name: Build Java artifacts
     runs-on: ubuntu-latest-8-cores
+    container: radixdlt/build-layers:java
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
       - uses: RDXWorks-actions/gradle-cache-action@v2
         name: Build
         env:
@@ -65,23 +61,14 @@ jobs:
   build_rust:
     name: Build libcorerust
     runs-on: ubuntu-latest-8-cores
+    container: radixdlt/build-layers:java
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
-      - name: Setup rust toolchain
-        uses: RDXWorks-actions/rust-toolchain@1.77
       - name: Setup rust cache
         uses: RDXWorks-actions/rust-cache@master
         with:
           workspaces: core-rust
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update -qq && \
-          sudo apt-get -qq -y --no-install-recommends install \
-              build-essential \
-              libclang-dev \
-              libssl-dev \
-              pkg-config
       - name: Build
         working-directory: core-rust
         run: |
