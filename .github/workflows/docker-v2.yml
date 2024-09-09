@@ -61,7 +61,7 @@ jobs:
   build_rust:
     name: Build libcorerust
     runs-on: ubuntu-latest-8-cores
-    container: radixdlt/build-layers:rust
+    container: radixdlt/build-layers:rust-v1
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
