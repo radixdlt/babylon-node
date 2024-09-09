@@ -65,6 +65,8 @@ jobs:
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
+      - name: Setup rust toolchain
+        uses: RDXWorks-actions/rust-toolchain@1.77
       - name: Setup rust cache
         uses: RDXWorks-actions/rust-cache@master
         with:
