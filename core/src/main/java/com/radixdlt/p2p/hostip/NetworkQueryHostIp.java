@@ -69,7 +69,6 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.net.HostAndPort;
 import com.radixdlt.lang.Result;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
@@ -184,14 +183,18 @@ final class NetworkQueryHostIp {
       final var request =
           new Request.Builder()
               .url(url)
-              .header("User-Agent", "curl/7.58.0")
-              .header("Accept", "*/*")
+              .header("User-Agent", "Mozilla/5.0")
+              .header("Accept", "text/plain,text/html")
+              .header("Accept-Encoding", "deflate,gzip,identity")
+              .header("Accept-Language", "en-GB,en-US")
               .get()
               .build();
       final var call = okHttpClient.newCall(request);
       try (var response = call.execute()) {
-        final var responseText = response.body().string().trim();
-        return Result.success(new HostIp(HostAndPort.fromHost(responseText).getHost()));
+        if (!response.isSuccessful()) {
+          return Result.error(new IOException("Not a success: %s".formatted(response)));
+        }
+        return Result.success(new HostIp(response.body().string().trim()));
       }
     } catch (IOException ex) {
       return Result.error(ex);
