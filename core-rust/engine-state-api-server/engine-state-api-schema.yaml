@@ -1,7 +1,7 @@
 openapi: 3.1.0
 
 info:
-  version: 'v1.2.2'
+  version: 'v1.2.3'
   title: 'Engine State API (Beta)'
   license:
     name: The Radix License, Version 1.0

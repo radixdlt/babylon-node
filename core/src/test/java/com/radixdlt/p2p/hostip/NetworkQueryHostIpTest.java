@@ -111,22 +111,19 @@ public class NetworkQueryHostIpTest {
   }
 
   @Test
-  public void testCollectionNotEmptyQueryFailed() throws IOException {
-    HttpURLConnection conn = mock(HttpURLConnection.class);
-    doReturn(404).when(conn).getResponseCode();
-    URL url = mock(URL.class);
-    doReturn(conn).when(url).openConnection();
-    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(url));
-    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
+  public void testCollectionNotEmptyQueryNotSuccessful() throws IOException {
+    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(makeUrl(404, "not found")));
+    Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
     assertFalse(host.isPresent());
   }
 
   @Test
-  public void testCollectionNotEmptyQueryFailed2() throws IOException {
+  public void testCollectionNotEmptyQueryIoException() throws IOException {
     URL url = mock(URL.class);
+    doReturn("https://mock.url/with-io-problems").when(url).toString();
     doThrow(new IOException("test exception")).when(url).openConnection();
     NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(url));
-    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
+    Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
     assertFalse(host.isPresent());
   }
 
@@ -134,18 +131,24 @@ public class NetworkQueryHostIpTest {
   public void testCollectionAllDifferent() throws IOException {
     List<URL> urls =
         List.of(
-            makeUrl("127.0.0.1"), makeUrl("127.0.0.2"), makeUrl("127.0.0.3"), makeUrl("127.0.0.4"));
+            makeUrl(200, "127.0.0.1"),
+            makeUrl(200, "127.0.0.2"),
+            makeUrl(200, "127.0.0.3"),
+            makeUrl(200, "127.0.0.4"));
     NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(urls);
-    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
+    Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
     assertFalse(host.isPresent());
   }
 
-  private static URL makeUrl(String data) throws IOException {
-    ByteArrayInputStream input = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+  private static URL makeUrl(int status, String body) throws IOException {
     HttpURLConnection conn = mock(HttpURLConnection.class);
-    doReturn(input).when(conn).getInputStream();
+    doReturn(status).when(conn).getResponseCode();
+    doReturn(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)))
+        .when(conn)
+        .getInputStream();
     URL url = mock(URL.class);
     doReturn(conn).when(url).openConnection();
+    doReturn("https://mock.url/?result=%s".formatted(body)).when(url).toString();
     return url;
   }
 }

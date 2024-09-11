@@ -109,16 +109,8 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cache SonarCloud packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -148,7 +140,7 @@ jobs:
           name: distZip
           retention-days: 7
       - uses: ./.github/actions/fetch-secrets
-        with: 
+        with:
           role_name: "${{ secrets.COMMON_SECRETS_ROLE_ARN }}"
           app_name: "babylon-node"
           step_name: "build"
@@ -169,14 +161,8 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cache Gradle packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -193,16 +179,8 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cache Gradle packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -221,16 +199,8 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cache Gradle packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -248,14 +218,10 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 1
-      - uses: RDXWorks-actions/rust-toolchain@master
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
         with:
-          toolchain: stable
-          targets: x86_64-pc-windows-msvc
-      - name: Update clang version to 16
-        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-16 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-16 /usr/bin/clang++ && sudo apt-get install -y libclang-dev llvm llvm-dev
-      - name: Install cargo-xwin
-        run: cargo install cargo-xwin --version 0.17.1 --locked
+          cross-compile-to-windows: "true"
       - name: cross compile to windows
         run: pushd core-rust; cargo xwin build --release --target x86_64-pc-windows-msvc
       - name: Publish corerust.dll
