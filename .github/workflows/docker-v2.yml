@@ -21,12 +21,12 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest-8-cores", "ubuntu-latest-arm-8-cores"]
-        arch: ["x86_64", "aarch64"]
+        arch: ["amd64", "arm64"]
         exclude:
           - os: ubuntu-latest-8-cores
-            arch: aarch64
+            arch: arm64
           - os: ubuntu-latest-arm-8-cores
-            arch: x86_64
+            arch: amd64
     name: Build Java artifacts
     runs-on: ${{ matrix.os }}
     container: radixdlt/build-layers:java
@@ -71,7 +71,12 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest-8-cores", "ubuntu-latest-arm-8-cores"]
-        arch: ["x86_64", "aarch64"]
+        arch: ["amd64", "arm64"]
+        exclude:
+          - os: ubuntu-latest-8-cores
+            arch: arm64
+          - os: ubuntu-latest-arm-8-cores
+            arch: amd64
     name: Build libcorerust
     runs-on: ${{ matrix.os }}
     container:
@@ -103,7 +108,12 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest-8-cores", "ubuntu-latest-arm-8-cores"]
-        arch: ["x86_64", "aarch64"]
+        arch: ["amd64", "arm64"]
+        exclude:
+          - os: ubuntu-latest-8-cores
+            arch: arm64
+          - os: ubuntu-latest-arm-8-cores
+            arch: amd64
     name: Build docker image
     runs-on: ${{ matrix.os }}
     needs:
@@ -145,28 +155,44 @@ jobs:
           name: rust-build-library-${{ matrix.arch }}
           path: artifacts
       - run: ls -l artifacts
-      - name: Configure AWS credentials
-        uses: RDXWorks-actions/configure-aws-credentials@main
-        with:
-          role-to-assume: ${{ secrets.COMMON_SECRETS_ROLE_ARN }}
-          aws-region: eu-west-2
-      - name: Setup dockerhub credentials
-        uses: RDXWorks-actions/aws-secretsmanager-get-secrets@main
-        with:
-          secret-ids: |
-            DOCKERHUB_PRIVATE, github-actions/common/dockerhub-credentials
-          parse-json-secrets: true
-      - name: Login to Docker Hub
-        uses: RDXWorks-actions/login-action@master
-        with:
-          username: ${{env.DOCKERHUB_PRIVATE_USERNAME}}
-          password: ${{env.DOCKERHUB_PRIVATE_TOKEN}}
+      # - name: Configure AWS credentials
+      #   uses: RDXWorks-actions/configure-aws-credentials@main
+      #   with:
+      #     role-to-assume: ${{ secrets.COMMON_SECRETS_ROLE_ARN }}
+      #     aws-region: eu-west-2
+      # - name: Setup dockerhub credentials
+      #   uses: RDXWorks-actions/aws-secretsmanager-get-secrets@main
+      #   with:
+      #     secret-ids: |
+      #       DOCKERHUB_PRIVATE, github-actions/common/dockerhub-credentials
+      #     parse-json-secrets: true
+      # - name: Login to Docker Hub
+      #   uses: RDXWorks-actions/login-action@master
+      #   with:
+      #     username: ${{env.DOCKERHUB_PRIVATE_USERNAME}}
+      #     password: ${{env.DOCKERHUB_PRIVATE_TOKEN}}
+      - name: Prepare
+        run: |
+          mkdir -p /tmp/images
+          platform=linux/${{ matrix.arch }}
+          echo "TARFILE=${platform//\//-}.tar" >> $GITHUB_ENV
+          echo "TAG=radixdlt/babylon-node-test:${platform//\//-}" >> $GITHUB_ENV 
+      - name: Set up Docker Buildx
+        uses: RDXWorks-actions/setup-buildx-action@v2
       - name: Build and push
         uses: RDXWorks-actions/build-push-action@v6
         with:
           file: ./docker/dockerfiles/app.dockerfile
           context: .
           platforms: linux/${{ matrix.arch }}
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ env.TAG }}
           labels: ${{ steps.meta.outputs.labels }}
-          push: true
+          outputs: type=docker,dest=/tmp/images/${{ env.TARFILE }}
+          push: false
+      - name: Upload images
+        uses: RDXWorks-actions/upload-artifact-v4@main
+        with:
+          name: images
+          path: /tmp/images/${{ env.TARFILE }}
+          if-no-files-found: error
+          retention-days: 1
