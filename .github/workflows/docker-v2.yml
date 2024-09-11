@@ -18,8 +18,17 @@ concurrency:
 
 jobs:
   build_java:
+    strategy:
+      matrix:
+        os: ["ubuntu-latest-8-cores", "ubuntu-latest-arm-8-cores"]
+        arch: ["x86_64", "aarch64"]
+        exclude:
+          - os: ubuntu-latest-8-cores
+            arch: aarch64
+          - os: ubuntu-latest-arm-8-cores
+            arch: x86_64
     name: Build Java artifacts
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ${{ matrix.os }}
     container: radixdlt/build-layers:java
     steps:
       - name: Checkout
@@ -44,7 +53,7 @@ jobs:
       - name: Upload artifacts
         uses: RDXWorks-actions/upload-artifact-v4@main
         with:
-          name: java-build-jars
+          name: java-build-jars-${{ matrix.arch }}
           path: core/build/distributions/*.jar
           if-no-files-found: error
           retention-days: 1
@@ -52,15 +61,19 @@ jobs:
       - name: Upload core script
         uses: RDXWorks-actions/upload-artifact-v4@main
         with:
-          name: java-build-core
+          name: java-build-core-${{ matrix.arch }}
           path: core/build/distributions/core
           if-no-files-found: error
           retention-days: 1
           include-hidden-files: false
 
   build_rust:
+    strategy:
+      matrix:
+        os: ["ubuntu-latest-8-cores", "ubuntu-latest-arm-8-cores"]
+        arch: ["x86_64", "aarch64"]
     name: Build libcorerust
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ${{ matrix.os }}
     container:
       image: radixdlt/build-layers:rust-v1
       options: --user root
@@ -80,15 +93,19 @@ jobs:
       - name: Upload artifacts
         uses: RDXWorks-actions/upload-artifact-v4@main
         with:
-          name: rust-build-library
+          name: rust-build-library-${{ matrix.arch }}
           path: core-rust/target/release/libcorerust.so
           if-no-files-found: error
           retention-days: 1
           include-hidden-files: false
 
   build_docker:
+    strategy:
+      matrix:
+        os: ["ubuntu-latest-8-cores", "ubuntu-latest-arm-8-cores"]
+        arch: ["x86_64", "aarch64"]
     name: Build docker image
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     needs:
       - build_java
       - build_rust
@@ -115,17 +132,17 @@ jobs:
       - uses: RDXWorks-actions/download-artifact-v4@main
         name: Download java artifacts
         with:
-          name: java-build-jars
+          name: java-build-jars-${{ matrix.arch }}
           path: artifacts
       - uses: RDXWorks-actions/download-artifact-v4@main
         name: Download core script
         with:
-          name: java-build-core
+          name: java-build-core-${{ matrix.arch }}
           path: artifacts
       - uses: RDXWorks-actions/download-artifact-v4@main
         name: Download rust artifacts
         with:
-          name: rust-build-library
+          name: rust-build-library-${{ matrix.arch }}
           path: artifacts
       - run: ls -l artifacts
       - name: Configure AWS credentials
@@ -149,6 +166,7 @@ jobs:
         with:
           file: ./docker/dockerfiles/app.dockerfile
           context: .
+          platforms: linux/${{ matrix.arch }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           push: true

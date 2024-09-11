@@ -53,7 +53,7 @@ RUN apt-get update \
     libssl-dev=3.0.14-1~deb12u2 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
-    wget=${WGET_VERSION} \
+    wget \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
     openjdk-17-jdk=17.0.12+7-2~deb12u1 \
