@@ -117,7 +117,7 @@ public class NetworkQueryHostIpTest {
     URL url = mock(URL.class);
     doReturn(conn).when(url).openConnection();
     NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(url));
-    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
+    Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
     assertFalse(host.isPresent());
   }
 
@@ -126,7 +126,7 @@ public class NetworkQueryHostIpTest {
     URL url = mock(URL.class);
     doThrow(new IOException("test exception")).when(url).openConnection();
     NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(url));
-    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
+    Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
     assertFalse(host.isPresent());
   }
 
@@ -136,7 +136,7 @@ public class NetworkQueryHostIpTest {
         List.of(
             makeUrl("127.0.0.1"), makeUrl("127.0.0.2"), makeUrl("127.0.0.3"), makeUrl("127.0.0.4"));
     NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(urls);
-    Optional<HostIp> host = nqhip.queryNetworkHosts().maybeHostIp();
+    Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
     assertFalse(host.isPresent());
   }
 
