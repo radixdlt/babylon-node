@@ -145,8 +145,8 @@ jobs:
         run: |
           mkdir -p /tmp/images
           platform=${{ matrix.platform }}
-          echo "TARFILE=${platform//\//-}.tar" >> $GITHUB_ENV
-          echo "TAG=${{ env.TMP_LOCAL_IMAGE }}:${platform//\//-}" >> $GITHUB_ENV
+          echo "TARFILE=${platform}.tar" >> $GITHUB_ENV
+          echo "TAG=${{ env.TMP_LOCAL_IMAGE }}:${platform}" >> $GITHUB_ENV
       - name: Set up Docker Buildx
         uses: RDXWorks-actions/setup-buildx-action@master
       - name: Build
