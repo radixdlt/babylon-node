@@ -196,9 +196,14 @@ jobs:
             type=semver,pattern={{major}}
             type=sha
       - uses: RDXWorks-actions/download-artifact-v4@main
-        name: Download images
+        name: Download images (amd64)
         with:
-          name: images
+          name: images-amd64
+          path: /tmp/images
+      - uses: RDXWorks-actions/download-artifact-v4@main
+        name: Download images (arm64)
+        with:
+          name: images-arm64
           path: /tmp/images
       - name: Load images
         run: |
