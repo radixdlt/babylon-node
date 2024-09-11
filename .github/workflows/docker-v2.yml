@@ -144,7 +144,7 @@ jobs:
       - name: Prepare
         run: |
           mkdir -p /tmp/images
-          platform=${{ matrix.platform }}
+          platform=${{ matrix.arch }}
           echo "TARFILE=${platform}.tar" >> $GITHUB_ENV
           echo "TAG=${{ env.TMP_LOCAL_IMAGE }}:${platform}" >> $GITHUB_ENV
       - name: Set up Docker Buildx
@@ -162,7 +162,7 @@ jobs:
       - name: Upload images
         uses: RDXWorks-actions/upload-artifact-v4@main
         with:
-          name: images
+          name: images-${{ matrix.arch }}
           path: /tmp/images/${{ env.TARFILE }}
           if-no-files-found: error
           retention-days: 1
