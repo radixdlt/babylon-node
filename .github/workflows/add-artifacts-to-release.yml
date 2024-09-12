@@ -94,7 +94,7 @@ jobs:
       - name: Build core-rust
         run: |
           cd core-rust
-          cargo build --release --profile=release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }}
           echo "ls  ./target/${{ matrix.target }}/release"
           ls  ./target/${{ matrix.target }}/release/
         env:
