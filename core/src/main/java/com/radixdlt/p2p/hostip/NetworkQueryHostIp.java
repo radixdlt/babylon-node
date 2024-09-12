@@ -67,9 +67,11 @@ package com.radixdlt.p2p.hostip;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.net.HostAndPort;
+import com.radixdlt.lang.Result;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -92,7 +94,9 @@ import org.apache.logging.log4j.Logger;
 final class NetworkQueryHostIp {
   private static final Logger log = LogManager.getLogger();
 
-  public record Result(Optional<HostIp> maybeHostIp, ImmutableList<URL> hostsQueried) {}
+  public record VotedResult(
+      Optional<HostIp> conclusiveHostIp,
+      ImmutableMap<URL, Result<HostIp, IOException>> individualQueryResults) {}
 
   @VisibleForTesting static final String QUERY_URLS_PROPERTY = "network.host_ip_query_urls";
 
@@ -125,7 +129,7 @@ final class NetworkQueryHostIp {
 
   private final List<URL> hosts;
   private final OkHttpClient okHttpClient;
-  private final Supplier<Result> result = Suppliers.memoize(this::get);
+  private final Supplier<VotedResult> result = Suppliers.memoize(this::get);
 
   NetworkQueryHostIp(Collection<URL> urls) {
     if (urls.isEmpty()) {
@@ -139,54 +143,61 @@ final class NetworkQueryHostIp {
     return this.hosts.size();
   }
 
-  public Result queryNetworkHosts() {
+  public VotedResult queryNetworkHosts() {
     return result.get();
   }
 
-  Result get() {
+  VotedResult get() {
     return publicIp((count() + 1) / 2); // Round up
   }
 
-  Result publicIp(int threshold) {
+  VotedResult publicIp(int threshold) {
     // Make sure we don't DoS the first one on the list
     Collections.shuffle(this.hosts);
     log.debug("Using hosts {}", this.hosts);
-    final Map<HostAndPort, AtomicInteger> ips = Maps.newHashMap();
-    final ImmutableList.Builder<URL> hostsQueried = ImmutableList.builder();
+    final Map<HostIp, AtomicInteger> successCounts = Maps.newHashMap();
+    final ImmutableMap.Builder<URL, Result<HostIp, IOException>> queryResults =
+        ImmutableMap.builder();
     for (URL url : this.hosts) {
-      HostAndPort q = query(url);
-      if (q != null) {
-        hostsQueried.add(url);
-        int newValue = ips.computeIfAbsent(q, k -> new AtomicInteger()).incrementAndGet();
-        if (newValue >= threshold) {
-          log.debug("Found address {}", q);
-          return new Result(Optional.of(new HostIp(q.getHost())), hostsQueried.build());
+      final Result<HostIp, IOException> result = query(url);
+      queryResults.put(url, result);
+      final Optional<HostIp> success = result.toOptional();
+      if (success.isPresent()) {
+        int newCount =
+            successCounts
+                .computeIfAbsent(success.get(), k -> new AtomicInteger())
+                .incrementAndGet();
+        if (newCount >= threshold) {
+          log.debug("Found address {}", success.get());
+          return new VotedResult(success, queryResults.build());
         }
       }
     }
     log.debug("No suitable address found");
-    return new Result(Optional.empty(), hostsQueried.build());
+    return new VotedResult(Optional.empty(), queryResults.build());
   }
 
-  HostAndPort query(URL url) {
+  Result<HostIp, IOException> query(URL url) {
     try {
-      final var response =
-          okHttpClient
-              .newCall(
-                  new Request.Builder()
-                      .url(url)
-                      .header(
-                          "User-Agent", "curl/7.58.0") // User agent is required by some services
-                      .header(
-                          "Accept", "*/*") // Similarly, this seems to be required by some services
-                      .get()
-                      .build())
-              .execute();
-      return HostAndPort.fromHost(response.body().string().trim());
-    } catch (Exception ex) {
-      // We don't want any single query to throw an uncaught exception
-      // (e.g. if they return an invalid response), so we're just catching all here.
-      return null;
+      // Some services simply require the headers we set here:
+      final var request =
+          new Request.Builder()
+              .url(url)
+              .header("User-Agent", "Mozilla/5.0")
+              .header("Accept", "text/plain,text/html")
+              .header("Accept-Encoding", "deflate,gzip,identity")
+              .header("Accept-Language", "en-GB,en-US")
+              .get()
+              .build();
+      final var call = okHttpClient.newCall(request);
+      try (var response = call.execute()) {
+        if (!response.isSuccessful()) {
+          return Result.error(new IOException("Not a success: %s".formatted(response)));
+        }
+        return Result.success(new HostIp(response.body().string().trim()));
+      }
+    } catch (IOException ex) {
+      return Result.error(ex);
     }
   }
 
