@@ -81,8 +81,8 @@ use crate::store::traits::scenario::{
 use crate::system_commits::*;
 
 use crate::protocol::{ProtocolUpdateNodeBatch, ProtocolVersionName};
-use crate::rocks_db::ActualStateManagerDatabase;
-use crate::traits::scenario::ExecutedScenarioV1;
+use crate::store::rocks_db::ActualStateManagerDatabase;
+use crate::store::traits::scenario::ExecutedScenarioV1;
 use radix_transaction_scenarios::scenarios::ALL_SCENARIOS;
 use std::sync::Arc;
 use std::time::Instant;

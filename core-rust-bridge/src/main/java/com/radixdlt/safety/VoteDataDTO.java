@@ -62,19 +62,16 @@
  * permissions under this License.
  */
 
-package com.radixdlt.store;
+package com.radixdlt.safety;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.radixdlt.utils.properties.RuntimeProperties;
+import com.radixdlt.lang.Option;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.StructCodec;
 
-/** Reads node's storage location from properties */
-public final class NodeStorageLocationFromPropertiesModule extends AbstractModule {
-  @Provides
-  @Singleton
-  @NodeStorageLocation
-  private String nodeStorageLocation(RuntimeProperties properties) {
-    return properties.get("db.location", ".//RADIXDB");
+public record VoteDataDTO(
+    BFTHeaderDTO proposed, BFTHeaderDTO parent, Option<BFTHeaderDTO> committed) {
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        VoteDataDTO.class, codecs -> StructCodec.fromRecordComponents(VoteDataDTO.class, codecs));
   }
 }

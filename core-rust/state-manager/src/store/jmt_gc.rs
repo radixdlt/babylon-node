@@ -70,7 +70,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tracing::info;
 
-use crate::rocks_db::ActualStateManagerDatabase;
+use crate::store::rocks_db::ActualStateManagerDatabase;
 use crate::store::traits::gc::StateTreeGcStore;
 use crate::store::traits::proofs::QueryableProofStore;
 use crate::store::traits::StaleTreePartsV1;

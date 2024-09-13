@@ -2,7 +2,7 @@ use crate::engine_prelude::*;
 
 use crate::protocol::*;
 
-use crate::traits::*;
+use crate::store::traits::*;
 
 use crate::LedgerProofOrigin;
 

@@ -124,7 +124,7 @@ public final class BottlenoseProtocolUpdateTest {
             new FunctionalRadixNodeModule(
                 FunctionalRadixNodeModule.NodeStorageConfig.tempFolder(folder),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     new StateComputerConfig.REv2StateComputerConfig(

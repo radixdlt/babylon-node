@@ -72,7 +72,7 @@ use tracing::{debug, info};
 
 use crate::engine_prelude::*;
 use crate::limits::*;
-use crate::rocks_db::ActualStateManagerDatabase;
+use crate::store::rocks_db::ActualStateManagerDatabase;
 use crate::*;
 
 use crate::system_commits::*;

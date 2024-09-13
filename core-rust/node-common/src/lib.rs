@@ -70,7 +70,9 @@ pub mod jni;
 pub mod locks;
 pub mod metrics;
 pub mod scheduler;
+pub mod store;
 pub mod utils;
+pub use rocksdb;
 
 pub(crate) mod engine_prelude {
     pub use radix_common::prelude::*;

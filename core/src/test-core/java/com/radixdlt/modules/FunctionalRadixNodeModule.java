@@ -73,10 +73,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
-import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.environment.NodeAutoCloseable;
-import com.radixdlt.environment.ScenariosExecutionConfig;
+import com.radixdlt.environment.*;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
@@ -123,7 +120,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public enum SafetyRecoveryConfig {
     MOCKED,
-    BERKELEY_DB,
+    REAL,
   }
 
   public static final class ConsensusConfig {
@@ -316,7 +313,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     switch (this.safetyRecoveryConfig) {
       case MOCKED -> install(new MockedSafetyStoreModule());
-      case BERKELEY_DB -> install(new BerkeleySafetyStoreModule());
+      case REAL -> install(new PersistentSafetyStateStoreModule());
     }
 
     // Consensus

@@ -7,7 +7,7 @@ use crate::engine_prelude::*;
 
 use crate::query::StateManagerSubstateQueries;
 
-use crate::rocks_db::ActualStateManagerDatabase;
+use crate::store::rocks_db::ActualStateManagerDatabase;
 use crate::store::traits::transactions::QueryableTransactionStore;
 use crate::store::traits::{QueryableProofStore, TransactionIndex};
 use crate::transaction::{ExecutionConfigurator, TransactionLogic};

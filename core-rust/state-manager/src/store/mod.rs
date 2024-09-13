@@ -62,22 +62,25 @@
  * permissions under this License.
  */
 
+use std::sync::Arc;
+
+use prometheus::Registry;
+use sbor::{Categorize, Decode, Encode};
+
+use node_common::locks::DbLock;
+use rocks_db::ActualStateManagerDatabase;
+
+use crate::RawDbMetrics;
+use traits::measurement::MeasurableDatabase;
+pub use traits::DatabaseConfig;
+
 mod codecs;
+pub mod column_families;
 pub mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;
 pub mod rocks_db;
 pub mod traits;
-mod typed_cf_api;
-
-use crate::store::traits::measurement::MeasurableDatabase;
-use crate::RawDbMetrics;
-use node_common::locks::DbLock;
-use prometheus::Registry;
-use rocks_db::ActualStateManagerDatabase;
-use sbor::{Categorize, Decode, Encode};
-use std::sync::Arc;
-pub use traits::DatabaseConfig;
 
 #[derive(Debug, Categorize, Encode, Decode, Clone)]
 pub struct DatabaseBackendConfig {

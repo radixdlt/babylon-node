@@ -100,7 +100,7 @@ public final class RandomVoteDropperTest {
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
                 true,
-                SafetyRecoveryConfig.BERKELEY_DB,
+                SafetyRecoveryConfig.REAL,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2()

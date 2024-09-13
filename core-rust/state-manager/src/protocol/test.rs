@@ -63,7 +63,7 @@
  */
 
 use crate::engine_prelude::*;
-use crate::traits::QueryableProofStore;
+use crate::store::traits::QueryableProofStore;
 
 use crate::protocol::*;
 use crate::{LedgerProof, LedgerProofOrigin, StateManagerConfig};

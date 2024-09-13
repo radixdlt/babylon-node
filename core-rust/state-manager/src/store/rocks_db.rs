@@ -63,50 +63,39 @@
  */
 
 use std::collections::HashSet;
-use std::fmt;
+use std::path::PathBuf;
 
+use node_common::rocksdb::{ColumnFamilyDescriptor, Direction, IteratorMode, Options, DB};
+use tracing::{error, info, warn};
+
+use node_common::locks::Snapshottable;
+use node_common::utils::IsAccountExt;
+
+use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
 use crate::engine_prelude::*;
+use crate::query::TransactionIdentifierLoader;
+use crate::store::column_families::*;
+use crate::store::historical_state::StateTreeBasedSubstateDatabase;
+use crate::store::traits::extensions::*;
+use crate::store::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
+use crate::store::traits::indices::{
+    CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintNameV1,
+};
+use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
+use crate::store::traits::scenario::{
+    ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber,
+};
 use crate::store::traits::*;
+use crate::transaction::{
+    LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
+};
 use crate::{
     BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin,
     LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash,
     StateVersion, SubstateChangeAction, TransactionTreeHash,
-    VersionedCommittedTransactionIdentifiers, VersionedLedgerProof,
-    VersionedLedgerTransactionReceipt, VersionedLocalTransactionExecution,
 };
-use node_common::utils::IsAccountExt;
-use rocksdb::checkpoint::Checkpoint;
-use rocksdb::{
-    AsColumnFamilyRef, ColumnFamily, ColumnFamilyDescriptor, DBPinnableSlice, Direction,
-    IteratorMode, Options, Snapshot, WriteBatch, DB,
-};
-
-use std::path::PathBuf;
-
-use node_common::locks::Snapshottable;
-use tracing::{error, info, warn};
-
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::query::TransactionIdentifierLoader;
-use crate::store::codecs::*;
-use crate::store::historical_state::StateTreeBasedSubstateDatabase;
-use crate::store::traits::gc::{
-    LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore, VersionedLedgerProofsGcProgress,
-};
-use crate::store::traits::indices::{
-    CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintName, ObjectBlueprintNameV1,
-    VersionedEntityBlueprintId, VersionedObjectBlueprintName,
-};
-use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
-use crate::store::traits::scenario::{
-    ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber, VersionedExecutedScenario,
-};
-use crate::store::typed_cf_api::*;
-use crate::transaction::{
-    LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
-};
-
-use super::traits::extensions::*;
+use node_common::store::rocks_db::*;
+use node_common::store::typed_cf_api::*;
 
 /// A listing of all column family names used by the Node.
 ///
@@ -126,7 +115,7 @@ use super::traits::extensions::*;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_COLUMN_FAMILIES: [&str; 25] = [
+const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 25] = [
     RawLedgerTransactionsCf::DEFAULT_NAME,
     CommittedTransactionIdentifiersCf::VERSIONED_NAME,
     TransactionReceiptsCf::VERSIONED_NAME,
@@ -153,591 +142,6 @@ const ALL_COLUMN_FAMILIES: [&str; 25] = [
     TypeAndCreationIndexedEntitiesCf::VERSIONED_NAME,
     BlueprintAndCreationIndexedObjectsCf::VERSIONED_NAME,
 ];
-
-/// Committed transactions.
-/// Schema: `StateVersion.to_bytes()` -> `RawLedgerTransaction.as_ref::<[u8]>()`
-/// Note: This table does not use explicit versioning wrapper, since the serialized content of
-/// [`RawLedgerTransaction`] is itself versioned.
-struct RawLedgerTransactionsCf;
-impl DefaultCf for RawLedgerTransactionsCf {
-    type Key = StateVersion;
-    type Value = RawLedgerTransaction;
-
-    const DEFAULT_NAME: &'static str = "raw_ledger_transactions";
-    type KeyCodec = StateVersionDbCodec;
-    type ValueCodec = RawLedgerTransactionDbCodec;
-}
-
-/// Identifiers of committed transactions.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedCommittedTransactionIdentifiers)`
-struct CommittedTransactionIdentifiersCf;
-impl VersionedCf for CommittedTransactionIdentifiersCf {
-    type Key = StateVersion;
-    type Value = CommittedTransactionIdentifiers;
-
-    const VERSIONED_NAME: &'static str = "committed_transaction_identifiers";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedCommittedTransactionIdentifiers;
-}
-
-/// Ledger receipts of committed transactions.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerTransactionReceipt)`
-struct TransactionReceiptsCf;
-impl VersionedCf for TransactionReceiptsCf {
-    type Key = StateVersion;
-    type Value = LedgerTransactionReceipt;
-
-    const VERSIONED_NAME: &'static str = "transaction_receipts";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLedgerTransactionReceipt;
-}
-
-/// Off-ledger details of committed transaction results (stored only when configured via
-/// `enable_local_transaction_execution_index`).
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLocalTransactionExecution)`
-struct LocalTransactionExecutionsCf;
-impl VersionedCf for LocalTransactionExecutionsCf {
-    type Key = StateVersion;
-    type Value = LocalTransactionExecution;
-
-    const VERSIONED_NAME: &'static str = "local_transaction_executions";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLocalTransactionExecution;
-}
-
-/// Ledger proofs of committed transactions.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-struct LedgerProofsCf;
-impl VersionedCf for LedgerProofsCf {
-    type Key = StateVersion;
-    type Value = LedgerProof;
-
-    const VERSIONED_NAME: &'static str = "ledger_proofs";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLedgerProof;
-}
-
-/// Ledger proofs of new epochs - i.e. the proofs which trigger the given `next_epoch`.
-/// Schema: `Epoch.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
-struct EpochLedgerProofsCf;
-impl VersionedCf for EpochLedgerProofsCf {
-    type Key = Epoch;
-    type Value = LedgerProof;
-
-    const VERSIONED_NAME: &'static str = "epoch_ledger_proofs";
-    type KeyCodec = EpochDbCodec;
-    type VersionedValue = VersionedLedgerProof;
-}
-
-/// Ledger proofs that initialize protocol updates, i.e. proofs of Consensus `origin`,
-/// with headers containing a non-empty `next_protocol_version`.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
-struct ProtocolUpdateInitLedgerProofsCf;
-impl VersionedCf for ProtocolUpdateInitLedgerProofsCf {
-    type Key = StateVersion;
-    type Value = LedgerProof;
-
-    const VERSIONED_NAME: &'static str = "protocol_update_init_ledger_proofs";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLedgerProof;
-}
-
-/// Ledger proofs of ProtocolUpdate `origin`, i.e. proofs created locally
-/// while protocol update state modifications were being applied.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedLedgerProof)`
-/// Note: This duplicates a small subset of [`LedgerProofsCf`]'s values.
-struct ProtocolUpdateExecutionLedgerProofsCf;
-impl VersionedCf for ProtocolUpdateExecutionLedgerProofsCf {
-    type Key = StateVersion;
-    type Value = LedgerProof;
-
-    const VERSIONED_NAME: &'static str = "protocol_update_execution_ledger_proofs";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedLedgerProof;
-}
-
-/// DB "index" table for transaction's [`IntentHash`] resolution.
-/// Schema: `IntentHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
-/// Note: This table does not use explicit versioning wrapper, since the value represents a DB
-/// key of another table (and versioning DB keys is not useful).
-struct IntentHashesCf;
-impl DefaultCf for IntentHashesCf {
-    type Key = IntentHash;
-    type Value = StateVersion;
-
-    const DEFAULT_NAME: &'static str = "intent_hashes";
-    type KeyCodec = HashDbCodec<IntentHash>;
-    type ValueCodec = StateVersionDbCodec;
-}
-
-/// DB "index" table for transaction's [`NotarizedTransactionHash`] resolution.
-/// Schema: `NotarizedTransactionHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
-/// Note: This table does not use explicit versioning wrapper, since the value represents a DB
-/// key of another table (and versioning DB keys is not useful).
-struct NotarizedTransactionHashesCf;
-impl DefaultCf for NotarizedTransactionHashesCf {
-    type Key = NotarizedTransactionHash;
-    type Value = StateVersion;
-
-    const DEFAULT_NAME: &'static str = "notarized_transaction_hashes";
-    type KeyCodec = HashDbCodec<NotarizedTransactionHash>;
-    type ValueCodec = StateVersionDbCodec;
-}
-
-/// DB "index" table for transaction's [`LedgerTransactionHash`] resolution.
-/// Schema: `LedgerTransactionHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
-/// Note: This table does not use explicit versioning wrapper, since the value represents a DB
-/// key of another table (and versioning DB keys is not useful).
-struct LedgerTransactionHashesCf;
-impl DefaultCf for LedgerTransactionHashesCf {
-    type Key = LedgerTransactionHash;
-    type Value = StateVersion;
-
-    const DEFAULT_NAME: &'static str = "ledger_transaction_hashes";
-    type KeyCodec = HashDbCodec<LedgerTransactionHash>;
-    type ValueCodec = StateVersionDbCodec;
-}
-
-/// Radix Engine's runtime Substate database.
-/// Schema: `encode_to_rocksdb_bytes(DbPartitionKey, DbSortKey)` -> `Vec<u8>`
-/// Note: This table does not use explicit versioning wrapper, since each serialized substate
-/// value is already versioned.
-struct SubstatesCf;
-impl DefaultCf for SubstatesCf {
-    type Key = DbSubstateKey;
-    type Value = DbSubstateValue;
-
-    const DEFAULT_NAME: &'static str = "substates";
-    type KeyCodec = SubstateKeyDbCodec;
-    type ValueCodec = DirectDbCodec;
-}
-
-/// Ancestor information for the RE Nodes of [`Substates`] (which is useful and can be computed,
-/// but is not provided by the Engine itself).
-/// Schema: `NodeId.0` -> `scrypto_encode(VersionedSubstateNodeAncestryRecord)`
-/// Note: we do not persist records of root Nodes (which do not have any ancestor).
-struct SubstateNodeAncestryRecordsCf;
-impl VersionedCf for SubstateNodeAncestryRecordsCf {
-    type Key = NodeId;
-    type Value = SubstateNodeAncestryRecord;
-
-    const VERSIONED_NAME: &'static str = "substate_node_ancestry_records";
-    type KeyCodec = NodeIdDbCodec;
-    type VersionedValue = VersionedSubstateNodeAncestryRecord;
-}
-
-/// Vertex store.
-/// Schema: `[]` -> `scrypto_encode(VersionedVertexStoreBlob)`
-/// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
-struct VertexStoreCf;
-impl VersionedCf for VertexStoreCf {
-    type Key = ();
-    type Value = VertexStoreBlob;
-
-    const VERSIONED_NAME: &'static str = "vertex_store";
-    type KeyCodec = UnitDbCodec;
-    type VersionedValue = VersionedVertexStoreBlob;
-}
-
-/// Individual nodes of the Substate database's hash tree.
-/// Schema: `encode_key(StoredTreeNodeKey)` -> `scrypto_encode(VersionedTreeNode)`.
-struct StateTreeNodesCf;
-impl VersionedCf for StateTreeNodesCf {
-    type Key = StoredTreeNodeKey;
-    type Value = TreeNode;
-
-    // Note: the legacy `state_hash_tree` name lives on here because it already got persisted.
-    const VERSIONED_NAME: &'static str = "state_hash_tree_nodes";
-    type KeyCodec = StoredTreeNodeKeyDbCodec;
-    type VersionedValue = VersionedTreeNode;
-}
-
-/// Parts of the Substate database's hash tree that became stale at a specific state version.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedStaleTreeParts)`.
-struct StaleStateTreePartsCf;
-impl VersionedCf for StaleStateTreePartsCf {
-    type Key = StateVersion;
-    type Value = StaleTreeParts;
-
-    // Note: the legacy `state_hash_tree` name lives on here because it already got persisted.
-    const VERSIONED_NAME: &'static str = "stale_state_hash_tree_parts";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedStaleTreeParts;
-}
-
-/// Transaction accumulator tree slices added at a specific state version.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedTransactionAccuTreeSlice)`.
-struct TransactionAccuTreeSlicesCf;
-impl VersionedCf for TransactionAccuTreeSlicesCf {
-    type Key = StateVersion;
-    type Value = TransactionAccuTreeSlice;
-
-    const VERSIONED_NAME: &'static str = "transaction_accu_tree_slices";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedTransactionAccuTreeSlice;
-}
-
-/// Receipt accumulator tree slices added at a specific state version.
-/// Schema: `StateVersion.to_bytes()` -> `scrypto_encode(VersionedReceiptAccuTreeSlice)`.
-struct ReceiptAccuTreeSlicesCf;
-impl VersionedCf for ReceiptAccuTreeSlicesCf {
-    type Key = StateVersion;
-    type Value = ReceiptAccuTreeSlice;
-
-    const VERSIONED_NAME: &'static str = "receipt_accu_tree_slices";
-    type KeyCodec = StateVersionDbCodec;
-    type VersionedValue = VersionedReceiptAccuTreeSlice;
-}
-
-/// Various data needed by extensions.
-/// Schema: `ExtensionsDataKeys.to_string().as_bytes() -> Vec<u8>`.
-/// Note: This table does not use explicit versioning wrapper, since each extension manages the
-/// serialization of their data (of its custom type).
-struct ExtensionsDataCf;
-impl TypedCf for ExtensionsDataCf {
-    type Key = ExtensionsDataKey;
-    type Value = Vec<u8>;
-
-    type KeyCodec = PredefinedDbCodec<ExtensionsDataKey>;
-    type ValueCodec = DirectDbCodec;
-
-    const NAME: &'static str = "extensions_data";
-
-    fn key_codec(&self) -> PredefinedDbCodec<ExtensionsDataKey> {
-        PredefinedDbCodec::new_from_string_representations(vec![
-            ExtensionsDataKey::AccountChangeIndexEnabled,
-            ExtensionsDataKey::AccountChangeIndexLastProcessedStateVersion,
-            ExtensionsDataKey::LocalTransactionExecutionIndexEnabled,
-            ExtensionsDataKey::December2023LostSubstatesRestored,
-            ExtensionsDataKey::StateTreeAssociatedValuesStatus,
-            ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
-        ])
-    }
-
-    fn value_codec(&self) -> DirectDbCodec {
-        DirectDbCodec::default()
-    }
-}
-
-/// Account addresses and state versions at which they were changed.
-/// Schema: `[GlobalAddress.0, StateVersion.to_bytes()].concat() -> []`.
-/// Note: This is a key-only table (i.e. the empty value is the only allowed value). Given fast
-/// prefix iterator from RocksDB this emulates a `Map<Account, Set<StateVersion>>`.
-struct AccountChangeStateVersionsCf;
-impl TypedCf for AccountChangeStateVersionsCf {
-    type Key = (GlobalAddress, StateVersion);
-    type Value = ();
-
-    type KeyCodec = PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec>;
-    type ValueCodec = UnitDbCodec;
-
-    const NAME: &'static str = "account_change_state_versions";
-
-    fn key_codec(&self) -> PrefixGlobalAddressDbCodec<StateVersion, StateVersionDbCodec> {
-        PrefixGlobalAddressDbCodec::new(StateVersionDbCodec::default())
-    }
-
-    fn value_codec(&self) -> UnitDbCodec {
-        UnitDbCodec::default()
-    }
-}
-
-/// Additional details of "Scenarios" (and their transactions) executed as part of Genesis,
-/// keyed by their sequence number (i.e. their index in the list of Scenarios to execute).
-/// Schema: `ScenarioSequenceNumber.to_be_bytes()` -> `scrypto_encode(VersionedExecutedScenario)`
-struct ExecutedScenariosCf;
-impl VersionedCf for ExecutedScenariosCf {
-    type Key = ScenarioSequenceNumber;
-    type Value = ExecutedScenario;
-
-    // Note: a legacy name is still used here, even though we now have scenarios run outside Genesis
-    const VERSIONED_NAME: &'static str = "executed_genesis_scenarios";
-    type KeyCodec = ScenarioSequenceNumberDbCodec;
-    type VersionedValue = VersionedExecutedScenario;
-}
-
-/// A progress of the GC process pruning the [`LedgerProofsCf`].
-/// Schema: `[]` -> `scrypto_encode(VersionedLedgerProofsGcProgress)`
-/// Note: This is a single-entry table (i.e. the empty key is the only allowed key).
-struct LedgerProofsGcProgressCf;
-impl VersionedCf for LedgerProofsGcProgressCf {
-    type Key = ();
-    type Value = LedgerProofsGcProgress;
-
-    const VERSIONED_NAME: &'static str = "ledger_proofs_gc_progress";
-    type KeyCodec = UnitDbCodec;
-    type VersionedValue = VersionedLedgerProofsGcProgress;
-}
-
-/// Node IDs and blueprints of all entities, indexed by their type and creation order.
-/// Schema: `[EntityType as u8, StateVersion.to_be_bytes(), (index_within_txn as u32).to_be_bytes()].concat()` -> `scrypto_encode(VersionedEntityBlueprintId)`
-struct TypeAndCreationIndexedEntitiesCf;
-impl VersionedCf for TypeAndCreationIndexedEntitiesCf {
-    type Key = (EntityType, CreationId);
-    type Value = EntityBlueprintId;
-
-    const VERSIONED_NAME: &'static str = "type_and_creation_indexed_entities";
-    type KeyCodec = TypeAndCreationIndexKeyDbCodec;
-    type VersionedValue = VersionedEntityBlueprintId;
-}
-
-/// Node IDs and blueprints of all objects, indexed by their blueprint ID and creation order.
-/// Schema: `[PackageAddress.0, hash(blueprint_name), StateVersion.to_be_bytes(), (index_within_txn as u32).to_be_bytes()].concat()` -> `scrypto_encode(VersionedObjectBlueprintName)`
-struct BlueprintAndCreationIndexedObjectsCf;
-impl VersionedCf for BlueprintAndCreationIndexedObjectsCf {
-    type Key = (PackageAddress, Hash, CreationId);
-    type Value = ObjectBlueprintName;
-
-    const VERSIONED_NAME: &'static str = "blueprint_and_creation_indexed_objects";
-    type KeyCodec = BlueprintAndCreationIndexKeyDbCodec;
-    type VersionedValue = VersionedObjectBlueprintName;
-}
-
-/// Substate values associated with leaf nodes of the state hash tree's Substate Tier.
-/// Needed for [`LeafSubstateValueStore`].
-/// Note: This table does not use explicit versioning wrapper, since each serialized substate
-/// value is already versioned.
-struct AssociatedStateTreeValuesCf;
-impl DefaultCf for AssociatedStateTreeValuesCf {
-    type Key = StoredTreeNodeKey;
-    type Value = DbSubstateValue;
-
-    const DEFAULT_NAME: &'static str = "associated_state_tree_values";
-    type KeyCodec = StoredTreeNodeKeyDbCodec;
-    type ValueCodec = DirectDbCodec;
-}
-
-/// An enum key for [`ExtensionsDataCf`].
-#[derive(Eq, PartialEq, Hash, PartialOrd, Ord, Clone, Debug)]
-enum ExtensionsDataKey {
-    AccountChangeIndexLastProcessedStateVersion,
-    AccountChangeIndexEnabled,
-    LocalTransactionExecutionIndexEnabled,
-    December2023LostSubstatesRestored,
-    StateTreeAssociatedValuesStatus,
-    EntityListingIndicesLastProcessedStateVersion,
-}
-
-// IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
-// effectively clear the associated extension's state in DB. For this reason, we choose to
-// define them manually (rather than using the enum's `Into<String>`, which is refactor-sensitive).
-impl fmt::Display for ExtensionsDataKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let str = match self {
-            Self::AccountChangeIndexLastProcessedStateVersion => {
-                "account_change_index_last_processed_state_version"
-            }
-            Self::AccountChangeIndexEnabled => "account_change_index_enabled",
-            Self::LocalTransactionExecutionIndexEnabled => {
-                "local_transaction_execution_index_enabled"
-            }
-            Self::December2023LostSubstatesRestored => "december_2023_lost_substates_restored",
-            Self::StateTreeAssociatedValuesStatus => "state_tree_associated_values_status",
-            Self::EntityListingIndicesLastProcessedStateVersion => {
-                "entity_listing_indices_last_processed_state_version"
-            }
-        };
-        write!(f, "{str}")
-    }
-}
-
-/// A redefined RocksDB's "key and value bytes" tuple (the original one lives in a private module).
-pub type KVBytes = (Box<[u8]>, Box<[u8]>);
-
-/// A trait capturing the common read methods present both in a "direct" RocksDB instance and in its
-/// snapshots.
-///
-/// The library we use (a thin C wrapper, really) does not introduce this trivial and natural trait
-/// itself, while we desperately need it to abstract the DB-reading code from the actual source of
-/// data.
-///
-/// A note on changed error handling:
-/// The original methods typically return [`Result`]s. Our trait assumes panics instead, since we
-/// treat all database access errors as fatal anyways.
-pub trait ReadableRocks {
-    /// Resolves the column family by name.
-    fn cf_handle(&self, name: &str) -> &ColumnFamily;
-
-    /// Starts iteration over key-value pairs, according to the given [`IteratorMode`].
-    fn iterator_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item = KVBytes> + '_>;
-
-    /// Gets a single value by key.
-    fn get_pinned_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice>;
-
-    /// Gets multiple values by keys.
-    ///
-    /// Syntax note:
-    /// The `<'a>` here is not special at all: it could technically be 100% inferred. Just the
-    /// compiler feature allowing to skip it from within the `<Item = &...>` is not yet stable.
-    /// TODO(when the rustc feature mentioned above becomes stable): get rid of the `<'a>`.
-    fn multi_get_cf<'a>(
-        &'a self,
-        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
-    ) -> Vec<Option<Vec<u8>>>;
-}
-
-/// A write-supporting extension of the [`ReadableRocks`].
-///
-/// Naturally, it is expected that only a "direct" RocksDB instance can implement this one.
-pub trait WriteableRocks: ReadableRocks {
-    /// Atomically writes the given batch of updates.
-    fn write(&self, batch: WriteBatch);
-
-    /// Returns a snapshot of the current state.
-    fn snapshot(&self) -> SnapshotRocks;
-}
-
-/// A [`ReadableRocks`] instance opened as secondary instance.
-pub trait SecondaryRocks: ReadableRocks {
-    /// Tries to catch up with the primary by reading as much as possible from the
-    /// log files.
-    fn try_catchup_with_primary(&self);
-}
-
-/// RocksDB checkpoint support.
-pub trait CheckpointableRocks {
-    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error>;
-}
-
-/// Direct RocksDB instance.
-pub struct DirectRocks {
-    db: DB,
-}
-
-impl ReadableRocks for DirectRocks {
-    fn cf_handle(&self, name: &str) -> &ColumnFamily {
-        self.db.cf_handle(name).expect(name)
-    }
-
-    fn iterator_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
-        Box::new(
-            self.db
-                .iterator_cf(cf, mode)
-                .map(|result| result.expect("reading from DB iterator")),
-        )
-    }
-
-    fn get_pinned_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice> {
-        self.db.get_pinned_cf(cf, key).expect("DB get by key")
-    }
-
-    fn multi_get_cf<'a>(
-        &'a self,
-        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
-    ) -> Vec<Option<Vec<u8>>> {
-        self.db
-            .multi_get_cf(keys)
-            .into_iter()
-            .map(|result| result.expect("batch DB get by key"))
-            .collect()
-    }
-}
-
-impl WriteableRocks for DirectRocks {
-    fn write(&self, batch: WriteBatch) {
-        self.db.write(batch).expect("DB write batch");
-    }
-
-    fn snapshot(&self) -> SnapshotRocks {
-        SnapshotRocks {
-            db: &self.db,
-            snapshot: self.db.snapshot(),
-        }
-    }
-}
-
-impl SecondaryRocks for DirectRocks {
-    fn try_catchup_with_primary(&self) {
-        self.db
-            .try_catch_up_with_primary()
-            .expect("secondary DB catchup");
-    }
-}
-
-impl CheckpointableRocks for DirectRocks {
-    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
-        create_checkpoint(&self.db, checkpoint_path)
-    }
-}
-
-impl<'db> CheckpointableRocks for SnapshotRocks<'db> {
-    fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
-        create_checkpoint(self.db, checkpoint_path)
-    }
-}
-
-fn create_checkpoint(db: &DB, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
-    let checkpoint = Checkpoint::new(db)?;
-    checkpoint.create_checkpoint(checkpoint_path)?;
-    Ok(())
-}
-
-/// Snapshot of RocksDB.
-///
-/// Implementation note:
-/// The original [`DB`] reference is interestingly kept internally by the [`Snapshot`] as well.
-/// However, we need direct access to it for the [`Self::cf_handle()`] reasons.
-pub struct SnapshotRocks<'db> {
-    db: &'db DB,
-    snapshot: Snapshot<'db>,
-}
-
-impl<'db> ReadableRocks for SnapshotRocks<'db> {
-    fn cf_handle(&self, name: &str) -> &ColumnFamily {
-        self.db.cf_handle(name).expect(name)
-    }
-
-    fn iterator_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        mode: IteratorMode,
-    ) -> Box<dyn Iterator<Item = KVBytes> + '_> {
-        Box::new(
-            self.snapshot
-                .iterator_cf(cf, mode)
-                .map(|result| result.expect("reading from snapshot DB iterator")),
-        )
-    }
-
-    fn get_pinned_cf(
-        &self,
-        cf: &impl AsColumnFamilyRef,
-        key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice> {
-        self.snapshot
-            .get_pinned_cf(cf, key)
-            .expect("snapshot DB get by key")
-    }
-
-    fn multi_get_cf<'a>(
-        &'a self,
-        keys: impl IntoIterator<Item = (&'a (impl AsColumnFamilyRef + 'a), impl AsRef<[u8]>)>,
-    ) -> Vec<Option<Vec<u8>>> {
-        self.snapshot
-            .multi_get_cf(keys)
-            .into_iter()
-            .map(|result| result.expect("batch snapshot DB get by key"))
-            .collect()
-    }
-}
 
 pub type ActualStateManagerDatabase = StateManagerDatabase<DirectRocks>;
 
@@ -782,7 +186,7 @@ impl ActualStateManagerDatabase {
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
 
-        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_STATE_MANAGER_COLUMN_FAMILIES
             .iter()
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
@@ -819,7 +223,7 @@ impl ActualStateManagerDatabase {
         db_opts.create_if_missing(false);
         db_opts.create_missing_column_families(false);
 
-        let column_families: Vec<ColumnFamilyDescriptor> = ALL_COLUMN_FAMILIES
+        let column_families: Vec<ColumnFamilyDescriptor> = ALL_STATE_MANAGER_COLUMN_FAMILIES
             .iter()
             .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
             .collect();
@@ -1071,7 +475,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
 
 impl MeasurableDatabase for ActualStateManagerDatabase {
     fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic> {
-        let mut statistics = ALL_COLUMN_FAMILIES
+        let mut statistics = ALL_STATE_MANAGER_COLUMN_FAMILIES
             .iter()
             .map(|cf_name| {
                 (
@@ -1080,13 +484,11 @@ impl MeasurableDatabase for ActualStateManagerDatabase {
                 )
             })
             .collect::<IndexMap<_, _>>();
-        let live_files = match self.rocks.db.live_files() {
-            Ok(live_files) => live_files,
-            Err(err) => {
-                warn!("could not get DB live files; returning 0: {:?}", err);
-                Vec::new()
-            }
-        };
+        let live_files = self.rocks.db.live_files().unwrap_or_else(|err| {
+            warn!("could not get DB live files; returning 0: {:?}", err);
+            Vec::new()
+        });
+
         for live_file in live_files {
             let Some(statistic) = statistics.get_mut(&live_file.column_family_name) else {
                 warn!("LiveFile of unknown column family: {:?}", live_file);

@@ -71,12 +71,9 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerProofBundle;
-import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPeerControl;
-import com.radixdlt.p2p.addressbook.AddressBookPersistence;
-import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
 import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.p2p.hostip.HostIp;
 import com.radixdlt.p2p.hostip.HostIpModule;
@@ -85,10 +82,7 @@ import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ProtocolState;
-import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
@@ -111,7 +105,6 @@ public final class P2PModule extends AbstractModule {
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
-    bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);
@@ -156,19 +149,6 @@ public final class P2PModule extends AbstractModule {
     final var host = hostIp.value();
     final var port = p2pConfig.broadcastPort();
     return RadixNodeUri.fromPubKeyAndAddress(network.getId(), selfKey, host, port);
-  }
-
-  @Provides
-  @Singleton
-  BerkeleyAddressBookStore addressBookStore(
-      Serialization serialization,
-      Metrics metrics,
-      @NodeStorageLocation String nodeStorageLocation) {
-    return new BerkeleyAddressBookStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
   }
 
   /**

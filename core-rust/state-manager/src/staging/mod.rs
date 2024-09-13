@@ -73,8 +73,8 @@ use crate::accumulator_tree::storage::ReadableAccuTreeStore;
 use crate::engine_prelude::*;
 use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
+use crate::store::traits::ConfigurableDatabase;
 use crate::store::traits::SubstateNodeAncestryStore;
-use crate::traits::ConfigurableDatabase;
 pub use cache::*;
 pub use result::*;
 

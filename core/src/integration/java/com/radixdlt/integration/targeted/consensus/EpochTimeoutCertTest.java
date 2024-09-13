@@ -132,7 +132,7 @@ public final class EpochTimeoutCertTest {
       test.runUntilMessage(
           proposalAtRound(ROUNDS_PER_EPOCH + 2),
           true,
-          10 * NUM_NODES * NUM_NODES * ((int) ROUNDS_PER_EPOCH));
+          10 * NUM_NODES * NUM_NODES * ROUNDS_PER_EPOCH);
       // Run for a while more and verify that no byzantine issues occur
       test.runForCount(40000);
     }

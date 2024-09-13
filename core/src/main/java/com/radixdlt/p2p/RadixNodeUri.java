@@ -127,7 +127,7 @@ public final class RadixNodeUri {
   }
 
   @JsonValue
-  private byte[] getSerializedValue() {
+  public byte[] getSerializedValue() {
     return getUriString().getBytes(StandardCharsets.UTF_8);
   }
 

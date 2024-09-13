@@ -101,7 +101,6 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.io.File;
 
 public final class REv2StateManagerModule extends AbstractModule {
 
@@ -205,10 +204,10 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          DatabaseBackendConfig databaseBackendConfig(
+          @NodeStorageLocation
+          DatabaseBackendConfig stateManagerDatabaseBackendConfig(
               @NodeStorageLocation String nodeStorageLocation) {
-            return new DatabaseBackendConfig(
-                new File(nodeStorageLocation, "state_manager").getPath());
+            return new DatabaseBackendConfig(nodeStorageLocation);
           }
 
           @Provides
@@ -217,7 +216,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
               FatalPanicHandler fatalPanicHandler,
               Network network,
-              DatabaseBackendConfig databaseBackendConfig,
+              @NodeStorageLocation DatabaseBackendConfig nodeDatabaseBackendConfig,
               DatabaseConfig databaseConfig) {
             return new NodeRustEnvironment(
                 mempoolRelayDispatcher,
@@ -226,7 +225,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     NetworkDefinition.from(network),
                     mempoolConfig,
                     vertexLimitsConfigOpt,
-                    databaseBackendConfig,
+                    nodeDatabaseBackendConfig,
                     databaseConfig,
                     getLoggingConfig(),
                     stateTreeGcConfig,

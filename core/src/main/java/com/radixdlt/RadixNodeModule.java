@@ -97,7 +97,7 @@ import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.modules.*;
-import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
+import com.radixdlt.store.StorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.utils.BooleanUtils;
@@ -252,7 +252,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // Storage directory
-    install(new NodeStorageLocationFromPropertiesModule());
+    install(new StorageLocationFromPropertiesModule());
     // State Computer
     var mempoolMaxMemory =
         properties.get(
@@ -390,8 +390,11 @@ public final class RadixNodeModule extends AbstractModule {
             protocolConfig,
             ScenariosExecutionConfig.resolveForNetwork(network)));
 
+    // Persistence
+    install(new PersistentSafetyStateStoreModule());
+    install(new AddressBookModule());
+
     // Recovery
-    install(new BerkeleySafetyStoreModule());
     install(new EpochsSafetyRecoveryModule());
     install(new REv2LedgerRecoveryModule());
     install(new REv2ConsensusRecoveryModule());

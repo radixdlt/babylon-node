@@ -66,6 +66,7 @@ pub mod db_checkpoints;
 pub mod fatal_panic_handler;
 pub mod mempool;
 pub mod node_rust_environment;
+pub mod p2p;
 pub mod prometheus;
 pub mod protocol_update;
 pub mod state_computer;

@@ -73,11 +73,11 @@ use crate::jni::node_rust_environment::JNINodeRustEnvironment;
 use crate::query::StateManagerSubstateQueries;
 use node_common::java::*;
 
+use crate::store::traits::measurement::MeasurableDatabase;
 use crate::store::traits::{
     gc::StateTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
     SubstateNodeAncestryStore,
 };
-use crate::traits::measurement::MeasurableDatabase;
 use crate::transaction::LedgerTransactionHash;
 
 //

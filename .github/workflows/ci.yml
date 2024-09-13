@@ -6,7 +6,7 @@ concurrency:
 
 on:
   pull_request:
-    # Runs on all PRs
+# Runs on all PRs
   push:
     branches:
       - develop
@@ -209,7 +209,8 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
         env:
-          RADIXDLT_LOG_LEVEL: warn
+          # Might be set to warn for debugging purposes. Warning, log file will be huge.
+          RADIXDLT_LOG_LEVEL: error
         run: ./gradlew clean runSteadyStateIntegrationTests --info --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
@@ -229,7 +230,8 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run targeted integration tests
         env:
-          RADIXDLT_LOG_LEVEL: warn
+          # Might be set to warn for debugging purposes. Warning, log file will be huge.
+          RADIXDLT_LOG_LEVEL: error
         run: ./gradlew clean runTargetedIntegrationTests --info --refresh-dependencies --parallel
   cross-xwin:
     name: Cross compile to Windows

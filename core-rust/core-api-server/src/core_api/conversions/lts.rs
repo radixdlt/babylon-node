@@ -1,5 +1,6 @@
 use crate::engine_prelude::*;
-use state_manager::rocks_db::{ReadableRocks, StateManagerDatabase};
+use node_common::store::rocks_db::ReadableRocks;
+use state_manager::store::rocks_db::StateManagerDatabase;
 use state_manager::store::traits::SubstateNodeAncestryStore;
 use state_manager::{
     CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,

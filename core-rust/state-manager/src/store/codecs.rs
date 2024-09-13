@@ -69,9 +69,9 @@ use crate::engine_prelude::*;
 
 use crate::store::traits::indices::CreationId;
 use crate::store::traits::scenario::ScenarioSequenceNumber;
-use crate::store::typed_cf_api::*;
 use crate::transaction::RawLedgerTransaction;
 use crate::StateVersion;
+use node_common::store::typed_cf_api::*;
 
 #[derive(Default)]
 pub struct StateVersionDbCodec {}
@@ -260,7 +260,7 @@ impl DbCodec<StoredTreeNodeKey> for StoredTreeNodeKeyDbCodec {
 impl BoundedDbCodec for StoredTreeNodeKeyDbCodec {
     fn upper_bound_encoding(&self) -> Vec<u8> {
         // Note: here we use knowledge of `encode_key()`'s internals: it puts the state version
-        // first. Additionally we need to assume that maximum state version is never reached.
+        // first. Additionally, we need to assume that maximum state version is never reached.
         encode_key(&StoredTreeNodeKey::new(
             Version::MAX,
             NibblePath::new_even(vec![]),

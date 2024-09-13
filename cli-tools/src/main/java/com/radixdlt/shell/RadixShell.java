@@ -178,7 +178,7 @@ public final class RadixShell {
         dataDir = new File(Files.createTempDirectory("radix-shell-node-").toString());
       }
 
-      customProperties.build().forEach((k, v) -> properties.set(k, v));
+      customProperties.build().forEach(properties::set);
 
       properties.set("db.location", dataDir.toString());
 
