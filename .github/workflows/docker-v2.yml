@@ -83,20 +83,21 @@ jobs:
     name: Build libcorerust
     runs-on: ${{ matrix.os }}
     container:
-      image: radixdlt/build-layers:rust-v1
+      image: radixdlt/build-layers:rust-full-build
       options: --user root
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
-      - name: Setup rust toolchain
-        uses: RDXWorks-actions/rust-toolchain@1.77
-      - name: Setup rust cache
-        uses: RDXWorks-actions/rust-cache@master
-        with:
-          workspaces: core-rust
+      - name: Copy target directory
+        run: |
+          mv /app/core-rust/target ./core-rust/target
       - name: Build
         working-directory: core-rust
         run: |
+          export PATH="$PATH:/root/.cargo/bin"
+          which cargo
+          rustup default 1.77
+          du -hs target
           cargo build --profile=release
       - name: Upload artifacts
         uses: RDXWorks-actions/upload-artifact-v4@main

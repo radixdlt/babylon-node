@@ -37,10 +37,11 @@ RUN apt-get update \
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
-  && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu --default-toolchain 1.77.2
+  && sh rustup.sh -y --default-toolchain 1.77.2
 
-RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
+ENV PATH="$PATH:/root/.cargo/bin"
 
-ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
-ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
-ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+COPY . .
+
+RUN cd core-rust && \
+    cargo build --profile=release
