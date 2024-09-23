@@ -83,7 +83,7 @@ jobs:
     name: Build libcorerust
     runs-on: ${{ matrix.os }}
     container:
-      image: radixdlt/build-layers:rust-v1
+      image: radixdlt/build-layers:rust
       options: --user root
     steps:
       - name: Checkout

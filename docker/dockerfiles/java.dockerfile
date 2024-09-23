@@ -16,7 +16,7 @@ LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 CMD ["/bin/bash"]
 
@@ -63,26 +63,6 @@ RUN apt-get update \
 ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF8"
 
 RUN mkdir -p /radixdlt
-# Copy the relevant files at the repo root
-# I wish we could just avoid pulling in the rust here, but https://github.com/moby/moby/issues/15771
-COPY \
-  build.gradle \
-  gradlew \
-  gradlew.bat \
-  settings.gradle \
-  sonar-project.properties \
-  gradle.properties \
-  licence-header.txt \
-  /radixdlt/
-COPY ./gradle /radixdlt/gradle
-COPY ./common /radixdlt/common
-COPY ./core /radixdlt/core
-COPY ./core-rust-bridge /radixdlt/core-rust-bridge
-COPY ./cli-tools /radixdlt/cli-tools
-COPY ./shell /radixdlt/shell
-COPY ./keygen /radixdlt/keygen
-# Need .git for tag versions - but this can probably be removed soon
-COPY ./.git/* /radixdlt/.git/
 
 WORKDIR /radixdlt
 

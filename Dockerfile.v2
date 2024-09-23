@@ -1,0 +1,50 @@
+FROM radixdlt/build-layers:java AS java-container
+
+WORKDIR /radixdlt
+
+# Copy the relevant files at the repo root
+COPY \
+  build.gradle \
+  gradlew \
+  gradlew.bat \
+  settings.gradle \
+  sonar-project.properties \
+  gradle.properties \
+  licence-header.txt \
+  /radixdlt/
+COPY ./gradle /radixdlt/gradle
+COPY ./common /radixdlt/common
+COPY ./core /radixdlt/core
+COPY ./core-rust-bridge /radixdlt/core-rust-bridge
+COPY ./cli-tools /radixdlt/cli-tools
+COPY ./shell /radixdlt/shell
+COPY ./keygen /radixdlt/keygen
+# Need .git for tag versions - but this can probably be removed soon
+COPY ./.git/* /radixdlt/.git/
+
+RUN SKIP_NATIVE_RUST_BUILD=TRUE ./gradlew clean build -x test -Pci=true -PrustBinaryBuildType=release
+
+RUN cd core/build/distributions && \
+    unzip -j *.zip && \
+    mkdir -p /artifacts && \
+    cp *.jar /artifacts && \
+    cp core /artifacts
+
+FROM radixdlt/build-layers:rust AS rust-container
+
+WORKDIR /app
+
+COPY core-rust/ /app
+
+RUN mkdir -p /artifacts && \
+    /root/.cargo/bin/cargo build --profile=release && \
+    cp target/release/libcorerust.so /artifacts/libcorerust.so
+
+FROM radixdlt/build-layers:app AS main
+
+# Copy in the application artifacts
+COPY --from=java-container /artifacts/*.jar /opt/radixdlt/lib/
+COPY --from=java-container /artifacts/core /opt/radixdlt/bin/core
+COPY --from=rust-container /artifacts/libcorerust.so /usr/lib/jni/libcorerust.so
+
+RUN chmod +x /opt/radixdlt/bin/core

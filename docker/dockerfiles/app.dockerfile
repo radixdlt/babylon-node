@@ -85,14 +85,6 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_NETWORK_ID=240 \
     RADIXDLT_NODE_KEY_CREATE_IF_MISSING=false
 
-# Copy in the application artifacts
-# The artifacts directory on the host must be populated with the required files.
-COPY artifacts/*.jar /opt/radixdlt/lib/
-COPY artifacts/core /opt/radixdlt/bin/core
-COPY artifacts/libcorerust.so /usr/lib/jni/libcorerust.so
-
-RUN chmod +x /opt/radixdlt/bin/core
-
 # Create configuration automatically when starting
 COPY docker/build_scripts/config_radixdlt.sh /opt/radixdlt/config_radixdlt.sh
 
