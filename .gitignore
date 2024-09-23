@@ -65,3 +65,6 @@ node_modules/
 # auto-generated doc
 **/resources/documentation/*.html
 **/resources/markdown
+
+# CI generated
+artifacts
