@@ -1,13 +1,10 @@
 use crate::core_api::*;
 use crate::engine_prelude::*;
 
-use std::ops::Range;
-
 use radix_engine_toolkit::receipt::RuntimeToolkitTransactionReceipt;
+use state_manager::rocks_db::ActualStateManagerDatabase;
 use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{
-    ActualStateManagerDatabase, ExecutionFeeData, LocalTransactionReceipt, PreviewRequest,
-};
+use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
@@ -62,12 +59,20 @@ fn extract_preview_request(
 
     Ok(PreviewRequest {
         manifest,
-        explicit_epoch_range: Some(Range {
-            start: extract_epoch(request.start_epoch_inclusive)
-                .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
-            end: extract_epoch(request.end_epoch_exclusive)
-                .map_err(|err| err.into_response_error("end_epoch_exclusive"))?,
-        }),
+        start_epoch_inclusive: match request.start_epoch_inclusive {
+            Some(start_epoch_inclusive) => Some(
+                extract_epoch(start_epoch_inclusive)
+                    .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
+            ),
+            None => None,
+        },
+        end_epoch_exclusive: match request.end_epoch_exclusive {
+            Some(end_epoch_exclusive) => Some(
+                extract_epoch(end_epoch_exclusive)
+                    .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
+            ),
+            None => None,
+        },
         notary_public_key: request
             .notary_public_key
             .map(|pk| {

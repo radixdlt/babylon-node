@@ -1352,6 +1352,7 @@ version = "0.1.0"
 dependencies = [
  "bech32",
  "blake2",
+ "itertools",
  "jni",
  "opentelemetry",
  "opentelemetry-jaeger",
@@ -1365,6 +1366,7 @@ dependencies = [
  "radix-substate-store-interface",
  "radix-substate-store-queries",
  "radix-transactions",
+ "rocksdb",
  "sbor",
  "tokio",
  "tokio-util",
@@ -1548,6 +1550,16 @@ name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
+
+[[package]]
+name = "p2p"
+version = "0.1.0"
+dependencies = [
+ "jni",
+ "node-common",
+ "radix-common",
+ "sbor",
+]
 
 [[package]]
 name = "parking_lot"
@@ -1869,6 +1881,7 @@ dependencies = [
  "radix-common",
  "radix-rust",
  "radix-substate-store-interface",
+ "rocksdb",
  "sbor",
 ]
 
@@ -2481,6 +2494,7 @@ dependencies = [
  "jni",
  "lru",
  "node-common",
+ "p2p",
  "prometheus",
  "radix-common",
  "radix-engine",
@@ -2492,7 +2506,6 @@ dependencies = [
  "radix-transaction-scenarios",
  "radix-transactions",
  "rand 0.8.5",
- "rocksdb",
  "sbor",
  "slotmap",
  "tempfile",
