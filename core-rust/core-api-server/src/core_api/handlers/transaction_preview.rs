@@ -1,9 +1,13 @@
 use crate::core_api::*;
 use crate::engine_prelude::*;
 
-use state_manager::store::rocks_db::ActualStateManagerDatabase;
+use std::ops::Range;
+
+use radix_engine_toolkit::receipt::RuntimeToolkitTransactionReceipt;
 use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
+use state_manager::{
+    ActualStateManagerDatabase, ExecutionFeeData, LocalTransactionReceipt, PreviewRequest,
+};
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
@@ -19,6 +23,11 @@ pub(crate) async fn handle_transaction_preview(
         .transpose()
         .map_err(|err| err.into_response_error("at_ledger_state"))?;
 
+    let should_produce_toolkit_receipt = request
+        .options
+        .as_ref()
+        .and_then(|opt_ins| opt_ins.radix_engine_toolkit_receipt)
+        .unwrap_or(false);
     let preview_request = extract_preview_request(&state.network, request)?;
 
     let result = state
@@ -26,7 +35,7 @@ pub(crate) async fn handle_transaction_preview(
         .transaction_previewer
         .preview(preview_request, at_state_version)?;
 
-    to_api_response(&mapping_context, result).map(Json)
+    to_api_response(&mapping_context, result, should_produce_toolkit_receipt).map(Json)
 }
 
 fn extract_preview_request(
@@ -41,10 +50,8 @@ fn extract_preview_request(
         .collect::<Result<_, _>>()
         .map_err(|err| err.into_response_error("blobs"))?;
     let manifest_blob_provider = BlobProvider::new_with_blobs(manifest_blobs);
-    let manifest = compile(&request.manifest, network, manifest_blob_provider)
+    let manifest = manifest::compile(&request.manifest, network, manifest_blob_provider)
         .map_err(|err| client_error(format!("Invalid manifest - {err:?}")))?;
-
-    let honor_requested_epoch_range = !request.flags.skip_epoch_check;
 
     let signer_public_keys: Vec<_> = request
         .signer_public_keys
@@ -55,21 +62,12 @@ fn extract_preview_request(
 
     Ok(PreviewRequest {
         manifest,
-        start_epoch_inclusive: request
-            .start_epoch_inclusive
-            .filter(|_| honor_requested_epoch_range)
-            .map(|number| {
-                extract_epoch(number)
-                    .map_err(|err| err.into_response_error("start_epoch_inclusive"))
-            })
-            .transpose()?,
-        end_epoch_exclusive: request
-            .end_epoch_exclusive
-            .filter(|_| honor_requested_epoch_range)
-            .map(|number| {
-                extract_epoch(number).map_err(|err| err.into_response_error("end_epoch_exclusive"))
-            })
-            .transpose()?,
+        explicit_epoch_range: Some(Range {
+            start: extract_epoch(request.start_epoch_inclusive)
+                .map_err(|err| err.into_response_error("start_epoch_inclusive"))?,
+            end: extract_epoch(request.end_epoch_exclusive)
+                .map_err(|err| err.into_response_error("end_epoch_exclusive"))?,
+        }),
         notary_public_key: request
             .notary_public_key
             .map(|pk| {
@@ -101,12 +99,32 @@ fn extract_preview_request(
 fn to_api_response(
     context: &MappingContext,
     result: ProcessedPreviewResult,
+    should_include_toolkit_receipt: bool,
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let engine_receipt = result.receipt;
     let versioned_engine_receipt = engine_receipt.clone().into_versioned();
 
-    // This is interpreted by the toolkit in the wallet
+    // This is interpreted by the toolkit in the wallet. This will be removed with the release of
+    // the cuttlefish protocol update.
     let encoded_receipt = to_hex(scrypto_encode(&versioned_engine_receipt).unwrap());
+
+    // Produce a toolkit transaction receipt for the transaction preview if it was requested in the
+    // request opt-ins.
+    let toolkit_receipt = if should_include_toolkit_receipt {
+        Some(
+            RuntimeToolkitTransactionReceipt::try_from(versioned_engine_receipt.clone())
+                .ok()
+                .and_then(|value| {
+                    value
+                        .into_serializable_receipt(&context.address_encoder)
+                        .ok()
+                })
+                .and_then(|value| serde_json::to_value(&value).ok())
+                .ok_or(server_error("Can't produce toolkit transaction receipt."))?,
+        )
+    } else {
+        None
+    };
 
     let at_ledger_state = Box::new(to_api_ledger_state_summary(
         context,
@@ -180,6 +198,7 @@ fn to_api_response(
                     context,
                     local_receipt,
                 )?),
+                radix_engine_toolkit_receipt: toolkit_receipt,
                 instruction_resource_changes,
                 logs,
             }
@@ -206,6 +225,7 @@ fn to_api_response(
                 next_epoch: None,
                 error_message: Some(format!("{reject_result:?}")),
             }),
+            radix_engine_toolkit_receipt: toolkit_receipt,
             instruction_resource_changes: vec![],
             logs: vec![],
         },

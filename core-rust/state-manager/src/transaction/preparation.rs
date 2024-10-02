@@ -278,7 +278,7 @@ impl Preparator {
 
         for raw_ancestor in prepare_request.ancestor_transactions {
             // TODO(optimization-only): We could avoid the hashing, decoding, signature verification
-            // and executable creation) by accessing the execution cache in a more clever way.
+            // and executable creation by accessing the execution cache in a more clever way.
             let validated = self
                 .ledger_transaction_validator
                 .validate_user_or_round_update_from_raw(&raw_ancestor)
