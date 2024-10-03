@@ -53,7 +53,7 @@ openapi: 3.1.0
 # => Hex-encoded bytes/payload should end _hex and not include _bytes
 info:
   # Should be the release version, and the release display name
-  version: 'v1.2.3'
+  version: 'v1.2.4'
   title: 'Radix Core API'
   license:
     name: The Radix License, Version 1.0
