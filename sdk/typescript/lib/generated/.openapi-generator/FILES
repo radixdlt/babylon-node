@@ -635,6 +635,7 @@ models/TransactionPreviewRequest.ts
 models/TransactionPreviewRequestFlags.ts
 models/TransactionPreviewResponse.ts
 models/TransactionPreviewResponseLogsInner.ts
+models/TransactionPreviewResponseOptions.ts
 models/TransactionReceipt.ts
 models/TransactionReceiptRequest.ts
 models/TransactionReceiptResponse.ts

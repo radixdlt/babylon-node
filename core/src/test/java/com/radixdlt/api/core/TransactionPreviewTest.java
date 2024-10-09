@@ -331,6 +331,69 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
     }
   }
 
+  @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
+  @Test
+  public void transaction_previewed_doesnt_include_toolkit_receipt_by_default() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      // Prepare a request with the RET receipt opt-ins
+      var manifest = Manifest.valid().apply(new Manifest.Parameters(networkDefinition));
+      var request =
+          new TransactionPreviewRequest()
+              .network(networkLogicalName)
+              .startEpochInclusive(0L)
+              .endEpochExclusive(100L)
+              .tipPercentage(1)
+              .nonce(10L)
+              .flags(
+                  new TransactionPreviewRequestFlags()
+                      .useFreeCredit(true)
+                      .assumeAllSignatureProofs(true)
+                      .skipEpochCheck(true))
+              .manifest(manifest);
+
+      // Ask for a preview of the manifest
+      var previewResponse =
+          getTransactionApi().transactionPreviewPost(request).getRadixEngineToolkitReceipt();
+
+      // Message should be included
+      assertThat(previewResponse).isNull();
+    }
+  }
+
+  @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
+  @Test
+  public void transaction_previewed_includes_a_toolkit_receipt_when_requested() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      // Prepare a request with the RET receipt opt-ins
+      var manifest = Manifest.valid().apply(new Manifest.Parameters(networkDefinition));
+      var request =
+          new TransactionPreviewRequest()
+              .network(networkLogicalName)
+              .startEpochInclusive(0L)
+              .endEpochExclusive(100L)
+              .tipPercentage(1)
+              .nonce(10L)
+              .flags(
+                  new TransactionPreviewRequestFlags()
+                      .useFreeCredit(true)
+                      .assumeAllSignatureProofs(true)
+                      .skipEpochCheck(true))
+              .manifest(manifest)
+              .options(new TransactionPreviewResponseOptions().radixEngineToolkitReceipt(true));
+
+      // Ask for a preview of the manifest
+      var previewResponse =
+          getTransactionApi().transactionPreviewPost(request).getRadixEngineToolkitReceipt();
+
+      // Message should be included
+      assertThat(previewResponse).isNotNull();
+    }
+  }
+
   private TransactionPreviewResponse previewAtVersion(
       Functions.Func1<Manifest.Parameters, String> manifest, Optional<Long> atStateVersion)
       throws ApiException {

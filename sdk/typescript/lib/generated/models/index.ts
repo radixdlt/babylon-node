@@ -628,6 +628,7 @@ export * from './TransactionPreviewRequest';
 export * from './TransactionPreviewRequestFlags';
 export * from './TransactionPreviewResponse';
 export * from './TransactionPreviewResponseLogsInner';
+export * from './TransactionPreviewResponseOptions';
 export * from './TransactionReceipt';
 export * from './TransactionReceiptRequest';
 export * from './TransactionReceiptResponse';

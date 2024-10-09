@@ -106,8 +106,8 @@ impl LedgerTransactionValidator {
             PreparedLedgerTransactionInner::RoundUpdateV1(prepared) => {
                 ValidatedLedgerTransactionInner::RoundUpdateV1(prepared)
             }
-            PreparedLedgerTransactionInner::FlashV1(prepared) => {
-                ValidatedLedgerTransactionInner::FlashV1(prepared)
+            PreparedLedgerTransactionInner::FlashV1(_) => {
+                return Err(LedgerTransactionValidationError::FlashTransactionProvided);
             }
         };
         Ok(ValidatedLedgerTransaction {
@@ -147,6 +147,7 @@ impl LedgerTransactionValidator {
 pub enum LedgerTransactionValidationError {
     ValidationError(TransactionValidationError),
     GenesisTransactionProvided,
+    FlashTransactionProvided,
 }
 
 impl LedgerTransactionValidationError {
@@ -156,6 +157,9 @@ impl LedgerTransactionValidationError {
             LedgerTransactionValidationError::ValidationError(x) => x,
             LedgerTransactionValidationError::GenesisTransactionProvided => {
                 panic!("into_user_validation_error called on a genesis transaction payload")
+            }
+            LedgerTransactionValidationError::FlashTransactionProvided => {
+                panic!("into_user_validation_error called on a flash transaction payload")
             }
         }
     }
