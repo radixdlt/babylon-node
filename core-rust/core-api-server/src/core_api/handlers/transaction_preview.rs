@@ -1,7 +1,7 @@
 use crate::core_api::*;
 use crate::engine_prelude::*;
 
-use radix_engine_toolkit::receipt::RuntimeToolkitTransactionReceipt;
+use radix_engine_toolkit_common::receipt::RuntimeToolkitTransactionReceipt;
 use state_manager::rocks_db::ActualStateManagerDatabase;
 use state_manager::transaction::ProcessedPreviewResult;
 use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
