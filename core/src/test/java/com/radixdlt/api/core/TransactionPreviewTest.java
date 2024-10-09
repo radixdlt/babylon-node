@@ -334,7 +334,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
   @Test
   public void transaction_previewed_doesnt_include_toolkit_receipt_by_default() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare a request with the RET receipt opt-ins
@@ -365,7 +365,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
   @Test
   public void transaction_previewed_includes_a_toolkit_receipt_when_requested() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare a request with the RET receipt opt-ins
