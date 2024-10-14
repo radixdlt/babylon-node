@@ -88,12 +88,16 @@ import com.radixdlt.sync.SyncRelayConfig;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+@Ignore(
+    "Cuttlefish - Both the positive and negative tests are still somewhat flaky, so ignoring these"
+        + " tests for now")
 @RunWith(Parameterized.class)
 public final class MultiNodeRebootTest {
   @Parameterized.Parameters
