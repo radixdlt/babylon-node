@@ -86,7 +86,7 @@ public final class InMemorySystemInfo {
       ProtocolState initialProtocolState) {
     this.rustStateReader = rustStateReader;
     final var latestEpochChange =
-        latestProof.closestEpochProofOnOrBefore().ledgerHeader().nextEpoch().unwrap();
+        latestProof.latestProofWhichInitiatedAnEpochChange().ledgerHeader().nextEpoch().unwrap();
     this.state =
         new InMemorySystemInfoState(
             initialProtocolState,

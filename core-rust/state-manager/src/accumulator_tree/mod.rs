@@ -62,12 +62,15 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use tree_builder::Merklizable;
+use crate::prelude::*;
 
-pub mod slice_merger;
-pub mod storage;
-pub mod tree_builder;
+mod slice_merger;
+mod storage;
+mod tree_builder;
+
+pub use slice_merger::*;
+pub use storage::*;
+pub use tree_builder::*;
 
 #[cfg(test)]
 mod test;

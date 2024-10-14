@@ -67,7 +67,7 @@ use crate::components::NodeSecp256k1PublicKey;
 use crate::migration::MigrationStatus;
 use crate::safety_store_components::{SafetyState, VersionedSafetyState};
 use crate::typed_cf_api::RawPublicKeyDbCodec;
-use node_common::store::typed_cf_api::{DefaultCf, SborDbCodec, UnitDbCodec, VersionedCf};
+use node_common::store::*;
 
 /// Address book and safety state store migration status. Filled once during the migration.
 pub struct MigrationStatusCf;

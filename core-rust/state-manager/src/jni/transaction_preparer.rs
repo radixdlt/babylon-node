@@ -62,14 +62,9 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::transaction::*;
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::*;
+use crate::jni_prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct PrepareIntentRequest {
     network_definition: NetworkDefinition,
     header: TransactionHeaderJava,
@@ -78,10 +73,10 @@ struct PrepareIntentRequest {
     message: Option<TransactionMessageJava>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct PrepareIntentResponse {
     intent_bytes: Vec<u8>,
-    intent_hash: IntentHash,
+    intent_hash: TransactionIntentHash,
 }
 
 #[no_mangle]
@@ -111,11 +106,11 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
                     .unwrap_or_else(|| MessageV1::None),
             };
 
-            let prepared_intent = intent.prepare()?;
+            let prepared_intent = intent.prepare(&PreparationSettings::latest())?;
 
             Ok(PrepareIntentResponse {
-                intent_bytes: intent.to_payload_bytes()?,
-                intent_hash: prepared_intent.intent_hash(),
+                intent_bytes: intent.to_raw()?.to_vec(),
+                intent_hash: prepared_intent.transaction_intent_hash(),
             })
         },
     )
@@ -123,7 +118,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
 
 // We use a separate model to ensure that any change to
 // TransactionHeader is picked up as a compile error, not an SBOR error
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct TransactionHeaderJava {
     pub network_id: u8,
     pub start_epoch_inclusive: u64,
@@ -148,37 +143,37 @@ impl From<TransactionHeaderJava> for TransactionHeaderV1 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 enum TransactionMessageJava {
     Plaintext(PlaintextMessageJava),
     Encrypted(EncryptedMessageJava),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct PlaintextMessageJava {
     mime_type: String,
     content: MessageContentJava,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 enum MessageContentJava {
     String(String),
     Bytes(Vec<u8>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct EncryptedMessageJava {
     aes_gcm_payload: Vec<u8>,
     curve_decryptor_sets: Vec<CurveDecryptorSetJava>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct CurveDecryptorSetJava {
     dh_ephemeral_public_key: PublicKey,
     decryptors: Vec<DecryptorJava>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct DecryptorJava {
     public_key_fingerprint: Vec<u8>,
     aes_wrapped_key: Vec<u8>,
@@ -236,17 +231,17 @@ impl From<CurveDecryptorSetJava> for DecryptorsByCurve {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct PrepareSignedIntentRequest {
-    intent_bytes: Vec<u8>,
+    intent_bytes: RawTransactionIntent,
     signatures: Vec<SignatureWithPublicKeyV1>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct PrepareSignedIntentResponse {
-    signed_intent_bytes: Vec<u8>,
-    intent_hash: IntentHash,
-    signed_intent_hash: SignedIntentHash,
+    signed_intent_bytes: RawSignedTransactionIntent,
+    intent_hash: TransactionIntentHash,
+    signed_intent_hash: SignedTransactionIntentHash,
 }
 
 #[no_mangle]
@@ -260,7 +255,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSign
         request_payload,
         |request: PrepareSignedIntentRequest| -> Result<PrepareSignedIntentResponse, StringError> {
             let signed_intent = SignedIntentV1 {
-                intent: IntentV1::from_payload_bytes(&request.intent_bytes)?,
+                intent: IntentV1::from_raw(&request.intent_bytes)?,
                 intent_signatures: IntentSignaturesV1 {
                     signatures: request
                         .signatures
@@ -270,20 +265,20 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSign
                 },
             };
 
-            let prepared_signed_intent = signed_intent.prepare()?;
+            let prepared_signed_intent = signed_intent.prepare(&PreparationSettings::latest())?;
 
             Ok(PrepareSignedIntentResponse {
-                signed_intent_bytes: signed_intent.to_payload_bytes()?,
-                intent_hash: prepared_signed_intent.intent_hash(),
-                signed_intent_hash: prepared_signed_intent.signed_intent_hash(),
+                signed_intent_bytes: signed_intent.to_raw()?,
+                intent_hash: prepared_signed_intent.transaction_intent_hash(),
+                signed_intent_hash: prepared_signed_intent.signed_transaction_intent_hash(),
             })
         },
     )
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct PrepareNotarizedTransactionRequest {
-    signed_intent_bytes: Vec<u8>,
+    signed_intent_bytes: RawSignedTransactionIntent,
     notary_signature: SignatureV1,
 }
 
@@ -291,8 +286,8 @@ struct PrepareNotarizedTransactionRequest {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode)]
 pub struct JavaPreparedNotarizedTransaction {
     pub notarized_transaction_bytes: RawNotarizedTransaction,
-    pub intent_hash: IntentHash,
-    pub signed_intent_hash: SignedIntentHash,
+    pub intent_hash: TransactionIntentHash,
+    pub signed_intent_hash: SignedTransactionIntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
 }
 
@@ -303,19 +298,19 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareNota
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |request: PrepareNotarizedTransactionRequest| -> Result<JavaPreparedNotarizedTransaction, StringError> {
-        let signed_intent = SignedIntentV1::from_payload_bytes(&request.signed_intent_bytes)?;
+        let signed_intent = SignedIntentV1::from_raw(&request.signed_intent_bytes)?;
 
         let notarized_transaction = NotarizedTransactionV1 {
             signed_intent,
             notary_signature: NotarySignatureV1(request.notary_signature),
         };
 
-        let prepared = notarized_transaction.prepare()?;
+        let prepared = notarized_transaction.prepare(&PreparationSettings::latest())?;
 
         Ok(JavaPreparedNotarizedTransaction {
-            notarized_transaction_bytes: RawNotarizedTransaction(notarized_transaction.to_payload_bytes()?),
-            intent_hash: prepared.intent_hash(),
-            signed_intent_hash: prepared.signed_intent_hash(),
+            notarized_transaction_bytes: notarized_transaction.to_raw()?,
+            intent_hash: prepared.transaction_intent_hash(),
+            signed_intent_hash: prepared.signed_transaction_intent_hash(),
             notarized_transaction_hash: prepared.notarized_transaction_hash(),
         })
     })
@@ -331,8 +326,8 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_userTransac
         &env,
         request_payload,
         |payload: RawNotarizedTransaction| -> Result<RawLedgerTransaction, StringError> {
-            let notarized_transaction = NotarizedTransactionV1::from_raw(&payload)?;
-            Ok(LedgerTransaction::UserV1(Box::new(notarized_transaction)).to_raw()?)
+            let ledger_transaction = LedgerTransaction::from(payload.into_typed()?);
+            Ok(ledger_transaction.to_raw()?)
         },
     )
 }

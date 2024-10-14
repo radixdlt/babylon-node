@@ -62,13 +62,7 @@
  * permissions under this License.
  */
 
-use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
-use crate::accumulator_tree::storage::{
-    AccuTreeStore, ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore,
-};
-use crate::accumulator_tree::tree_builder::AccuTree;
-use crate::accumulator_tree::IsMerklizableHash;
-use crate::{AccuTreeDiff, CollectingAccuTreeStore, StateVersion};
+use crate::prelude::*;
 
 /// A factory of accu tree utilities operating under the "accu tree per epoch" approach (where the
 /// first leaf of the next epoch's tree is an auto-inserted root of the previous epoch's tree).
@@ -172,6 +166,7 @@ impl<'s, S: AccuTreeStore<StateVersion, N>, N: IsMerklizableHash> EpochAccuTreeB
     /// Appends the next leaf to the epoch's accu tree.
     /// This method will handle a special case of an epoch that was just started (which requires
     /// inserting the previous epoch's root as the first leaf of this epoch's tree).
+    #[allow(unused)]
     pub fn append(&mut self, new_leaf_hash: N) {
         self.append_batch(vec![new_leaf_hash]);
     }

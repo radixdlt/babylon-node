@@ -1,12 +1,6 @@
-use crate::engine_prelude::*;
-use node_common::store::rocks_db::ReadableRocks;
+use crate::prelude::*;
 use serde::Serialize;
-use state_manager::store::rocks_db::StateManagerDatabase;
-use state_manager::store::traits::*;
-use state_manager::LedgerHeader;
 use std::io::Write;
-
-use super::*;
 
 #[allow(unused)]
 pub(crate) fn read_typed_substate(
@@ -16,7 +10,7 @@ pub(crate) fn read_typed_substate(
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
 ) -> Result<Option<models::Substate>, MappingError> {
-    let Some(raw_value) = database.get_substate(
+    let Some(raw_value) = database.get_raw_substate_by_db_key(
         &SpreadPrefixKeyMapper::to_db_partition_key(node_id, partition_number),
         &SpreadPrefixKeyMapper::to_db_sort_key(substate_key),
     ) else {
@@ -120,7 +114,7 @@ pub(crate) fn read_optional_substate<D: ScryptoDecode>(
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
 ) -> Option<D> {
-    database.get_mapped::<SpreadPrefixKeyMapper, D>(node_id, partition_number, substate_key)
+    database.get_substate::<D>(node_id, partition_number, substate_key)
 }
 
 #[tracing::instrument(skip_all)]

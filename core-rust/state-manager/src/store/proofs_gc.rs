@@ -62,29 +62,10 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use node_common::locks::DbLock;
-use std::ops::Deref;
-use std::sync::Arc;
-use std::time::Duration;
-use tracing::{error, info};
-
-use crate::store::traits::gc::{
-    LedgerProofsGcProgress, LedgerProofsGcProgressV1, LedgerProofsGcStore,
-};
-use crate::store::traits::proofs::QueryableProofStore;
-
-use crate::jni::LedgerSyncLimitsConfig;
-use crate::store::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
-use crate::store::traits::GetSyncableTxnsAndProofError::{
-    FailedToPrepareAResponseWithinLimits, NothingToServeAtTheGivenStateVersion,
-    RefusedToServeGenesis, RefusedToServeProtocolUpdate,
-};
-use crate::{LedgerProof, StateVersion};
-use node_common::store::rocks_db::ReadableRocks;
+use crate::prelude::*;
 
 /// A configuration for [`LedgerProofsGc`].
-#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
+#[derive(Debug, Clone, Default, Sbor)]
 pub struct LedgerProofsGcConfig {
     /// How often to run the GC, in seconds.
     /// Since this GC operates with an epoch precision, we do not need to run more often than epoch
@@ -248,11 +229,11 @@ impl LedgerProofsGc {
                 }
                 Err(err) => {
                     match err {
-                        NothingToServeAtTheGivenStateVersion => {
+                        GetSyncableTxnsAndProofError::NothingToServeAtTheGivenStateVersion => {
                             // No more proofs
                             return None;
                         }
-                        RefusedToServeGenesis { refused_proof } => {
+                        GetSyncableTxnsAndProofError::RefusedToServeGenesis { refused_proof } => {
                             // We have encountered the genesis proof, which shouldn't be pruned.
                             // Skipping to the next (post-proof) state version.
                             skipped_proofs += 1;
@@ -263,7 +244,9 @@ impl LedgerProofsGc {
                                 .expect("state version overflow");
                             continue;
                         }
-                        RefusedToServeProtocolUpdate { refused_proof } => {
+                        GetSyncableTxnsAndProofError::RefusedToServeProtocolUpdate {
+                            refused_proof,
+                        } => {
                             // Similarly here, we're skipping all protocol update
                             // state versions and retrying from the next (post-update)
                             // version in the next iteration.
@@ -275,7 +258,7 @@ impl LedgerProofsGc {
                                 .expect("state version overflow");
                             continue;
                         }
-                        FailedToPrepareAResponseWithinLimits => {
+                        GetSyncableTxnsAndProofError::FailedToPrepareAResponseWithinLimits => {
                             // That's an error
                             error!(
                                 "A chain of transactions-without-proof from state version {} does not fit within the limits {:?}; aborting the GC",
@@ -308,16 +291,8 @@ impl ProofPruneRange {
 
 #[cfg(test)]
 mod tests {
-    use crate::engine_prelude::*;
-    use crate::jni::LedgerSyncLimitsConfig;
-    use crate::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
-    use crate::protocol::*;
-    use crate::store::traits::proofs::QueryableProofStore;
-    use crate::store::traits::GetSyncableTxnsAndProofError;
+    use super::*;
     use crate::test::{commit_round_updates_until_epoch, create_state_manager};
-    use crate::{StateManagerConfig, StateVersion};
-
-    use std::time::Duration;
 
     #[test]
     fn test_retain_protocol_update_proofs() {

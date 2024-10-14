@@ -62,40 +62,12 @@
  * permissions under this License.
  */
 
-use std::collections::HashSet;
-use std::path::PathBuf;
+use crate::prelude::*;
 
-use node_common::rocksdb::{ColumnFamilyDescriptor, Direction, IteratorMode, Options, DB};
-use tracing::{error, info, warn};
-
-use node_common::locks::Snapshottable;
-use node_common::utils::IsAccountExt;
-
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::engine_prelude::*;
-use crate::query::TransactionIdentifierLoader;
 use crate::store::column_families::*;
 use crate::store::historical_state::StateTreeBasedSubstateDatabase;
-use crate::store::traits::extensions::*;
-use crate::store::traits::gc::{LedgerProofsGcProgress, LedgerProofsGcStore, StateTreeGcStore};
-use crate::store::traits::indices::{
-    CreationId, EntityBlueprintId, EntityListingIndex, ObjectBlueprintNameV1,
-};
-use crate::store::traits::measurement::{CategoryDbVolumeStatistic, MeasurableDatabase};
-use crate::store::traits::scenario::{
-    ExecutedScenario, ExecutedScenarioStore, ScenarioSequenceNumber,
-};
 use crate::store::traits::*;
-use crate::transaction::{
-    LedgerTransactionHash, RawLedgerTransaction, TypedTransactionIdentifiers,
-};
-use crate::{
-    BySubstate, CommittedTransactionIdentifiers, LedgerProof, LedgerProofOrigin,
-    LedgerTransactionReceipt, LocalTransactionExecution, LocalTransactionReceipt, ReceiptTreeHash,
-    StateVersion, SubstateChangeAction, TransactionTreeHash,
-};
-use node_common::store::rocks_db::*;
-use node_common::store::typed_cf_api::*;
+use rocksdb::*;
 
 /// A listing of all column family names used by the Node.
 ///
@@ -425,7 +397,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         let substate_leaf_keys = substate_database.iter_substate_leaf_keys();
         for (tree_node_key, (partition_key, sort_key)) in substate_leaf_keys {
             let value = self
-                .get_substate(&partition_key, &sort_key)
+                .get_raw_substate_by_db_key(&partition_key, &sort_key)
                 .expect("substate value referenced by hash tree does not exist");
             associated_values_cf.put(&tree_node_key, &value);
             if db_context.buffered_data_size() >= SUBSTATE_BATCH_BYTE_SIZE {
@@ -525,14 +497,12 @@ impl<R: WriteableRocks> CommitStore for StateManagerDatabase<R> {
         let commit_state_version = commit_ledger_header.state_version;
 
         for transaction_bundle in commit_bundle.transactions {
-            let payload_identifiers = &transaction_bundle.identifiers.payload;
-            if let TypedTransactionIdentifiers::User { intent_hash, .. } =
-                &payload_identifiers.typed
-            {
-                processed_intent_hashes.insert(*intent_hash);
+            let hashes = &transaction_bundle.identifiers.transaction_hashes;
+            if let Some(user_hashes) = hashes.as_user() {
+                processed_intent_hashes.insert(user_hashes.transaction_intent_hash);
                 user_transactions_count += 1;
             }
-            processed_ledger_transaction_hashes.insert(payload_identifiers.ledger_transaction_hash);
+            processed_ledger_transaction_hashes.insert(hashes.ledger_transaction_hash);
             self.add_transaction_to_write_batch(&db_context, transaction_bundle);
         }
 
@@ -668,29 +638,30 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
             receipt,
             identifiers,
         } = transaction_bundle;
-        let ledger_transaction_hash = identifiers.payload.ledger_transaction_hash;
+        let ledger_transaction_hash = identifiers.transaction_hashes.ledger_transaction_hash;
 
         // TEMPORARY until this is handled in the engine: we store both an intent lookup and the transaction itself
-        if let TypedTransactionIdentifiers::User {
-            intent_hash,
+        if let Some(UserTransactionHashes {
+            transaction_intent_hash,
             notarized_transaction_hash,
             ..
-        } = &identifiers.payload.typed
+        }) = identifiers.transaction_hashes.as_user().as_ref()
         {
             /* For user transactions we only need to check for duplicate intent hashes to know
             that user payload hash and ledger payload hash are also unique. */
 
-            let maybe_existing_state_version = db_context.cf(IntentHashesCf).get(intent_hash);
+            let maybe_existing_state_version =
+                db_context.cf(IntentHashesCf).get(transaction_intent_hash);
             if let Some(existing_state_version) = maybe_existing_state_version {
                 panic!(
                     "Attempted to save intent hash {:?} which already exists at state version {:?}",
-                    intent_hash, existing_state_version
+                    transaction_intent_hash, existing_state_version
                 );
             }
 
             db_context
                 .cf(IntentHashesCf)
-                .put(intent_hash, &state_version);
+                .put(transaction_intent_hash, &state_version);
             db_context
                 .cf(NotarizedTransactionHashesCf)
                 .put(notarized_transaction_hash, &state_version);
@@ -905,10 +876,10 @@ impl<R: ReadableRocks> QueryableTransactionStore for StateManagerDatabase<R> {
     }
 }
 
-impl<R: ReadableRocks> TransactionIndex<&IntentHash> for StateManagerDatabase<R> {
+impl<R: ReadableRocks> TransactionIndex<&TransactionIntentHash> for StateManagerDatabase<R> {
     fn get_txn_state_version_by_identifier(
         &self,
-        intent_hash: &IntentHash,
+        intent_hash: &TransactionIntentHash,
     ) -> Option<StateVersion> {
         self.open_read_context().cf(IntentHashesCf).get(intent_hash)
     }
@@ -1072,7 +1043,7 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
                     {
                         match txns_iter.next() {
                             Some((next_txn_state_version, next_txn)) => {
-                                payload_size_including_next_proof_txns += next_txn.0.len() as u32;
+                                payload_size_including_next_proof_txns += next_txn.len() as u32;
                                 next_proof_txns.push(next_txn);
 
                                 if next_txn_state_version == next_proof_state_version {
@@ -1216,7 +1187,7 @@ impl<R: CheckpointableRocks> StateManagerDatabase<R> {
 }
 
 impl<R: ReadableRocks> SubstateDatabase for StateManagerDatabase<R> {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
@@ -1226,7 +1197,7 @@ impl<R: ReadableRocks> SubstateDatabase for StateManagerDatabase<R> {
             .get(&(partition_key.clone(), sort_key.clone()))
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,

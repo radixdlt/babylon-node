@@ -63,20 +63,22 @@ pub fn to_api_access_rule(
 
 pub fn to_api_access_rule_node(
     context: &MappingContext,
-    access_rule: &AccessRuleNode,
+    composite_requirement: &CompositeRequirement,
 ) -> Result<models::AccessRuleNode, MappingError> {
-    Ok(match access_rule {
-        AccessRuleNode::ProofRule(proof_rule) => models::AccessRuleNode::ProofAccessRuleNode {
-            proof_rule: Box::new(to_api_proof_rule(context, proof_rule)?),
-        },
-        AccessRuleNode::AnyOf(access_rules) => models::AccessRuleNode::AnyOfAccessRuleNode {
-            access_rules: access_rules
+    Ok(match composite_requirement {
+        CompositeRequirement::BasicRequirement(requirement) => {
+            models::AccessRuleNode::ProofAccessRuleNode {
+                proof_rule: Box::new(to_api_proof_rule(context, requirement)?),
+            }
+        }
+        CompositeRequirement::AnyOf(requirements) => models::AccessRuleNode::AnyOfAccessRuleNode {
+            access_rules: requirements
                 .iter()
                 .map(|ar| to_api_access_rule_node(context, ar))
                 .collect::<Result<_, _>>()?,
         },
-        AccessRuleNode::AllOf(access_rules) => models::AccessRuleNode::AllOfAccessRuleNode {
-            access_rules: access_rules
+        CompositeRequirement::AllOf(requirements) => models::AccessRuleNode::AllOfAccessRuleNode {
+            access_rules: requirements
                 .iter()
                 .map(|ar| to_api_access_rule_node(context, ar))
                 .collect::<Result<_, _>>()?,
@@ -86,23 +88,29 @@ pub fn to_api_access_rule_node(
 
 pub fn to_api_proof_rule(
     context: &MappingContext,
-    proof_rule: &ProofRule,
+    requirement: &BasicRequirement,
 ) -> Result<models::ProofRule, MappingError> {
-    Ok(match proof_rule {
-        ProofRule::Require(resource_or_non_fungible) => models::ProofRule::RequireProofRule {
-            requirement: Box::new(to_api_requirement(context, resource_or_non_fungible)?),
-        },
-        ProofRule::AmountOf(amount, resource) => models::ProofRule::AmountOfProofRule {
+    Ok(match requirement {
+        BasicRequirement::Require(resource_or_non_fungible) => {
+            models::ProofRule::RequireProofRule {
+                requirement: Box::new(to_api_requirement(context, resource_or_non_fungible)?),
+            }
+        }
+        BasicRequirement::AmountOf(amount, resource) => models::ProofRule::AmountOfProofRule {
             amount: to_api_decimal(amount),
             resource: to_api_resource_address(context, resource)?,
         },
-        ProofRule::AllOf(resource_or_non_fungible_list) => models::ProofRule::AllOfProofRule {
-            list: to_api_resource_or_non_fungible_list(context, resource_or_non_fungible_list)?,
-        },
-        ProofRule::AnyOf(resource_or_non_fungible_list) => models::ProofRule::AnyOfProofRule {
-            list: to_api_resource_or_non_fungible_list(context, resource_or_non_fungible_list)?,
-        },
-        ProofRule::CountOf(count, resource_or_non_fungible_list) => {
+        BasicRequirement::AllOf(resource_or_non_fungible_list) => {
+            models::ProofRule::AllOfProofRule {
+                list: to_api_resource_or_non_fungible_list(context, resource_or_non_fungible_list)?,
+            }
+        }
+        BasicRequirement::AnyOf(resource_or_non_fungible_list) => {
+            models::ProofRule::AnyOfProofRule {
+                list: to_api_resource_or_non_fungible_list(context, resource_or_non_fungible_list)?,
+            }
+        }
+        BasicRequirement::CountOf(count, resource_or_non_fungible_list) => {
             models::ProofRule::CountOfProofRule {
                 count: *count as i32,
                 list: to_api_resource_or_non_fungible_list(context, resource_or_non_fungible_list)?,

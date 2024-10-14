@@ -46,14 +46,12 @@ impl MappingContext {
 
 pub struct ExtractionContext {
     pub address_decoder: AddressBech32Decoder,
-    pub transaction_hash_decoder: TransactionHashBech32Decoder,
 }
 
 impl ExtractionContext {
     pub fn new(network_definition: &NetworkDefinition) -> Self {
         Self {
             address_decoder: AddressBech32Decoder::new(network_definition),
-            transaction_hash_decoder: TransactionHashBech32Decoder::new(network_definition),
         }
     }
 }

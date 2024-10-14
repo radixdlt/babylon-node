@@ -64,17 +64,13 @@
 
 use std::path::PathBuf;
 
-use node_common::rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use crate::prelude::*;
+use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 
 use crate::address_book_components::*;
 use crate::column_families::*;
-use crate::components::NodeSecp256k1PublicKey;
-use crate::engine_prelude::*;
 use crate::migration::MigrationStatus;
 use crate::safety_store_components::SafetyState;
-use crate::traits::node::{AddressBookStore, HighPriorityPeersStore, SafetyStateStore};
-use node_common::store::rocks_db::*;
-use node_common::store::typed_cf_api::*;
 
 /// A listing of all column family names used by the Node.
 ///
@@ -172,7 +168,7 @@ impl<R: WriteableRocks> AddressBookStore for AddressBookDatabase<R> {
         let binding = open_rw_context(&self.rocks);
         let context = binding.cf(AddressBookCf);
 
-        context.put(node_id, &entry);
+        context.put(node_id, entry);
 
         true
     }
@@ -203,7 +199,7 @@ impl<R: WriteableRocks> HighPriorityPeersStore for AddressBookDatabase<R> {
     fn upsert_all_high_priority_peers(&self, peers: &HighPriorityPeers) {
         open_rw_context(&self.rocks)
             .cf(HighPriorityPeersCf)
-            .put(&(), &peers);
+            .put(&(), peers);
     }
 
     fn get_all_high_priority_peers(&self) -> Option<HighPriorityPeers> {

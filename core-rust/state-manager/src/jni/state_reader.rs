@@ -87,13 +87,13 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getValidatorProtocolU
         request_payload,
         |validator_address: ComponentAddress| -> JavaResult<Option<String>> {
             let database = JNINodeRustEnvironment::get_database(&env, j_node_rust_env);
-            let result = database
-                .snapshot()
-                .get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ValidatorProtocolUpdateReadinessSignalFieldPayload>>(
-                    &validator_address.into_node_id(),
-                    MAIN_BASE_PARTITION,
-                    &ValidatorField::ProtocolUpdateReadinessSignal.into()
-                );
+            let result = database.snapshot().get_substate::<FieldSubstate<
+                ValidatorProtocolUpdateReadinessSignalFieldPayload,
+            >>(
+                validator_address,
+                MAIN_BASE_PARTITION,
+                ValidatorField::ProtocolUpdateReadinessSignal,
+            );
             Ok(result.and_then(|f| {
                 f.into_payload()
                     .fully_update_and_into_latest_version()
@@ -114,10 +114,10 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getConsensusManagerCo
         let database = JNINodeRustEnvironment::get_database(&env, j_node_rust_env);
         let substate = database
             .snapshot()
-            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerConfigurationFieldSubstate>(
-                CONSENSUS_MANAGER.as_node_id(),
+            .get_substate::<ConsensusManagerConfigurationFieldSubstate>(
+                CONSENSUS_MANAGER,
                 MAIN_BASE_PARTITION,
-                &ConsensusManagerField::Configuration.into(),
+                ConsensusManagerField::Configuration,
             )
             .expect("Missing ConsensusManagerConfigurationFieldSubstate");
         let consensus_manager_config = substate
@@ -142,10 +142,10 @@ extern "system" fn Java_com_radixdlt_state_RustStateReader_getConsensusManagerSt
         let database = JNINodeRustEnvironment::get_database(&env, j_node_rust_env);
         let substate = database
             .snapshot()
-            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerStateFieldSubstate>(
-                CONSENSUS_MANAGER.as_node_id(),
+            .get_substate::<ConsensusManagerStateFieldSubstate>(
+                CONSENSUS_MANAGER,
                 MAIN_BASE_PARTITION,
-                &ConsensusManagerField::State.into(),
+                ConsensusManagerField::State,
             )
             .expect("Missing ConsensusManagerStateFieldSubstate");
         let consensus_manager_state = substate

@@ -62,15 +62,9 @@
  * permissions under this License.
  */
 
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-
-use crate::engine_prelude::*;
-use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use node_common::java::*;
+use crate::jni_prelude::*;
 use p2p::address_book_components::HighPriorityPeers;
-use p2p::traits::node::HighPriorityPeersStore;
+use p2p::traits::HighPriorityPeersStore;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_p2p_RocksDbHighPriorityPeersStore_upsertAllHighPriorityPeers(

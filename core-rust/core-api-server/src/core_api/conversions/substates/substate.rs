@@ -20,6 +20,10 @@ pub fn to_api_substate(
         TypedSubstateValue::BootLoader(BootLoaderSubstateValue::Kernel(kernel_boot_substate)) => {
             to_api_kernel_boot_substate(context, state_mapping_lookups, kernel_boot_substate)?
         }
+        TypedSubstateValue::BootLoader(BootLoaderSubstateValue::TransactionValidation(_)) => {
+            todo!()
+        }
+        TypedSubstateValue::ProtocolUpdateStatus(_) => todo!(),
         TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, state_mapping_lookups, type_info_substate)?,

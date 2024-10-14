@@ -62,9 +62,9 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
-#[derive(Debug, ScryptoSbor)]
+#[derive(Debug, Sbor)]
 pub struct JavaError(pub String);
 
 impl From<DecodeError> for JavaError {

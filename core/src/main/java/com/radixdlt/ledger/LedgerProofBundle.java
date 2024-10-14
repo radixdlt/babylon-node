@@ -79,12 +79,12 @@ public record LedgerProofBundle(
     LedgerProof primaryProof,
     // Latest (with respect to `primaryProof`) epoch change proof.
     // Could be the `primaryProof` itself.
-    LedgerProof closestEpochProofOnOrBefore,
+    LedgerProof latestProofWhichInitiatedAnEpochChange,
     // Latest (with respect to primaryProof) proof that initiated a protocol update.
     // Could be the `primaryProof` itself.
-    Option<LedgerProof> closestProtocolUpdateInitProofOnOrBefore,
+    Option<LedgerProof> latestProofWhichInitiatedAProtocolUpdate,
     // Latest (with respect to `primaryProof`) proof of ProtocolUpdate `origin`.
-    Option<LedgerProof> closestProtocolUpdateExecutionProofOnOrBefore) {
+    Option<LedgerProof> latestProtocolUpdateExecutionProof) {
 
   public static LedgerProofBundle mockedOfHeader(com.radixdlt.consensus.LedgerHeader ledgerHeader) {
     final var proof =
@@ -101,20 +101,20 @@ public record LedgerProofBundle(
    * proof created during the protocol update.
    */
   public LedgerHeader epochInitialHeader() {
-    return closestProtocolUpdateExecutionProofOnOrBefore
+    return latestProtocolUpdateExecutionProof
         .map(
             protocolUpdateExecutionProof -> {
-              // If we have executed some protocol updates, check if the latest
+              // If we have executed some protocoxl updates, check if the latest
               // proof we have is actually newer than the real epoch proof.
               // If so, use it instead of an epoch proof.
               if (protocolUpdateExecutionProof.stateVersion()
-                  >= closestEpochProofOnOrBefore.stateVersion()) {
+                  >= latestProofWhichInitiatedAnEpochChange.stateVersion()) {
                 return protocolUpdateExecutionProof.ledgerHeader();
               } else {
-                return closestEpochProofOnOrBefore.ledgerHeader();
+                return latestProofWhichInitiatedAnEpochChange.ledgerHeader();
               }
             })
-        .orElse(closestEpochProofOnOrBefore.ledgerHeader());
+        .orElse(latestProofWhichInitiatedAnEpochChange.ledgerHeader());
   }
 
   /**
@@ -129,7 +129,7 @@ public record LedgerProofBundle(
           case LedgerProofOrigin.ProtocolUpdate protocolUpdate ->
           // This assumes that protocol updates always happen at epoch boundary
           // (which is true, for now)
-          closestProtocolUpdateInitProofOnOrBefore.unwrap().ledgerHeader();
+          latestProofWhichInitiatedAProtocolUpdate.unwrap().ledgerHeader();
         };
 
     return maybeEpochChangeHeader.nextEpoch().isPresent()
@@ -138,7 +138,12 @@ public record LedgerProofBundle(
   }
 
   public long resultantEpoch() {
-    return closestEpochProofOnOrBefore.ledgerHeader().nextEpoch().unwrap().epoch().toLong();
+    return latestProofWhichInitiatedAnEpochChange
+        .ledgerHeader()
+        .nextEpoch()
+        .unwrap()
+        .epoch()
+        .toLong();
   }
 
   public long resultantStateVersion() {
@@ -161,7 +166,7 @@ public record LedgerProofBundle(
       // Since protocol updates can't themselves trigger another protocol update,
       // this is guaranteed to be a consensus (or, possibly in some testing corner case, genesis)
       // proof.
-      closestProtocolUpdateInitProofOnOrBefore().unwrap();
+      latestProofWhichInitiatedAProtocolUpdate().unwrap();
     };
   }
 }

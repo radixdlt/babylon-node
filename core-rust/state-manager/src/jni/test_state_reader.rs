@@ -62,29 +62,13 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome, StateVersion};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use std::ops::Deref;
-
-use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::query::StateManagerSubstateQueries;
-use node_common::java::*;
-
-use crate::store::traits::measurement::MeasurableDatabase;
-use crate::store::traits::{
-    gc::StateTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
-    SubstateNodeAncestryStore,
-};
-use crate::transaction::LedgerTransactionHash;
+use crate::jni_prelude::*;
 
 //
 // JNI Interface (for test purposes only)
 //
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 struct ExecutedTransaction {
     ledger_transaction_hash: LedgerTransactionHash,
     outcome: TransactionOutcomeJava,
@@ -93,19 +77,19 @@ struct ExecutedTransaction {
     transaction_bytes: Vec<u8>,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 struct TransactionDetails {
     new_component_addresses: IndexSet<ComponentAddress>,
     new_resource_addresses: IndexSet<ResourceAddress>,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub enum TransactionOutcomeJava {
     Success,
     Failure,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct JavaValidatorInfo {
     pub stake_unit_resource: ResourceAddress,
     pub claim_resource: ResourceAddress,
@@ -134,7 +118,9 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
                 database.get_committed_local_transaction_execution(state_version)?;
 
             Some(ExecutedTransaction {
-                ledger_transaction_hash: committed_identifiers.payload.ledger_transaction_hash,
+                ledger_transaction_hash: committed_identifiers
+                    .transaction_hashes
+                    .ledger_transaction_hash,
                 outcome: match committed_ledger_transaction_receipt.outcome {
                     LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
                     LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,
@@ -147,7 +133,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
                     &committed_ledger_transaction_receipt.get_consensus_receipt(),
                 )
                 .unwrap(),
-                transaction_bytes: committed_transaction.0,
+                transaction_bytes: committed_transaction.to_vec(),
             })
         },
     )
@@ -199,10 +185,10 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
 
             // a quick fix for handling virtual accounts
             if database
-                .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                .get_substate::<TypeInfoSubstate>(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
+                    TypeInfoField::TypeInfo,
                 )
                 .is_some()
             {
@@ -231,10 +217,10 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let validator_state = database
                 .snapshot()
-                .get_mapped::<SpreadPrefixKeyMapper, ValidatorStateFieldSubstate>(
-                    validator_address.as_node_id(),
+                .get_substate::<ValidatorStateFieldSubstate>(
+                    validator_address,
                     MAIN_BASE_PARTITION,
-                    &ValidatorField::State.into(),
+                    ValidatorField::State,
                 )
                 .unwrap()
                 .into_payload()

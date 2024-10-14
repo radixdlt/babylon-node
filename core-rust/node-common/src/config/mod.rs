@@ -62,9 +62,11 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
-pub mod limits;
+mod limits;
+
+pub use limits::*;
 
 // Note: this is a hard limit on the raw network size of all transactions represented by the mempool.
 // However, the implementation may keep extra information (i.e. the same transaction but validated/prepared)
@@ -72,7 +74,7 @@ pub mod limits;
 pub const DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE: u64 = 512 * 1024 * 1024;
 pub const DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT: u32 = 10_000;
 
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
+#[derive(Debug, Clone, Sbor)]
 pub struct MempoolConfig {
     pub max_total_transactions_size: u64,
     pub max_transaction_count: u32,
