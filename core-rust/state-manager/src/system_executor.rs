@@ -62,30 +62,11 @@
  * permissions under this License.
  */
 
-use crate::query::*;
+use crate::prelude::*;
 
-use crate::store::traits::*;
-use crate::transaction::*;
-
-use crate::*;
-
-use crate::engine_prelude::*;
-
-use node_common::locks::DbLock;
-
-use tracing::info;
-
-use crate::store::traits::scenario::{
-    DescribedAddressRendering, ExecutedScenario, ExecutedScenarioStore, ExecutedScenarioTransaction,
-};
 use crate::system_commits::*;
 
-use crate::protocol::{ProtocolUpdateNodeBatch, ProtocolVersionName};
-use crate::store::rocks_db::ActualStateManagerDatabase;
-use crate::store::traits::scenario::ExecutedScenarioV1;
-use radix_transaction_scenarios::scenarios::ALL_SCENARIOS;
-use std::sync::Arc;
-use std::time::Instant;
+use radix_transaction_scenarios::scenarios::get_scenario;
 
 pub struct SystemExecutor {
     network: NetworkDefinition,
@@ -122,7 +103,7 @@ impl SystemExecutor {
         faucet_supply: Decimal,
         genesis_scenarios: Vec<String>,
     ) -> LedgerProof {
-        let start_instant = Instant::now();
+        let start_instant = StdInstant::now();
 
         let database = self.database.lock();
         if database.get_post_genesis_epoch_proof().is_some() {
@@ -184,8 +165,7 @@ impl SystemExecutor {
                 index + 1,
                 genesis_data_chunks_len
             );
-            let transaction =
-                create_genesis_data_ingestion_transaction(&GENESIS_HELPER, chunk, index);
+            let transaction = create_genesis_data_ingestion_transaction(chunk, index);
             let prepare_result = self
                 .preparator
                 .prepare_genesis(GenesisTransaction::Transaction(Box::new(transaction)));
@@ -214,7 +194,7 @@ impl SystemExecutor {
     pub fn execute_protocol_update_action(
         &self,
         protocol_version: &ProtocolVersionName,
-        batch_idx: u32,
+        batch_index: usize,
         batch: ProtocolUpdateNodeBatch,
     ) {
         let database = self.database.lock();
@@ -240,13 +220,13 @@ impl SystemExecutor {
             state_version: latest_header.state_version,
             proof_origin: LedgerProofOrigin::ProtocolUpdate {
                 protocol_version_name: protocol_version.clone(),
-                batch_idx,
+                batch_index: batch_index as u32,
             },
         };
 
         match batch {
-            ProtocolUpdateNodeBatch::FlashTransactions(flash_transactions) => {
-                let prepare_result = self.preparator.prepare_protocol_update(flash_transactions);
+            ProtocolUpdateNodeBatch::ProtocolUpdateBatch(batch) => {
+                let prepare_result = self.preparator.prepare_protocol_update(batch);
                 let commit_request = system_commit_request_factory.create(prepare_result);
                 self.committer.commit_system(commit_request);
             }
@@ -359,20 +339,17 @@ impl SystemExecutor {
         starting_nonce: u32,
         scenario_name: &str,
     ) -> Box<dyn ScenarioInstance> {
-        ALL_SCENARIOS
-            .get(scenario_name)
-            .expect(scenario_name)
-            .create(ScenarioCore::new(
-                self.network.clone(),
-                epoch,
-                starting_nonce,
-            ))
+        get_scenario(scenario_name).create(ScenarioCore::new(
+            self.network.clone(),
+            epoch,
+            starting_nonce,
+        ))
     }
 
     fn create_executed_scenario_entry(
         &self,
         logical_name: &str,
-        committed_transactions: &[RawAndValidatedTransaction],
+        committed_transactions: &[ProcessedLedgerTransaction],
         committed_transaction_names: Vec<(StateVersion, String)>,
         output: ScenarioOutput,
     ) -> ExecutedScenario {
@@ -386,7 +363,11 @@ impl SystemExecutor {
                     |(transaction, (state_version, logical_name))| ExecutedScenarioTransaction {
                         logical_name,
                         state_version,
-                        intent_hash: transaction.validated.intent_hash_if_user().unwrap(),
+                        transaction_intent_hash: transaction
+                            .hashes
+                            .as_user()
+                            .unwrap()
+                            .transaction_intent_hash,
                     },
                 )
                 .collect(),
@@ -419,7 +400,7 @@ fn log_executed_scenario_details(executed_scenario: &ExecutedScenario) {
         let ExecutedScenarioTransaction {
             logical_name,
             state_version,
-            intent_hash,
+            transaction_intent_hash: intent_hash,
         } = committed_transaction;
         info!(
             "Committed {} at state version {} ({:?})",
@@ -452,7 +433,7 @@ impl SystemExecutor {
         let genesis_chunks = vec![
             GenesisDataChunk::Validators(vec![genesis_validator.clone()]),
             GenesisDataChunk::Stakes {
-                accounts: vec![ComponentAddress::virtual_account_from_public_key(
+                accounts: vec![ComponentAddress::preallocated_account_from_public_key(
                     &genesis_validator.key,
                 )],
                 allocations: vec![(
@@ -499,14 +480,7 @@ impl SystemExecutor {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
-
-    use crate::engine_prelude::*;
-    use crate::transaction::{LedgerTransaction, RoundUpdateTransactionV1};
-    use crate::{
-        LedgerProof, PrepareRequest, PrepareResult, RoundHistory, StateManager, StateManagerConfig,
-    };
-    use node_common::config::limits::VertexLimitsConfig;
+    use super::*;
 
     use crate::test::create_state_manager;
     use tempfile::TempDir;
@@ -561,7 +535,7 @@ mod tests {
                     .lock_fee_from_faucet()
                     .get_free_xrd_from_faucet()
                     .try_deposit_entire_worktop_or_abort(
-                        ComponentAddress::virtual_account_from_public_key(
+                        ComponentAddress::preallocated_account_from_public_key(
                             &sig_1_private_key.public_key(),
                         ),
                         None,
@@ -637,36 +611,41 @@ mod tests {
             .transaction_executor_factory
             .start_series_execution(database.deref());
 
-        let round_update = RoundUpdateTransactionV1::new(
+        let round_update = create_round_update_transaction(
             series_executor.epoch_header(),
             &prepare_request.round_history,
         );
         let ledger_round_update = LedgerTransaction::RoundUpdateV1(Box::new(round_update));
-        let validated_round_update = state_manager
-            .ledger_transaction_validator
-            .validate_user_or_round_update_from_model(&ledger_round_update)
+        let round_update_executable = ledger_round_update
+            .to_raw()
+            .unwrap()
+            .create_identifiable_ledger_executable(
+                state_manager.transaction_validator.read().deref(),
+                AcceptedLedgerTransactionKind::UserOrValidator,
+            )
             .expect("expected to be able to prepare the round update transaction");
 
         let round_update_result = series_executor
-            .execute_and_update_state(&validated_round_update, "cost computation - round update")
+            .execute_and_update_state(
+                &round_update_executable.executable,
+                &round_update_executable.hashes,
+                "cost computation - round update",
+            )
             .expect("round update rejected");
 
         prepare_request
             .proposed_transactions
             .iter()
             .map(|raw_user_transaction| {
-                let (_, prepared_transaction) = state_manager
+                let (_, executable, hashes) = state_manager
                     .preparator
-                    .try_prepare_ledger_transaction_from_user_transaction(raw_user_transaction)
-                    .unwrap();
+                    .prepare_known_valid_raw_user_transaction(raw_user_transaction);
 
-                let validated = state_manager
-                    .ledger_transaction_validator
-                    .validate_user_or_round_update(prepared_transaction)
-                    .unwrap();
-
-                let execute_result =
-                    series_executor.execute_and_update_state(&validated, "cost computation");
+                let execute_result = series_executor.execute_and_update_state(
+                    &executable,
+                    &hashes,
+                    "cost computation",
+                );
 
                 match execute_result {
                     Ok(commit) => {

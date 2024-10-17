@@ -62,26 +62,15 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use node_common::locks::DbLock;
+use crate::prelude::*;
 use std::iter;
-use std::ops::Deref;
-use std::sync::Arc;
-use std::time::Duration;
-use tracing::info;
-
-use crate::store::rocks_db::ActualStateManagerDatabase;
-use crate::store::traits::gc::StateTreeGcStore;
-use crate::store::traits::proofs::QueryableProofStore;
-use crate::store::traits::StaleTreePartsV1;
-use crate::{StateVersion, StateVersionDelta};
 
 /// A maximum number of JMT nodes collected into "batch delete" buffer.
 /// Needed only to avoid OOM problems.
 const DELETED_NODE_BUFFER_MAX_LEN: usize = 1000000;
 
 /// A configuration for [`StateTreeGc`].
-#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
+#[derive(Debug, Clone, Default, Sbor)]
 pub struct StateTreeGcConfig {
     /// How often to run the GC, in seconds.
     /// This should be at least an order of magnitude shorter than an expected duration over which

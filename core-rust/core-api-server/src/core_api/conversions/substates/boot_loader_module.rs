@@ -13,6 +13,7 @@ pub fn to_api_system_boot_substate(
         SystemBoot::V1(system_parameters) => models::BootLoaderModuleFieldSystemBootValue::new(
             to_api_system_parameters(context, system_parameters)?,
         ),
+        SystemBoot::V2(..) => todo!(),
     };
 
     Ok(models::Substate::BootLoaderModuleFieldSystemBootSubstate {
@@ -46,6 +47,7 @@ pub fn to_api_kernel_boot_substate(
     let value = match substate {
         // Note: this is how OpenAPI generator represents an empty object type, even when named:
         KernelBoot::V1 => serde_json::Value::Object(serde_json::Map::default()),
+        KernelBoot::V2(_) => todo!(),
     };
 
     Ok(models::Substate::BootLoaderModuleFieldKernelBootSubstate {
@@ -105,8 +107,8 @@ fn to_api_network_definition(
     } = network_definition;
     Ok(models::NetworkDefinition {
         id: to_api_u8_as_i32(*id),
-        logical_name: logical_name.clone(),
-        hrp_suffix: hrp_suffix.clone(),
+        logical_name: logical_name.to_string(),
+        hrp_suffix: hrp_suffix.to_string(),
     })
 }
 

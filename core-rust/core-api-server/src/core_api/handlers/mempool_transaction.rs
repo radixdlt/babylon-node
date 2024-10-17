@@ -1,4 +1,4 @@
-use crate::core_api::*;
+use crate::prelude::*;
 
 pub(crate) async fn handle_mempool_transaction(
     state: State<CoreApiState>,
@@ -29,7 +29,9 @@ pub(crate) async fn handle_mempool_transaction(
                 .map_err(|err| err.into_response_error("payload_hashes"))?;
 
         let (hex, error) = match mempool.get_payload(&payload_hash) {
-            Some(mempool_transaction) => (Some(hex::encode(&mempool_transaction.raw.0)), None),
+            Some(mempool_transaction) => {
+                (Some(hex::encode(mempool_transaction.raw.as_slice())), None)
+            }
             None => (None, Some("Payload hash not found in mempool".into())),
         };
 

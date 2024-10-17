@@ -1,13 +1,4 @@
-use crate::engine_prelude::*;
-use node_common::store::rocks_db::ReadableRocks;
-use state_manager::store::rocks_db::StateManagerDatabase;
-use state_manager::store::traits::SubstateNodeAncestryStore;
-use state_manager::{
-    CommittedTransactionIdentifiers, LedgerTransactionOutcome, LocalTransactionReceipt,
-    StateVersion, TransactionTreeHash,
-};
-
-use crate::core_api::*;
+use crate::prelude::*;
 
 #[tracing::instrument(skip_all)]
 pub fn to_api_lts_committed_transaction_outcome(
@@ -30,24 +21,28 @@ pub fn to_api_lts_committed_transaction_outcome(
             &identifiers.resultant_ledger_hashes.transaction_root,
         ),
         user_transaction_identifiers: identifiers
-            .payload
-            .typed
-            .user()
+            .transaction_hashes
+            .as_user()
             .map(|hashes| {
                 Ok(Box::new(models::TransactionIdentifiers {
-                    intent_hash: to_api_intent_hash(hashes.intent_hash),
-                    intent_hash_bech32m: to_api_hash_bech32m(context, hashes.intent_hash)?,
-                    signed_intent_hash: to_api_signed_intent_hash(hashes.signed_intent_hash),
+                    intent_hash: to_api_transaction_intent_hash(&hashes.transaction_intent_hash),
+                    intent_hash_bech32m: to_api_hash_bech32m(
+                        context,
+                        &hashes.transaction_intent_hash,
+                    )?,
+                    signed_intent_hash: to_api_signed_transaction_intent_hash(
+                        &hashes.signed_transaction_intent_hash,
+                    ),
                     signed_intent_hash_bech32m: to_api_hash_bech32m(
                         context,
-                        hashes.signed_intent_hash,
+                        &hashes.signed_transaction_intent_hash,
                     )?,
                     payload_hash: to_api_notarized_transaction_hash(
-                        hashes.notarized_transaction_hash,
+                        &hashes.notarized_transaction_hash,
                     ),
                     payload_hash_bech32m: to_api_hash_bech32m(
                         context,
-                        hashes.notarized_transaction_hash,
+                        &hashes.notarized_transaction_hash,
                     )?,
                 }))
             })

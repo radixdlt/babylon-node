@@ -1,9 +1,4 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::query::{dump_component_state, VaultData};
-
-use std::ops::Deref;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
@@ -43,7 +38,7 @@ pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     );
 
     if type_info.is_none() {
-        if component_address.as_node_id().is_global_virtual() {
+        if component_address.as_node_id().is_global_preallocated() {
             return Ok(Json(
                 models::LtsStateAccountAllFungibleResourceBalancesResponse {
                     state_version: to_api_state_version(header.state_version)?,

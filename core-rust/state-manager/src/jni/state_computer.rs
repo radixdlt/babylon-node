@@ -62,24 +62,13 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::protocol::ProtocolVersionName;
-use crate::{protocol::ProtocolState, CommitSummary, LedgerProof};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-
-use node_common::java::*;
-
-use crate::types::{CommitRequest, InvalidCommitRequestError, PrepareRequest, PrepareResult};
-
-use super::node_rust_environment::JNINodeRustEnvironment;
+use crate::jni_prelude::*;
 
 //
 // JNI Interface
 //
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct JavaGenesisData {
     pub initial_epoch: Epoch,
     pub initial_timestamp_ms: i64,
@@ -89,7 +78,7 @@ pub struct JavaGenesisData {
     pub scenarios_to_run: Vec<String>,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct JavaConsensusManagerConfig {
     pub max_validators: u32,
     pub epoch_min_round_count: u64,

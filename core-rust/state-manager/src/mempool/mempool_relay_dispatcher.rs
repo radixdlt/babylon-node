@@ -110,7 +110,7 @@ impl MempoolRelayDispatcher {
             MempoolRelayDispatcher::TRIGGER_METHOD_DESCRIPTOR,
             &[JValue::Object(JObject::from(jni_slice_to_jbytearray(
                 env,
-                &transaction.0,
+                transaction.as_slice(),
             )))],
         );
         if result.is_err() && env.exception_check()? {

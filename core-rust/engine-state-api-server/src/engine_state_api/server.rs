@@ -62,6 +62,7 @@
  * permissions under this License.
  */
 
+use crate::prelude::*;
 use std::future::Future;
 use std::sync::Arc;
 
@@ -76,9 +77,8 @@ use axum::{
     Router,
 };
 
-use crate::engine_prelude::*;
 use prometheus::Registry;
-use state_manager::StateManager;
+use state_manager::state_manager::StateManager;
 use tower_http::catch_panic::CatchPanicLayer;
 
 use super::{handlers::*, ResponseError};

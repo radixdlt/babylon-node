@@ -1,10 +1,4 @@
-use crate::engine_state_api::*;
-
-use crate::engine_prelude::*;
-
-use crate::engine_state_api::factories::EngineStateLoaderFactory;
-use crate::engine_state_api::handlers::HandlerPagingSupport;
-use state_manager::historical_state::VersionScopingSupport;
+use crate::prelude::*;
 
 pub(crate) async fn handle_kv_store_iterator(
     state: State<EngineStateApiState>,
@@ -31,7 +25,8 @@ pub(crate) async fn handle_kv_store_iterator(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let loader_factory = EngineStateLoaderFactory::new(&database).ensure_instantiated(&node_id);
+    let loader_factory = EngineStateLoaderFactory::new(state.network.clone(), &database)
+        .ensure_instantiated(&node_id);
 
     let meta_loader = loader_factory.create_meta_loader();
     let EntityMeta::KeyValueStore(kv_store_meta) = meta_loader.load_entity_meta(&node_id)? else {

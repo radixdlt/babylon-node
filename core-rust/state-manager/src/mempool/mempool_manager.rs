@@ -62,22 +62,10 @@
  * permissions under this License.
  */
 
-use super::metrics::MempoolManagerMetrics;
-use crate::mempool::priority_mempool::*;
-use crate::mempool::*;
-use crate::MempoolAddSource;
-use node_common::metrics::TakesMetricLabels;
-use prometheus::Registry;
+use crate::prelude::*;
 
-use std::collections::HashSet;
-use std::sync::Arc;
 use std::time::Instant;
 
-use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
-
-use crate::mempool::metrics::MempoolAddResult;
-use crate::transaction::{CachedCommittabilityValidator, ForceRecalculation};
-use node_common::locks::RwLock;
 use tracing::warn;
 
 /// A high-level API giving a thread-safe access to the `PriorityMempool`.
@@ -94,7 +82,7 @@ impl MempoolManager {
         mempool: Arc<RwLock<PriorityMempool>>,
         relay_dispatcher: MempoolRelayDispatcher,
         cached_committability_validator: CachedCommittabilityValidator,
-        metric_registry: &Registry,
+        metric_registry: &MetricRegistry,
     ) -> Self {
         Self {
             mempool,
@@ -108,7 +96,7 @@ impl MempoolManager {
     pub fn new_for_testing(
         mempool: Arc<RwLock<PriorityMempool>>,
         cached_committability_validator: CachedCommittabilityValidator,
-        metric_registry: &Registry,
+        metric_registry: &MetricRegistry,
     ) -> Self {
         Self {
             mempool,
@@ -152,7 +140,7 @@ impl MempoolManager {
         candidate_transactions
             .into_iter()
             .filter(|transaction| {
-                let increased_payload_size = payload_size_so_far + transaction.raw.0.len() as u64;
+                let increased_payload_size = payload_size_so_far + transaction.raw.len() as u64;
                 let fits = increased_payload_size <= max_payload_size_bytes;
                 if fits {
                     payload_size_so_far = increased_payload_size;
@@ -176,7 +164,10 @@ impl MempoolManager {
         for candidate_transaction in candidate_transactions {
             // invoking the check automatically removes the transaction when rejected
             self.cached_committability_validator
-                .check_for_rejection_validated(&candidate_transaction.transaction.validated);
+                .check_for_rejection_validated(
+                    &candidate_transaction.transaction.executable,
+                    &candidate_transaction.transaction.hashes,
+                );
         }
     }
 
@@ -234,11 +225,11 @@ impl MempoolManager {
             .prepare_from_raw(&raw_transaction)
         {
             Ok(prepared) => prepared,
-            Err(validation_error) => {
+            Err(prepare_error) => {
                 // If the transaction fails to prepare at this point then we don't even have a hash to assign against it,
                 // so we can't cache anything - just return an error
                 return Err(MempoolAddError::Rejected(
-                    MempoolAddRejection::for_static_rejection(validation_error),
+                    MempoolAddRejection::for_static_rejection(prepare_error.into()),
                 ));
             }
         };
@@ -269,20 +260,22 @@ impl MempoolManager {
 
         // STEP 4 - We check if the result should mean we add the transaction to our mempool
         let PendingExecutedTransaction {
-            transaction,
+            executable,
+            user_hashes,
             latest_attempt_against_state,
         } = record
             .should_accept_into_mempool(check_result)
             .map_err(MempoolAddError::Rejected)?;
 
         let mempool_transaction = Arc::new(MempoolTransaction {
-            validated: transaction,
+            executable,
+            hashes: user_hashes,
             raw: raw_transaction,
         });
         match self.mempool.write().add_transaction_if_not_present(
             mempool_transaction.clone(),
             source,
-            Instant::now(),
+            StdInstant::now(),
             latest_attempt_against_state.committed_version(),
         ) {
             Ok(_evicted) => Ok(mempool_transaction),
@@ -293,7 +286,10 @@ impl MempoolManager {
     /// Removes all the transactions that have the given intent hashes.
     /// This method is meant to be called for transactions that were successfully committed - and
     /// this assumption is important for metric correctness.
-    pub fn remove_committed<'a>(&self, intent_hashes: impl IntoIterator<Item = &'a IntentHash>) {
+    pub fn remove_committed<'a>(
+        &self,
+        intent_hashes: impl IntoIterator<Item = &'a TransactionIntentHash>,
+    ) {
         let mut write_mempool = self.mempool.write();
         let removed = intent_hashes
             .into_iter()

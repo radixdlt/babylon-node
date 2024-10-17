@@ -1,8 +1,4 @@
-use crate::engine_prelude::*;
-use crate::engine_state_api::*;
-
-use crate::engine_state_api::factories::EngineStateLoaderFactory;
-use state_manager::historical_state::VersionScopingSupport;
+use crate::prelude::*;
 
 pub(crate) async fn handle_blueprint_info(
     state: State<EngineStateApiState>,
@@ -34,7 +30,7 @@ pub(crate) async fn handle_blueprint_info(
         .database
         .snapshot()
         .scoped_at(requested_state_version)?;
-    let loader_factory = EngineStateLoaderFactory::new(&database);
+    let loader_factory = EngineStateLoaderFactory::new(state.network.clone(), &database);
 
     let blueprint_meta = loader_factory
         .create_meta_loader()

@@ -1,23 +1,13 @@
-use axum::body::BoxBody;
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
-};
-use models::stream_proofs_error_details::StreamProofsErrorDetails;
+use crate::prelude::*;
 use std::any::Any;
 
-use crate::engine_prelude::*;
-use hyper::StatusCode;
 use tower_http::catch_panic::ResponseForPanic;
 
-use super::{models, CoreApiState};
-use crate::core_api::models::StreamTransactionsErrorDetails;
 use models::{
     lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
+    stream_proofs_error_details::StreamProofsErrorDetails,
     transaction_submit_error_details::TransactionSubmitErrorDetails,
 };
-use state_manager::historical_state::StateHistoryError;
-use state_manager::transaction::PreviewerError;
 
 /// A marker trait for custom error details
 pub trait ErrorDetails: serde::Serialize + Debug + Sized {
@@ -76,7 +66,7 @@ impl ErrorDetails for LtsTransactionSubmitErrorDetails {
     }
 }
 
-impl ErrorDetails for StreamTransactionsErrorDetails {
+impl ErrorDetails for models::StreamTransactionsErrorDetails {
     fn to_error_response(
         details: Option<Self>,
         code: i32,

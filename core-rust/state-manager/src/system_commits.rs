@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::transaction::*;
-use crate::*;
+use crate::prelude::*;
 
 pub struct SystemCommitRequestFactory {
     pub epoch: Epoch,
@@ -117,7 +115,7 @@ impl SystemCommitRequestFactory {
 
 /// An input to [`SystemCommitRequestFactory::create()`].
 pub struct SystemPrepareResult {
-    pub committed_transactions: Vec<RawAndValidatedTransaction>,
+    pub committed_transactions: Vec<ProcessedLedgerTransaction>,
     pub ledger_hashes: LedgerHashes,
     pub next_epoch: Option<NextEpoch>,
 }
@@ -126,7 +124,7 @@ impl SystemPrepareResult {
     /// Creates an instance for committing the given pre-validated transactions, using the current
     /// end-state of the given series executor.
     pub fn from_committed_series(
-        committed_transactions: Vec<RawAndValidatedTransaction>,
+        committed_transactions: Vec<ProcessedLedgerTransaction>,
         series_executor: TransactionSeriesExecutor<impl Sized>,
     ) -> Self {
         Self {
@@ -139,7 +137,7 @@ impl SystemPrepareResult {
 
 /// An output from [`SystemCommitRequestFactory::create()`].
 pub struct SystemCommitRequest {
-    pub transactions: Vec<RawAndValidatedTransaction>,
+    pub transactions: Vec<ProcessedLedgerTransaction>,
     pub proof: LedgerProof,
     pub require_committed_successes: bool,
 }
@@ -152,7 +150,8 @@ impl SystemCommitRequest {
     }
 }
 
-pub struct RawAndValidatedTransaction {
+pub struct ProcessedLedgerTransaction {
     pub raw: RawLedgerTransaction,
-    pub validated: ValidatedLedgerTransaction,
+    pub executable: LedgerExecutable,
+    pub hashes: LedgerTransactionHashes,
 }

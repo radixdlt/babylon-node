@@ -440,7 +440,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
           test.getInstance(0, REv2TransactionsAndProofReader.class)
               .getLatestProofBundle()
               .orElseThrow()
-              .closestProtocolUpdateInitProofOnOrBefore()
+              .latestProofWhichInitiatedAProtocolUpdate()
               .unwrap()
               .stateVersion();
 

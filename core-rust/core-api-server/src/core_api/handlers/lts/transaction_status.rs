@@ -1,15 +1,4 @@
-use std::collections::{HashMap, HashSet};
-
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::{
-    AlreadyCommittedError, DetailedTransactionOutcome, MempoolRejectionReason, StateVersion,
-};
-
-use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
-use state_manager::query::StateManagerSubstateQueries;
-use state_manager::store::traits::*;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_transaction_status(
@@ -21,7 +10,7 @@ pub(crate) async fn handle_lts_transaction_status(
     let mapping_context = MappingContext::new_for_uncommitted_data(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
 
-    let intent_hash = extract_intent_hash(&extraction_context, request.intent_hash)
+    let intent_hash = extract_transaction_intent_hash(&extraction_context, request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
     let pending_transaction_result_cache =
@@ -57,11 +46,10 @@ pub(crate) async fn handle_lts_transaction_status(
     });
 
     if let Some(txn_state_version) = txn_state_version_opt {
-        let identifiers = database
+        let hashes = database
             .get_committed_transaction_identifiers(txn_state_version)
             .expect("Txn identifiers are missing")
-            .payload
-            .typed;
+            .transaction_hashes;
 
         let local_detailed_outcome = database
             .get_committed_local_transaction_execution(txn_state_version)
@@ -69,13 +57,13 @@ pub(crate) async fn handle_lts_transaction_status(
             .outcome;
         drop(database);
 
-        let user_identifiers = identifiers
-            .user()
+        let user_hashes = hashes
+            .as_user()
             .expect("Only user transactions should be able to be looked up by intent hash");
-        let notarized_transaction_hash = user_identifiers.notarized_transaction_hash;
+        let notarized_transaction_hash = user_hashes.notarized_transaction_hash;
 
         // Remove the committed payload from the rejection list if it's present
-        known_pending_payloads.remove(notarized_transaction_hash);
+        known_pending_payloads.remove(&notarized_transaction_hash);
 
         let (intent_status, payload_status, outcome, error_message) = match local_detailed_outcome {
             DetailedTransactionOutcome::Success(_) => (
@@ -94,11 +82,11 @@ pub(crate) async fn handle_lts_transaction_status(
 
         let committed_payload = models::LtsTransactionPayloadDetails {
             payload_hash: to_api_notarized_transaction_hash(
-                user_identifiers.notarized_transaction_hash,
+                &user_hashes.notarized_transaction_hash,
             ),
             payload_hash_bech32m: to_api_hash_bech32m(
                 &mapping_context,
-                user_identifiers.notarized_transaction_hash,
+                &user_hashes.notarized_transaction_hash,
             )?,
             state_version: Some(to_api_state_version(txn_state_version)?),
             status: payload_status,
@@ -110,7 +98,7 @@ pub(crate) async fn handle_lts_transaction_status(
             &mapping_context,
             known_pending_payloads,
             txn_state_version,
-            notarized_transaction_hash,
+            &notarized_transaction_hash,
         )?);
 
         return Ok(Json(models::LtsTransactionStatusResponse {

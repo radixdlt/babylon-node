@@ -62,12 +62,7 @@
  * permissions under this License.
  */
 
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-
-use crate::engine_prelude::*;
-use crate::java::utils::jni_sbor_coded_call;
+use crate::jni_prelude::*;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress(

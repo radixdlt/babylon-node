@@ -62,26 +62,13 @@
  * permissions under this License.
  */
 
-use std::cmp::min;
+use crate::prelude::*;
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
-use crate::limits::VertexLimitsExceeded;
-use crate::transaction::{LeaderRoundCounter, RawLedgerTransaction};
-use crate::{ProcessedCommitResult, StateVersion, ValidatorId};
-use node_common::config::limits::*;
-use node_common::locks::{LockFactory, Mutex};
-use node_common::metrics::*;
 use prometheus::{
     Gauge, GaugeVec, Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
 };
-
-use crate::engine_prelude::*;
-use crate::protocol::{
-    PendingProtocolUpdateState, ProtocolState, ProtocolUpdateEnactmentCondition,
-};
-use crate::store::traits::measurement::CategoryDbVolumeStatistic;
-use crate::store::traits::QueryableProofStore;
 
 pub struct LedgerMetrics {
     address_encoder: AddressBech32Encoder, // for label rendering only
@@ -150,7 +137,7 @@ impl LedgerMetrics {
                     "committed_transactions_size",
                     "Size in bytes of committed transactions.",
                 ),
-                higher_resolution_for_lower_values_buckets_for_limit(MAX_TRANSACTION_SIZE),
+                higher_resolution_for_lower_values_buckets_for_limit(PreparationSettings::latest().max_ledger_payload_length),
             )
             .registered_at(registry),
             execution_cost_units_consumed: new_histogram(
@@ -324,7 +311,7 @@ pub struct TransactionMetricsData {
 impl TransactionMetricsData {
     pub fn new(raw: &RawLedgerTransaction, commit_result: &ProcessedCommitResult) -> Self {
         TransactionMetricsData {
-            size: raw.0.len(),
+            size: raw.len(),
             fee_summary: commit_result
                 .local_receipt
                 .local_execution
@@ -889,18 +876,22 @@ impl OverallLedgerHealthFactor {
     }
 
     /// Calculates the current value of the overall ledger health factor.
+    ///
     /// This is a proper fraction representation, where:
     /// - 0.0 means "critically unhealthy",
     /// - 1.0 means "fully healthy",
     /// - intermediate fractions mean some level of warning.
+    ///
     /// Implementation wise, the result depends on the "syncing rate" and "proposal reliability".
     fn calculate(&self) -> f64 {
         self.syncing_factor() * self.proposal_reliability_factor()
     }
 
     /// Calculates the health factor part related to ledger-syncing.
+    ///
     /// If the ledger is synced (i.e. the latest committed proposer timestamp is close to the
     /// wall-clock), then the result is "fully healthy" (i.e. 1.0).
+    ///
     /// Otherwise, the health factor depends on the proposer timestamp's progress rate (see
     /// [`HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE`] and [`MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE`]).
     fn syncing_factor(&self) -> f64 {
@@ -934,7 +925,7 @@ impl OverallLedgerHealthFactor {
 
 /// A simplified "overall ledger health" (see [`OverallLedgerHealthFactor::syncing_factor()`]).
 /// This enum is meant to be surfaced from a `/system/health` API.
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub enum LedgerStatus {
     /// Ledger is fully synced, i.e. the last committed proposer timestamp is closer than
     /// [`SYNCED_LEDGER_MAX_DELAY_SEC`] to wallclock.
@@ -949,7 +940,7 @@ pub enum LedgerStatus {
 
 /// A recent statistic on a number of successful/missed proposals.
 /// This information is meant to be surfaced from a `/system/health` API.
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct RecentSelfProposalMissStatistic {
     /// A number of missed proposals among [`recent_proposals_tracked_count`] most recent ones.
     missed_count: u64,

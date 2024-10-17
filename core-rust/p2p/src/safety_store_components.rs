@@ -62,11 +62,10 @@
  * permissions under this License.
  */
 
-use crate::components::{NodeSecp256k1PublicKey, NodeSignature};
-use crate::engine_prelude::*;
+use crate::prelude::*;
 use sbor::define_single_versioned;
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct SafetyStateV1 {
     validator_id: BFTValidatorId,
     round: Round,
@@ -74,7 +73,7 @@ pub struct SafetyStateV1 {
 }
 
 define_single_versioned! {
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub VersionedSafetyState(SafetyStateVersions) => SafetyState = SafetyStateV1
 }
 
@@ -92,30 +91,26 @@ define_single_versioned! {
 // )]
 type SafetyStateTimestamp = i64;
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct BFTHeader {
     round: Round,
     vertex_id: VertexId,
     ledger_header: LedgerHeader,
 }
 
-#[derive(
-    Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Ord, PartialOrd, Eq, PartialEq,
-)]
+#[derive(Debug, Clone, ScryptoSbor, Ord, PartialOrd, Eq, PartialEq)]
 pub struct BFTValidator {
     power: Vec<u8>,
     validator_id: BFTValidatorId,
 }
 
-#[derive(
-    Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, Ord, PartialOrd, Eq, PartialEq,
-)]
+#[derive(Debug, Clone, ScryptoSbor, Ord, PartialOrd, Eq, PartialEq)]
 pub struct BFTValidatorId {
     key: NodeSecp256k1PublicKey,
     validator_address: ComponentAddress,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct HighQC {
     highest_quorum_certificate: QuorumCertificate,
     highest_committed_quorum_certificate: QuorumCertificate,
@@ -125,7 +120,7 @@ pub struct HighQC {
 // FIXME: A duplicate of LedgerHeader from StateManager.
 // Made separate te reference only types within this module. De-duplication requires
 // careful merging of the other referenced types as well.
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct LedgerHeader {
     epoch: i64,
     round: Round,
@@ -137,7 +132,7 @@ pub struct LedgerHeader {
     next_protocol_version: Option<String>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct LedgerHashes {
     pub state_root: RawHash,
     pub transaction_root: RawHash,
@@ -148,47 +143,47 @@ define_wrapped_hash! {
     RawHash
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct NextEpoch {
     epoch: i64,
     validators: Vec<BFTValidator>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct QuorumCertificate {
     signatures: TimestampedECDSASignatures,
     vote_data: VoteData,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct Round {
     round: i64,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct TimeoutCertificate {
     epoch: i64,
     round: Round,
     signatures: TimestampedECDSASignatures,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct TimestampedECDSASignature {
     timestamp: SafetyStateTimestamp,
     signature: NodeSignature,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct TimestampedECDSASignatures {
     node_to_timestamped_signature: BTreeMap<BFTValidatorId, TimestampedECDSASignature>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct VertexId {
     id_bytes: Vec<u8>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct Vote {
     author: BFTValidatorId,
     high_quorum_certificate: HighQC,
@@ -198,7 +193,7 @@ pub struct Vote {
     timeout_signature: Option<NodeSignature>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct VoteData {
     proposed: BFTHeader,
     parent: BFTHeader,

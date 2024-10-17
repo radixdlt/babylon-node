@@ -62,32 +62,13 @@
  * permissions under this License.
  */
 
-use crate::mempool_manager::MempoolManager;
-use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
-use crate::store::traits::*;
-use crate::transaction::*;
-use crate::types::CommitRequest;
-use crate::*;
+use crate::prelude::*;
 
-use crate::engine_prelude::*;
-
-use node_common::locks::{DbLock, RwLock};
-
-use tracing::warn;
-
-use crate::protocol::*;
 use crate::system_commits::*;
-
-use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-
-use crate::store::rocks_db::ActualStateManagerDatabase;
-use std::ops::Deref;
-use std::sync::Arc;
-use std::time::SystemTime;
 
 pub struct Committer {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-    ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+    validator: Arc<RwLock<TransactionValidator>>,
     transaction_executor_factory: Arc<TransactionExecutorFactory>,
     mempool_manager: Arc<MempoolManager>,
     execution_cache_manager: Arc<ExecutionCacheManager>,
@@ -101,7 +82,7 @@ impl Committer {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         transaction_executor_factory: Arc<TransactionExecutorFactory>,
-        ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+        ledger_transaction_validator: Arc<RwLock<TransactionValidator>>,
         mempool_manager: Arc<MempoolManager>,
         execution_cache_manager: Arc<ExecutionCacheManager>,
         pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
@@ -110,7 +91,7 @@ impl Committer {
     ) -> Self {
         Self {
             database,
-            ledger_transaction_validator,
+            validator: ledger_transaction_validator,
             transaction_executor_factory,
             mempool_manager,
             execution_cache_manager,
@@ -153,9 +134,7 @@ impl Committer {
             .ledger_header
             .proposer_timestamp_ms;
         for (index, raw_transaction) in transactions.iter().enumerate() {
-            let result = self
-                .ledger_transaction_validator
-                .prepare_from_raw(raw_transaction);
+            let result = raw_transaction.prepare(self.validator.read().preparation_settings());
             let prepared_transaction = match result {
                 Ok(prepared_transaction) => prepared_transaction,
                 Err(error) => {
@@ -167,12 +146,20 @@ impl Committer {
                 }
             };
 
-            if let PreparedLedgerTransactionInner::RoundUpdateV1(_) = &prepared_transaction.inner {
-                let round_update = LedgerTransaction::from_raw(raw_transaction)
+            if let PreparedLedgerTransactionInner::Validator(_) = &prepared_transaction.inner {
+                let ledger_transaction = LedgerTransaction::from_raw(raw_transaction)
                     .expect("the same transaction was parsed fine above");
-                if let LedgerTransaction::RoundUpdateV1(round_update) = round_update {
-                    leader_round_counters_builder.update(&round_update.leader_proposal_history);
-                    proposer_timestamp_ms = round_update.proposer_timestamp_ms;
+                match ledger_transaction {
+                    LedgerTransaction::RoundUpdateV1(round_update) => {
+                        leader_round_counters_builder.update(&round_update.leader_proposal_history);
+                        proposer_timestamp_ms = round_update.proposer_timestamp_ms;
+                    }
+                    LedgerTransaction::Genesis(_)
+                    | LedgerTransaction::UserV1(_)
+                    | LedgerTransaction::FlashV1(_)
+                    | LedgerTransaction::UserV2(_) => {
+                        panic!("A validator transaction can only be a RoundUpdate")
+                    }
                 }
             }
 
@@ -224,22 +211,27 @@ impl Committer {
             .zip(prepared_transactions)
             .zip(proposer_timestamps)
         {
-            let validated = self
-                .ledger_transaction_validator
-                .validate_user_or_round_update(prepared)
+            let validated = prepared
+                .validate(
+                    self.validator.read().deref(),
+                    AcceptedLedgerTransactionKind::UserOrValidator,
+                )
                 .unwrap_or_else(|error| {
                     panic!("cannot validate transaction to be committed: {error:?}");
                 });
 
+            let hashes = validated.create_hashes();
+            let executable = validated.create_ledger_executable();
+
             let commit = series_executor
-                .execute_and_update_state(&validated, "prepared")
+                .execute_and_update_state(&executable, &hashes, "prepared")
                 .expect("cannot execute transaction to be committed");
 
-            if let ValidatedLedgerTransactionInner::UserV1(user_transaction) = &validated.inner {
+            if let Some(user_hashes) = hashes.as_user() {
                 committed_user_transactions.push(CommittedUserTransactionIdentifiers {
                     state_version: series_executor.latest_state_version(),
-                    intent_hash: user_transaction.intent_hash(),
-                    notarized_transaction_hash: user_transaction.notarized_transaction_hash(),
+                    transaction_intent_hash: user_hashes.transaction_intent_hash,
+                    notarized_transaction_hash: user_hashes.notarized_transaction_hash,
                 });
             }
             transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
@@ -248,7 +240,7 @@ impl Committer {
                 series_executor.latest_state_version(),
                 proposer_timestamp_ms,
                 raw,
-                validated,
+                hashes,
                 commit,
             );
         }
@@ -278,7 +270,7 @@ impl Committer {
         self.mempool_manager.remove_committed(
             committed_user_transactions
                 .iter()
-                .map(|txn| &txn.intent_hash),
+                .map(|txn| &txn.transaction_intent_hash),
         );
 
         if let Some(epoch_change) = epoch_change {
@@ -326,9 +318,14 @@ impl Committer {
 
         let mut commit_bundle_builder = series_executor.start_commit_builder();
         let mut transactions_metrics_data = Vec::new();
-        for RawAndValidatedTransaction { raw, validated } in transactions {
+        for ProcessedLedgerTransaction {
+            raw,
+            executable,
+            hashes,
+        } in transactions
+        {
             let mut commit = series_executor
-                .execute_and_update_state(&validated, "system transaction")
+                .execute_and_update_state(&executable, &hashes, "system transaction")
                 .expect("cannot execute system transaction");
             if require_committed_successes {
                 commit = commit.expect_success("system transaction not successful");
@@ -339,7 +336,7 @@ impl Committer {
                 series_executor.latest_state_version(),
                 proposer_timestamp_ms,
                 raw,
-                validated,
+                hashes,
                 commit,
             );
         }
@@ -494,6 +491,6 @@ impl Committer {
 
 pub struct CommittedUserTransactionIdentifiers {
     pub state_version: StateVersion,
-    pub intent_hash: IntentHash,
+    pub transaction_intent_hash: TransactionIntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
 }

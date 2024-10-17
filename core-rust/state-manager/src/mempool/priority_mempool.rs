@@ -62,21 +62,13 @@
  * permissions under this License.
  */
 
-use node_common::config::MempoolConfig;
-use node_common::metrics::TakesMetricLabels;
-use prometheus::Registry;
+use crate::prelude::*;
 use rand::seq::index::sample;
-use tracing::warn;
-
-use crate::{mempool::*, StateVersion};
 
 use std::cmp::{max, min, Ordering};
-use std::collections::{HashMap, HashSet};
 
 use node_common::indexing::SecondaryIndex;
 use std::ops::Index;
-use std::sync::Arc;
-use std::time::Instant;
 
 use super::metrics::MempoolMetrics;
 
@@ -95,7 +87,7 @@ pub struct MempoolData {
     /// it as part of mempool operations.
     pub transaction: Arc<MempoolTransaction>,
     /// The instant at which the transaction was added to the mempool.
-    pub added_at: Instant,
+    pub added_at: StdInstant,
     /// The source of the transaction.
     pub source: MempoolAddSource,
     /// The state version of this transaction's last successful execution.
@@ -104,54 +96,46 @@ pub struct MempoolData {
 
 #[derive(Debug, Clone, Eq, PartialEq)] // (`Eq` for tests only)
 pub struct MempoolTransaction {
-    pub validated: Box<ValidatedNotarizedTransactionV1>,
+    pub executable: ExecutableTransaction,
+    pub hashes: UserTransactionHashes,
     pub raw: RawNotarizedTransaction,
 }
 
 impl MempoolTransaction {
-    pub fn tip_percentage(&self) -> u16 {
-        self.validated
-            .prepared
-            .signed_intent
-            .intent
-            .header
-            .inner
-            .tip_percentage
+    pub fn tip_basis_points(&self) -> u32 {
+        self.executable.costing_parameters().tip.basis_points()
     }
 
     pub fn end_epoch_exclusive(&self) -> Epoch {
-        self.validated
-            .prepared
-            .signed_intent
-            .intent
-            .header
-            .inner
+        self.executable
+            .overall_epoch_range()
+            .expect("User tranasctions must have an epoch validity range")
             .end_epoch_exclusive
     }
 }
 
-impl HasIntentHash for MempoolTransaction {
-    fn intent_hash(&self) -> IntentHash {
-        self.validated.prepared.intent_hash()
+impl HasTransactionIntentHash for MempoolTransaction {
+    fn transaction_intent_hash(&self) -> TransactionIntentHash {
+        self.hashes.transaction_intent_hash
     }
 }
 
-impl HasSignedIntentHash for MempoolTransaction {
-    fn signed_intent_hash(&self) -> SignedIntentHash {
-        self.validated.prepared.signed_intent_hash()
+impl HasSignedTransactionIntentHash for MempoolTransaction {
+    fn signed_transaction_intent_hash(&self) -> SignedTransactionIntentHash {
+        self.hashes.signed_transaction_intent_hash
     }
 }
 
 impl HasNotarizedTransactionHash for MempoolTransaction {
     fn notarized_transaction_hash(&self) -> NotarizedTransactionHash {
-        self.validated.prepared.notarized_transaction_hash()
+        self.hashes.notarized_transaction_hash
     }
 }
 
 impl MempoolData {
     fn new(
         transaction: Arc<MempoolTransaction>,
-        added_at: Instant,
+        added_at: StdInstant,
         source: MempoolAddSource,
         successfully_executed_at: StateVersion,
     ) -> Self {
@@ -166,18 +150,18 @@ impl MempoolData {
 
 /// A transaction's proposal priority.
 ///
-/// The greatest element (i.e. the one with the *highest* `tip_percentage`, and then the *oldest*
-/// `added_at`) marks the "best" transaction (i.e. the one to be executed first).
+/// The greatest element (i.e. the one with the *highest* [`tip_basis_points`][Self::tip_basis_points],
+/// and then the *oldest* `added_at`) marks the "best" transaction (i.e. the one to be executed first).
 #[derive(Clone, Eq, PartialEq)]
 struct ProposalPriority {
-    tip_percentage: u16,
-    added_at: Instant,
+    tip_basis_points: u32,
+    added_at: StdInstant,
 }
 
 impl Ord for ProposalPriority {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.tip_percentage
-            .cmp(&other.tip_percentage)
+        self.tip_basis_points
+            .cmp(&other.tip_basis_points)
             // Note: the `reverse()` below is deliberate; this is why we cannot do `#[derive(Ord)]`
             .then_with(|| self.added_at.cmp(&other.added_at).reverse())
     }
@@ -192,7 +176,7 @@ impl PartialOrd for ProposalPriority {
 impl ProposalPriority {
     pub fn new(mempool_data: &MempoolData) -> Self {
         Self {
-            tip_percentage: mempool_data.transaction.tip_percentage(),
+            tip_basis_points: mempool_data.transaction.tip_basis_points(),
             added_at: mempool_data.added_at,
         }
     }
@@ -226,8 +210,8 @@ pub struct PriorityMempool {
     /// Mapping from [`NotarizedTransactionHash`] to [`MempoolData`] containing [`MempoolTransaction`] with said payload hash.
     /// We use [`IndexMap`] for it's O(1) [`get_index`] needed for efficient random sampling.
     data: IndexMap<NotarizedTransactionHash, MempoolData>,
-    /// Mapping from [`IntentHash`] to all transactions ([`NotarizedTransactionHash`]) that submit said intent.
-    intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
+    /// Mapping from [`TransactionIntentHash`] to all transactions ([`NotarizedTransactionHash`]) that submit said intent.
+    intent_lookup: HashMap<TransactionIntentHash, HashSet<NotarizedTransactionHash>>,
     /// Keeps ordering of the transactions by their [`ProposalPriority`].
     proposal_priority_index: SecondaryIndex<ProposalPriority, NotarizedTransactionHash>,
     /// Keeps ordering of the transactions by their validity end epoch.
@@ -239,7 +223,7 @@ pub struct PriorityMempool {
 }
 
 impl PriorityMempool {
-    pub fn new(config: MempoolConfig, metric_registry: &Registry) -> PriorityMempool {
+    pub fn new(config: MempoolConfig, metric_registry: &MetricRegistry) -> PriorityMempool {
         PriorityMempool {
             remaining_transaction_count: config.max_transaction_count,
             remaining_total_transactions_size: config.max_total_transactions_size,
@@ -262,7 +246,7 @@ impl PriorityMempool {
         &mut self,
         transaction: Arc<MempoolTransaction>,
         source: MempoolAddSource,
-        added_at: Instant,
+        added_at: StdInstant,
         executed_at: StateVersion,
     ) -> Result<Vec<MempoolData>, MempoolAddError> {
         let notarized_transaction_hash = transaction.notarized_transaction_hash();
@@ -271,8 +255,8 @@ impl PriorityMempool {
             return Ok(vec![]);
         }
 
-        let intent_hash = transaction.intent_hash();
-        let transaction_size = transaction.raw.0.len() as u64;
+        let intent_hash = transaction.transaction_intent_hash();
+        let transaction_size = transaction.raw.len() as u64;
 
         let transaction_data = MempoolData::new(transaction, added_at, source, executed_at);
         let new_proposal_priority = ProposalPriority::new(&transaction_data);
@@ -298,13 +282,12 @@ impl PriorityMempool {
                     // Even with an empty mempool we are not able to fulfill the request.
                     warn!("Impossible to add new transaction. Mempool max size lower than transaction size!");
                     return Err(MempoolAddError::PriorityThresholdNotMet {
-                        min_tip_percentage_required: None,
-                        tip_percentage: transaction_data.transaction.tip_percentage(),
+                        min_tip_basis_points_required: None,
+                        tip_basis_points: transaction_data.transaction.tip_basis_points(),
                     });
                 }
                 Some(mempool_data) => {
-                    total_transaction_size_free_space +=
-                        mempool_data.transaction.raw.0.len() as u64;
+                    total_transaction_size_free_space += mempool_data.transaction.raw.len() as u64;
                     total_transaction_count_free_space += 1;
                     to_be_removed.push(mempool_data.clone());
                 }
@@ -318,11 +301,11 @@ impl PriorityMempool {
             if new_proposal_priority < ProposalPriority::new(best_to_be_removed) {
                 let min_tip_percentage_required = best_to_be_removed
                     .transaction
-                    .tip_percentage()
+                    .tip_basis_points()
                     .checked_add(1);
                 return Err(MempoolAddError::PriorityThresholdNotMet {
-                    min_tip_percentage_required,
-                    tip_percentage: transaction_data.transaction.tip_percentage(),
+                    min_tip_basis_points_required: min_tip_percentage_required,
+                    tip_basis_points: transaction_data.transaction.tip_basis_points(),
                 });
             }
         }
@@ -399,7 +382,10 @@ impl PriorityMempool {
         }
     }
 
-    pub fn remove_by_intent_hash(&mut self, intent_hash: &IntentHash) -> Vec<MempoolData> {
+    pub fn remove_by_intent_hash(
+        &mut self,
+        intent_hash: &TransactionIntentHash,
+    ) -> Vec<MempoolData> {
         let data: Vec<_> = self
             .intent_lookup
             .get(intent_hash)
@@ -409,9 +395,8 @@ impl PriorityMempool {
             .cloned()
             .collect();
         data.into_iter()
-            .map(|data| {
+            .inspect(|data| {
                 self.remove_data(data.clone());
-                data
             })
             .collect()
     }
@@ -439,7 +424,7 @@ impl PriorityMempool {
 
     pub fn get_notarized_transaction_hashes_for_intent(
         &self,
-        intent_hash: &IntentHash,
+        intent_hash: &TransactionIntentHash,
     ) -> Vec<NotarizedTransactionHash> {
         match self.intent_lookup.get(intent_hash) {
             Some(notarized_transaction_hashes) => {
@@ -451,7 +436,7 @@ impl PriorityMempool {
 
     pub fn all_hashes_iter(
         &self,
-    ) -> impl Iterator<Item = (&IntentHash, &NotarizedTransactionHash)> {
+    ) -> impl Iterator<Item = (&TransactionIntentHash, &NotarizedTransactionHash)> {
         self.intent_lookup
             .iter()
             .flat_map(|(intent_hash, notarized_transaction_hashes)| {
@@ -509,7 +494,7 @@ impl PriorityMempool {
             .take(max_transactions_to_try)
             .map(|hash| self.data.index(hash).transaction.clone())
             .filter(|transaction| {
-                let increased_payload_size = payload_size_so_far + transaction.raw.0.len() as u64;
+                let increased_payload_size = payload_size_so_far + transaction.raw.len() as u64;
                 let fits = increased_payload_size <= max_payload_size_bytes;
                 if fits {
                     payload_size_so_far = increased_payload_size;
@@ -527,9 +512,9 @@ impl PriorityMempool {
     /// Note: assumes that the given transaction is currently in the mempool.
     fn remove_data(&mut self, data: MempoolData) {
         let notarized_transaction_hash = &data.transaction.notarized_transaction_hash();
-        let intent_hash = &data.transaction.intent_hash();
+        let intent_hash = &data.transaction.transaction_intent_hash();
 
-        let transaction_size = data.transaction.raw.0.len();
+        let transaction_size = data.transaction.raw.len();
         self.remaining_transaction_count += 1;
         self.remaining_total_transactions_size += transaction_size as u64;
 
@@ -601,81 +586,49 @@ mod tests {
 
     use crate::mempool::priority_mempool::*;
 
-    fn create_fake_pub_key() -> PublicKey {
-        PublicKey::Secp256k1(Secp256k1PublicKey([0; Secp256k1PublicKey::LENGTH]))
-    }
-
-    fn create_fake_signature() -> NotarySignatureV1 {
-        NotarySignatureV1(SignatureV1::Secp256k1(Secp256k1Signature(
-            [0; Secp256k1Signature::LENGTH],
-        )))
-    }
-
-    fn create_fake_signature_with_public_key() -> IntentSignatureV1 {
-        IntentSignatureV1(SignatureWithPublicKeyV1::Secp256k1 {
-            signature: Secp256k1Signature([0; Secp256k1Signature::LENGTH]),
-        })
-    }
-
-    fn create_fake_notarized_transaction(
-        nonce: u32,
-        sigs_count: usize,
-        tip_percentage: u16,
-    ) -> PreparedNotarizedTransactionV1 {
-        NotarizedTransactionV1 {
-            signed_intent: SignedIntentV1 {
-                intent: IntentV1 {
-                    header: TransactionHeaderV1 {
-                        network_id: 1,
-                        start_epoch_inclusive: Epoch::of(1),
-                        end_epoch_exclusive: Epoch::of(2),
-                        nonce,
-                        notary_public_key: create_fake_pub_key(),
-                        notary_is_signatory: false,
-                        tip_percentage,
-                    },
-                    instructions: InstructionsV1(vec![]),
-                    blobs: BlobsV1 { blobs: vec![] },
-                    message: MessageV1::None,
-                },
-                intent_signatures: IntentSignaturesV1 {
-                    signatures: vec![0; sigs_count]
-                        .into_iter()
-                        .map(|_| create_fake_signature_with_public_key())
-                        .collect(),
-                },
-            },
-            notary_signature: create_fake_signature(),
-        }
-        .prepare()
-        .expect("Expected that it could be prepared")
-    }
-
-    fn create_fake_pending_transaction(
-        nonce: u32,
-        sigs_count: usize,
+    fn create_mempool_transaction(
+        intent_discriminator: u32,
+        signer_discriminator: u64,
         tip_percentage: u16,
     ) -> Arc<MempoolTransaction> {
+        let notary = Ed25519PrivateKey::from_u64(999).unwrap();
+        let raw = TransactionV1Builder::new()
+            .header(TransactionHeaderV1 {
+                network_id: 1,
+                start_epoch_inclusive: Epoch::of(1),
+                end_epoch_exclusive: Epoch::of(2),
+                nonce: intent_discriminator,
+                notary_public_key: notary.public_key().into(),
+                notary_is_signatory: false,
+                tip_percentage,
+            })
+            .manifest(ManifestBuilder::new_v1().build())
+            .sign(&Ed25519PrivateKey::from_u64(signer_discriminator).unwrap())
+            .notarize(&notary)
+            .build()
+            .to_raw()
+            .unwrap();
+        let validated = raw
+            .validate(&TransactionValidator::new_with_latest_config_network_agnostic())
+            .unwrap();
+        let hashes = validated.hashes();
+        let executable = validated.create_executable();
+
         Arc::new(MempoolTransaction {
-            validated: Box::new(ValidatedNotarizedTransactionV1 {
-                prepared: create_fake_notarized_transaction(nonce, sigs_count, tip_percentage),
-                // Fake these
-                encoded_instructions: vec![],
-                signer_keys: vec![],
-                num_of_signature_validations: 0,
-            }),
-            raw: RawNotarizedTransaction(vec![]),
+            executable,
+            hashes,
+            raw,
         })
     }
 
     #[test]
     fn add_and_get_test() {
-        let mt1 = create_fake_pending_transaction(1, 0, 0);
-        let mt2 = create_fake_pending_transaction(2, 0, 0);
-        let mt3 = create_fake_pending_transaction(3, 0, 0);
+        let mt1 = create_mempool_transaction(1, 0, 0);
+        let mt2 = create_mempool_transaction(2, 0, 0);
+        let mt3 = create_mempool_transaction(3, 0, 0);
         let v1 = StateVersion::of(1);
 
-        let registry = Registry::new();
+        let registry = MetricRegistry::new();
 
         let mut mp = PriorityMempool::new(
             MempoolConfig {
@@ -690,7 +643,7 @@ mod tests {
         mp.add_transaction_if_not_present(
             mt1.clone(),
             MempoolAddSource::CoreApi,
-            Instant::now(),
+            StdInstant::now(),
             v1,
         )
         .unwrap();
@@ -701,7 +654,7 @@ mod tests {
         mp.add_transaction_if_not_present(
             mt2.clone(),
             MempoolAddSource::MempoolSync,
-            Instant::now(),
+            StdInstant::now(),
             v1,
         )
         .unwrap();
@@ -710,14 +663,14 @@ mod tests {
         assert!(mp.contains_transaction(&mt1.notarized_transaction_hash()));
         assert!(mp.contains_transaction(&mt2.notarized_transaction_hash()));
 
-        let rem = mp.remove_by_intent_hash(&mt1.intent_hash());
+        let rem = mp.remove_by_intent_hash(&mt1.transaction_intent_hash());
         assert!(rem.iter().any(|d| d.transaction == mt1));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 1);
         assert!(mp.data.contains_key(&mt2.notarized_transaction_hash()));
         assert!(!mp.data.contains_key(&mt1.notarized_transaction_hash()));
 
-        let rem = mp.remove_by_intent_hash(&mt2.intent_hash());
+        let rem = mp.remove_by_intent_hash(&mt2.transaction_intent_hash());
         assert!(rem.iter().any(|d| d.transaction == mt2));
         assert_eq!(rem.len(), 1);
         assert_eq!(mp.get_count(), 0);
@@ -725,21 +678,27 @@ mod tests {
         assert!(!mp.data.contains_key(&mt1.notarized_transaction_hash()));
 
         // mempool is empty. Should return no transactions.
-        assert!(mp.remove_by_intent_hash(&mt3.intent_hash()).is_empty());
-        assert!(mp.remove_by_intent_hash(&mt2.intent_hash()).is_empty());
-        assert!(mp.remove_by_intent_hash(&mt1.intent_hash()).is_empty());
+        assert!(mp
+            .remove_by_intent_hash(&mt3.transaction_intent_hash())
+            .is_empty());
+        assert!(mp
+            .remove_by_intent_hash(&mt2.transaction_intent_hash())
+            .is_empty());
+        assert!(mp
+            .remove_by_intent_hash(&mt1.transaction_intent_hash())
+            .is_empty());
     }
 
     #[test]
     fn test_intent_lookup() {
-        let intent_1_payload_1 = create_fake_pending_transaction(1, 1, 0);
-        let intent_1_payload_2 = create_fake_pending_transaction(1, 2, 0);
-        let intent_1_payload_3 = create_fake_pending_transaction(1, 3, 0);
-        let intent_2_payload_1 = create_fake_pending_transaction(2, 1, 0);
-        let intent_2_payload_2 = create_fake_pending_transaction(2, 2, 0);
+        let intent_1_payload_1 = create_mempool_transaction(1, 1, 0);
+        let intent_1_payload_2 = create_mempool_transaction(1, 2, 0);
+        let intent_1_payload_3 = create_mempool_transaction(1, 3, 0);
+        let intent_2_payload_1 = create_mempool_transaction(2, 1, 0);
+        let intent_2_payload_2 = create_mempool_transaction(2, 2, 0);
         let v1 = StateVersion::of(1);
 
-        let registry = Registry::new();
+        let registry = MetricRegistry::new();
 
         let mut mp = PriorityMempool::new(
             MempoolConfig {
@@ -752,7 +711,7 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_1_payload_1.clone(),
                 MempoolAddSource::CoreApi,
-                Instant::now(),
+                StdInstant::now(),
                 v1
             )
             .unwrap()
@@ -761,7 +720,7 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_1_payload_2.clone(),
                 MempoolAddSource::CoreApi,
-                Instant::now(),
+                StdInstant::now(),
                 v1
             )
             .unwrap()
@@ -770,7 +729,7 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_1_payload_3,
                 MempoolAddSource::MempoolSync,
-                Instant::now(),
+                StdInstant::now(),
                 v1
             )
             .unwrap()
@@ -779,7 +738,7 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_2_payload_1.clone(),
                 MempoolAddSource::CoreApi,
-                Instant::now(),
+                StdInstant::now(),
                 v1
             )
             .unwrap()
@@ -787,51 +746,63 @@ mod tests {
 
         assert_eq!(mp.get_count(), 4);
         assert_eq!(
-            mp.get_notarized_transaction_hashes_for_intent(&intent_2_payload_1.intent_hash())
-                .len(),
+            mp.get_notarized_transaction_hashes_for_intent(
+                &intent_2_payload_1.transaction_intent_hash()
+            )
+            .len(),
             1
         );
         assert_eq!(
-            mp.get_notarized_transaction_hashes_for_intent(&intent_1_payload_1.intent_hash())
-                .len(),
+            mp.get_notarized_transaction_hashes_for_intent(
+                &intent_1_payload_1.transaction_intent_hash()
+            )
+            .len(),
             3
         );
         mp.remove_by_notarized_transaction_hash(&intent_1_payload_2.notarized_transaction_hash());
         assert_eq!(
-            mp.get_notarized_transaction_hashes_for_intent(&intent_1_payload_1.intent_hash())
-                .len(),
+            mp.get_notarized_transaction_hashes_for_intent(
+                &intent_1_payload_1.transaction_intent_hash()
+            )
+            .len(),
             2
         );
         let removed_data = mp
             .remove_by_notarized_transaction_hash(&intent_2_payload_2.notarized_transaction_hash());
         assert!(removed_data.is_none());
         assert_eq!(
-            mp.get_notarized_transaction_hashes_for_intent(&intent_2_payload_2.intent_hash())
-                .len(),
+            mp.get_notarized_transaction_hashes_for_intent(
+                &intent_2_payload_2.transaction_intent_hash()
+            )
+            .len(),
             1
         );
         let removed_data = mp
             .remove_by_notarized_transaction_hash(&intent_2_payload_1.notarized_transaction_hash());
         assert!(removed_data.is_some());
         assert_eq!(
-            mp.get_notarized_transaction_hashes_for_intent(&intent_2_payload_2.intent_hash())
-                .len(),
+            mp.get_notarized_transaction_hashes_for_intent(
+                &intent_2_payload_2.transaction_intent_hash()
+            )
+            .len(),
             0
         );
         assert!(mp
             .add_transaction_if_not_present(
                 intent_2_payload_1,
                 MempoolAddSource::MempoolSync,
-                Instant::now(),
+                StdInstant::now(),
                 v1
             )
             .unwrap()
             .is_empty());
 
-        mp.remove_by_intent_hash(&intent_1_payload_2.intent_hash());
+        mp.remove_by_intent_hash(&intent_1_payload_2.transaction_intent_hash());
         assert_eq!(
-            mp.get_notarized_transaction_hashes_for_intent(&intent_1_payload_1.intent_hash())
-                .len(),
+            mp.get_notarized_transaction_hashes_for_intent(
+                &intent_1_payload_1.transaction_intent_hash()
+            )
+            .len(),
             0
         );
 
@@ -839,26 +810,28 @@ mod tests {
             .add_transaction_if_not_present(
                 intent_2_payload_2.clone(),
                 MempoolAddSource::CoreApi,
-                Instant::now(),
+                StdInstant::now(),
                 v1
             )
             .unwrap()
             .is_empty());
         assert_eq!(
-            mp.get_notarized_transaction_hashes_for_intent(&intent_2_payload_2.intent_hash())
-                .len(),
+            mp.get_notarized_transaction_hashes_for_intent(
+                &intent_2_payload_2.transaction_intent_hash()
+            )
+            .len(),
             2
         );
-        mp.remove_by_intent_hash(&intent_2_payload_2.intent_hash());
+        mp.remove_by_intent_hash(&intent_2_payload_2.transaction_intent_hash());
         assert_eq!(mp.get_count(), 0);
     }
 
     #[test]
     fn test_proposal_priority_ordering() {
-        let mt1 = create_fake_pending_transaction(1, 0, 10);
-        let mt2 = create_fake_pending_transaction(2, 0, 20);
+        let mt1 = create_mempool_transaction(1, 0, 10);
+        let mt2 = create_mempool_transaction(2, 0, 20);
 
-        let now = Instant::now();
+        let now = StdInstant::now();
         let time_point = [now + Duration::from_secs(1), now + Duration::from_secs(2)];
 
         let md1 = MempoolData::new(
@@ -892,17 +865,17 @@ mod tests {
 
     #[test]
     fn test_proposal_priority_add_eviction() {
-        let mt1 = create_fake_pending_transaction(1, 0, 10);
-        let mt2 = create_fake_pending_transaction(1, 0, 20);
-        let mt3 = create_fake_pending_transaction(2, 0, 20);
-        let mt4 = create_fake_pending_transaction(1, 0, 30);
-        let mt5 = create_fake_pending_transaction(1, 0, 40);
-        let mt6 = create_fake_pending_transaction(2, 0, 40);
-        let mt7 = create_fake_pending_transaction(3, 0, 40);
-        let mt8 = create_fake_pending_transaction(4, 0, 40);
-        let mt9 = create_fake_pending_transaction(5, 0, 40);
+        let mt1 = create_mempool_transaction(1, 0, 10);
+        let mt2 = create_mempool_transaction(1, 0, 20);
+        let mt3 = create_mempool_transaction(2, 0, 20);
+        let mt4 = create_mempool_transaction(1, 0, 30);
+        let mt5 = create_mempool_transaction(1, 0, 40);
+        let mt6 = create_mempool_transaction(2, 0, 40);
+        let mt7 = create_mempool_transaction(3, 0, 40);
+        let mt8 = create_mempool_transaction(4, 0, 40);
+        let mt9 = create_mempool_transaction(5, 0, 40);
 
-        let now = Instant::now();
+        let now = StdInstant::now();
         let v1 = StateVersion::of(1);
         let time_point = [
             now + Duration::from_secs(1),
@@ -910,7 +883,7 @@ mod tests {
             now + Duration::from_secs(3),
         ];
 
-        let registry = Registry::new();
+        let registry = MetricRegistry::new();
 
         let mut mp = PriorityMempool::new(
             MempoolConfig {
@@ -989,12 +962,12 @@ mod tests {
 
     #[test]
     fn test_duplicate_txn_not_inserted() {
-        let mempool_txn = create_fake_pending_transaction(1, 0, 10);
+        let mempool_txn = create_mempool_transaction(1, 0, 10);
 
-        let now = Instant::now();
+        let now = StdInstant::now();
         let v1 = StateVersion::of(1);
 
-        let registry = Registry::new();
+        let registry = MetricRegistry::new();
 
         let mut mempool = PriorityMempool::new(
             MempoolConfig {

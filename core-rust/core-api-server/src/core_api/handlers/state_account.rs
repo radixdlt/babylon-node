@@ -1,9 +1,6 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
 use state_manager::query::{dump_component_state, VaultData};
-
-use std::ops::Deref;
 
 pub(crate) async fn handle_state_account(
     state: State<CoreApiState>,

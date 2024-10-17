@@ -62,8 +62,7 @@
  * permissions under this License.
  */
 
-use crate::components::NodeSecp256k1PublicKey;
-use node_common::store::typed_cf_api::{BoundedDbCodec, DbCodec};
+use crate::prelude::*;
 
 #[derive(Clone, Default)]
 pub struct RawPublicKeyDbCodec {}

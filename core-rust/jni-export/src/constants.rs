@@ -62,23 +62,10 @@
  * permissions under this License.
  */
 
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use radix_common::prelude::{
-    EXECUTION_COST_UNIT_LIMIT, FINALIZATION_COST_UNIT_LIMIT, MAX_TRANSACTION_SIZE,
-};
-
-use node_common::config::limits::{
-    DEFAULT_MAX_TOTAL_VERTEX_EXECUTION_COST_UNITS_CONSUMED,
-    DEFAULT_MAX_TOTAL_VERTEX_FINALIZATION_COST_UNITS_CONSUMED,
-    DEFAULT_MAX_TOTAL_VERTEX_TRANSACTIONS_SIZE, DEFAULT_MAX_VERTEX_TRANSACTION_COUNT,
-};
-use node_common::config::{
-    DEFAULT_MEMPOOL_MAX_TOTAL_TRANSACTIONS_SIZE, DEFAULT_MEMPOOL_MAX_TRANSACTION_COUNT,
-};
-use node_common::java::jni_sbor_coded_call;
-use state_manager::priority_mempool::MEMPOOL_TRANSACTION_OVERHEAD_FACTOR_PERCENT;
+use node_common::prelude::*;
+use radix_transactions::model::PreparationSettings;
+use state_manager::jni_prelude::*;
+use state_manager::prelude::*;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxVertexTransactionCount(
@@ -152,7 +139,9 @@ extern "system" fn Java_com_radixdlt_environment_NodeConstants_getDefaultMaxTran
     _class: JClass,
     request_payload: jbyteArray,
 ) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| MAX_TRANSACTION_SIZE)
+    jni_sbor_coded_call(&env, request_payload, |_: ()| {
+        PreparationSettings::latest().max_user_payload_length
+    })
 }
 
 #[no_mangle]

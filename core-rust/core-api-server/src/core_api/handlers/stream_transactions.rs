@@ -1,18 +1,4 @@
-use crate::engine_prelude::*;
-
-use std::iter;
-use std::ops::Deref;
-
-use crate::core_api::*;
-
-use node_common::store::rocks_db::ReadableRocks;
-use state_manager::store::rocks_db::StateManagerDatabase;
-use state_manager::store::traits::*;
-use state_manager::transaction::*;
-use state_manager::{
-    CommittedTransactionIdentifiers, LedgerHeader, LedgerProof, LedgerProofOrigin,
-    LocalTransactionReceipt, StateVersion,
-};
+use crate::prelude::*;
 
 use super::to_api_committed_state_identifiers;
 
@@ -102,7 +88,7 @@ pub(crate) async fn handle_stream_transactions(
     let proofs_iter = if request.include_proofs.is_some_and(|value| value) {
         database.get_proof_iter(from_state_version)
     } else {
-        Box::new(iter::empty())
+        Box::new(core::iter::empty())
     };
     let transactions_and_proofs_iter = TransactionAndProofIterator::new(bundles_iter, proofs_iter);
     for (bundle, maybe_proof) in transactions_and_proofs_iter.take(limit) {
@@ -203,10 +189,10 @@ pub fn to_api_ledger_proof(
         }
         LedgerProofOrigin::ProtocolUpdate {
             protocol_version_name,
-            batch_idx,
+            batch_index,
         } => models::LedgerProofOrigin::ProtocolUpdateLedgerProofOrigin {
             protocol_version_name: protocol_version_name.to_string(),
-            batch_idx: to_api_u32_as_i64(*batch_idx),
+            batch_idx: to_api_u32_as_i64(*batch_index),
         },
     };
     Ok(models::LedgerProof {
@@ -298,7 +284,7 @@ pub fn to_api_committed_transaction(
             context,
             &raw_ledger_transaction,
             &ledger_transaction,
-            &identifiers.payload,
+            &identifiers.transaction_hashes,
         )?),
         receipt: Box::new(to_api_receipt(Some(database), context, receipt)?),
         balance_changes,
@@ -310,33 +296,33 @@ pub fn to_api_ledger_transaction(
     context: &MappingContext,
     raw_ledger_transaction: &RawLedgerTransaction,
     ledger_transaction: &LedgerTransaction,
-    payload_identifiers: &PayloadIdentifiers,
+    hashes: &LedgerTransactionHashes,
 ) -> Result<models::LedgerTransaction, MappingError> {
     let payload_hex = if context.transaction_options.include_raw_ledger {
-        Some(to_hex(&raw_ledger_transaction.0))
+        Some(to_hex(raw_ledger_transaction.as_slice()))
     } else {
         None
     };
 
     Ok(match ledger_transaction {
         LedgerTransaction::UserV1(tx) => {
-            let user_identifiers = payload_identifiers.typed.user().ok_or_else(|| {
-                MappingError::MismatchedTransactionIdentifiers {
-                    message: "Transaction hashes for notarized transaction were not user"
-                        .to_string(),
-                }
-            })?;
+            let user_hashes =
+                hashes
+                    .as_user()
+                    .ok_or_else(|| MappingError::MismatchedTransactionIdentifiers {
+                        message: "Transaction hashes for notarized transaction were not user"
+                            .to_string(),
+                    })?;
             models::LedgerTransaction::UserLedgerTransaction {
                 payload_hex,
                 notarized_transaction: Box::new(to_api_notarized_transaction(
                     context,
                     tx,
-                    user_identifiers.intent_hash,
-                    user_identifiers.signed_intent_hash,
-                    user_identifiers.notarized_transaction_hash,
+                    &user_hashes,
                 )?),
             }
         }
+        LedgerTransaction::UserV2(..) => todo!(),
         LedgerTransaction::RoundUpdateV1(tx) => {
             models::LedgerTransaction::RoundUpdateLedgerTransaction {
                 payload_hex,
@@ -372,30 +358,31 @@ pub fn to_api_ledger_transaction(
 pub fn to_api_notarized_transaction(
     context: &MappingContext,
     notarized: &NotarizedTransactionV1,
-    intent_hash: &IntentHash,
-    signed_intent_hash: &SignedIntentHash,
-    notarized_transaction_hash: &NotarizedTransactionHash,
+    user_hashes: &UserTransactionHashes,
 ) -> Result<models::NotarizedTransaction, MappingError> {
     let payload_hex = if context.transaction_options.include_raw_notarized {
-        Some(to_hex(notarized.to_payload_bytes().map_err(|err| {
-            MappingError::SborEncodeError {
-                encode_error: err,
-                message: "Error encoding user payload sbor".to_string(),
-            }
-        })?))
+        Some(to_hex(
+            notarized
+                .to_raw()
+                .map_err(|err| MappingError::SborEncodeError {
+                    encode_error: err,
+                    message: "Error encoding user payload sbor".to_string(),
+                })?
+                .as_slice(),
+        ))
     } else {
         None
     };
 
     Ok(models::NotarizedTransaction {
-        hash: to_api_notarized_transaction_hash(notarized_transaction_hash),
-        hash_bech32m: to_api_hash_bech32m(context, notarized_transaction_hash)?,
+        hash: to_api_notarized_transaction_hash(&user_hashes.notarized_transaction_hash),
+        hash_bech32m: to_api_hash_bech32m(context, &user_hashes.notarized_transaction_hash)?,
         payload_hex,
         signed_intent: Box::new(to_api_signed_intent(
             context,
             &notarized.signed_intent,
-            intent_hash,
-            signed_intent_hash,
+            &user_hashes.transaction_intent_hash,
+            &user_hashes.signed_transaction_intent_hash,
         )?),
         notary_signature: Some(to_api_signature(&notarized.notary_signature.0)),
     })
@@ -405,13 +392,17 @@ pub fn to_api_notarized_transaction(
 pub fn to_api_signed_intent(
     context: &MappingContext,
     signed_intent: &SignedIntentV1,
-    intent_hash: &IntentHash,
-    signed_intent_hash: &SignedIntentHash,
+    transaction_intent_hash: &TransactionIntentHash,
+    signed_transaction_intent_hash: &SignedTransactionIntentHash,
 ) -> Result<models::SignedTransactionIntent, MappingError> {
     Ok(models::SignedTransactionIntent {
-        hash: to_api_signed_intent_hash(signed_intent_hash),
-        hash_bech32m: to_api_hash_bech32m(context, signed_intent_hash)?,
-        intent: Box::new(to_api_intent(context, &signed_intent.intent, intent_hash)?),
+        hash: to_api_signed_transaction_intent_hash(signed_transaction_intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, signed_transaction_intent_hash)?,
+        intent: Box::new(to_api_intent_v1(
+            context,
+            &signed_intent.intent,
+            transaction_intent_hash,
+        )?),
         intent_signatures: signed_intent
             .intent_signatures
             .signatures
@@ -422,16 +413,29 @@ pub fn to_api_signed_intent(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_intent(
+pub fn to_api_intent_v1(
     context: &MappingContext,
     intent: &IntentV1,
-    intent_hash: &IntentHash,
+    transaction_intent_hash: &TransactionIntentHash,
 ) -> Result<models::TransactionIntent, MappingError> {
+    let instructions = if context.transaction_options.include_manifest {
+        let readable_manifest = TransactionManifestV1::from_intent(intent);
+        Some(
+            manifest::decompile(&readable_manifest, &context.network_definition).map_err(
+                |err| MappingError::InvalidManifest {
+                    message: format!("Failed to decompile a transaction manifest: {err:?}"),
+                },
+            )?,
+        )
+    } else {
+        None
+    };
+
     let IntentV1 {
         header,
-        instructions,
         blobs,
         message,
+        ..
     } = intent;
 
     let header = Box::new(models::TransactionHeader {
@@ -443,21 +447,6 @@ pub fn to_api_intent(
         notary_is_signatory: header.notary_is_signatory,
         tip_percentage: to_api_u16_as_i32(header.tip_percentage),
     });
-
-    let instructions = if context.transaction_options.include_manifest {
-        Some(
-            manifest::decompile(&instructions.0, &context.network_definition).map_err(|err| {
-                MappingError::InvalidManifest {
-                    message: format!(
-                        "Failed to decompile a transaction manifest: {err:?}, instructions: {:?}",
-                        &instructions
-                    ),
-                }
-            })?,
-        )
-    } else {
-        None
-    };
 
     let blobs_hex = if context.transaction_options.include_blobs {
         Some(
@@ -483,8 +472,8 @@ pub fn to_api_intent(
     };
 
     Ok(models::TransactionIntent {
-        hash: to_api_intent_hash(intent_hash),
-        hash_bech32m: to_api_hash_bech32m(context, intent_hash)?,
+        hash: to_api_transaction_intent_hash(transaction_intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, transaction_intent_hash)?,
         header,
         instructions,
         blobs_hex,
@@ -608,12 +597,15 @@ pub fn to_api_system_transaction(
     system_transaction: &SystemTransactionV1,
 ) -> Result<models::SystemTransaction, MappingError> {
     let payload_hex = if context.transaction_options.include_raw_system {
-        Some(to_hex(system_transaction.to_payload_bytes().map_err(
-            |err| MappingError::SborEncodeError {
-                encode_error: err,
-                message: "Error encoding system transaction sbor".to_string(),
-            },
-        )?))
+        Some(to_hex(
+            system_transaction
+                .to_raw()
+                .map_err(|err| MappingError::SborEncodeError {
+                    encode_error: err,
+                    message: "Error encoding system transaction sbor".to_string(),
+                })?
+                .as_slice(),
+        ))
     } else {
         None
     };

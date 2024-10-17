@@ -65,13 +65,15 @@
 use std::cmp::Ordering;
 use std::iter::Peekable;
 
-use crate::engine_prelude::*;
+use crate::prelude::*;
 use crate::staging::StateTreeDiff;
-
-use crate::transaction::*;
-use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt, StateVersion};
 pub use commit::*;
+pub use extensions::*;
+pub use gc::*;
+pub use indices::*;
+pub use measurement::*;
 pub use proofs::*;
+pub use scenario::*;
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
@@ -83,7 +85,7 @@ pub enum DatabaseConfigValidationError {
 }
 
 /// Database flags required for initialization built from config file and environment variables.
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
+#[derive(Debug, Clone, Sbor)]
 pub struct DatabaseConfig {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
@@ -181,19 +183,16 @@ pub mod vertex {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        #[derive(Debug, Clone, ScryptoSbor)]
         pub VersionedVertexStoreBlob(VertexStoreBlobVersions) => VertexStoreBlob = VertexStoreBlobV1
     }
 
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct VertexStoreBlobV1(pub Vec<u8>);
 }
 
 pub mod substate {
     use super::*;
-    use std::slice;
-
-    use crate::SubstateReference;
 
     /// A low-level storage of [`SubstateNodeAncestryRecord`].
     ///
@@ -207,7 +206,7 @@ pub mod substate {
         /// - the `node_id` happens to be a root Node (since they do not have "ancestry");
         /// - or the `node_id` does not exist yet.
         fn get_ancestry(&self, node_id: &NodeId) -> Option<SubstateNodeAncestryRecord> {
-            let records = self.batch_get_ancestry(slice::from_ref(node_id));
+            let records = self.batch_get_ancestry([node_id]);
             if records.len() != 1 {
                 panic!(
                     "trait contract violated: expected a single result for {:?}, got {:?}",
@@ -231,12 +230,12 @@ pub mod substate {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
         pub VersionedSubstateNodeAncestryRecord(SubstateNodeAncestryRecordVersions) => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
     }
 
     /// Ancestry information of a RE Node.
-    #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
     pub struct SubstateNodeAncestryRecordV1 {
         /// A substate owning the Node (i.e. its immediate parent).
         /// Note: this will always be present, since we do not need ancestry of root RE Nodes.
@@ -263,12 +262,6 @@ pub mod substate {
 
 pub mod transactions {
     use super::*;
-
-    use crate::store::traits::CommittedTransactionBundle;
-    use crate::{
-        CommittedTransactionIdentifiers, LedgerHashes, LedgerTransactionReceipt,
-        LocalTransactionExecution, LocalTransactionReceipt,
-    };
 
     pub trait IterableTransactionStore {
         fn get_committed_transaction_bundle_iter(
@@ -366,13 +359,13 @@ pub mod proofs {
         fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof>;
     }
 
-    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Clone, Debug, ScryptoSbor)]
     pub struct TxnsAndProof {
         pub txns: Vec<RawLedgerTransaction>,
         pub proof: LedgerProof,
     }
 
-    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Clone, Debug, ScryptoSbor)]
     pub enum GetSyncableTxnsAndProofError {
         RefusedToServeGenesis { refused_proof: Box<LedgerProof> },
         RefusedToServeProtocolUpdate { refused_proof: Box<LedgerProof> },
@@ -383,8 +376,6 @@ pub mod proofs {
 
 pub mod commit {
     use super::*;
-    use crate::accumulator_tree::storage::TreeSlice;
-    use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
@@ -507,11 +498,11 @@ pub mod commit {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        #[derive(Debug, Clone, ScryptoSbor)]
         pub VersionedStaleTreeParts(StaleTreePartsVersions) => StaleTreeParts = StaleTreePartsV1
     }
 
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct StaleTreePartsV1(pub Vec<StaleTreePart>);
 
     pub struct StateTreeUpdate {
@@ -551,19 +542,19 @@ pub mod commit {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        #[derive(Debug, Clone, ScryptoSbor)]
         pub VersionedTransactionAccuTreeSlice(TransactionAccuTreeSliceVersions) => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
     }
 
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct TransactionAccuTreeSliceV1(pub TreeSlice<TransactionTreeHash>);
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        #[derive(Debug, Clone, ScryptoSbor)]
         pub VersionedReceiptAccuTreeSlice(ReceiptAccuTreeSliceVersions) => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
     }
 
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct ReceiptAccuTreeSliceV1(pub TreeSlice<ReceiptTreeHash>);
 
     pub trait CommitStore {
@@ -577,28 +568,28 @@ pub mod scenario {
     pub type ScenarioSequenceNumber = u32;
 
     define_single_versioned! {
-        #[derive(Debug, Clone, Categorize, Encode, Decode)]
+        #[derive(Debug, Clone, Sbor)]
         pub VersionedExecutedScenario(ExecutedScenarioVersions) => ExecutedScenario = ExecutedScenarioV1
     }
 
-    #[derive(Debug, Clone, Categorize, Encode, Decode)]
+    #[derive(Debug, Clone, Sbor)]
     pub struct ExecutedScenarioV1 {
         pub logical_name: String,
         pub committed_transactions: Vec<ExecutedScenarioTransaction>,
         pub addresses: Vec<DescribedAddressRendering>,
     }
 
-    #[derive(Debug, Clone, Categorize, Encode, Decode)]
+    #[derive(Debug, Clone, Sbor)]
     pub struct DescribedAddressRendering {
         pub logical_name: String,
         pub rendered_address: String, // we store it pre-rendered, since `GlobalAddress` has no SBOR coding
     }
 
-    #[derive(Debug, Clone, Categorize, Encode, Decode)]
+    #[derive(Debug, Clone, Sbor)]
     pub struct ExecutedScenarioTransaction {
         pub logical_name: String,
         pub state_version: StateVersion,
-        pub intent_hash: IntentHash,
+        pub transaction_intent_hash: TransactionIntentHash,
     }
 
     /// A store of testing-specific [`ExecutedScenario`], meant to be as separated as possible from
@@ -709,13 +700,13 @@ pub mod indices {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        #[derive(Debug, Clone, ScryptoSbor)]
         pub VersionedEntityBlueprintId(EntityBlueprintIdVersions) => EntityBlueprintId = EntityBlueprintIdV1
     }
 
     /// An entity's ID and its blueprint reference.
     /// This is a "technical" structure stored in one of the Entity-listing indices.
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct EntityBlueprintIdV1 {
         /// Node ID.
         pub node_id: NodeId,
@@ -743,13 +734,13 @@ pub mod indices {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        #[derive(Debug, Clone, ScryptoSbor)]
         pub VersionedObjectBlueprintName(ObjectBlueprintNameVersions) => ObjectBlueprintName = ObjectBlueprintNameV1
     }
 
     /// An Object's ID and its blueprint name.
     /// This is a "technical" structure stored in one of the Entity-listing indices.
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct ObjectBlueprintNameV1 {
         /// Node ID - guaranteed to *not* be a Key-Value Store.
         pub node_id: NodeId,
@@ -827,7 +818,6 @@ pub mod measurement {
 
 pub mod gc {
     use super::*;
-    use crate::LedgerHeader;
 
     /// A storage API tailored for the [`StateTreeGc`].
     pub trait StateTreeGcStore {
@@ -861,12 +851,12 @@ pub mod gc {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+        #[derive(Debug, Clone, ScryptoSbor)]
         pub VersionedLedgerProofsGcProgress(LedgerProofsGcProgressVersions) => LedgerProofsGcProgress = LedgerProofsGcProgressV1
     }
 
     /// A state of the GC's progress.
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct LedgerProofsGcProgressV1 {
         /// The last epoch pruned by the GC. The next run should start from the beginning of the
         /// next epoch.

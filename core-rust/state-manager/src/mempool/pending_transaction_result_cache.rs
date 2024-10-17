@@ -1,19 +1,11 @@
-use crate::engine_prelude::*;
-use node_common::locks::RwLock;
+use crate::prelude::*;
 
-use crate::{
-    transaction::{CheckMetadata, StaticValidation},
-    CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion, TransactionTreeHash,
-};
-
-use crate::priority_mempool::PriorityMempool;
 use lru::LruCache;
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::hash_map::Entry,
     fmt,
     num::NonZeroUsize,
     ops::Add,
-    sync::Arc,
     time::{Duration, SystemTime},
 };
 
@@ -57,8 +49,11 @@ impl MempoolRejectionReason {
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
                 ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
+                ExecutionRejectionReason::TransactionProposerTimestampNotYetValid { .. } => false,
+                ExecutionRejectionReason::TransactionProposerTimestampNoLongerValid { .. } => false,
                 ExecutionRejectionReason::IntentHashPreviouslyCommitted => true,
                 ExecutionRejectionReason::IntentHashPreviouslyCancelled => true,
+                ExecutionRejectionReason::SubintentsNotYetSupported => false,
             },
             MempoolRejectionReason::ValidationError(_) => false,
         }
@@ -79,24 +74,14 @@ impl MempoolRejectionReason {
                 RejectionPermanence::PermanentForAnyPayloadWithThisIntent
             }
             MempoolRejectionReason::FromExecution(rejection_error) => match **rejection_error {
-                ExecutionRejectionReason::BootloadingError(_) => RejectionPermanence::Temporary {
-                    retry: RetrySettings::AfterDelay {
-                        base_delay: Duration::from_secs(2 * 60),
-                    },
-                },
+                ExecutionRejectionReason::BootloadingError(_) => {
+                    RejectionPermanence::default_temporary()
+                }
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => {
-                    RejectionPermanence::Temporary {
-                        retry: RetrySettings::AfterDelay {
-                            base_delay: Duration::from_secs(2 * 60),
-                        },
-                    }
+                    RejectionPermanence::default_temporary()
                 }
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => {
-                    RejectionPermanence::Temporary {
-                        retry: RetrySettings::AfterDelay {
-                            base_delay: Duration::from_secs(2 * 60),
-                        },
-                    }
+                    RejectionPermanence::default_temporary()
                 }
                 ExecutionRejectionReason::TransactionEpochNotYetValid { valid_from, .. } => {
                     RejectionPermanence::Temporary {
@@ -106,11 +91,25 @@ impl MempoolRejectionReason {
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
+                ExecutionRejectionReason::TransactionProposerTimestampNotYetValid {
+                    valid_from_inclusive,
+                    ..
+                } => RejectionPermanence::Temporary {
+                    retry: RetrySettings::FromProposerTimestamp {
+                        proposer_timestamp: valid_from_inclusive,
+                    },
+                },
+                ExecutionRejectionReason::TransactionProposerTimestampNoLongerValid { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
                 ExecutionRejectionReason::IntentHashPreviouslyCommitted => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
                 ExecutionRejectionReason::IntentHashPreviouslyCancelled => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
+                ExecutionRejectionReason::SubintentsNotYetSupported => {
+                    RejectionPermanence::wait_for_protocol_update()
                 }
             },
             MempoolRejectionReason::ValidationError(validation_error) => match validation_error {
@@ -135,15 +134,38 @@ impl MempoolRejectionReason {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
                 // This is permanent for the intent - because all intents share the same manifest
-                TransactionValidationError::IdValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // This is permanent for the intent - because all intents share the same manifest
-                TransactionValidationError::CallDataValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // This is permanent for the intent - because all intents share the same manifest
                 TransactionValidationError::InvalidMessage(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
+                TransactionValidationError::TransactionVersionNotPermitted(_) => {
+                    RejectionPermanence::wait_for_protocol_update()
+                }
+                // The manifest validity is a property of the intent
+                TransactionValidationError::ManifestBasicValidatorError(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
+                // The manifest validity is a property of the intent
+                TransactionValidationError::ManifestValidationError(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
+                // The subintent structure is a property of the intent
+                TransactionValidationError::SubintentError(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
+                // Total signature count is a property of the payload, not intent
+                TransactionValidationError::TooManySignatures { .. } => {
+                    RejectionPermanence::PermanentForPayload
+                }
+                // Intent signature count is a property of the payload, not intent
+                TransactionValidationError::TooManySignaturesForIntent { .. } => {
+                    RejectionPermanence::PermanentForPayload
+                }
+                // Total reference count is a property of the intent
+                TransactionValidationError::TooManyReferences { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                }
+                // Reference count per intent is a property of the intent
+                TransactionValidationError::TooManyReferencesForIntent { .. } => {
                     RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
             },
@@ -159,6 +181,24 @@ pub enum RejectionPermanence {
 }
 
 impl RejectionPermanence {
+    pub fn wait_for_protocol_update() -> Self {
+        // For want of something better, let's just wait for 5 minutes
+        Self::Temporary {
+            retry: RetrySettings::AfterDelay {
+                base_delay: Duration::from_secs(5 * 60),
+            },
+        }
+    }
+
+    pub fn default_temporary() -> Self {
+        // Wait 2 minutes in case things clear up
+        Self::Temporary {
+            retry: RetrySettings::AfterDelay {
+                base_delay: Duration::from_secs(2 * 60),
+            },
+        }
+    }
+
     pub fn is_permanent_for_payload(&self) -> bool {
         match self {
             RejectionPermanence::PermanentForPayload => true,
@@ -180,6 +220,7 @@ impl RejectionPermanence {
 pub enum RetrySettings {
     AfterDelay { base_delay: Duration },
     FromEpoch { epoch: Epoch },
+    FromProposerTimestamp { proposer_timestamp: Instant },
 }
 
 impl fmt::Display for MempoolRejectionReason {
@@ -211,7 +252,7 @@ impl fmt::Display for MempoolRejectionReason {
 /// the API can distinguish permanent rejections from non-permanent rejections.
 #[derive(Debug, Clone)]
 pub struct PendingTransactionRecord {
-    pub intent_hash: IntentHash,
+    pub intent_hash: TransactionIntentHash,
     /// Only needs to be specified if the rejection isn't permanent
     pub intent_invalid_from_epoch: Option<Epoch>,
     pub latest_attempt: TransactionAttempt,
@@ -301,17 +342,23 @@ pub enum RetryFrom {
 
 #[derive(Debug, Clone)]
 pub struct PendingExecutedTransaction {
-    pub transaction: Box<ValidatedNotarizedTransactionV1>,
+    pub executable: ExecutableTransaction,
+    pub user_hashes: UserTransactionHashes,
     pub latest_attempt_against_state: AtSpecificState,
 }
 
 impl PendingExecutedTransaction {
-    pub fn new(transaction: Box<ValidatedNotarizedTransactionV1>, against_state: AtState) -> Self {
+    pub fn new(
+        executable: ExecutableTransaction,
+        user_hashes: UserTransactionHashes,
+        against_state: AtState,
+    ) -> Self {
         let AtState::Specific(latest_attempt_against_state) = against_state else {
             panic!("transaction must have been executed against some state")
         };
         Self {
-            transaction,
+            executable,
+            user_hashes,
             latest_attempt_against_state,
         }
     }
@@ -319,7 +366,7 @@ impl PendingExecutedTransaction {
 
 impl PendingTransactionRecord {
     pub fn new(
-        intent_hash: IntentHash,
+        intent_hash: TransactionIntentHash,
         invalid_from_epoch: Option<Epoch>,
         attempt: TransactionAttempt,
     ) -> Self {
@@ -383,8 +430,8 @@ impl PendingTransactionRecord {
     }
 
     /// Precondition:
-    /// * If check = CheckMetadata::Cached, the latest attempt must be a rejection
-    /// This precondition is met if the record/metadata come from a call using ForceRecalculation::IfCachedAsValid
+    /// * If `check == CheckMetadata::Cached`, the latest attempt must be a rejection.
+    ///   This precondition is met if the record/metadata come from a call using `ForceRecalculation::IfCachedAsValid`
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
@@ -413,9 +460,14 @@ impl PendingTransactionRecord {
             CheckMetadata::Cached => {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
             }
-            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok(
-                PendingExecutedTransaction::new(transaction, self.latest_attempt.against_state),
-            ),
+            CheckMetadata::Fresh(StaticValidation::Valid {
+                executable,
+                user_hashes,
+            }) => Ok(PendingExecutedTransaction::new(
+                executable,
+                user_hashes,
+                self.latest_attempt.against_state,
+            )),
             CheckMetadata::Fresh(StaticValidation::Invalid) => {
                 panic!("A statically invalid transaction should already have been handled in the above")
             }
@@ -460,7 +512,30 @@ impl PendingTransactionRecord {
 
                         RetryFrom::FromTime(attempt.timestamp.add(delay))
                     }
-                    _ => {
+                    RejectionPermanence::Temporary {
+                        retry:
+                            RetrySettings::FromProposerTimestamp {
+                                proposer_timestamp:
+                                    Instant {
+                                        seconds_since_unix_epoch,
+                                    },
+                            },
+                    } => {
+                        u64::try_from(seconds_since_unix_epoch)
+                            .ok()
+                            // Add one more second so we don't risk retrying before the timestamp on ledger has updated
+                            .and_then(|seconds_since_unix_epoch| {
+                                seconds_since_unix_epoch.checked_add(1)
+                            })
+                            .and_then(|retry_in_seconds| {
+                                SystemTime::UNIX_EPOCH
+                                    .checked_add(Duration::from_secs(retry_in_seconds))
+                            })
+                            .map(RetryFrom::FromTime)
+                            .unwrap_or(RetryFrom::Never)
+                    }
+                    RejectionPermanence::PermanentForPayload
+                    | RejectionPermanence::PermanentForAnyPayloadWithThisIntent => {
                         // If RejectionPermanence was Permanent, this has already been handled
                         return;
                     }
@@ -485,8 +560,8 @@ const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
 pub struct PendingTransactionResultCache {
     mempool: Arc<RwLock<PriorityMempool>>,
     pending_transaction_records: LruCache<NotarizedTransactionHash, PendingTransactionRecord>,
-    intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
-    recently_committed_intents: LruCache<IntentHash, CommittedIntentRecord>,
+    intent_lookup: HashMap<TransactionIntentHash, HashSet<NotarizedTransactionHash>>,
+    recently_committed_intents: LruCache<TransactionIntentHash, CommittedIntentRecord>,
 }
 
 impl PendingTransactionResultCache {
@@ -510,7 +585,7 @@ impl PendingTransactionResultCache {
     /// Note - the invalid_from_epoch only needs to be provided if the attempt is not a permanent rejection
     pub fn track_transaction_result(
         &mut self,
-        intent_hash: IntentHash,
+        intent_hash: TransactionIntentHash,
         notarized_transaction_hash: NotarizedTransactionHash,
         invalid_from_epoch: Option<Epoch>,
         attempt: TransactionAttempt,
@@ -549,7 +624,7 @@ impl PendingTransactionResultCache {
         committed_transactions: Vec<CommittedUserTransactionIdentifiers>,
     ) {
         for committed_transaction in committed_transactions {
-            let committed_intent_hash = committed_transaction.intent_hash;
+            let committed_intent_hash = committed_transaction.transaction_intent_hash;
             let committed_notarized_transaction_hash =
                 committed_transaction.notarized_transaction_hash;
             // Note - we keep the relevant statuses of all known payloads for the intent in the cache
@@ -592,7 +667,7 @@ impl PendingTransactionResultCache {
 
     pub fn get_pending_transaction_record(
         &mut self,
-        intent_hash: &IntentHash,
+        intent_hash: &TransactionIntentHash,
         notarized_transaction_hash: &NotarizedTransactionHash,
     ) -> Option<PendingTransactionRecord> {
         if let Some(x) = self
@@ -629,7 +704,7 @@ impl PendingTransactionResultCache {
 
     pub fn peek_all_known_payloads_for_intent(
         &self,
-        intent_hash: &IntentHash,
+        intent_hash: &TransactionIntentHash,
     ) -> HashMap<NotarizedTransactionHash, PendingTransactionRecord> {
         match self.intent_lookup.get(intent_hash) {
             Some(payload_hashes) => payload_hashes
@@ -648,7 +723,7 @@ impl PendingTransactionResultCache {
 
     fn handled_added(
         &mut self,
-        intent_hash: IntentHash,
+        intent_hash: TransactionIntentHash,
         notarized_transaction_hash: NotarizedTransactionHash,
     ) {
         // Add the intent hash <-> payload hash lookup
@@ -704,8 +779,8 @@ mod tests {
         NotarizedTransactionHash::from(blake2b_256_hash([0, nonce]))
     }
 
-    fn intent_hash(nonce: u8) -> IntentHash {
-        IntentHash::from(blake2b_256_hash([1, nonce]))
+    fn intent_hash(nonce: u8) -> TransactionIntentHash {
+        TransactionIntentHash::from(blake2b_256_hash([1, nonce]))
     }
 
     #[test]
@@ -874,7 +949,7 @@ mod tests {
             now,
             vec![CommittedUserTransactionIdentifiers {
                 state_version: StateVersion::of(1),
-                intent_hash: intent_hash_1,
+                transaction_intent_hash: intent_hash_1,
                 notarized_transaction_hash: payload_hash_1,
             }],
         );

@@ -62,15 +62,9 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::store::traits::QueryableProofStore;
-
-use crate::protocol::*;
-use crate::{LedgerProof, LedgerProofOrigin, StateManagerConfig};
-use std::ops::Deref;
+use crate::prelude::*;
 
 use crate::test::{create_state_manager, prepare_and_commit_round_update};
-use crate::transaction::FlashTransactionV1;
 
 const CUSTOM_V2_PROTOCOL_VERSION: &str = "custom-v2";
 
@@ -101,10 +95,12 @@ fn flash_protocol_update_test() {
         let validator_fee_fix = AnemoneSettings::all_disabled()
             .enable(|anemone_settings| &mut anemone_settings.validator_fee_fix)
             .create_batch_generator()
-            .generate_batch(tmp_state_manager.database.access_direct().deref(), 0)
+            .generate_batch(tmp_state_manager.database.access_direct().deref(), 0, 0)
             .transactions
             .remove(0);
-        let ProtocolUpdateTransactionDetails::FlashV1Transaction(flash) = validator_fee_fix;
+        let ProtocolUpdateTransaction::FlashTransactionV1(flash) = validator_fee_fix else {
+            panic!("Anenome validator fee fix is known to be a FlashTransactionV1");
+        };
         flash.state_updates
     };
 
@@ -113,7 +109,7 @@ fn flash_protocol_update_test() {
         .protocol_update_content_overrides = ProtocolUpdateContentOverrides::empty()
         .with_custom(
             custom_v2_protocol_version.clone(),
-            vec![ProtocolUpdateNodeBatch::FlashTransactions(vec![
+            vec![CustomProtocolUpdateBatch::FlashTransactions(vec![
                 FlashTransactionV1 {
                     name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
                     state_updates: consensus_manager_state_updates,
@@ -152,11 +148,13 @@ fn flash_protocol_update_test() {
     );
 
     // Verify that a new consensus manager config has been flashed
-    let config_substate = database.get_mapped::<SpreadPrefixKeyMapper, FieldSubstate<ConsensusManagerConfigurationFieldPayload>>(
-        CONSENSUS_MANAGER.as_node_id(),
-        MAIN_BASE_PARTITION,
-        &ConsensusManagerField::Configuration.into()
-    ).unwrap();
+    let config_substate = database
+        .get_substate::<FieldSubstate<ConsensusManagerConfigurationFieldPayload>>(
+            CONSENSUS_MANAGER,
+            MAIN_BASE_PARTITION,
+            ConsensusManagerField::Configuration,
+        )
+        .unwrap();
 
     assert_eq!(
         config_substate
@@ -182,7 +180,7 @@ fn flash_protocol_update_test() {
         latest_execution_proof.origin,
         LedgerProofOrigin::ProtocolUpdate {
             protocol_version_name: ProtocolVersionName::of_unchecked(CUSTOM_V2_PROTOCOL_VERSION),
-            batch_idx: 0
+            batch_index: 0
         }
     );
 

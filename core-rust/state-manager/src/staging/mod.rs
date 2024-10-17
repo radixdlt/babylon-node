@@ -62,20 +62,19 @@
  * permissions under this License.
  */
 
+use crate::prelude::*;
+
 mod cache;
-pub mod epoch_handling;
+mod epoch_handling;
 mod node_ancestry_resolver;
 mod overlays;
 mod result;
 mod stage_tree;
 
-use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-use crate::engine_prelude::*;
-use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
-
-use crate::store::traits::ConfigurableDatabase;
-use crate::store::traits::SubstateNodeAncestryStore;
 pub use cache::*;
+pub use epoch_handling::*;
+pub use node_ancestry_resolver::*;
+pub use overlays::*;
 pub use result::*;
 
 pub trait ReadableStateTreeStore: ReadableTreeStore {}

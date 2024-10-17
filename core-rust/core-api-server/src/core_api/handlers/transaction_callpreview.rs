@@ -1,7 +1,4 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::PreviewRequest;
+use crate::prelude::*;
 
 macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
@@ -49,12 +46,12 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_package_address(&extraction_context, package_address.as_str())
                     .map_err(|err| err.into_response_error("target.package_address"))?;
 
-            InstructionV1::CallFunction {
+            InstructionV1::CallFunction(CallFunction {
                 blueprint_name,
                 function_name,
                 package_address: package_address.into(),
                 args: args_from_bytes_vec!(args),
-            }
+            })
         }
         models::TargetIdentifier::ComponentMethodTargetIdentifier {
             component_address,
@@ -64,11 +61,11 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_component_address(&extraction_context, component_address.as_str())
                     .map_err(|err| err.into_response_error("target.component_address"))?;
 
-            InstructionV1::CallMethod {
+            InstructionV1::CallMethod(CallMethod {
                 address: component_address.into(),
                 method_name,
                 args: args_from_bytes_vec!(args),
-            }
+            })
         }
     };
 
@@ -77,6 +74,7 @@ pub(crate) async fn handle_transaction_callpreview(
             manifest: TransactionManifestV1 {
                 instructions: vec![requested_call],
                 blobs: index_map_new(),
+                object_names: Default::default(),
             },
             start_epoch_inclusive: None,
             end_epoch_exclusive: None,

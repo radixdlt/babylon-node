@@ -1,14 +1,7 @@
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
-use radix_engine::transaction::{
-    execute_and_commit_transaction, CommitResult, ExecutionConfig, StateUpdateSummary,
-    TransactionResult,
-};
-use radix_engine::vm::wasm::DefaultWasmEngine;
-use radix_engine::vm::{NoExtension, ScryptoVm, VmInit};
-use radix_substate_store_impls::substate_database_overlay::{
-    SubstateDatabaseOverlay, UnmergeableSubstateDatabaseOverlay,
-};
+use radix_engine::transaction::*;
+use radix_transactions::manifest::*;
 
 use super::*;
 
@@ -18,14 +11,16 @@ use super::*;
 /// instantiation" of an uninstantiated entity - hence most endpoint handlers should interact with
 /// this factory.
 pub struct EngineStateLoaderFactory<'s, S> {
+    network_definition: NetworkDefinition,
     database: UnmergeableSubstateDatabaseOverlay<'s, S>,
     staged_node_ids: IndexSet<NodeId>,
 }
 
 impl<'s, S: SubstateDatabase> EngineStateLoaderFactory<'s, S> {
     /// Creates a factory using the given database.
-    pub fn new(database: &'s S) -> Self {
+    pub fn new(network_definition: NetworkDefinition, database: &'s S) -> Self {
         Self {
+            network_definition,
             database: SubstateDatabaseOverlay::new_unmergeable(database),
             staged_node_ids: index_set_new(),
         }
@@ -107,7 +102,7 @@ impl<'s, S: SubstateDatabase> EngineStateLoaderFactory<'s, S> {
     /// Checks whether the given entity should be automatically instantiated on access, given the
     /// current database state.
     fn requires_instantiation(&self, node_id: &NodeId) -> bool {
-        if !node_id.is_global_virtual() {
+        if !node_id.is_global_preallocated() {
             // No matter if it exists or not, we shouldn't instantiate:
             return false;
         }
@@ -127,13 +122,13 @@ impl<'s, S: SubstateDatabase> EngineStateLoaderFactory<'s, S> {
         // the benefits of caching an instance (since we do not use any WASM here). If these
         // assumptions change in future, then it will make most sense to turn the `Self` into a
         // long-lived service holding a `ScryptoVm` as its dependency.
-        let scrypto_vm = ScryptoVm::<DefaultWasmEngine>::default();
+        let vm_modules = DefaultVmModules::default();
 
         let receipt = execute_and_commit_transaction(
             &mut self.database,
-            VmInit::new(&scrypto_vm, NoExtension),
-            &ExecutionConfig::default(),
-            &intent.get_executable(),
+            &vm_modules,
+            &ExecutionConfig::for_preview(self.network_definition.clone()),
+            intent.create_executable(),
         );
         let TransactionResult::Commit(commit) = receipt.result else {
             panic!("failed to force instantiation: {:?}", receipt);
@@ -182,7 +177,7 @@ fn create_intent_forcing_instantiation(node_id: &NodeId) -> ValidatedPreviewInte
             // Call any basic, non-invasive method, which is enough to force instantiation:
             // Note: the "get metadata" call below seems universal and future-proof enough, but
             // a more elegant solution could be based on some hypothetical "ensure exists" method?
-            InstructionV1::CallMetadataMethod {
+            InstructionV1::CallMetadataMethod(CallMetadataMethod {
                 address: DynamicGlobalAddress::Static(address),
                 method_name: "get".to_string(),
                 args: ManifestValue::Tuple {
@@ -190,14 +185,16 @@ fn create_intent_forcing_instantiation(node_id: &NodeId) -> ValidatedPreviewInte
                         value: "dummy name".to_string(),
                     }],
                 },
-            },
+            }),
         ]),
         blobs: BlobsV1::default(),
         message: MessageV1::None,
     };
 
     ValidatedPreviewIntent {
-        intent: intent.prepare().expect("hardcoded"),
+        intent: intent
+            .prepare(&PreparationSettings::latest())
+            .expect("hardcoded"),
         encoded_instructions: manifest_encode(&intent.instructions.0).expect("hardcoded"),
         signer_public_keys: vec![],
         flags: PreviewFlags {

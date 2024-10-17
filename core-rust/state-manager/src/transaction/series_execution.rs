@@ -62,20 +62,10 @@
  * permissions under this License.
  */
 
-use node_common::utils::CaptureSupport;
+use crate::prelude::*;
 use std::fmt::Formatter;
-use std::ops::Deref;
-use std::sync::Arc;
 
 use crate::commit_bundle::CommitBundleBuilder;
-use crate::protocol::*;
-use crate::query::*;
-use crate::staging::ReadableStore;
-use crate::store::traits::*;
-use crate::transaction::*;
-use crate::*;
-
-use crate::engine_prelude::*;
 
 pub struct TransactionExecutorFactory {
     execution_configurator: Arc<ExecutionConfigurator>,
@@ -144,10 +134,11 @@ where
     /// the transaction's ledger hash).
     pub fn execute_and_update_state(
         &mut self,
-        transaction: &ValidatedLedgerTransaction,
+        executable: &LedgerExecutable,
+        hashes: &LedgerTransactionHashes,
         description: &str,
     ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
-        let result = self.execute_no_state_update(transaction, description);
+        let result = self.execute_no_state_update(executable, hashes, description);
         if let Ok(commit) = &result {
             self.update_state(commit);
         }
@@ -162,17 +153,21 @@ where
     /// the transaction's ledger hash).
     pub fn execute_no_state_update(
         &mut self,
-        transaction: &ValidatedLedgerTransaction,
+        executable: &LedgerExecutable,
+        hashes: &LedgerTransactionHashes,
         description: &str,
     ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
         let described_ledger_transaction_hash = DescribedTransactionHash {
-            ledger_hash: transaction.ledger_transaction_hash(),
+            ledger_hash: hashes.ledger_transaction_hash,
             description,
         };
         self.execute_wrapped_no_state_update(
             &described_ledger_transaction_hash,
-            self.execution_configurator
-                .wrap_ledger_transaction(transaction, &described_ledger_transaction_hash),
+            self.execution_configurator.wrap_ledger_transaction(
+                hashes,
+                executable,
+                &described_ledger_transaction_hash,
+            ),
         )
     }
 

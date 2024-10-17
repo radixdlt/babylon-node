@@ -1,9 +1,4 @@
-use crate::engine_state_api::*;
-
-use crate::engine_prelude::*;
-
-use crate::engine_state_api::factories::EngineStateLoaderFactory;
-use state_manager::historical_state::VersionScopingSupport;
+use crate::prelude::*;
 
 pub(crate) async fn handle_object_metadata_entry(
     state: State<EngineStateApiState>,
@@ -25,7 +20,8 @@ pub(crate) async fn handle_object_metadata_entry(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let loader_factory = EngineStateLoaderFactory::new(&database).ensure_instantiated(&node_id);
+    let loader_factory = EngineStateLoaderFactory::new(state.network.clone(), &database)
+        .ensure_instantiated(&node_id);
 
     let metadata_value = loader_factory
         .create_object_metadata_loader()

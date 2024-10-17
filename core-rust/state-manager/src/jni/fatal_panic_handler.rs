@@ -62,9 +62,8 @@
  * permissions under this License.
  */
 
-use jni::errors::Result;
-use jni::objects::{GlobalRef, JObject};
-use jni::{JNIEnv, JavaVM};
+use crate::jni_prelude::*;
+use jni::{errors::Result, JavaVM};
 use std::ops::Deref;
 use tracing::error;
 

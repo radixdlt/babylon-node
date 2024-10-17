@@ -83,7 +83,7 @@ use crate::engine_prelude::*;
 /// proofs GC.
 /// Please see the Java counterpart (i.e. `record LedgerSyncLimitsConfig`) for detailed descriptions
 /// of the fields.
-#[derive(Debug, Categorize, Encode, Decode, Clone, Default)]
+#[derive(Debug, Sbor, Clone, Default)]
 pub struct LedgerSyncLimitsConfig {
     pub max_txns_for_responses_spanning_more_than_one_proof: u32,
     pub max_txn_bytes_for_single_response: u32,

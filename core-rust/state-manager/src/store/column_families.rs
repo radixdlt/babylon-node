@@ -1,19 +1,8 @@
-use std::fmt;
+use crate::prelude::*;
 
-use radix_common::crypto::Hash;
-use radix_common::prelude::{EntityType, Epoch, GlobalAddress, NodeId, PackageAddress};
 use radix_substate_store_impls::state_tree::tree_store::*;
-use radix_substate_store_interface::interface::{DbSubstateKey, DbSubstateValue};
-use radix_transactions::model::{IntentHash, NotarizedTransactionHash};
 
 use crate::store::codecs::*;
-use crate::store::traits::gc::{LedgerProofsGcProgress, VersionedLedgerProofsGcProgress};
-use crate::store::traits::indices::*;
-use crate::store::traits::scenario::*;
-use crate::store::traits::*;
-use crate::transaction::{LedgerTransactionHash, RawLedgerTransaction};
-use crate::*;
-use node_common::store::typed_cf_api::*;
 
 /// Committed transactions.
 /// Schema: `StateVersion.to_bytes()` -> `RawLedgerTransaction.as_ref::<[u8]>()`
@@ -119,17 +108,17 @@ impl VersionedCf for ProtocolUpdateExecutionLedgerProofsCf {
     type VersionedValue = VersionedLedgerProof;
 }
 
-/// DB "index" table for transaction's [`IntentHash`] resolution.
-/// Schema: `IntentHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
+/// DB "index" table for transaction's [`TransactionIntentHash`] resolution.
+/// Schema: `TransactionIntentHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
 /// Note: This table does not use explicit versioning wrapper, since the value represents a DB
 /// key of another table (and versioning DB keys is not useful).
 pub struct IntentHashesCf;
 impl DefaultCf for IntentHashesCf {
-    type Key = IntentHash;
+    type Key = TransactionIntentHash;
     type Value = StateVersion;
 
     const DEFAULT_NAME: &'static str = "intent_hashes";
-    type KeyCodec = HashDbCodec<IntentHash>;
+    type KeyCodec = HashDbCodec<TransactionIntentHash>;
     type ValueCodec = StateVersionDbCodec;
 }
 

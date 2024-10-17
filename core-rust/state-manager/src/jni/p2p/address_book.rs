@@ -62,14 +62,9 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::*;
+use crate::jni_prelude::*;
 use p2p::address_book_components::{AddressBookEntry, NodeIdDTO};
-use p2p::traits::node::AddressBookStore;
+use p2p::traits::AddressBookStore;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_p2p_RocksDbAddressBookStore_removeOne(

@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use crate::components;
-use crate::engine_prelude::*;
-use crate::engine_prelude::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use crate::prelude::*;
 use sbor::define_single_versioned;
 
 /// Timestamp of the various peer-related events
@@ -79,26 +77,26 @@ use sbor::define_single_versioned;
 type PeerTimestamp = i64;
 
 /// Peer address entry with all components
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct PeerAddress {
     pub encoded_uri: Vec<u8>,
     pub latest_connection_status: Option<ConnectionStatus>,
     pub last_seen: Option<PeerTimestamp>,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub enum ConnectionStatus {
     Connected,
     Disconnected,
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct NodeIdDTO {
-    pub key: components::NodeSecp256k1PublicKey,
+    pub key: NodeSecp256k1PublicKey,
 }
 
 /// Address book entry
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct AddressBookEntryV1 {
     pub node_id: NodeIdDTO,
     pub banned_until: Option<PeerTimestamp>,
@@ -106,14 +104,14 @@ pub struct AddressBookEntryV1 {
 }
 
 define_single_versioned! {
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub VersionedAddressBookEntry(AddressBookEntryVersions) => AddressBookEntry = AddressBookEntryV1
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct HighPriorityPeersV1(Vec<NodeIdDTO>);
 
 define_single_versioned! {
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub VersionedHighPriorityPeers(HighPriorityPeersVersions) => HighPriorityPeers = HighPriorityPeersV1
 }

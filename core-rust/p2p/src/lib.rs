@@ -7,6 +7,11 @@ pub mod safety_store_components;
 pub mod traits;
 pub mod typed_cf_api;
 
-pub mod engine_prelude {
-    pub use radix_common::prelude::*;
+pub mod prelude {
+    // External preludes re-imported for internal use
+    pub(crate) use node_common::prelude::*;
+
+    // Important modules exported externally
+    pub use crate::components::*;
+    pub use crate::traits::*;
 }

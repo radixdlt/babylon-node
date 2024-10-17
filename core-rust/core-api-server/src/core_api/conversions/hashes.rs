@@ -1,25 +1,26 @@
-use crate::engine_prelude::*;
-use state_manager::{transaction::*, ReceiptTreeHash, StateHash, TransactionTreeHash};
+use crate::prelude::*;
 
-use crate::core_api::*;
-
-pub fn to_api_intent_hash(intent_hash: &IntentHash) -> String {
-    to_hex(intent_hash)
+pub fn to_api_transaction_intent_hash(transaction_intent_hash: &TransactionIntentHash) -> String {
+    to_hex(transaction_intent_hash)
 }
 
-pub fn to_api_signed_intent_hash(signed_intent_hash: &SignedIntentHash) -> String {
-    to_hex(signed_intent_hash)
+pub fn to_api_signed_transaction_intent_hash(
+    signed_transaction_intent_hash: &SignedTransactionIntentHash,
+) -> String {
+    to_hex(signed_transaction_intent_hash)
 }
 
-pub fn to_api_notarized_transaction_hash(payload_hash: &NotarizedTransactionHash) -> String {
-    to_hex(payload_hash)
+pub fn to_api_notarized_transaction_hash(
+    notarized_transaction_hash: &NotarizedTransactionHash,
+) -> String {
+    to_hex(notarized_transaction_hash)
 }
 
 pub fn to_api_ledger_hash(ledger_hash: &LedgerTransactionHash) -> String {
     to_hex(ledger_hash)
 }
 
-pub fn to_api_hash_bech32m<T: HashHasHrp>(
+pub fn to_api_hash_bech32m<T: IsTransactionHash>(
     context: &MappingContext,
     hash: &T,
 ) -> Result<String, MappingError> {
@@ -49,14 +50,14 @@ pub fn to_api_code_hash(hash: &CodeHash) -> String {
     to_hex(hash)
 }
 
-pub fn extract_intent_hash(
+pub fn extract_transaction_intent_hash(
     context: &ExtractionContext,
     hash_str: String,
-) -> Result<IntentHash, ExtractionError> {
+) -> Result<TransactionIntentHash, ExtractionError> {
     from_hex(&hash_str)
         .ok()
         .and_then(|bytes| Hash::try_from(bytes.as_slice()).ok())
-        .map(IntentHash::from_hash)
+        .map(TransactionIntentHash::from_hash)
         .or_else(|| {
             context
                 .transaction_hash_decoder

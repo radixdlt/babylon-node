@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
+use crate::prelude::*;
 use std::future::Future;
-use std::sync::Arc;
 
 use super::metrics::CoreApiMetrics;
 use super::metrics_layer::MetricsLayer;
@@ -76,12 +76,8 @@ use axum::{
     routing::{get, post},
     Router,
 };
-
-use crate::engine_prelude::*;
-use prometheus::Registry;
-use state_manager::StateManager;
+use state_manager::state_manager::StateManager;
 use tower_http::catch_panic::CatchPanicLayer;
-use tracing::{debug, error, info, trace, warn, Level};
 
 use super::{constants::LARGE_REQUEST_MAX_BYTES, handlers::*, not_found_error, ResponseError};
 
@@ -100,7 +96,7 @@ pub async fn create_server<F>(
     bind_addr: &str,
     shutdown_signal: F,
     core_api_state: CoreApiState,
-    metric_registry: &Registry,
+    metric_registry: &MetricRegistry,
 ) where
     F: Future<Output = ()>,
 {
@@ -233,21 +229,21 @@ async fn emit_error_response_event(uri: Uri, response: Response) -> Response {
         let level = resolve_level(response.status());
         // the `event!(level, ...)` macro does not accept non-constant levels, hence we unroll:
         match level {
-            Level::TRACE => trace!(path = uri.path(), error = debug(error_response)),
-            Level::DEBUG => debug!(path = uri.path(), error = debug(error_response)),
-            Level::INFO => info!(path = uri.path(), error = debug(error_response)),
-            Level::WARN => warn!(path = uri.path(), error = debug(error_response)),
-            Level::ERROR => error!(path = uri.path(), error = debug(error_response)),
+            LogLevel::TRACE => trace!(path = uri.path(), error = debug(error_response)),
+            LogLevel::DEBUG => debug!(path = uri.path(), error = debug(error_response)),
+            LogLevel::INFO => info!(path = uri.path(), error = debug(error_response)),
+            LogLevel::WARN => warn!(path = uri.path(), error = debug(error_response)),
+            LogLevel::ERROR => error!(path = uri.path(), error = debug(error_response)),
         }
     }
     response
 }
 
-fn resolve_level(status_code: StatusCode) -> Level {
+fn resolve_level(status_code: StatusCode) -> LogLevel {
     if status_code.is_server_error() {
-        Level::WARN
+        LogLevel::WARN
     } else {
-        Level::DEBUG
+        LogLevel::DEBUG
     }
 }
 

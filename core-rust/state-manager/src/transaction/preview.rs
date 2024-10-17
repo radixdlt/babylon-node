@@ -1,21 +1,12 @@
-use crate::engine_prelude::*;
-use node_common::locks::DbLock;
-use std::sync::Arc;
+use crate::prelude::*;
 
-use crate::historical_state::{StateHistoryError, VersionScopingSupport};
-
-use crate::store::rocks_db::ActualStateManagerDatabase;
-use crate::transaction::*;
-use crate::{
-    GlobalBalanceSummary, LedgerStateChanges, LedgerStateSummary, PreviewRequest,
-    ProcessedCommitResult, StateVersion,
-};
+use historical_state::{StateHistoryError, VersionScopingSupport};
 
 /// A transaction preview runner.
 pub struct TransactionPreviewer {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     execution_configurator: Arc<ExecutionConfigurator>,
-    validation_config: ValidationConfig,
+    transaction_validator: Arc<RwLock<TransactionValidator>>,
 }
 
 pub struct ProcessedPreviewResult {
@@ -35,12 +26,12 @@ impl TransactionPreviewer {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         execution_configurator: Arc<ExecutionConfigurator>,
-        validation_config: ValidationConfig,
+        transaction_validator: Arc<RwLock<TransactionValidator>>,
     ) -> Self {
         Self {
             database,
             execution_configurator,
-            validation_config,
+            transaction_validator,
         }
     }
 }
@@ -63,13 +54,16 @@ impl TransactionPreviewer {
 
         let intent = self.create_intent(preview_request, base_ledger_state.epoch);
 
-        let validator = NotarizedTransactionValidator::new(self.validation_config);
-        let validated = validator
+        let validated = self
+            .transaction_validator
+            .read()
             .validate_preview_intent_v1(intent)
             .map_err(PreviewError::TransactionValidationError)?;
+        let disable_auth = validated.flags.disable_auth;
+        let executable = validated.create_executable();
         let transaction_logic = self
             .execution_configurator
-            .wrap_preview_transaction(&validated);
+            .wrap_preview_transaction(&executable, disable_auth);
 
         let receipt = transaction_logic.execute_on(&database);
         let (state_changes, global_balance_summary) = match &receipt.result {
@@ -119,17 +113,24 @@ impl TransactionPreviewer {
         let notary_public_key = notary_public_key.unwrap_or_else(|| {
             PublicKey::Secp256k1(Secp256k1PrivateKey::from_u64(2).unwrap().public_key())
         });
+        let (max_epoch_range, network_id) = {
+            let validator = self.transaction_validator.read();
+            (
+                validator.config().max_epoch_range,
+                validator.network_id().unwrap(),
+            )
+        };
         let start_epoch_inclusive = start_epoch_inclusive.unwrap_or(at_epoch);
         let end_epoch_exclusive = end_epoch_exclusive.unwrap_or_else(|| {
             start_epoch_inclusive
-                .after(self.validation_config.max_epoch_range)
+                .after(max_epoch_range)
                 .expect("currently calculated max end epoch is outside of valid range")
         });
         let (instructions, blobs) = manifest.for_intent();
         PreviewIntentV1 {
             intent: IntentV1 {
                 header: TransactionHeaderV1 {
-                    network_id: self.validation_config.network_id,
+                    network_id,
                     start_epoch_inclusive,
                     end_epoch_exclusive,
                     nonce,
@@ -161,10 +162,7 @@ impl From<StateHistoryError> for PreviewerError {
 
 #[cfg(test)]
 mod tests {
-
-    use crate::engine_prelude::*;
-    use crate::{PreviewRequest, StateManagerConfig};
-
+    use super::*;
     use crate::test::create_state_manager;
 
     #[test]

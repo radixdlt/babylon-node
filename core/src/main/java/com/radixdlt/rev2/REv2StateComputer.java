@@ -64,6 +64,8 @@
 
 package com.radixdlt.rev2;
 
+import static com.radixdlt.lang.Option.none;
+
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
@@ -285,14 +287,13 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
     final var proof = ledgerExtension.proof();
-    final var header = proof.ledgerHeader();
 
     final Option<byte[]> vertexStoreBytes;
     if (vertexStore != null) {
       vertexStoreBytes =
           Option.some(serialization.toDson(vertexStore.toSerialized(), DsonOutput.Output.ALL));
     } else {
-      vertexStoreBytes = Option.none();
+      vertexStoreBytes = none();
     }
 
     var commitRequest =
@@ -308,43 +309,57 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 })
             .unwrap();
 
-    final var maybeNextEpoch = header.nextEpoch();
-    final var maybeNextProtocolVersion = header.nextProtocolVersion();
+    // Prepare to update the latestProof bundle
+    var newLatestProof = proof;
+    var latestProofWhichInitiatedAnEpochChange =
+        this.latestProof.latestProofWhichInitiatedAnEpochChange();
+    var latestProofWhichInitiatedAProtocolUpdate =
+        this.latestProof.latestProofWhichInitiatedAProtocolUpdate();
+    var latestProtocolUpdateExecutionProof = this.latestProof.latestProtocolUpdateExecutionProof();
 
-    if (maybeNextProtocolVersion.isPresent() && maybeNextEpoch.isEmpty()) {
-      throw new IllegalStateException("Protocol updates must happen at epoch boundary");
+    if (newLatestProof.ledgerHeader().nextProtocolVersion().isPresent()
+        && newLatestProof.ledgerHeader().nextEpoch().isEmpty()) {
+      throw new IllegalStateException(
+          "Initial protocol update triggers must happen at epoch boundary");
     }
 
-    // Synchronously apply a protocol update while we still hold a StateComputerResult lock
-    final var maybePostProtocolUpdateProof =
-        maybeNextProtocolVersion.map(
-            nextProtocolVersion ->
-                this.rustProtocolUpdate.applyProtocolUpdate(nextProtocolVersion).postUpdateProof());
-
-    final var newLatestProof = maybePostProtocolUpdateProof.orElse(proof);
+    // A loop here allows us to enact protocol updates back-to-back
+    LedgerProof lastHandledProof;
+    Option<com.radixdlt.statecomputer.commit.NextEpoch> maybeNextEpoch = none();
+    do {
+      lastHandledProof = newLatestProof;
+      final var newHeader = newLatestProof.ledgerHeader();
+      if (newHeader.nextEpoch().isPresent()) {
+        latestProofWhichInitiatedAnEpochChange = newLatestProof;
+        maybeNextEpoch = newHeader.nextEpoch();
+      }
+      if (newHeader.nextProtocolVersion().isPresent()) {
+        final var nextProtocolVersion = newHeader.nextProtocolVersion().unwrap();
+        latestProofWhichInitiatedAProtocolUpdate = Option.some(newLatestProof);
+        final var finalExecutionProof =
+            this.rustProtocolUpdate.applyProtocolUpdate(nextProtocolVersion).postUpdateProof();
+        newLatestProof = finalExecutionProof;
+        latestProtocolUpdateExecutionProof = Option.some(finalExecutionProof);
+      }
+    } while (newLatestProof != lastHandledProof);
 
     // This presence of the protocol update in the proof is validated in rust - to ensure that if
-    // any protocol update
-    // is present, our node agrees it should be committed.
+    // any protocol update is present, our node agrees it should be committed.
     // We then can trust that we should trigger the application of the protocol update here.
     // NOTE: In the future, we may be able to move this down into Rust.
     this.latestProof =
         new LedgerProofBundle(
             newLatestProof,
-            maybeNextEpoch.isPresent() ? proof : this.latestProof.closestEpochProofOnOrBefore(),
-            maybeNextProtocolVersion.isPresent()
-                ? Option.some(proof)
-                : this.latestProof.closestProtocolUpdateInitProofOnOrBefore(),
-            maybePostProtocolUpdateProof.isPresent()
-                ? Option.some(maybePostProtocolUpdateProof.unwrap())
-                : this.latestProof.closestProtocolUpdateExecutionProofOnOrBefore());
+            latestProofWhichInitiatedAnEpochChange,
+            latestProofWhichInitiatedAProtocolUpdate,
+            latestProtocolUpdateExecutionProof);
 
     final var maybeEpochChange =
         maybeNextEpoch.map(
             nextEpoch -> {
               final var initialState =
                   VertexStoreState.createNewForNextEpoch(
-                      REv2ToConsensus.ledgerHeader(latestProof.epochInitialHeader()),
+                      REv2ToConsensus.ledgerHeader(this.latestProof.epochInitialHeader()),
                       nextEpoch.epoch().toLong(),
                       hasher);
               final var validatorSet = REv2ToConsensus.validatorSet(nextEpoch.validators());
@@ -352,7 +367,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                   ProposerElections.defaultRotation(nextEpoch.epoch().toLong(), validatorSet);
               final var bftConfiguration =
                   new BFTConfiguration(proposerElection, validatorSet, initialState);
-              return new EpochChange(latestProof, bftConfiguration);
+              return new EpochChange(this.latestProof, bftConfiguration);
             });
 
     maybeEpochChange.ifPresent(
@@ -364,12 +379,12 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     final var ledgerUpdate =
         new LedgerUpdate(
             commitSummary,
-            latestProof,
+            this.latestProof,
             maybeEpochChange,
             protocolState,
             ledgerExtension.transactions());
     ledgerUpdateEventDispatcher.dispatch(ledgerUpdate);
 
-    return latestProof;
+    return this.latestProof;
   }
 }

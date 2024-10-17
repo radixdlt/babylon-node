@@ -1,9 +1,7 @@
-use crate::engine_prelude::{ScryptoCategorize, ScryptoDecode, ScryptoEncode};
+use crate::prelude::*;
 
 /// The ID of the node stored in the Address book (Secp256k1 public key)
-#[derive(
-    Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode, PartialOrd, Ord, PartialEq, Eq,
-)]
+#[derive(Debug, Clone, ScryptoSbor, PartialOrd, Ord, PartialEq, Eq)]
 #[sbor(transparent)]
 pub struct NodeSecp256k1PublicKey(pub [u8; NodeSecp256k1PublicKey::LENGTH]);
 
@@ -20,7 +18,7 @@ impl NodeSecp256k1PublicKey {
 }
 
 /// The Secp256K1 signature
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct NodeSignature(pub [u8; NodeSignature::LENGTH]);
 
 impl NodeSignature {

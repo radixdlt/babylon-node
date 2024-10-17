@@ -62,40 +62,12 @@
  * permissions under this License.
  */
 
-use std::ops::Deref;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
-
-use crate::engine_prelude::*;
 use crate::jni::LedgerSyncLimitsConfig;
-use crate::protocol::{
-    ProtocolConfig, ProtocolManager, ProtocolUpdateExecutor, ProtocolVersionName,
-};
-use crate::store::jmt_gc::StateTreeGcConfig;
+use crate::jni_prelude::*;
+use crate::store::jmt_gc::*;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
-use crate::store::rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
-use crate::store::traits::proofs::QueryableProofStore;
-use crate::store::traits::DatabaseConfigValidationError;
-use crate::transaction::{
-    ExecutionConfigurator, LedgerTransactionValidator, Preparator, TransactionExecutorFactory,
-};
-use crate::{
-    mempool_manager::MempoolManager,
-    mempool_relay_dispatcher::MempoolRelayDispatcher,
-    priority_mempool::PriorityMempool,
-    store::{jmt_gc::StateTreeGc, DatabaseBackendConfig, DatabaseConfig, RawDbMetricsCollector},
-    transaction::{CachedCommittabilityValidator, CommittabilityValidator, TransactionPreviewer},
-    Committer, ExecutionCacheManager, LedgerMetrics, PendingTransactionResultCache,
-    ProtocolUpdateResult, SystemExecutor,
-};
-use node_common::java::{JavaError, JavaResult, StructFromJava};
+
 use node_common::scheduler::{Metrics, Scheduler, Spawner, Tracker};
-use node_common::{
-    config::{limits::VertexLimitsConfig, MempoolConfig},
-    locks::*,
-};
-use prometheus::Registry;
 
 /// An interval between time-intensive measurement of raw DB metrics.
 /// Some of our raw DB metrics take ~a few milliseconds to collect. We cannot afford the overhead of
@@ -104,7 +76,7 @@ use prometheus::Registry;
 /// (which in practice still runs more often than Prometheus' scraping).
 const RAW_DB_MEASUREMENT_INTERVAL: Duration = Duration::from_secs(10);
 
-#[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, ScryptoSbor)]
 pub struct StateManagerConfig {
     pub network_definition: NetworkDefinition,
     pub mempool_config: Option<MempoolConfig>,
@@ -183,7 +155,7 @@ pub struct StateManager {
     pub database: Arc<DbLock<ActualStateManagerDatabase>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
-    pub ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+    pub transaction_validator: Arc<RwLock<TransactionValidator>>,
     pub committability_validator: Arc<RwLock<CommittabilityValidator>>,
     pub transaction_previewer: Arc<TransactionPreviewer>,
     pub preparator: Arc<Preparator>,
@@ -193,7 +165,7 @@ pub struct StateManager {
     pub system_executor: Arc<SystemExecutor>,
     pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub protocol_manager: Arc<ProtocolManager>,
-    pub protocol_update_executor: Arc<ProtocolUpdateExecutor>,
+    pub protocol_update_executor: Arc<NodeProtocolUpdateExecutor>,
     pub ledger_metrics: Arc<LedgerMetrics>,
 }
 
@@ -202,7 +174,7 @@ impl StateManager {
         config: StateManagerConfig,
         mempool_relay_dispatcher: Option<MempoolRelayDispatcher>,
         lock_factory: &LockFactory,
-        metrics_registry: &Registry,
+        metrics_registry: &MetricRegistry,
         scheduler: &Scheduler<impl Spawner, impl Tracker, impl Metrics>,
     ) -> Self {
         let StateManagerConfig {
@@ -241,9 +213,9 @@ impl StateManager {
 
         let database = Arc::new(lock_factory.named("database").new_db_lock(raw_db));
 
-        let ledger_transaction_validator = Arc::new(
-            LedgerTransactionValidator::default_from_network(&network_definition),
-        );
+        let transaction_validator = Arc::new(lock_factory.named("validator").new_rwlock(
+            TransactionValidator::new(database.access_direct().deref(), &network_definition),
+        ));
 
         let protocol_manager = Arc::new(ProtocolManager::new(
             genesis_protocol_version,
@@ -271,13 +243,13 @@ impl StateManager {
             Arc::new(lock_factory.named("pending_cache").new_rwlock(
                 PendingTransactionResultCache::new(mempool.clone(), 10000, 10000),
             ));
-        let validation_config = ValidationConfig::default(network_definition.id);
+
         let committability_validator =
             Arc::new(lock_factory.named("committability_validator").new_rwlock(
                 CommittabilityValidator::new(
                     database.clone(),
                     execution_configurator.clone(),
-                    NotarizedTransactionValidator::new(validation_config),
+                    transaction_validator.clone(),
                 ),
             ));
         let cached_committability_validator = CachedCommittabilityValidator::new(
@@ -302,7 +274,7 @@ impl StateManager {
         let transaction_previewer = Arc::new(TransactionPreviewer::new(
             database.clone(),
             execution_configurator.clone(),
-            validation_config,
+            transaction_validator.clone(),
         ));
 
         let execution_cache_manager =
@@ -316,7 +288,7 @@ impl StateManager {
             database.clone(),
             transaction_executor_factory.clone(),
             pending_transaction_result_cache.clone(),
-            ledger_transaction_validator.clone(),
+            transaction_validator.clone(),
             vertex_limits_config.unwrap_or_default(),
             metrics_registry,
         ));
@@ -332,7 +304,7 @@ impl StateManager {
         let committer = Arc::new(Committer::new(
             database.clone(),
             transaction_executor_factory.clone(),
-            ledger_transaction_validator.clone(),
+            transaction_validator.clone(),
             mempool_manager.clone(),
             execution_cache_manager.clone(),
             pending_transaction_result_cache.clone(),
@@ -347,7 +319,7 @@ impl StateManager {
             committer.clone(),
         ));
 
-        let protocol_update_executor = Arc::new(ProtocolUpdateExecutor::new(
+        let protocol_update_executor = Arc::new(NodeProtocolUpdateExecutor::new(
             network_definition.clone(),
             protocol_update_content_overrides,
             scenarios_execution_config,
@@ -390,7 +362,7 @@ impl StateManager {
             database,
             mempool,
             mempool_manager,
-            ledger_transaction_validator,
+            transaction_validator,
             committability_validator,
             transaction_previewer,
             preparator,

@@ -69,34 +69,56 @@ mod commit_bundle;
 mod committer;
 pub mod jni;
 mod limits;
-pub mod mempool;
-pub mod metrics;
-pub mod protocol;
+mod mempool;
+mod metrics;
+mod protocol;
 pub mod query;
 mod receipt;
 mod staging;
-mod state_manager;
+pub mod state_manager;
 pub mod store;
-pub mod system_commits;
+mod system_commits;
 mod system_executor;
-pub mod transaction;
+mod transaction;
 mod types;
 
 #[cfg(test)]
 mod test;
 
-pub use crate::committer::*;
-pub use crate::mempool::*;
-pub use crate::metrics::*;
-pub use crate::pending_transaction_result_cache::*;
-pub use crate::receipt::*;
-pub use crate::staging::*;
-pub use crate::state_manager::*;
-pub use crate::store::*;
-pub use crate::system_executor::*;
-pub use crate::types::*;
+pub mod prelude {
+    // Other prelude re-exports
+    pub(crate) use crate::engine_prelude::*;
+    pub(crate) use node_common::prelude::*;
 
-pub mod engine_prelude {
+    // Public prelude
+    pub use crate::mempool::*;
+    pub use crate::protocol::*;
+    pub use crate::query::*;
+    pub use crate::receipt::*;
+    pub use crate::store::*;
+    pub use crate::transaction::*;
+    pub use crate::types::*;
+
+    // Extra items on the internal prelude
+    pub(crate) use crate::accumulator_tree::*;
+    pub(crate) use crate::committer::*;
+    pub(crate) use crate::jni::LedgerSyncLimitsConfig;
+    pub(crate) use crate::limits::*;
+    pub(crate) use crate::metrics::*;
+    pub(crate) use crate::staging::*;
+    pub(crate) use crate::state_manager::*;
+    pub(crate) use crate::system_commits::*;
+    pub(crate) use crate::system_executor::*;
+}
+
+pub mod jni_prelude {
+    pub use crate::jni::node_rust_environment::*;
+    pub(crate) use crate::prelude::*;
+    pub use node_common::jni_prelude::*;
+}
+
+#[allow(unused_imports)]
+mod engine_prelude {
     pub use radix_common::prelude::*;
 
     pub use radix_engine::errors::*;

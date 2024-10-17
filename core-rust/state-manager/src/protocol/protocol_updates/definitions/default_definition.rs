@@ -1,8 +1,4 @@
-use crate::engine_prelude::*;
-use crate::protocol::*;
-use crate::store::rocks_db::ActualStateManagerDatabase;
-use node_common::locks::DbLock;
-use std::sync::Arc;
+use crate::prelude::*;
 
 pub struct NoOpProtocolDefinition;
 
@@ -22,11 +18,11 @@ impl ProtocolUpdateDefinition for NoOpProtocolDefinition {
 struct EmptyNodeBatchGenerator;
 
 impl ProtocolUpdateNodeBatchGenerator for EmptyNodeBatchGenerator {
-    fn generate_batch(&self, _batch_idx: u32) -> ProtocolUpdateNodeBatch {
+    fn generate_batch(&self, _batch_idx: usize) -> ProtocolUpdateNodeBatch {
         panic!("no batches")
     }
 
-    fn batch_count(&self) -> u32 {
+    fn batch_count(&self) -> usize {
         0
     }
 }

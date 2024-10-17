@@ -62,15 +62,9 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+use crate::jni_prelude::*;
 use std::panic;
 use std::panic::AssertUnwindSafe;
-
-use crate::java::structure::{StructFromJava, StructToJava};
-
-use crate::java::result::JavaResult;
 
 pub fn jni_jbytearray_to_vector(env: &JNIEnv, jbytearray: jbyteArray) -> JavaResult<Vec<u8>> {
     Ok(env.convert_byte_array(jbytearray)?)

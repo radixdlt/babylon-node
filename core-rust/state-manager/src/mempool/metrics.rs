@@ -62,10 +62,8 @@
  * permissions under this License.
  */
 
-use node_common::metrics::*;
+use crate::prelude::*;
 use prometheus::*;
-
-use crate::{MempoolAddError, MempoolAddSource, MempoolRejectionReason};
 
 pub struct MempoolMetrics {
     pub current_transactions: IntGauge,
@@ -104,7 +102,7 @@ impl MempoolMetrics {
 }
 
 impl MempoolManagerMetrics {
-    pub fn new(registry: &Registry) -> Self {
+    pub fn new(registry: &MetricRegistry) -> Self {
         Self {
             submission_attempt: new_timer_vec(
                 opts(

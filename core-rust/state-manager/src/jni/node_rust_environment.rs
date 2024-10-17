@@ -64,32 +64,20 @@
 use std::ops::Deref;
 use std::path::{PathBuf, MAIN_SEPARATOR};
 use std::str::FromStr;
-use std::sync::Arc;
 
-use crate::engine_prelude::*;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+use crate::jni_prelude::*;
 use node_common::environment::setup_tracing;
-use node_common::java::{jni_call, jni_jbytearray_to_vector};
-use node_common::locks::*;
 use prometheus::Registry;
 
 use node_common::scheduler::{Scheduler, UntilDropTracker};
 use tokio::runtime::Runtime;
 use tracing::Level;
 
-use crate::mempool_manager::MempoolManager;
-use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
-use crate::priority_mempool::PriorityMempool;
-
 use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolManager;
 use crate::store::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::Preparator;
-use crate::{Committer, DatabaseBackendConfig, LedgerMetrics, SystemExecutor};
-use crate::{StateManager, StateManagerConfig};
 use p2p::rocks_db::{ActualAddressBookDatabase, ActualSafetyStoreDatabase};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";

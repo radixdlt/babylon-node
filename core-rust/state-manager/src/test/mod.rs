@@ -1,13 +1,5 @@
-use crate::engine_prelude::*;
-use crate::query::TransactionIdentifierLoader;
-use crate::store::traits::QueryableProofStore;
-use crate::{
-    CommitRequest, CommitSummary, LedgerHeader, LedgerProof, LedgerProofOrigin, PrepareRequest,
-    PrepareResult, RoundHistory, StateManager, StateManagerConfig,
-};
-use node_common::locks::LockFactory;
+use crate::prelude::*;
 use node_common::scheduler::Scheduler;
-use prometheus::Registry;
 
 // A bunch of test utils
 
@@ -16,7 +8,7 @@ pub fn create_state_manager(config: StateManagerConfig) -> StateManager {
         config,
         None,
         &LockFactory::new("testing"),
-        &Registry::new(),
+        &MetricRegistry::new(),
         &Scheduler::new("testing"),
     )
 }

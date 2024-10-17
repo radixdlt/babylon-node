@@ -1,11 +1,8 @@
-use crate::engine_prelude::*;
-use state_manager::StateVersion;
-use tracing::warn;
-
-use crate::core_api::*;
+use crate::prelude::*;
 
 /// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
+#[allow(unused)] // Debug is ignored for dead code analysis, but is used in the error messages
 pub enum MappingError {
     PartitionNumber {
         entity_address: String,
@@ -91,6 +88,7 @@ impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {
 /// Should be used when extracting values from a client request
 #[derive(Debug, Clone)]
 #[allow(clippy::enum_variant_names)]
+#[allow(unused)] // Debug is ignored for dead code analysis, but is used in the error messages
 pub enum ExtractionError {
     InvalidInteger {
         message: String,
