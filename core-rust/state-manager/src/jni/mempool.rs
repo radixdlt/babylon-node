@@ -193,7 +193,7 @@ impl From<Arc<MempoolTransaction>> for JavaPreparedNotarizedTransaction {
 enum MempoolAddErrorJava {
     PriorityThresholdNotMet {
         min_tip_percentage_required: Option<u32>,
-        tip_percentage: u32,
+        tip_basis_points: u32,
     },
     Duplicate(NotarizedTransactionHash),
     TransactionValidationError(String),
@@ -205,10 +205,10 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
         match err {
             MempoolAddError::PriorityThresholdNotMet {
                 min_tip_basis_points_required: min_tip_percentage_required,
-                tip_basis_points: tip_percentage,
+                tip_basis_points,
             } => MempoolAddErrorJava::PriorityThresholdNotMet {
                 min_tip_percentage_required,
-                tip_percentage,
+                tip_basis_points,
             },
             MempoolAddError::Duplicate(hash) => MempoolAddErrorJava::Duplicate(hash),
             MempoolAddError::Rejected(rejection) => {

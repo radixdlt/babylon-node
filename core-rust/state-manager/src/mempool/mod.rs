@@ -151,14 +151,14 @@ impl Display for MempoolAddError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             MempoolAddError::PriorityThresholdNotMet {
-                min_tip_basis_points_required: min_tip_percentage_required,
-                tip_basis_points: tip_percentage,
-            } => match min_tip_percentage_required {
+                min_tip_basis_points_required,
+                tip_basis_points,
+            } => match min_tip_basis_points_required {
                 None => {
                     write!(f, "Priority Threshold not met. There is no known tip to guarantee mempool submission.")
                 }
                 Some(min_tip_percentage_required) => {
-                    write!(f, "Priority Threshold not met: tip is {tip_percentage} while min tip required {min_tip_percentage_required}")
+                    write!(f, "Priority Threshold not met: tip is {tip_basis_points} basis points while min tip required {min_tip_percentage_required} basis points")
                 }
             },
             MempoolAddError::Duplicate(_) => write!(f, "Duplicate Entry"),

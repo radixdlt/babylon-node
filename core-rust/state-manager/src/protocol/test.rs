@@ -99,7 +99,7 @@ fn flash_protocol_update_test() {
             .transactions
             .remove(0);
         let ProtocolUpdateTransaction::FlashTransactionV1(flash) = validator_fee_fix else {
-            panic!();
+            panic!("Anenome validator fee fix is known to be a FlashTransactionV1");
         };
         flash.state_updates
     };
