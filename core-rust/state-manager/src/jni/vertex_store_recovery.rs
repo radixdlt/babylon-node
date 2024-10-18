@@ -62,12 +62,7 @@
  * permissions under this License.
  */
 
-use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::store::traits::{RecoverableVertexStore, VertexStoreBlobV1, WriteableVertexStore};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use node_common::java::*;
+use crate::jni_prelude::*;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_recovery_VertexStoreRecovery_getVertexStore(

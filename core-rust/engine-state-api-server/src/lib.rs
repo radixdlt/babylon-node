@@ -68,12 +68,36 @@ extern crate serde_json;
 mod engine_state_api;
 pub mod jni;
 
+#[allow(unused_imports)]
+pub(crate) mod prelude {
+    pub(crate) use crate::engine_prelude::*;
+    pub(crate) use node_common::prelude::*;
+    pub(crate) use state_manager::prelude::*;
+
+    pub(crate) use crate::engine_state_api::*;
+    pub(crate) use historical_state::*;
+
+    // Axum imports
+    pub(crate) use axum::{
+        body::BoxBody,
+        http::Uri,
+        response::{IntoResponse, Response},
+        Json,
+    };
+}
+
+pub(crate) mod jni_prelude {
+    pub(crate) use crate::prelude::*;
+    pub(crate) use state_manager::jni_prelude::*;
+}
+
 pub(crate) mod engine_prelude {
     pub use radix_blueprint_schema_init::*;
 
     pub use radix_engine::object_modules::metadata::*;
     pub use radix_engine::system::system_db_reader::*;
     pub use radix_engine::system::system_type_checker::*;
+    pub use radix_engine::vm::*;
 
     pub use radix_common::prelude::*;
 
@@ -84,6 +108,7 @@ pub(crate) mod engine_prelude {
     pub use radix_transactions::errors::*;
     pub use sbor::representations::*;
 
+    pub use radix_substate_store_impls::substate_database_overlay::*;
     pub use radix_substate_store_interface::interface::*;
     pub use radix_substate_store_queries::typed_substate_layout::*;
 }

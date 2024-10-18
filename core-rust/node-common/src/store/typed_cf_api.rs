@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::store::rocks_db::{ReadableRocks, WriteableRocks};
-use itertools::Itertools;
+use crate::prelude::*;
 use rocksdb::{ColumnFamily, Direction, IteratorMode, WriteBatch};
 use std::ops::Range;
 
@@ -617,7 +615,7 @@ pub trait OrderPreservingDbCodec {}
 /// - a `DbCodec<SocketAddress>` which turns an `(ip: u32, port: u16)` tuple into `ip[4B]|port[2B]`
 ///   bytes *does* preserve grouping by host:
 ///   - [3, 14, 0, 1, 0, 80] and [3, 14, 0, 1, 0, 22] bytes start with the same 4-byte prefix, and
-///    indeed they represent port 80 and port 22 on the same host `3.14.0.1`.
+///     indeed they represent port 80 and port 22 on the same host `3.14.0.1`.
 ///   - the lexicographically-ordered range of *all* socket addresses on host `3.14.0.1` can be
 ///     expressed as "from `[3, 14, 0, 1]` inclusive to `[3, 14, 0, 1, 255, 255, 0]` exclusive"
 ///     (please note that it requires some knowledge on the maximum length of the part following the

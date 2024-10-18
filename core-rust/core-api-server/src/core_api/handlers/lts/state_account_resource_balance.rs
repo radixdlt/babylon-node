@@ -1,8 +1,4 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::LedgerHeader;
-use std::ops::Deref;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
@@ -43,7 +39,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
 
     let database = state.state_manager.database.snapshot();
 
-    if !account_address.as_node_id().is_global_virtual() {
+    if !account_address.as_node_id().is_global_preallocated() {
         read_optional_substate::<TypeInfoSubstate>(
             database.deref(),
             account_address.as_node_id(),
@@ -63,7 +59,7 @@ pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
     );
 
     if type_info.is_none() {
-        if account_address.as_node_id().is_global_virtual() {
+        if account_address.as_node_id().is_global_preallocated() {
             return response(
                 &mapping_context,
                 &header,

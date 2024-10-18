@@ -176,7 +176,7 @@ public final class AnemoneProtocolUpdateTest {
       assertEquals(
           PROTOCOL_VERSION_NAME,
           postProtocolUpdateProof
-              .closestProtocolUpdateInitProofOnOrBefore()
+              .latestProofWhichInitiatedAProtocolUpdate()
               .unwrap()
               .ledgerHeader()
               .nextProtocolVersion()

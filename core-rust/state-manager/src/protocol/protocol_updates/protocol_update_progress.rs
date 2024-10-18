@@ -1,10 +1,4 @@
-use crate::engine_prelude::*;
-
-use crate::protocol::*;
-
-use crate::store::traits::*;
-
-use crate::LedgerProofOrigin;
+use crate::prelude::*;
 
 pub enum ProtocolUpdateProgress {
     UpdateInitiatedButNothingCommitted {
@@ -12,7 +6,7 @@ pub enum ProtocolUpdateProgress {
     },
     UpdateInProgress {
         protocol_version_name: ProtocolVersionName,
-        last_batch_idx: u32,
+        last_batch_index: usize,
     },
     /// This means that the last proof contains no notion of a protocol update,
     /// which in practice almost always means that it has already executed in full.
@@ -45,10 +39,10 @@ impl ProtocolUpdateProgress {
             }
             LedgerProofOrigin::ProtocolUpdate {
                 protocol_version_name,
-                batch_idx,
+                batch_index,
             } => ProtocolUpdateProgress::UpdateInProgress {
                 protocol_version_name: protocol_version_name.clone(),
-                last_batch_idx: *batch_idx,
+                last_batch_index: *batch_index as usize,
             },
         }
     }

@@ -1,9 +1,5 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use hyper::StatusCode;
+use crate::prelude::*;
 use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
-use state_manager::{AlreadyCommittedError, MempoolAddError, MempoolAddSource};
 
 #[tracing::instrument(level = "debug", skip(state))]
 pub(crate) async fn handle_transaction_submit(
@@ -20,21 +16,21 @@ pub(crate) async fn handle_transaction_submit(
 
     let result = state.state_manager.mempool_manager.add_and_trigger_relay(
         MempoolAddSource::CoreApi,
-        RawNotarizedTransaction(transaction_bytes),
+        RawNotarizedTransaction::from_vec(transaction_bytes),
         force_recalculate,
     );
 
     match result {
         Ok(_) => Ok(models::TransactionSubmitResponse::new(false)),
         Err(MempoolAddError::PriorityThresholdNotMet {
-            min_tip_percentage_required,
-            tip_percentage,
+            min_tip_basis_points_required,
+            tip_basis_points,
         }) => Err(detailed_error(
             StatusCode::BAD_REQUEST,
             "The mempool is full and the submitted transaction's priority is not sufficient to replace any existing transactions. Try submitting with a larger tip to increase the transaction's priority.",
             TransactionSubmitErrorDetails::TransactionSubmitPriorityThresholdNotMetErrorDetails {
-                tip_percentage: tip_percentage as i32,
-                min_tip_percentage_required: min_tip_percentage_required.map(|x| x as i32),
+                tip_percentage: TipSpecifier::BasisPoints(tip_basis_points).truncate_to_percentage_u32() as i32, // Dividing by 100 means this is inbounds
+                min_tip_percentage_required: min_tip_basis_points_required.map(|x| TipSpecifier::BasisPoints(x).truncate_to_percentage_u32() as i32),
             },
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::TransactionSubmitResponse::new(true)),
@@ -62,19 +58,19 @@ pub(crate) async fn handle_transaction_submit(
                         is_intent_rejection_permanent: rejection.is_permanent_for_intent(),
                         // TODO - Add `result_validity_substate_criteria` once track / mempool is improved
                         retry_from_timestamp: match rejection.retry_from {
-                            state_manager::RetryFrom::Never => None,
-                            state_manager::RetryFrom::FromTime(time) => Some(Box::new(
+                            RetryFrom::Never => None,
+                            RetryFrom::FromTime(time) => Some(Box::new(
                                 to_api_clamped_instant_from_epoch_milli(to_unix_timestamp_ms(time)?)?,
                             )),
-                            state_manager::RetryFrom::FromEpoch(_) => None,
-                            state_manager::RetryFrom::Whenever => {
+                            RetryFrom::FromEpoch(_) => None,
+                            RetryFrom::Whenever => {
                                 Some(Box::new(to_api_clamped_instant_from_epoch_milli(
                                     to_unix_timestamp_ms(std::time::SystemTime::now())?,
                                 )?))
                             }
                         },
                         retry_from_epoch: match rejection.retry_from {
-                            state_manager::RetryFrom::FromEpoch(epoch) => {
+                            RetryFrom::FromEpoch(epoch) => {
                                 Some(to_api_epoch(&mapping_context, epoch)?)
                             }
                             _ => None,

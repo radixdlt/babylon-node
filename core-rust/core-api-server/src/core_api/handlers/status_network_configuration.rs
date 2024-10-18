@@ -1,5 +1,4 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_configuration(
@@ -20,27 +19,27 @@ pub(crate) async fn handle_status_network_configuration(
             core_version: env!("CARGO_PKG_VERSION").to_string(),
             api_version: models::SCHEMA_VERSION.to_string(),
         }),
-        network: network.logical_name,
+        network: network.logical_name.into_owned(),
         network_id: to_api_u8_as_i32(network.id),
-        network_hrp_suffix: network.hrp_suffix,
+        network_hrp_suffix: network.hrp_suffix.into_owned(),
         usd_price_in_xrd: to_api_decimal(&Decimal::try_from(USD_PRICE_IN_XRD).unwrap()),
         address_types,
         well_known_addresses: Box::new(models::NetworkConfigurationResponseWellKnownAddresses {
             xrd: bech32_encoder.encode(XRD.as_ref()).unwrap(),
             secp256k1_signature_virtual_badge: bech32_encoder
-                .encode(SECP256K1_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .encode(SECP256K1_SIGNATURE_RESOURCE.as_ref())
                 .unwrap(),
             ed25519_signature_virtual_badge: bech32_encoder
-                .encode(ED25519_SIGNATURE_VIRTUAL_BADGE.as_ref())
+                .encode(ED25519_SIGNATURE_RESOURCE.as_ref())
                 .unwrap(),
             package_of_direct_caller_virtual_badge: bech32_encoder
-                .encode(PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE.as_ref())
+                .encode(PACKAGE_OF_DIRECT_CALLER_RESOURCE.as_ref())
                 .unwrap(),
             global_caller_virtual_badge: bech32_encoder
-                .encode(GLOBAL_CALLER_VIRTUAL_BADGE.as_ref())
+                .encode(GLOBAL_CALLER_RESOURCE.as_ref())
                 .unwrap(),
             system_transaction_badge: bech32_encoder
-                .encode(SYSTEM_TRANSACTION_BADGE.as_ref())
+                .encode(SYSTEM_EXECUTION_RESOURCE.as_ref())
                 .unwrap(),
             package_owner_badge: bech32_encoder.encode(PACKAGE_OWNER_BADGE.as_ref()).unwrap(),
             validator_owner_badge: bech32_encoder

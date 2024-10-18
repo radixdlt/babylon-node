@@ -62,16 +62,8 @@
  * permissions under this License.
  */
 
-use std::ops::Deref;
-
-use crate::engine_prelude::entity_tier::EntityTier;
-use crate::engine_prelude::*;
-use crate::query::StateManagerSubstateQueries;
-use crate::store::rocks_db::StateManagerDatabase;
-use crate::store::traits::indices::{CreationId, EntityBlueprintId, EntityListingIndex};
-use crate::store::traits::*;
-use crate::{CommittedTransactionIdentifiers, LedgerStateSummary, StateVersion};
-use node_common::store::rocks_db::ReadableRocks;
+use crate::prelude::*;
+use entity_tier::EntityTier;
 
 /// An implementation of a [`SubstateDatabase`] viewed at a specific [`StateVersion`].
 ///
@@ -166,7 +158,7 @@ impl<'s, S: ReadableTreeStore + 's, DS: Deref<Target = S>> StateTreeBasedSubstat
 impl<'s, S: ReadableTreeStore + LeafSubstateValueStore + 's, DS: Deref<Target = S>> SubstateDatabase
     for StateTreeBasedSubstateDatabase<'s, DS>
 {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
@@ -178,7 +170,7 @@ impl<'s, S: ReadableTreeStore + LeafSubstateValueStore + 's, DS: Deref<Target = 
             .map(|substate| self.get_value(&substate.state_tree_leaf_key))
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
@@ -313,32 +305,32 @@ impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>>
 impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>> SubstateDatabase
     for VersionScopedDatabase<'s, DS>
 {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
         match self {
             VersionScopedDatabase::Current(database) => {
-                database.get_substate(partition_key, sort_key)
+                database.get_raw_substate_by_db_key(partition_key, sort_key)
             }
             VersionScopedDatabase::Historical(database) => {
-                database.get_substate(partition_key, sort_key)
+                database.get_raw_substate_by_db_key(partition_key, sort_key)
             }
         }
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         match self {
             VersionScopedDatabase::Current(database) => {
-                database.list_entries_from(partition_key, from_sort_key)
+                database.list_raw_values_from_db_key(partition_key, from_sort_key)
             }
             VersionScopedDatabase::Historical(database) => {
-                database.list_entries_from(partition_key, from_sort_key)
+                database.list_raw_values_from_db_key(partition_key, from_sort_key)
             }
         }
     }
@@ -483,11 +475,11 @@ mod tests {
             .put_substate_changes(vec![change(8, 7, 2, Some(8)), change(8, 1, 9, Some(1))]);
 
         let subject_v1 = test_stores.create_subject(v1);
-        let value_v1 = subject_v1.get_substate(&partition_key(8, 7), &sort_key(2));
+        let value_v1 = subject_v1.get_raw_substate_by_db_key(&partition_key(8, 7), &sort_key(2));
         assert_eq!(value_v1, Some(from_seed(7)));
 
         let subject_v2 = test_stores.create_subject(v2);
-        let value_v2 = subject_v2.get_substate(&partition_key(8, 7), &sort_key(2));
+        let value_v2 = subject_v2.get_raw_substate_by_db_key(&partition_key(8, 7), &sort_key(2));
         assert_eq!(value_v2, Some(from_seed(8)));
     }
 
@@ -503,11 +495,11 @@ mod tests {
             test_stores.reset_partition(&partition_key(8, 7), vec![(sort_key(2), from_seed(9))]);
 
         let subject_v1 = test_stores.create_subject(v1);
-        let value_v1 = subject_v1.get_substate(&partition_key(8, 7), &sort_key(2));
+        let value_v1 = subject_v1.get_raw_substate_by_db_key(&partition_key(8, 7), &sort_key(2));
         assert_eq!(value_v1, Some(from_seed(7)));
 
         let subject_v2 = test_stores.create_subject(v2);
-        let value_v2 = subject_v2.get_substate(&partition_key(8, 7), &sort_key(2));
+        let value_v2 = subject_v2.get_raw_substate_by_db_key(&partition_key(8, 7), &sort_key(2));
         assert_eq!(value_v2, Some(from_seed(9)));
     }
 
@@ -523,9 +515,9 @@ mod tests {
             .put_substate_changes(vec![change(8, 7, 2, Some(8)), change(8, 1, 9, Some(1))]);
 
         let subject_v1 = test_stores.create_subject(v1);
-        let value_v1 = subject_v1.get_substate(&partition_key(8, 6), &sort_key(3));
+        let value_v1 = subject_v1.get_raw_substate_by_db_key(&partition_key(8, 6), &sort_key(3));
         let subject_v2 = test_stores.create_subject(v2);
-        let value_v2 = subject_v2.get_substate(&partition_key(8, 6), &sort_key(3));
+        let value_v2 = subject_v2.get_raw_substate_by_db_key(&partition_key(8, 6), &sort_key(3));
         assert_eq!(value_v2, value_v1);
     }
 
@@ -541,11 +533,11 @@ mod tests {
             .put_substate_changes(vec![change(8, 7, 2, Some(8)), change(8, 1, 9, Some(1))]);
 
         let subject_v1 = test_stores.create_subject(v1);
-        let value_v1 = subject_v1.get_substate(&partition_key(8, 1), &sort_key(9));
+        let value_v1 = subject_v1.get_raw_substate_by_db_key(&partition_key(8, 1), &sort_key(9));
         assert_eq!(value_v1, None);
 
         let subject_v2 = test_stores.create_subject(v2);
-        let value_v2 = subject_v2.get_substate(&partition_key(8, 1), &sort_key(9));
+        let value_v2 = subject_v2.get_raw_substate_by_db_key(&partition_key(8, 1), &sort_key(9));
         assert_eq!(value_v2, Some(from_seed(1)));
     }
 
@@ -561,11 +553,11 @@ mod tests {
             test_stores.put_substate_changes(vec![change(8, 7, 2, None), change(8, 1, 9, Some(1))]);
 
         let subject_v2 = test_stores.create_subject(v2);
-        let value_v2 = subject_v2.get_substate(&partition_key(8, 7), &sort_key(2));
+        let value_v2 = subject_v2.get_raw_substate_by_db_key(&partition_key(8, 7), &sort_key(2));
         assert_eq!(value_v2, None);
 
         let subject_v1 = test_stores.create_subject(v1);
-        let value_v1 = subject_v1.get_substate(&partition_key(8, 7), &sort_key(2));
+        let value_v1 = subject_v1.get_raw_substate_by_db_key(&partition_key(8, 7), &sort_key(2));
         assert_eq!(value_v1, Some(from_seed(7)));
     }
 
@@ -580,11 +572,11 @@ mod tests {
         let v2 = test_stores.reset_partition(&partition_key(8, 7), vec![]);
 
         let subject_v2 = test_stores.create_subject(v2);
-        let value_v2 = subject_v2.get_substate(&partition_key(8, 7), &sort_key(2));
+        let value_v2 = subject_v2.get_raw_substate_by_db_key(&partition_key(8, 7), &sort_key(2));
         assert_eq!(value_v2, None);
 
         let subject_v1 = test_stores.create_subject(v1);
-        let value_v1 = subject_v1.get_substate(&partition_key(8, 7), &sort_key(2));
+        let value_v1 = subject_v1.get_raw_substate_by_db_key(&partition_key(8, 7), &sort_key(2));
         assert_eq!(value_v1, Some(from_seed(7)));
     }
 
@@ -607,7 +599,7 @@ mod tests {
 
         let subject_v1 = test_stores.create_subject(v1);
         let substates_v1 = subject_v1
-            .list_entries_from(&partition_key(8, 7), None)
+            .list_raw_values_from_db_key(&partition_key(8, 7), None)
             .collect::<Vec<_>>();
         assert_eq!(
             substates_v1,
@@ -620,7 +612,7 @@ mod tests {
 
         let subject_v2 = test_stores.create_subject(v2);
         let substates_v2 = subject_v2
-            .list_entries_from(&partition_key(8, 7), None)
+            .list_raw_values_from_db_key(&partition_key(8, 7), None)
             .collect::<Vec<_>>();
         assert_eq!(
             substates_v2,
@@ -644,7 +636,7 @@ mod tests {
 
         let subject = test_stores.create_subject(the_only_version);
         let all_substates = subject
-            .list_entries_from(&partition_key(8, 7), None)
+            .list_raw_values_from_db_key(&partition_key(8, 7), None)
             .collect::<Vec<_>>();
         assert_eq!(
             all_substates,
@@ -657,22 +649,22 @@ mod tests {
         );
 
         let from_existent = subject
-            .list_entries_from(&partition_key(8, 7), Some(&sort_key(2)))
+            .list_raw_values_from_db_key(&partition_key(8, 7), Some(&sort_key(2)))
             .collect::<Vec<_>>();
         assert_eq!(from_existent, all_substates[1..]);
 
         let from_non_existent = subject
-            .list_entries_from(&partition_key(8, 7), Some(&sort_key(3)))
+            .list_raw_values_from_db_key(&partition_key(8, 7), Some(&sort_key(3)))
             .collect::<Vec<_>>();
         assert_eq!(from_non_existent, all_substates[2..]);
 
         let from_lt_min = subject
-            .list_entries_from(&partition_key(8, 7), Some(&sort_key(0)))
+            .list_raw_values_from_db_key(&partition_key(8, 7), Some(&sort_key(0)))
             .collect::<Vec<_>>();
         assert_eq!(from_lt_min, all_substates);
 
         let from_gt_max = subject
-            .list_entries_from(&partition_key(8, 7), Some(&sort_key(9)))
+            .list_raw_values_from_db_key(&partition_key(8, 7), Some(&sort_key(9)))
             .collect::<Vec<_>>();
         assert_eq!(from_gt_max, vec![]);
     }

@@ -1,10 +1,5 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use radix_engine_toolkit::receipt::RuntimeToolkitTransactionReceipt;
-use state_manager::rocks_db::ActualStateManagerDatabase;
-use state_manager::transaction::ProcessedPreviewResult;
-use state_manager::{ExecutionFeeData, LocalTransactionReceipt, PreviewRequest};
+use crate::prelude::*;
+use radix_engine_toolkit_common::receipt::RuntimeToolkitTransactionReceipt;
 
 pub(crate) async fn handle_transaction_preview(
     state: State<CoreApiState>,
@@ -107,17 +102,16 @@ fn to_api_response(
     should_include_toolkit_receipt: bool,
 ) -> Result<models::TransactionPreviewResponse, ResponseError<()>> {
     let engine_receipt = result.receipt;
-    let versioned_engine_receipt = engine_receipt.clone().into_versioned();
 
-    // This is interpreted by the toolkit in the wallet. This will be removed with the release of
-    // the cuttlefish protocol update.
-    let encoded_receipt = to_hex(scrypto_encode(&versioned_engine_receipt).unwrap());
+    // The `encoded_receipt` is removed as of Cuttlefish, but the JSON field is kept for
+    // structural backwards compatibility, to prevent breaking clients who don't rely on it.
+    let encoded_receipt = "".to_string();
 
     // Produce a toolkit transaction receipt for the transaction preview if it was requested in the
     // request opt-ins.
     let toolkit_receipt = if should_include_toolkit_receipt {
         Some(
-            RuntimeToolkitTransactionReceipt::try_from(versioned_engine_receipt.clone())
+            RuntimeToolkitTransactionReceipt::try_from(engine_receipt.clone())
                 .ok()
                 .and_then(|value| {
                     value

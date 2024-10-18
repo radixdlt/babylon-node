@@ -102,7 +102,7 @@ public final class REv2ConsensusRecoveryModule extends AbstractModule {
   private BFTValidatorSet initialValidatorSet(LedgerProofBundle latestProof) {
     return REv2ToConsensus.validatorSet(
         latestProof
-            .closestEpochProofOnOrBefore()
+            .latestProofWhichInitiatedAnEpochChange()
             .ledgerHeader()
             .nextEpoch()
             .orElseThrow()

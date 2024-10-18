@@ -62,26 +62,7 @@
  * permissions under this License.
  */
 
-use super::ReadableStateTreeStore;
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
-
-use crate::engine_prelude::*;
-use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
-use crate::transaction::LedgerTransactionHash;
-use crate::{
-    ActiveValidatorInfo, ByPartition, BySubstate, DetailedTransactionOutcome,
-    EpochTransactionIdentifiers, LedgerHashes, LedgerStateChanges, LocalTransactionReceipt,
-    NextEpoch, PartitionChangeAction, ReceiptTreeHash, StateHash, StateVersion,
-    SubstateChangeAction, SubstateReference, TransactionTreeHash,
-};
-
-use crate::staging::ReadableStore;
-
-use crate::staging::node_ancestry_resolver::NodeAncestryResolver;
-use crate::staging::overlays::{MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore};
-use crate::store::traits::{ConfigurableDatabase, LeafSubstateKeyAssociation};
-use crate::store::traits::{KeyedSubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use node_common::utils::IsAccountExt;
+use crate::prelude::*;
 
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
@@ -109,12 +90,6 @@ pub struct HashUpdateContext<'s, S> {
     pub epoch_transaction_identifiers: &'s EpochTransactionIdentifiers,
     pub parent_state_version: StateVersion,
     pub ledger_transaction_hash: &'s LedgerTransactionHash,
-}
-
-pub struct ExecutionFeeData {
-    pub fee_summary: TransactionFeeSummary,
-    pub engine_costing_parameters: CostingParameters,
-    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
 }
 
 impl ProcessedTransactionReceipt {
@@ -191,9 +166,7 @@ impl ProcessedCommitResult {
 
         let state_changes = Self::compute_ledger_state_changes(store, &commit_result.state_updates);
 
-        let database_updates = commit_result
-            .state_updates
-            .create_database_updates::<SpreadPrefixKeyMapper>();
+        let database_updates = commit_result.state_updates.create_database_updates();
 
         let GlobalBalanceUpdate {
             global_balance_summary,
@@ -333,10 +306,8 @@ impl ProcessedCommitResult {
                     },
                 };
                 for (substate_key, update) in substate_updates.as_ref() {
-                    let previous_opt = store.get_substate(
-                        &SpreadPrefixKeyMapper::to_db_partition_key(node_id, *partition_num),
-                        &SpreadPrefixKeyMapper::to_db_sort_key(substate_key),
-                    );
+                    let previous_opt =
+                        store.get_raw_substate(node_id, *partition_num, substate_key);
                     let change_action_opt = match (update, previous_opt) {
                         (DatabaseUpdate::Set(new), Some(previous)) if previous != *new => {
                             Some(SubstateChangeAction::Update {
@@ -391,7 +362,7 @@ impl ProcessedCommitResult {
 }
 
 /// A summary of vault balances per global root entity.
-#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, ScryptoSbor)]
 pub struct GlobalBalanceSummary {
     /// A cumulative balance change of each global root entity owning one or more vaults from the
     /// input "vault balance changes".
@@ -651,10 +622,10 @@ impl<'s, S: SubstateDatabase + ConfigurableDatabase> WriteableTreeStore
             .push(LeafSubstateKeyAssociation {
                 tree_node_key: state_tree_leaf_key.clone(),
                 substate_value: match substate_value {
-                    AssociatedSubstateValue::Upserted(value) => value.clone(),
+                    AssociatedSubstateValue::Upserted(value) => value.to_vec(),
                     AssociatedSubstateValue::Unchanged => self
                         .readable_delegate
-                        .get_substate(partition_key, sort_key)
+                        .get_raw_substate_by_db_key(partition_key, sort_key)
                         .expect("unchanged value not found in substate database"),
                 },
             });

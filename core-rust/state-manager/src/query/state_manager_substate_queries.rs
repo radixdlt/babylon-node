@@ -7,10 +7,10 @@ pub trait StateManagerSubstateQueries {
 impl<T: SubstateDatabase> StateManagerSubstateQueries for T {
     fn get_epoch_and_round(&self) -> (Epoch, Round) {
         let consensus_manager_state = self
-            .get_mapped::<SpreadPrefixKeyMapper, ConsensusManagerStateFieldSubstate>(
-                CONSENSUS_MANAGER.as_node_id(),
+            .get_substate::<ConsensusManagerStateFieldSubstate>(
+                CONSENSUS_MANAGER,
                 MAIN_BASE_PARTITION,
-                &ConsensusManagerField::State.into(),
+                ConsensusManagerField::State,
             )
             .unwrap()
             .into_payload()

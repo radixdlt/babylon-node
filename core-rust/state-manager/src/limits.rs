@@ -62,8 +62,7 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use node_common::config::limits::VertexLimitsConfig;
+use crate::prelude::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum VertexLimitsExceeded {

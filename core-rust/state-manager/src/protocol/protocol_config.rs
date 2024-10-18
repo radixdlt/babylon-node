@@ -10,6 +10,7 @@ const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 pub const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
 pub const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
 pub const BOTTLENOSE_PROTOCOL_VERSION: &str = "bottlenose";
+pub const CUTTLEFISH_PROTOCOL_VERSION: &str = "cuttlefish";
 
 pub fn resolve_update_definition_for_version(
     protocol_version_name: &ProtocolVersionName,
@@ -20,6 +21,7 @@ pub fn resolve_update_definition_for_version(
         GENESIS_PROTOCOL_VERSION => Some(Box::new(NoOpProtocolDefinition)),
         ANEMONE_PROTOCOL_VERSION => Some(Box::new(AnemoneProtocolUpdateDefinition)),
         BOTTLENOSE_PROTOCOL_VERSION => Some(Box::new(BottlenoseProtocolUpdateDefinition)),
+        CUTTLEFISH_PROTOCOL_VERSION => Some(Box::new(CuttlefishProtocolUpdateDefinition)),
         // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
         name_string if CustomProtocolUpdateDefinition::matches(name_string) => {
             Some(Box::new(CustomProtocolUpdateDefinition))

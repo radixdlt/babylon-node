@@ -72,8 +72,41 @@ pub mod metrics;
 pub mod scheduler;
 pub mod store;
 pub mod utils;
-pub use rocksdb;
 
-pub(crate) mod engine_prelude {
+pub mod prelude {
+    // Modules to export downstream
+    pub use crate::config::*;
+    pub use crate::locks::*;
+    pub use crate::metrics::*;
+    pub use crate::store::*;
+    pub use crate::utils::*;
+
+    // Other commonly used imports which can be used across the node
+    pub use itertools::Itertools;
+    pub use prometheus::Registry as MetricRegistry;
     pub use radix_common::prelude::*;
+    pub use std::cmp::{min, Ordering};
+    pub use std::ops::{Deref, DerefMut};
+    pub use std::path::PathBuf;
+    pub use std::sync::Arc;
+    pub use std::time::Duration;
+    pub use std::time::Instant as StdInstant; // As opposed to an engine Instant
+    pub use std::time::SystemTime;
+    pub use tracing::{debug, error, info, trace, warn, Level as LogLevel};
+
+    // Re-export the rocksdb crate
+    pub use rocksdb;
+}
+
+/// Explicitly for use when creating JNI integrations.
+/// Includes the standard prelude for ease.
+pub mod jni_prelude {
+    // Include the crate's own prelude when used internally
+    pub(crate) use crate::prelude::*;
+
+    // Externally, just export the JNI-relevant stuff
+    pub use crate::java::*;
+    pub use jni::objects::*;
+    pub use jni::sys::jbyteArray;
+    pub use jni::{JNIEnv, JavaVM};
 }

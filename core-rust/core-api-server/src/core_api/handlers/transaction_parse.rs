@@ -1,25 +1,17 @@
-use crate::core_api::*;
-use std::ops::Deref;
-use std::time::SystemTime;
+use crate::prelude::*;
 
 use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode};
 use models::transaction_parse_response::TransactionParseResponse;
 
-use state_manager::mempool::pending_transaction_result_cache::MempoolRejectionReason;
-
-use state_manager::transaction::*;
-
-use crate::engine_prelude::*;
-
 use super::{
-    to_api_intent, to_api_ledger_transaction, to_api_notarized_transaction, to_api_signed_intent,
+    to_api_intent_v1, to_api_ledger_transaction, to_api_notarized_transaction, to_api_signed_intent,
 };
 
 pub struct ParseContext<'a> {
     mapping_context: MappingContext,
     response_mode: ResponseMode,
     validation_mode: ValidationMode,
-    user_transaction_validator: NotarizedTransactionValidator,
+    transaction_validator: TransactionValidator,
     committability_validator: &'a CommittabilityValidator,
 }
 
@@ -38,9 +30,7 @@ pub(crate) async fn handle_transaction_parse(
             .with_transaction_formats(&request.transaction_format_options),
         response_mode: request.response_mode.unwrap_or(ResponseMode::Full),
         validation_mode: request.validation_mode.unwrap_or(ValidationMode::_Static),
-        user_transaction_validator: NotarizedTransactionValidator::new(ValidationConfig::default(
-            state.network.id,
-        )),
+        transaction_validator: *state.state_manager.transaction_validator.read(),
         committability_validator: read_commitability_validator.deref(),
     };
 
@@ -54,17 +44,17 @@ pub(crate) async fn handle_transaction_parse(
             to_api_parsed_notarized_transaction(&context, parsed)?
         }
         ParseMode::Signed => {
-            let parsed = attempt_parsing_as_signed_intent(&bytes)
+            let parsed = attempt_parsing_as_signed_intent(&context, &bytes)
                 .ok_or_else(|| client_error("The payload isn't a signed transaction intent"))?;
             to_api_parsed_signed_intent(&context, parsed)?
         }
         ParseMode::Unsigned => {
-            let parsed = attempt_parsing_as_intent(&bytes)
+            let parsed = attempt_parsing_as_intent(&context, &bytes)
                 .ok_or_else(|| client_error("The payload isn't an unsigned transaction intent"))?;
             to_api_parsed_intent(&context, parsed)?
         }
         ParseMode::Ledger => {
-            let parsed = attempt_parsing_as_ledger_transaction(&bytes)
+            let parsed = attempt_parsing_as_ledger_transaction(&context, &bytes)
                 .ok_or_else(|| client_error("The payload isn't a ledger transaction"))?;
             to_api_parsed_ledger_transaction(&context, parsed)?
         }
@@ -87,21 +77,21 @@ fn attempt_parsing_as_any_payload_type_and_map_for_api(
     }
 
     // Attempt 2 - Try parsing as SignedTransactionIntent
-    let signed_intent_parse_option = attempt_parsing_as_signed_intent(bytes);
+    let signed_intent_parse_option = attempt_parsing_as_signed_intent(context, bytes);
 
     if let Some(parsed) = signed_intent_parse_option {
         return to_api_parsed_signed_intent(context, parsed);
     }
 
     // Attempt 3 - Try parsing as (unsigned) TransactionIntent
-    let intent_parse_option = attempt_parsing_as_intent(bytes);
+    let intent_parse_option = attempt_parsing_as_intent(context, bytes);
 
     if let Some(parsed) = intent_parse_option {
         return to_api_parsed_intent(context, parsed);
     }
 
     // Attempt 4 - Try parsing as a ledger transaction payload
-    let ledger_parse_option = attempt_parsing_as_ledger_transaction(bytes);
+    let ledger_parse_option = attempt_parsing_as_ledger_transaction(context, bytes);
 
     if let Some(parsed) = ledger_parse_option {
         return to_api_parsed_ledger_transaction(context, parsed);
@@ -112,6 +102,7 @@ fn attempt_parsing_as_any_payload_type_and_map_for_api(
 
 struct ParsedNotarizedTransactionV1 {
     model: NotarizedTransactionV1,
+    hashes: UserTransactionHashes,
     prepared: PreparedNotarizedTransactionV1,
     validation: Option<Result<(), MempoolRejectionReason>>,
 }
@@ -120,48 +111,56 @@ fn attempt_parsing_as_notarized_transaction(
     context: &ParseContext,
     bytes: &[u8],
 ) -> Option<ParsedNotarizedTransactionV1> {
-    let prepare_result = context
-        .user_transaction_validator
-        .prepare_from_payload_bytes(bytes);
-    let prepared = match prepare_result {
-        Ok(prepared) => prepared,
-        Err(_) => return None,
+    let raw = RawNotarizedTransaction::from_slice(bytes);
+    let prepared = raw
+        .prepare(context.transaction_validator.preparation_settings())
+        .ok()?;
+
+    let hashes = prepared.hashes();
+
+    let prepared = match prepared {
+        PreparedUserTransaction::V1(prepared) => prepared,
+        PreparedUserTransaction::V2(_) => todo!(),
     };
-    let model: NotarizedTransactionV1 = match NotarizedTransactionV1::from_payload_bytes(bytes) {
-        Ok(model) => model,
-        Err(_) => return None,
-    };
+
+    let model = NotarizedTransactionV1::from_raw(&raw).ok()?;
 
     Some(match context.validation_mode {
         ValidationMode::None => ParsedNotarizedTransactionV1 {
             model,
+            hashes,
             prepared,
             validation: None,
         },
         ValidationMode::_Static => {
             let validation = Some(
-                context
-                    .user_transaction_validator
-                    .validate(prepared.clone())
+                prepared
+                    .clone()
+                    .validate(&context.transaction_validator)
                     .map(|_| ())
                     .map_err(MempoolRejectionReason::ValidationError),
             );
             ParsedNotarizedTransactionV1 {
                 model,
+                hashes,
                 prepared,
                 validation,
             }
         }
         ValidationMode::Full => {
             let validation = Some({
-                context
-                    .user_transaction_validator
-                    .validate(prepared.clone())
+                prepared
+                    .clone()
+                    .validate(&context.transaction_validator)
                     .map_err(MempoolRejectionReason::ValidationError)
                     .and_then(|validated| {
                         let rejection = context
                             .committability_validator
-                            .check_for_rejection(&validated, SystemTime::now())
+                            .check_for_rejection(
+                                &validated.create_executable(),
+                                &hashes,
+                                SystemTime::now(),
+                            )
                             .rejection;
                         match rejection {
                             Some(rejection) => Err(rejection),
@@ -171,6 +170,7 @@ fn attempt_parsing_as_notarized_transaction(
             });
             ParsedNotarizedTransactionV1 {
                 model,
+                hashes,
                 prepared,
                 validation,
             }
@@ -182,18 +182,12 @@ fn to_api_parsed_notarized_transaction(
     context: &ParseContext,
     parsed: ParsedNotarizedTransactionV1,
 ) -> Result<models::ParsedTransaction, ResponseError<()>> {
-    let intent_hash = parsed.prepared.intent_hash();
-    let signed_intent_hash = parsed.prepared.signed_intent_hash();
-    let notarized_transaction_hash = parsed.prepared.notarized_transaction_hash();
-
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_notarized_transaction(
             &context.mapping_context,
             &parsed.model,
-            &intent_hash,
-            &signed_intent_hash,
-            &notarized_transaction_hash,
+            &parsed.hashes,
         )?)),
     };
 
@@ -208,22 +202,30 @@ fn to_api_parsed_notarized_transaction(
         });
 
     let ledger_hash =
-        PreparedLedgerTransactionInner::UserV1(Box::new(parsed.prepared)).get_ledger_hash();
+        PreparedLedgerTransactionInner::User(PreparedUserTransaction::V1(parsed.prepared))
+            .get_ledger_hash();
 
     Ok(models::ParsedTransaction::ParsedNotarizedTransaction {
         notarized_transaction: model,
         identifiers: Box::new(models::ParsedNotarizedTransactionIdentifiers {
-            intent_hash: to_api_intent_hash(&intent_hash),
-            intent_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, &intent_hash)?,
-            signed_intent_hash: to_api_signed_intent_hash(&signed_intent_hash),
+            intent_hash: to_api_transaction_intent_hash(&parsed.hashes.transaction_intent_hash),
+            intent_hash_bech32m: to_api_hash_bech32m(
+                &context.mapping_context,
+                &parsed.hashes.transaction_intent_hash,
+            )?,
+            signed_intent_hash: to_api_signed_transaction_intent_hash(
+                &parsed.hashes.signed_transaction_intent_hash,
+            ),
             signed_intent_hash_bech32m: to_api_hash_bech32m(
                 &context.mapping_context,
-                &signed_intent_hash,
+                &parsed.hashes.signed_transaction_intent_hash,
             )?,
-            payload_hash: to_api_notarized_transaction_hash(&notarized_transaction_hash),
+            payload_hash: to_api_notarized_transaction_hash(
+                &parsed.hashes.notarized_transaction_hash,
+            ),
             payload_hash_bech32m: to_api_hash_bech32m(
                 &context.mapping_context,
-                &notarized_transaction_hash,
+                &parsed.hashes.notarized_transaction_hash,
             )?,
             ledger_hash: to_api_ledger_hash(&ledger_hash),
             ledger_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, &ledger_hash)?,
@@ -233,10 +235,14 @@ fn to_api_parsed_notarized_transaction(
 }
 
 fn attempt_parsing_as_signed_intent(
+    context: &ParseContext,
     bytes: &[u8],
 ) -> Option<(SignedIntentV1, PreparedSignedIntentV1)> {
-    let signed_intent = SignedIntentV1::from_payload_bytes(bytes).ok()?;
-    let prepared = PreparedSignedIntentV1::prepare_from_payload(bytes).ok()?;
+    let raw = RawSignedTransactionIntent::from_slice(bytes);
+    let signed_intent = SignedIntentV1::from_raw(&raw).ok()?;
+    let prepared =
+        PreparedSignedIntentV1::prepare(&raw, context.transaction_validator.preparation_settings())
+            .ok()?;
     Some((signed_intent, prepared))
 }
 
@@ -249,30 +255,38 @@ fn to_api_parsed_signed_intent(
         ResponseMode::Full => Some(Box::new(to_api_signed_intent(
             &context.mapping_context,
             &model,
-            &prepared.intent_hash(),
-            &prepared.signed_intent_hash(),
+            &prepared.transaction_intent_hash(),
+            &prepared.signed_transaction_intent_hash(),
         )?)),
     };
     Ok(models::ParsedTransaction::ParsedSignedTransactionIntent {
         signed_intent: model,
         identifiers: Box::new(models::ParsedSignedTransactionIntentIdentifiers {
-            intent_hash: to_api_intent_hash(&prepared.intent_hash()),
+            intent_hash: to_api_transaction_intent_hash(&prepared.transaction_intent_hash()),
             intent_hash_bech32m: to_api_hash_bech32m(
                 &context.mapping_context,
-                &prepared.intent_hash(),
+                &prepared.transaction_intent_hash(),
             )?,
-            signed_intent_hash: to_api_signed_intent_hash(&prepared.signed_intent_hash()),
+            signed_intent_hash: to_api_signed_transaction_intent_hash(
+                &prepared.signed_transaction_intent_hash(),
+            ),
             signed_intent_hash_bech32m: to_api_hash_bech32m(
                 &context.mapping_context,
-                &prepared.signed_intent_hash(),
+                &prepared.signed_transaction_intent_hash(),
             )?,
         }),
     })
 }
 
-fn attempt_parsing_as_intent(bytes: &[u8]) -> Option<(IntentV1, PreparedIntentV1)> {
-    let model = IntentV1::from_payload_bytes(bytes).ok()?;
-    let prepared = PreparedIntentV1::prepare_from_payload(bytes).ok()?;
+fn attempt_parsing_as_intent(
+    context: &ParseContext,
+    bytes: &[u8],
+) -> Option<(IntentV1, PreparedIntentV1)> {
+    let raw = RawTransactionIntent::from_slice(bytes);
+    let model = IntentV1::from_raw(&raw).ok()?;
+    let prepared =
+        PreparedIntentV1::prepare(&raw, context.transaction_validator.preparation_settings())
+            .ok()?;
     Some((model, prepared))
 }
 
@@ -280,10 +294,10 @@ fn to_api_parsed_intent(
     context: &ParseContext,
     (model, prepared): (IntentV1, PreparedIntentV1),
 ) -> Result<models::ParsedTransaction, ResponseError<()>> {
-    let intent_hash = &prepared.intent_hash();
+    let intent_hash = &prepared.transaction_intent_hash();
     let model = match context.response_mode {
         ResponseMode::Basic => None,
-        ResponseMode::Full => Some(Box::new(to_api_intent(
+        ResponseMode::Full => Some(Box::new(to_api_intent_v1(
             &context.mapping_context,
             &model,
             intent_hash,
@@ -292,22 +306,27 @@ fn to_api_parsed_intent(
     Ok(models::ParsedTransaction::ParsedTransactionIntent {
         intent: model,
         identifiers: Box::new(models::ParsedTransactionIntentIdentifiers {
-            intent_hash: to_api_intent_hash(intent_hash),
+            intent_hash: to_api_transaction_intent_hash(intent_hash),
             intent_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, intent_hash)?,
         }),
     })
 }
 
 fn attempt_parsing_as_ledger_transaction(
+    context: &ParseContext,
     bytes: &[u8],
 ) -> Option<(
     LedgerTransaction,
     PreparedLedgerTransaction,
     RawLedgerTransaction,
 )> {
-    let model = LedgerTransaction::from_payload_bytes(bytes).ok()?;
-    let prepared = PreparedLedgerTransaction::prepare_from_payload(bytes).ok()?;
-    let raw = RawLedgerTransaction(bytes.to_vec());
+    let raw = RawLedgerTransaction::from_slice(bytes);
+    let model = LedgerTransaction::from_raw(&raw).ok()?;
+    let prepared = PreparedLedgerTransaction::prepare(
+        &raw,
+        context.transaction_validator.preparation_settings(),
+    )
+    .ok()?;
     Some((model, prepared, raw))
 }
 
@@ -319,45 +338,53 @@ fn to_api_parsed_ledger_transaction(
         RawLedgerTransaction,
     ),
 ) -> Result<models::ParsedTransaction, ResponseError<()>> {
-    let identifiers = prepared.create_identifiers();
+    let hashes = prepared.create_hashes();
     let model = match context.response_mode {
         ResponseMode::Basic => None,
         ResponseMode::Full => Some(Box::new(to_api_ledger_transaction(
             &context.mapping_context,
             &raw,
             &model,
-            &identifiers,
+            &hashes,
         )?)),
     };
 
-    let user_identifiers = identifiers.typed.user();
+    let user_identifiers = hashes.as_user();
 
     Ok(models::ParsedTransaction::ParsedLedgerTransaction {
         ledger_transaction: model,
         identifiers: Box::new(models::ParsedLedgerTransactionIdentifiers {
             intent_hash: user_identifiers
                 .as_ref()
-                .map(|hashes| to_api_intent_hash(hashes.intent_hash)),
+                .map(|hashes| to_api_transaction_intent_hash(&hashes.transaction_intent_hash)),
             intent_hash_bech32m: user_identifiers
                 .as_ref()
-                .map(|hashes| to_api_hash_bech32m(&context.mapping_context, hashes.intent_hash))
+                .map(|hashes| {
+                    to_api_hash_bech32m(&context.mapping_context, &hashes.transaction_intent_hash)
+                })
                 .transpose()?,
-            signed_intent_hash: user_identifiers
-                .as_ref()
-                .map(|hashes| to_api_signed_intent_hash(hashes.signed_intent_hash)),
+            signed_intent_hash: user_identifiers.as_ref().map(|hashes| {
+                to_api_signed_transaction_intent_hash(&hashes.signed_transaction_intent_hash)
+            }),
             signed_intent_hash_bech32m: user_identifiers
                 .as_ref()
                 .map(|hashes| {
-                    to_api_hash_bech32m(&context.mapping_context, hashes.signed_intent_hash)
+                    to_api_hash_bech32m(
+                        &context.mapping_context,
+                        &hashes.signed_transaction_intent_hash,
+                    )
                 })
                 .transpose()?,
-            payload_hash: user_identifiers
-                .as_ref()
-                .map(|hashes| to_api_notarized_transaction_hash(hashes.notarized_transaction_hash)),
+            payload_hash: user_identifiers.as_ref().map(|hashes| {
+                to_api_notarized_transaction_hash(&hashes.notarized_transaction_hash)
+            }),
             payload_hash_bech32m: user_identifiers
                 .as_ref()
                 .map(|hashes| {
-                    to_api_hash_bech32m(&context.mapping_context, hashes.notarized_transaction_hash)
+                    to_api_hash_bech32m(
+                        &context.mapping_context,
+                        &hashes.notarized_transaction_hash,
+                    )
                 })
                 .transpose()?,
             ledger_hash: to_api_ledger_hash(&prepared.ledger_transaction_hash()),

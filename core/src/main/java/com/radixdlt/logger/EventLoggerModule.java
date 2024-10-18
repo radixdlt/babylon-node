@@ -227,7 +227,7 @@ public final class EventLoggerModule extends AbstractModule {
     } else if (proof.primaryProof().origin() instanceof LedgerProofOrigin.ProtocolUpdate) {
       // Protocol update init proof must be present if latest proof is of ProtocolUpdate origin.
       final var protocolUpdateInitHeader =
-          proof.closestProtocolUpdateInitProofOnOrBefore().unwrap().ledgerHeader();
+          proof.latestProofWhichInitiatedAProtocolUpdate().unwrap().ledgerHeader();
       final var postProtocolUpdateHeader = proof.primaryProof().ledgerHeader();
       final var initStateVersion = protocolUpdateInitHeader.stateVersion().toLong();
       final var postStateVersion = postProtocolUpdateHeader.stateVersion().toLong();

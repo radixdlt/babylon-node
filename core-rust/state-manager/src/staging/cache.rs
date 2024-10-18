@@ -64,32 +64,10 @@
 
 #![allow(clippy::too_many_arguments)]
 
-use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
-use super::ReadableStore;
-use std::ops::{Deref, DerefMut};
-use std::sync::Arc;
-
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::engine_prelude::*;
-use crate::staging::overlays::{
-    MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
-};
-use crate::staging::{
-    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt, StateTreeDiff,
-};
-use crate::transaction::{
-    HasLedgerTransactionHash, LedgerTransactionHash, PreparedLedgerTransaction, TransactionLogic,
-};
-use crate::{
-    EpochTransactionIdentifiers, LedgerHashes, ReceiptTreeHash, StateVersion, TransactionTreeHash,
-};
+use super::overlays::*;
+use super::stage_tree::*;
+use crate::prelude::*;
 use im::hashmap::HashMap as ImmutableHashMap;
-use itertools::Itertools;
-
-use crate::store::rocks_db::ActualStateManagerDatabase;
-use crate::store::traits::{ConfigurableDatabase, QueryableProofStore};
-use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
-use node_common::locks::{DbLock, LockFactory, Mutex};
 use slotmap::SecondaryMap;
 
 pub struct ExecutionCacheManager {
@@ -179,16 +157,16 @@ struct InternalTransactionIds {
 /// A transaction may be unambiguously identified by 2 different business keys here:
 ///
 /// - By a [`TransactionPlacement`]:
-/// A "transaction placement" of transaction X is technically a tuple `{X's parent's transaction
-/// root, X's payload hash}`. It can be produced for any "candidate" transaction (i.e. even for ones
-/// that would be rejected).
+///   A "transaction placement" of transaction X is technically a tuple `{X's parent's transaction
+///   root, X's payload hash}`. It can be produced for any "candidate" transaction (i.e. even for ones
+///   that would be rejected).
 ///
 /// - By a transaction root:
-/// This means just a regular transaction tree root (i.e. our replacement of accumulator hash).
-/// There is a gotcha though: transaction root comes from transaction's [`LedgerHashes`], and we do
-/// not compute them for transactions that are rejected (technically we could compute just the
-/// transaction root alone, but in our current impl we do not - for simplicity and performance).
-/// Yet, in this cache, we want to reference rejected transactions as well.
+///   This means just a regular transaction tree root (i.e. our replacement of accumulator hash).
+///   There is a gotcha though: transaction root comes from transaction's [`LedgerHashes`], and we do
+///   not compute them for transactions that are rejected (technically we could compute just the
+///   transaction root alone, but in our current impl we do not - for simplicity and performance).
+///   Yet, in this cache, we want to reference rejected transactions as well.
 ///
 /// For the above reasons, we need two [`HashMap`]s leading to [`DerivedStageKey`]s (we identify the
 /// candidate transactions by their placement, and we identify their parents by transaction root).
@@ -343,19 +321,23 @@ impl<'s, S> StagedStore<'s, S> {
 }
 
 impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
-    fn get_substate(
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
         let partition_updates = self.overlay.partition_updates.get(partition_key);
         let Some(partition_updates) = partition_updates else {
-            return self.root.get_substate(partition_key, sort_key);
+            return self
+                .root
+                .get_raw_substate_by_db_key(partition_key, sort_key);
         };
         match partition_updates {
             ImmutablePartitionUpdates::Delta { substate_updates } => {
                 match substate_updates.get(sort_key) {
-                    None => self.root.get_substate(partition_key, sort_key),
+                    None => self
+                        .root
+                        .get_raw_substate_by_db_key(partition_key, sort_key),
                     Some(update) => match update {
                         DatabaseUpdate::Set(value) => Some(value.clone()),
                         DatabaseUpdate::Delete => None,
@@ -370,14 +352,16 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
         }
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let partition_updates = self.overlay.partition_updates.get(partition_key);
         let Some(partition_updates) = partition_updates else {
-            return self.root.list_entries_from(partition_key, from_sort_key);
+            return self
+                .root
+                .list_raw_values_from_db_key(partition_key, from_sort_key);
         };
         let cloned_from_sort_key = from_sort_key.cloned();
 
@@ -396,7 +380,8 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
                     });
 
                 Box::new(SubstateOverlayIterator::new(
-                    self.root.list_entries_from(partition_key, from_sort_key),
+                    self.root
+                        .list_raw_values_from_db_key(partition_key, from_sort_key),
                     Box::new(overlaid_iter),
                 ))
             }

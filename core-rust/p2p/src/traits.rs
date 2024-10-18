@@ -62,9 +62,11 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
-pub mod node {
+pub use node::*;
+
+mod node {
     use super::*;
     use crate::address_book_components::*;
     use crate::components::NodeSecp256k1PublicKey;

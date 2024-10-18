@@ -1,26 +1,9 @@
-use crate::engine_prelude::*;
-use node_common::locks::{DbLock, LockFactory, RwLock};
-use prometheus::Registry;
-use std::cmp::Ordering;
-use std::collections::BTreeMap;
-use std::ops::Deref;
-use std::sync::Arc;
-use tracing::info;
-
-use crate::protocol::*;
-use crate::store::traits::{IterableProofStore, QueryableProofStore, QueryableTransactionStore};
-
-use crate::store::rocks_db::ActualStateManagerDatabase;
-use crate::{
-    LocalTransactionReceipt, ProtocolMetrics, ScenariosExecutionConfig, StateVersion,
-    SystemExecutor,
-};
-use ProtocolUpdateEnactmentCondition::*;
+use crate::prelude::*;
 
 // This file contains types and utilities for managing the (dynamic) protocol state of a running
 // node.
 
-pub struct ProtocolUpdateExecutor {
+pub struct NodeProtocolUpdateExecutor {
     network: NetworkDefinition,
     protocol_update_content_overrides: RawProtocolUpdateContentOverrides,
     scenarios_execution_config: ScenariosExecutionConfig,
@@ -28,7 +11,7 @@ pub struct ProtocolUpdateExecutor {
     system_executor: Arc<SystemExecutor>,
 }
 
-impl ProtocolUpdateExecutor {
+impl NodeProtocolUpdateExecutor {
     pub fn new(
         network: NetworkDefinition,
         protocol_update_content_overrides: RawProtocolUpdateContentOverrides,
@@ -60,7 +43,7 @@ impl ProtocolUpdateExecutor {
             }
             ProtocolUpdateProgress::UpdateInProgress {
                 protocol_version_name,
-                last_batch_idx,
+                last_batch_index: last_batch_idx,
             } => {
                 let next_batch_idx = last_batch_idx.checked_add(1).unwrap();
                 info!(
@@ -85,7 +68,7 @@ impl ProtocolUpdateExecutor {
     fn execute_protocol_update_actions(
         &self,
         protocol_version: &ProtocolVersionName,
-        from_batch_idx: u32,
+        from_batch_idx: usize,
     ) {
         let overrides = self.protocol_update_content_overrides.get(protocol_version);
         let protocol_update_transactions = resolve_update_definition_for_version(protocol_version)
@@ -99,11 +82,11 @@ impl ProtocolUpdateExecutor {
                 .to_run_after_protocol_update(protocol_version),
         };
 
-        for batch_idx in from_batch_idx..transactions_and_scenarios.batch_count() {
+        for batch_index in from_batch_idx..transactions_and_scenarios.batch_count() {
             self.system_executor.execute_protocol_update_action(
                 protocol_version,
-                batch_idx,
-                transactions_and_scenarios.generate_batch(batch_idx),
+                batch_index,
+                transactions_and_scenarios.generate_batch(batch_index),
             );
         }
     }
@@ -122,7 +105,7 @@ impl ProtocolManager {
         protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
         database: &S,
         lock_factory: &LockFactory,
-        metric_registry: &Registry,
+        metric_registry: &MetricRegistry,
     ) -> Self {
         let initial_protocol_state =
             ProtocolState::compute_initial(database, &protocol_update_triggers);
@@ -185,7 +168,7 @@ impl ProtocolManager {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ProtocolState {
     /// A list of all protocol updates that have been enacted.
     pub enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName>,
@@ -193,13 +176,13 @@ pub struct ProtocolState {
     pub pending_protocol_updates: Vec<PendingProtocolUpdate>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct PendingProtocolUpdate {
     pub protocol_update: ProtocolUpdateTrigger,
     pub state: PendingProtocolUpdateState,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub enum PendingProtocolUpdateState {
     ForSignalledReadinessSupportCondition {
         thresholds_state: Vec<(
@@ -213,7 +196,7 @@ pub enum PendingProtocolUpdateState {
     Empty,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct SignalledReadinessThresholdState {
     /// A number of consecutive epochs on or above the threshold,
     /// including the current (uncompleted) epoch.
@@ -234,7 +217,7 @@ fn compute_initial_protocol_update_status<
     protocol_update_trigger: &ProtocolUpdateTrigger,
 ) -> InitialProtocolUpdateStatus {
     match &protocol_update_trigger.enactment_condition {
-        EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
             lower_bound_inclusive,
             upper_bound_exclusive,
             readiness_thresholds,
@@ -245,7 +228,7 @@ fn compute_initial_protocol_update_status<
             upper_bound_exclusive,
             readiness_thresholds,
         ),
-        EnactAtStartOfEpochUnconditionally(epoch) => {
+        ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(epoch) => {
             compute_initial_at_epoch_protocol_update_status(store, *epoch)
         }
     }
@@ -458,7 +441,7 @@ impl ProtocolState {
         let mut enactable_protocol_updates = vec![];
         for mut pending_protocol_update in new_protocol_state.pending_protocol_updates {
             match &pending_protocol_update.protocol_update.enactment_condition {
-                EnactAtStartOfEpochIfValidatorsReady {
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
                     lower_bound_inclusive,
                     upper_bound_exclusive,
                     ..
@@ -504,7 +487,9 @@ impl ProtocolState {
                         expired_protocol_updates.push(pending_protocol_update);
                     }
                 }
-                EnactAtStartOfEpochUnconditionally(enactment_epoch) => {
+                ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(
+                    enactment_epoch,
+                ) => {
                     if let Some(next_epoch) = &local_receipt.local_execution.next_epoch {
                         match next_epoch.epoch.cmp(enactment_epoch) {
                             Ordering::Less => {

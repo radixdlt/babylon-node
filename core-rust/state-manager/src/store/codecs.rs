@@ -62,16 +62,9 @@
  * permissions under this License.
  */
 
+use crate::prelude::*;
 use std::mem::size_of;
 use std::ops::Range;
-
-use crate::engine_prelude::*;
-
-use crate::store::traits::indices::CreationId;
-use crate::store::traits::scenario::ScenarioSequenceNumber;
-use crate::transaction::RawLedgerTransaction;
-use crate::StateVersion;
-use node_common::store::typed_cf_api::*;
 
 #[derive(Default)]
 pub struct StateVersionDbCodec {}
@@ -123,11 +116,11 @@ pub struct RawLedgerTransactionDbCodec {}
 
 impl DbCodec<RawLedgerTransaction> for RawLedgerTransactionDbCodec {
     fn encode(&self, value: &RawLedgerTransaction) -> Vec<u8> {
-        value.0.to_vec()
+        value.as_slice().to_vec()
     }
 
     fn decode(&self, bytes: &[u8]) -> RawLedgerTransaction {
-        RawLedgerTransaction(bytes.to_vec())
+        RawLedgerTransaction::from_slice(bytes)
     }
 }
 

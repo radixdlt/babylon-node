@@ -44,7 +44,7 @@ pub fn to_api_transaction_tracker_collection_entry(
         substate,
         TransactionTrackerCollectionEntry,
         models::TransactionIdKey {
-            intent_hash: to_api_intent_hash(intent_hash),
+            intent_hash: to_api_transaction_intent_hash(intent_hash),
             intent_hash_bech32m: to_api_hash_bech32m(context, intent_hash)?,
         },
         value => {
