@@ -106,15 +106,31 @@ impl SystemExecutor {
                 self.committer.commit_system(commit_request);
             }
             ProtocolUpdateNodeBatch::Scenario(scenario) => {
-                // Note: here we use the top-of-ledger's state version as a starting nonce for the
-                // Scenario's transactions. This behavior is different than the Engine's default
-                // Scenario executor's (which increments the last nonce used by the previous
-                // Scenario). Unfortunately, we do not track these nonces in our database (at least
-                // not for easy retrieval), but the ever-incrementing state version is good enough
-                // for transaction deduplication purposes.
-                // ...if the state version ever gets larger than a u32, we are fine with this wrapping around.
                 let starting_nonce =
-                    batch_details.start_state_identifiers.state_version.number() as u32;
+                    if batch_details.protocol_version != &ProtocolVersionName::babylon() {
+                        // For non-genesis, we use the top-of-ledger's state version as a starting nonce for the
+                        // Scenario's transactions. This behavior is different than the Engine's default
+                        // Scenario executor's (which increments the last nonce used by the previous
+                        // Scenario).
+                        // But the ever-incrementing state version is good enough for transaction deduplication purposes.
+                        // And if the state version ever gets larger than a u32, we are fine with this wrapping around.
+                        batch_details.start_state_identifiers.state_version.number() as u32
+                    } else {
+                        // Annoyingly, genesis scenarios used a different strategy for their nonces,
+                        // so for backwards compatibility, we need to resolve them from <previous transaction + 1>
+                        let database = self.database.lock();
+                        let top_of_ledger = database.get_top_transaction_identifiers().unwrap().0;
+                        let raw_last_transaction =
+                            database.get_committed_transaction(top_of_ledger).unwrap();
+                        let typed = LedgerTransaction::from_raw(&raw_last_transaction).unwrap();
+
+                        match typed {
+                            LedgerTransaction::UserV1(user) => {
+                                user.signed_intent.intent.header.nonce + 1
+                            }
+                            _ => 0,
+                        }
+                    };
                 self.execute_scenario(batch_details, scenario.as_str(), starting_nonce);
             }
         }
