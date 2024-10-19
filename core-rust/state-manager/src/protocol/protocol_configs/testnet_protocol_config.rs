@@ -13,7 +13,7 @@ pub fn testnet_protocol_config() -> ProtocolConfig {
     //
     // So we should target applying protocol updates from 3 onwards (1 per epoch)
     ProtocolConfig::new_with_triggers(hashmap! {
-        ANEMONE_PROTOCOL_VERSION => EnactAtStartOfEpochUnconditionally(Epoch::of(3)),
-        BOTTLENOSE_PROTOCOL_VERSION => EnactAtStartOfEpochUnconditionally(Epoch::of(4)),
+        ProtocolVersionName::anemone() => EnactAtStartOfEpochUnconditionally(Epoch::of(3)),
+        ProtocolVersionName::bottlenose() => EnactAtStartOfEpochUnconditionally(Epoch::of(4)),
     })
 }

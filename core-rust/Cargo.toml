@@ -9,32 +9,35 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+
+# ================================================================
 # DEPENDENCIES ON RADIXDLT-SCRYPTO
+# ================================================================
 #
-# To make builds reproducible, for merged in node code, please specify a fixed tag below, not a branch.
+# To make builds reproducible, we must specify a fixed tag below, not a branch.
 # 
-# * In development, feel free to use branch="branch-name", instead of tag="X"
-# * When ready to put in a PR to the node, please merge your upstream PR into develop.
-# * Then create a tag in radixdlt-scrypto against the develop branch:
-#   $ git checkout release/release_name
-#   $ git pull
-#   $ git rev-parse --short HEAD | cut -c1-8
-#   $ git tag "release_name-<8 char hash id from previous command>"
-#   $ git push origin "release_name-BLAH"
-# * Then use tag="release_name-BLAH" in the below dependencies.
-# 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032", features = ["serde"] }
-radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032" }
-radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032" }
-radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032" }
-radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032" }
-radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032" }
-radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032" }
-radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032", features = ["serde"] }
-radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032", features = ["serde"] }
-radix-engine-toolkit-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-96326032" }
+# Go to your checkout of `radixdlt-scrypto`, then run the following:
+#  $ git checkout <relevant-branch>
+#  $ git pull
+#  $ git rev-parse HEAD | cut -c1-8
+#  $ git tag "release_name-<8 char hash id from previous command>"
+#  $ git push origin "release_name-BLAH"
+#
+# Then use tag="release_name-BLAH" in the below dependencies.
+# =================================================================
+
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7", features = ["serde"] }
+radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
+radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
+radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
+radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
+radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
+radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
+radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7", features = ["serde"] }
+radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7", features = ["serde"] }
+radix-engine-toolkit-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
 
 itertools = { version = "=0.10.5" }
 jni = { version = "=0.19.0" }

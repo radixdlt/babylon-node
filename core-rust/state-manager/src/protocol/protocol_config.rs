@@ -7,29 +7,61 @@ use crate::protocol::*;
 const MIN_PROTOCOL_VERSION_NAME_LEN: usize = 2;
 const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 
-pub const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
-pub const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
-pub const BOTTLENOSE_PROTOCOL_VERSION: &str = "bottlenose";
-pub const CUTTLEFISH_PROTOCOL_VERSION: &str = "cuttlefish";
+const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
+const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
+const BOTTLENOSE_PROTOCOL_VERSION: &str = "bottlenose";
+const CUTTLEFISH_PROTOCOL_VERSION: &str = "cuttlefish";
 
-pub fn resolve_update_definition_for_version(
-    protocol_version_name: &ProtocolVersionName,
-) -> Option<Box<dyn ConfigurableProtocolUpdateDefinition>> {
-    match protocol_version_name.as_str() {
-        // Note: Genesis execution is done manually; it still needs to be defined here so that
-        // resolution on boot-up handles any protocol state in a streamlined way.
-        GENESIS_PROTOCOL_VERSION => Some(Box::new(NoOpProtocolDefinition)),
-        ANEMONE_PROTOCOL_VERSION => Some(Box::new(AnemoneProtocolUpdateDefinition)),
-        BOTTLENOSE_PROTOCOL_VERSION => Some(Box::new(BottlenoseProtocolUpdateDefinition)),
-        CUTTLEFISH_PROTOCOL_VERSION => Some(Box::new(CuttlefishProtocolUpdateDefinition)),
-        // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
-        name_string if CustomProtocolUpdateDefinition::matches(name_string) => {
-            Some(Box::new(CustomProtocolUpdateDefinition))
+pub enum ResolvedProtocolVersion {
+    Babylon,
+    Anemone,
+    Bottlenose,
+    Cuttlefish,
+    Custom(ProtocolVersionName),
+    Test(ProtocolVersionName),
+}
+
+impl ResolvedProtocolVersion {
+    pub fn of(protocol_version_name: &ProtocolVersionName) -> Option<Self> {
+        match protocol_version_name.as_str() {
+            GENESIS_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Babylon),
+            ANEMONE_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Anemone),
+            BOTTLENOSE_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Bottlenose),
+            CUTTLEFISH_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Cuttlefish),
+            // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
+            name_string if CustomProtocolUpdateDefinition::matches(name_string) => Some(
+                ResolvedProtocolVersion::Custom(protocol_version_name.clone()),
+            ),
+            // Updates starting "test-" are intended for use with tests, where it uses a dummy update
+            name_string if TestProtocolUpdateDefinition::matches(name_string) => {
+                Some(ResolvedProtocolVersion::Test(protocol_version_name.clone()))
+            }
+            _ => None,
         }
-        name_string if TestProtocolUpdateDefinition::matches(name_string) => Some(Box::new(
-            TestProtocolUpdateDefinition::new(protocol_version_name.clone()),
-        )),
-        _ => None,
+    }
+
+    pub fn resolve_engine_version(&self) -> Option<ProtocolVersion> {
+        match self {
+            ResolvedProtocolVersion::Babylon => Some(ProtocolVersion::Babylon),
+            ResolvedProtocolVersion::Anemone => Some(ProtocolVersion::Anemone),
+            ResolvedProtocolVersion::Bottlenose => Some(ProtocolVersion::Bottlenose),
+            ResolvedProtocolVersion::Cuttlefish => Some(ProtocolVersion::Cuttlefish),
+            ResolvedProtocolVersion::Custom { .. } => None,
+            ResolvedProtocolVersion::Test { .. } => None,
+        }
+    }
+
+    pub fn definition(&self) -> Box<dyn ConfigurableProtocolUpdateDefinition> {
+        match self {
+            ResolvedProtocolVersion::Babylon => Box::new(BabylonProtocolUpdateDefinition),
+            ResolvedProtocolVersion::Anemone => Box::new(AnemoneProtocolUpdateDefinition),
+            ResolvedProtocolVersion::Bottlenose => Box::new(BottlenoseProtocolUpdateDefinition),
+            ResolvedProtocolVersion::Cuttlefish => Box::new(CuttlefishProtocolUpdateDefinition),
+            ResolvedProtocolVersion::Custom(..) => Box::new(CustomProtocolUpdateDefinition),
+            ResolvedProtocolVersion::Test(name) => {
+                Box::new(TestProtocolUpdateDefinition::new(name.clone()))
+            }
+        }
     }
 }
 
@@ -59,18 +91,18 @@ pub struct ProtocolConfig {
 
 impl ProtocolConfig {
     pub fn new_with_no_updates() -> Self {
-        Self::new_with_triggers::<&str>([])
+        Self::new_with_triggers([])
     }
 
-    pub fn new_with_triggers<T: Into<String>>(
-        triggers: impl IntoIterator<Item = (T, ProtocolUpdateEnactmentCondition)>,
+    pub fn new_with_triggers(
+        triggers: impl IntoIterator<Item = (ProtocolVersionName, ProtocolUpdateEnactmentCondition)>,
     ) -> Self {
         Self {
-            genesis_protocol_version: ProtocolVersionName::of(GENESIS_PROTOCOL_VERSION).unwrap(),
+            genesis_protocol_version: ProtocolVersionName::babylon(),
             protocol_update_triggers: triggers
                 .into_iter()
                 .map(|(version, enactment_condition)| {
-                    ProtocolUpdateTrigger::of(version.into(), enactment_condition)
+                    ProtocolUpdateTrigger::of(version, enactment_condition)
                 })
                 .collect(),
             protocol_update_content_overrides: ProtocolUpdateContentOverrides::empty().into(),
@@ -78,10 +110,11 @@ impl ProtocolConfig {
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        let mut protocol_versions = hashset!();
-
         self.genesis_protocol_version
-            .validate_as_configured_protocol_definition()?;
+            .validate()
+            .map_err(|err| format!("{err:?}"))?;
+
+        let mut protocol_versions = hashset!(&self.genesis_protocol_version);
 
         for protocol_update_trigger in self.protocol_update_triggers.iter() {
             protocol_update_trigger.validate()?;
@@ -98,9 +131,12 @@ impl ProtocolConfig {
         // But let's check the length here too, which isn't checked there.
         for (protocol_version_name, raw_overrides) in self.protocol_update_content_overrides.iter()
         {
-            let definition = protocol_version_name.validate_as_configured_protocol_definition()?;
+            let resolved = protocol_version_name
+                .validate()
+                .map_err(|err| format!("{err:?}"))?;
 
-            definition
+            resolved
+                .definition()
                 .validate_raw_overrides(raw_overrides)
                 .map_err(|err| {
                     format!(
@@ -131,9 +167,38 @@ pub enum ProtocolVersionNameValidationError {
         invalid_name: String,
         allowed_chars: String,
     },
+    Unrecognized {
+        invalid_name: String,
+    },
 }
 
 impl ProtocolVersionName {
+    pub fn babylon() -> Self {
+        Self::of(GENESIS_PROTOCOL_VERSION).unwrap()
+    }
+
+    pub fn anemone() -> Self {
+        Self::of(ANEMONE_PROTOCOL_VERSION).unwrap()
+    }
+
+    pub fn bottlenose() -> Self {
+        Self::of(BOTTLENOSE_PROTOCOL_VERSION).unwrap()
+    }
+
+    pub fn cuttlefish() -> Self {
+        Self::of(CUTTLEFISH_PROTOCOL_VERSION).unwrap()
+    }
+
+    pub fn for_engine(version: ProtocolVersion) -> Self {
+        match version {
+            ProtocolVersion::Unbootstrapped => panic!("Unbootstrapped is not supported!"),
+            ProtocolVersion::Babylon => Self::babylon(),
+            ProtocolVersion::Anemone => Self::anemone(),
+            ProtocolVersion::Bottlenose => Self::bottlenose(),
+            ProtocolVersion::Cuttlefish => Self::cuttlefish(),
+        }
+    }
+
     pub fn of(name: impl Into<String>) -> Result<Self, ProtocolVersionNameValidationError> {
         let name = Self(name.into());
         name.validate()?;
@@ -145,7 +210,7 @@ impl ProtocolVersionName {
         Self(name.into())
     }
 
-    pub fn validate(&self) -> Result<(), ProtocolVersionNameValidationError> {
+    pub fn validate(&self) -> Result<ResolvedProtocolVersion, ProtocolVersionNameValidationError> {
         let length = self.0.len();
         if !(MIN_PROTOCOL_VERSION_NAME_LEN..=MAX_PROTOCOL_VERSION_NAME_LEN).contains(&length) {
             return Err(ProtocolVersionNameValidationError::LengthInvalid {
@@ -166,17 +231,11 @@ impl ProtocolVersionName {
                 allowed_chars: "[A-Za-z0-9] and -".to_string(),
             });
         }
-        Ok(())
-    }
 
-    pub fn validate_as_configured_protocol_definition(
-        &self,
-    ) -> Result<Box<dyn ConfigurableProtocolUpdateDefinition>, String> {
-        self.validate()
-            .map_err(|err| format!("Protocol version ({self}) is invalid: {err:?}"))?;
-
-        resolve_update_definition_for_version(self).ok_or_else(|| {
-            format!("Protocol version ({self}) does not have a recognized definition")
+        ResolvedProtocolVersion::of(self).ok_or_else(|| {
+            ProtocolVersionNameValidationError::Unrecognized {
+                invalid_name: self.0.clone(),
+            }
         })
     }
 
@@ -221,11 +280,11 @@ pub struct ProtocolUpdateTrigger {
 impl ProtocolUpdateTrigger {
     /// Note: panics if next_protocol_version is invalid
     pub fn of(
-        next_protocol_version: impl Into<String>,
+        next_protocol_version: ProtocolVersionName,
         enactment_condition: ProtocolUpdateEnactmentCondition,
     ) -> Self {
         Self {
-            next_protocol_version: ProtocolVersionName::of(next_protocol_version.into()).unwrap(),
+            next_protocol_version,
             enactment_condition,
         }
     }
@@ -233,7 +292,9 @@ impl ProtocolUpdateTrigger {
     pub fn validate(&self) -> Result<(), String> {
         let protocol_version_name = &self.next_protocol_version;
 
-        protocol_version_name.validate_as_configured_protocol_definition()?;
+        protocol_version_name
+            .validate()
+            .map_err(|err| format!("{err:?}"))?;
 
         match &self.enactment_condition {
             ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
@@ -260,6 +321,11 @@ impl ProtocolUpdateTrigger {
                 }
             }
             ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(_) => {
+                // Nothing to check here
+            }
+            ProtocolUpdateEnactmentCondition::EnactImmediatelyAfterEndOfProtocolUpdate {
+                ..
+            } => {
                 // Nothing to check here
             }
         }
@@ -301,6 +367,9 @@ pub enum ProtocolUpdateEnactmentCondition {
     /// The enactment proceeds unconditionally
     /// at the start of specified epoch.
     EnactAtStartOfEpochUnconditionally(Epoch),
+    EnactImmediatelyAfterEndOfProtocolUpdate {
+        trigger_after: ProtocolVersionName,
+    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]

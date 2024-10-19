@@ -62,54 +62,33 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2;
+package com.radixdlt.crypto;
 
-import com.google.common.base.Preconditions;
 import com.google.common.hash.HashCode;
-import com.radixdlt.crypto.Hasher;
-import com.radixdlt.genesis.GenesisProvider;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.statecomputer.commit.LedgerProof;
-import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
-import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 
-public record REv2LedgerInitializer(
-    Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
+/** A Hasher implementation that uses Blake2b hashing algorithm. */
+public class Blake2b256Hasher implements Hasher {
 
-  public LedgerProof initialize(GenesisProvider genesisProvider) {
-    var postGenesisEpochProof = reader.getPostGenesisEpochProof();
-    if (postGenesisEpochProof.isPresent()) {
-      // the database has already been initialized:
-      var existingPostGenesisEpochProof = postGenesisEpochProof.get();
-      checkGenesisDataHashMatches(genesisProvider.genesisDataHash(), existingPostGenesisEpochProof);
-      return existingPostGenesisEpochProof;
-    } else {
-      // The database is fresh, so execute the genesis:
-      return rustStateComputer.executeGenesis(genesisProvider.genesisData().value());
-    }
+  private final Serialization serialization;
+
+  public Blake2b256Hasher(Serialization serialization) {
+    this.serialization = serialization;
   }
 
-  /**
-   * Verifies that the previous genesis matches the current configuration, to protect from node
-   * misconfiguration (i.e. configuring genesis A, but node already uses a previously-executed
-   * genesis B).
-   */
-  private void checkGenesisDataHashMatches(
-      HashCode configuredGenesisDataHash, LedgerProof postGenesisEpochProof) {
-    if (postGenesisEpochProof.origin() instanceof LedgerProofOrigin.Genesis genesisOrigin) {
-      // Opaque value of the genesis proof is the hash of GenesisData
-      final var existingGenesisHash = genesisOrigin.genesisOpaqueHash();
-      Preconditions.checkState(
-          existingGenesisHash.equals(configuredGenesisDataHash),
-          """
-          Current genesis data (of hash %s) doesn't match the genesis data that has previously been \
-          used to initialize the database (%s). \
-          Make sure your configuration is correct (check `network.id` and/or `network.genesis_data` \
-          and/or `network.genesis_data_file`).""",
-          configuredGenesisDataHash,
-          existingGenesisHash);
-    } else {
-      throw new IllegalStateException("Post genesis epoch proof is not of Genesis origin.");
-    }
+  @Override
+  public int hashSizeInBytes() {
+    return 32;
+  }
+
+  @Override
+  public HashCode hashDsonEncoded(Object o) {
+    return HashUtils.blake2b256(serialization.toDson(o, DsonOutput.Output.HASH));
+  }
+
+  @Override
+  public HashCode hashBytes(byte[] bytes) {
+    return HashUtils.blake2b256(bytes);
   }
 }

@@ -123,7 +123,7 @@ public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
                             .resultantProtocolVersion(e.getValue()))
                 .toList())
         .pendingProtocolUpdates(
-            protocolState.pendingProtocolUpdates().stream()
+            protocolState.pendingProtocolUpdates().values().stream()
                 .map(
                     p ->
                         pendingProtocolUpdate(

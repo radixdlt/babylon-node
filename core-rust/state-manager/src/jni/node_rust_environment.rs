@@ -145,6 +145,7 @@ impl JNINodeRustEnvironment {
         let state_manager = StateManager::new(
             config,
             Some(MempoolRelayDispatcher::new(env, j_node_rust_env).unwrap()),
+            Arc::new(JavaGenesisDataResolver::new(env, j_node_rust_env).unwrap()),
             &lock_factory,
             &metric_registry,
             &scheduler,

@@ -458,9 +458,10 @@ define_versioned!(
     pub VersionedLedgerProof(LedgerProofVersions) {
         previous_versions: [
             1 => LedgerProofV1: { updates_to: 2 },
+            2 => LedgerProofV2: { updates_to: 3 },
         ],
         latest_version: {
-            2 => LedgerProof = LedgerProofV2,
+            3 => LedgerProof = LedgerProofV3,
         },
     }
 );
@@ -475,11 +476,19 @@ pub struct LedgerProofV1 {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct LedgerProofV2 {
     pub ledger_header: LedgerHeader,
-    pub origin: LedgerProofOrigin,
+    pub origin: LedgerProofOriginV1,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-pub enum LedgerProofOrigin {
+pub struct LedgerProofV3 {
+    pub ledger_header: LedgerHeader,
+    pub origin: LedgerProofOriginV2,
+}
+
+pub type LedgerProofOrigin = LedgerProofOriginV2;
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub enum LedgerProofOriginV1 {
     Genesis {
         genesis_opaque_hash: Hash,
     },
@@ -493,15 +502,34 @@ pub enum LedgerProofOrigin {
     },
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub enum LedgerProofOriginV2 {
+    Consensus {
+        opaque: Hash,
+        timestamped_signatures: Vec<TimestampedValidatorSignature>,
+    },
+    /// All fields except `protocol_version_name` might be inaccurate on old ledgers / before Cuttlefish
+    ProtocolUpdate {
+        protocol_version_name: ProtocolVersionName,
+        /// Captures the known hash of the config of the protocol update, for cross-referencing on boot-up.
+        /// This is `None` if (and only if) the node ran the protocol update before this was captured.
+        config_hash: Option<Hash>,
+        batch_group_index: usize,
+        batch_group_descriptor: String,
+        batch_index: usize,
+        is_end_of_update: bool,
+    },
+}
+
 impl From<LedgerProofV1> for LedgerProofV2 {
     fn from(proof: LedgerProofV1) -> Self {
         let origin = if proof.timestamped_signatures.is_empty() {
             // The only V1 proofs without signatures are genesis
-            LedgerProofOrigin::Genesis {
+            LedgerProofOriginV1::Genesis {
                 genesis_opaque_hash: proof.opaque,
             }
         } else {
-            LedgerProofOrigin::Consensus {
+            LedgerProofOriginV1::Consensus {
                 opaque: proof.opaque,
                 timestamped_signatures: proof.timestamped_signatures,
             }
@@ -509,6 +537,53 @@ impl From<LedgerProofV1> for LedgerProofV2 {
         LedgerProofV2 {
             ledger_header: proof.ledger_header.into(),
             origin,
+        }
+    }
+}
+
+impl From<LedgerProofOriginV1> for LedgerProofOriginV2 {
+    fn from(value: LedgerProofOriginV1) -> Self {
+        // We accept that this can be wrong on old nodes at <= Cuttlefish
+        // We could fix with a migration, but it shouldn't matter, as the only use
+        // of this state for protocol updates is resuming current updates.
+        match value {
+            LedgerProofOriginV1::Genesis {
+                genesis_opaque_hash,
+            } => LedgerProofOriginV2::ProtocolUpdate {
+                protocol_version_name: ProtocolVersionName::babylon(),
+                config_hash: Some(genesis_opaque_hash),
+                batch_group_index: 0,
+                batch_group_descriptor: "".to_string(),
+                batch_index: 0,
+                is_end_of_update: false,
+            },
+            LedgerProofOriginV1::Consensus {
+                opaque,
+                timestamped_signatures,
+            } => LedgerProofOriginV2::Consensus {
+                opaque,
+                timestamped_signatures,
+            },
+            LedgerProofOriginV1::ProtocolUpdate {
+                protocol_version_name,
+                batch_index,
+            } => LedgerProofOriginV2::ProtocolUpdate {
+                protocol_version_name,
+                config_hash: None,
+                batch_group_index: 0,
+                batch_group_descriptor: "".to_string(),
+                batch_index: batch_index as usize,
+                is_end_of_update: false,
+            },
+        }
+    }
+}
+
+impl From<LedgerProofV2> for LedgerProofV3 {
+    fn from(proof: LedgerProofV2) -> Self {
+        Self {
+            ledger_header: proof.ledger_header,
+            origin: proof.origin.into(),
         }
     }
 }

@@ -64,7 +64,7 @@
 
 use crate::prelude::*;
 
-use crate::test::{create_state_manager, prepare_and_commit_round_update};
+use crate::test::*;
 
 const CUSTOM_V2_PROTOCOL_VERSION: &str = "custom-v2";
 
@@ -79,7 +79,7 @@ fn flash_protocol_update_test() {
     let protocol_update_epoch = Epoch::of(3);
 
     state_manager_config.protocol_config = ProtocolConfig::new_with_triggers(hashmap! {
-        CUSTOM_V2_PROTOCOL_VERSION => ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(
+        custom_v2_protocol_version.clone() => ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(
             protocol_update_epoch,
         )
     });
@@ -87,10 +87,10 @@ fn flash_protocol_update_test() {
     // This is a bit of a hack to be able to use fixed flash protocol update
     let consensus_manager_state_updates = {
         // Run the genesis first
-        let tmp_state_manager = create_state_manager(state_manager_config.clone());
-        tmp_state_manager
-            .system_executor
-            .execute_genesis_for_unit_tests_with_default_config();
+        let tmp_state_manager = create_bootstrapped_state_manager_with_rounds_per_epoch(
+            state_manager_config.clone(),
+            1,
+        );
         // Now we can prepare the state updates based on the initialized database
         let validator_fee_fix = AnemoneSettings::all_disabled()
             .enable(|anemone_settings| &mut anemone_settings.validator_fee_fix)
@@ -104,25 +104,24 @@ fn flash_protocol_update_test() {
         flash.state_updates
     };
 
+    let overrides = vec![CustomProtocolUpdateBatch::FlashTransactions(vec![
+        FlashTransactionV1 {
+            name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
+            state_updates: consensus_manager_state_updates,
+        },
+    ])];
+    let expected_config_hash = hash(scrypto_encode(&overrides).unwrap());
+
     state_manager_config
         .protocol_config
         .protocol_update_content_overrides = ProtocolUpdateContentOverrides::empty()
-        .with_custom(
-            custom_v2_protocol_version.clone(),
-            vec![CustomProtocolUpdateBatch::FlashTransactions(vec![
-                FlashTransactionV1 {
-                    name: format!("{CUSTOM_V2_PROTOCOL_VERSION}-flash"),
-                    state_updates: consensus_manager_state_updates,
-                },
-            ])],
-        )
+        .with_custom(custom_v2_protocol_version.clone(), overrides)
         .into();
 
-    let state_manager = create_state_manager(state_manager_config);
+    let state_manager =
+        create_bootstrapped_state_manager_with_rounds_per_epoch(state_manager_config, 1);
 
-    // Commit 3 round updates to get us to the next epoch (3).
-    let _ = prepare_and_commit_round_update(&state_manager);
-    let _ = prepare_and_commit_round_update(&state_manager);
+    // We configured 1 round per epoch, so commit 1 round to get us to the next epoch (3)
     let (prepare_result, _commit_summary) = prepare_and_commit_round_update(&state_manager);
 
     assert_eq!(
@@ -139,7 +138,7 @@ fn flash_protocol_update_test() {
     let pre_protocol_update_state_version = database.max_state_version();
 
     // Now let's apply the protocol update (this would normally be called by Java)
-    state_manager.apply_protocol_update(&custom_v2_protocol_version);
+    state_manager.apply_known_pending_protocol_update();
 
     // Verify a transaction has been committed
     assert_eq!(
@@ -179,8 +178,12 @@ fn flash_protocol_update_test() {
     assert_eq!(
         latest_execution_proof.origin,
         LedgerProofOrigin::ProtocolUpdate {
-            protocol_version_name: ProtocolVersionName::of_unchecked(CUSTOM_V2_PROTOCOL_VERSION),
-            batch_index: 0
+            protocol_version_name: custom_v2_protocol_version,
+            config_hash: Some(expected_config_hash),
+            batch_group_index: 0,
+            batch_group_descriptor: ArbitraryNodeBatchGenerator::BATCH_DESCRIPTOR.to_string(),
+            batch_index: 0,
+            is_end_of_update: true,
         }
     );
 

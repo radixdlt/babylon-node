@@ -387,9 +387,15 @@ impl ProtocolMetrics {
         instance
     }
 
-    pub fn update(&self, protocol_state: &ProtocolState, epoch_change_event: &EpochChangeEvent) {
+    pub fn update(
+        &self,
+        protocol_state: &ProtocolState,
+        epoch_change_event: Option<&EpochChangeEvent>,
+    ) {
         self.update_state_based_metrics(protocol_state);
-        self.update_epoch_change_based_metrics(epoch_change_event);
+        if let Some(epoch_change_event) = epoch_change_event {
+            self.update_epoch_change_based_metrics(epoch_change_event);
+        }
     }
 
     /// Updates the metrics that are based on ProtocolState (pending, enacted updates)
@@ -404,7 +410,9 @@ impl ProtocolMetrics {
         self.pending_update_upper_bound_epoch.reset();
         self.enacted_protocol_update_state_version.reset();
 
-        for pending_protocol_update in protocol_state.pending_protocol_updates.iter() {
+        for (protocol_name, pending_protocol_update) in
+            protocol_state.pending_protocol_updates.iter()
+        {
             let protocol_update = &pending_protocol_update.protocol_update;
             match &pending_protocol_update.protocol_update.enactment_condition {
                 ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
@@ -415,13 +423,13 @@ impl ProtocolMetrics {
                     let readiness_signal_name = protocol_update.readiness_signal_name();
                     self.pending_update_lower_bound_epoch
                         .with_two_labels(
-                            protocol_update.next_protocol_version.to_string(),
+                            protocol_name.to_string(),
                             readiness_signal_name.to_string(),
                         )
                         .set(lower_bound_inclusive.number() as i64);
                     self.pending_update_upper_bound_epoch
                         .with_two_labels(
-                            protocol_update.next_protocol_version.to_string(),
+                            protocol_name.to_string(),
                             readiness_signal_name.to_string(),
                         )
                         .set(upper_bound_exclusive.number() as i64);
@@ -434,7 +442,7 @@ impl ProtocolMetrics {
                             {
                                 self.pending_update_threshold_required_ratio
                                     .with_four_labels(
-                                        protocol_update.next_protocol_version.to_string(),
+                                        protocol_name.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
                                         threshold
@@ -446,7 +454,7 @@ impl ProtocolMetrics {
                                     ));
                                 self.pending_update_threshold_required_consecutive_epochs
                                     .with_four_labels(
-                                        protocol_update.next_protocol_version.to_string(),
+                                        protocol_name.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
                                         threshold
@@ -459,7 +467,7 @@ impl ProtocolMetrics {
                                     );
                                 self.pending_update_threshold_current_consecutive_epochs
                                     .with_four_labels(
-                                        protocol_update.next_protocol_version.to_string(),
+                                        protocol_name.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
                                         threshold
@@ -477,17 +485,16 @@ impl ProtocolMetrics {
                 }
                 ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(epoch) => {
                     self.pending_update_lower_bound_epoch
-                        .with_two_labels(
-                            protocol_update.next_protocol_version.to_string(),
-                            "".to_string(),
-                        )
+                        .with_two_labels(protocol_name.to_string(), "".to_string())
                         .set(epoch.number() as i64);
                     self.pending_update_upper_bound_epoch
-                        .with_two_labels(
-                            protocol_update.next_protocol_version.to_string(),
-                            "".to_string(),
-                        )
+                        .with_two_labels(protocol_name.to_string(), "".to_string())
                         .set(epoch.number() as i64 + 1);
+                }
+                ProtocolUpdateEnactmentCondition::EnactImmediatelyAfterEndOfProtocolUpdate {
+                    ..
+                } => {
+                    // Don't add any metrics for these triggers, as the previous update will have them
                 }
             }
         }
@@ -668,7 +675,6 @@ impl MetricLabel for ConsensusRoundResolution {
 pub enum VertexPrepareStopReason {
     ProposalComplete,
     EpochChange,
-    ProtocolUpdate,
     LimitExceeded(VertexLimitsExceeded),
 }
 
@@ -679,7 +685,6 @@ impl MetricLabel for VertexPrepareStopReason {
         match self {
             VertexPrepareStopReason::ProposalComplete => "ProposalComplete",
             VertexPrepareStopReason::EpochChange => "EpochChange",
-            VertexPrepareStopReason::ProtocolUpdate => "ProtocolUpdate",
             VertexPrepareStopReason::LimitExceeded(limit_exceeded) => match limit_exceeded {
                 VertexLimitsExceeded::TransactionsCount => "TransactionsCountLimitReached",
                 VertexLimitsExceeded::TransactionsSize => "TransactionsSizeLimitReached",

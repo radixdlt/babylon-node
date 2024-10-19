@@ -163,18 +163,15 @@ impl From<StateHistoryError> for PreviewerError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test::create_state_manager;
+    use crate::test::create_bootstrapped_state_manager;
 
     #[test]
     fn test_preview_processed_substate_changes() {
         let tmp = tempfile::tempdir().unwrap();
-        let state_manager = create_state_manager(StateManagerConfig::new_for_testing(
-            tmp.path().to_str().unwrap(),
-        ));
-
-        state_manager
-            .system_executor
-            .execute_genesis_for_unit_tests_with_default_config();
+        let state_manager = create_bootstrapped_state_manager(
+            StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),
+            BabylonSettings::test_default(),
+        );
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 

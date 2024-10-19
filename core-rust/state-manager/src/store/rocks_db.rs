@@ -995,7 +995,6 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
             .iterate_from(&start_state_version_inclusive, Direction::Forward);
 
         // A few flags used to be able to provide an accurate error response
-        let mut encountered_genesis_proof = None;
         let mut encountered_protocol_update_proof = None;
         let mut any_consensus_proof_iterated = false;
 
@@ -1013,10 +1012,6 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
                     // Stop iterating the proofs and return whatever txns/proof we have
                     // collected so far (or an empty response).
                     match next_proof.origin {
-                        LedgerProofOrigin::Genesis { .. } => {
-                            encountered_genesis_proof = Some(next_proof);
-                            break 'proof_loop;
-                        }
                         LedgerProofOrigin::ProtocolUpdate { .. } => {
                             encountered_protocol_update_proof = Some(next_proof);
                             break 'proof_loop;
@@ -1104,11 +1099,7 @@ impl<R: ReadableRocks> QueryableProofStore for StateManagerDatabase<R> {
                 // We have not iterated any valid consensus proof.
                 // Check if we've broken due to encountering
                 // one of the non-Consensus originated proofs.
-                if let Some(genesis_proof) = encountered_genesis_proof {
-                    GetSyncableTxnsAndProofError::RefusedToServeGenesis {
-                        refused_proof: Box::new(genesis_proof),
-                    }
-                } else if let Some(protocol_update_proof) = encountered_protocol_update_proof {
+                if let Some(protocol_update_proof) = encountered_protocol_update_proof {
                     GetSyncableTxnsAndProofError::RefusedToServeProtocolUpdate {
                         refused_proof: Box::new(protocol_update_proof),
                     }

@@ -136,7 +136,9 @@ public class HealthHandlerTest extends SystemApiTestBase {
             final var protocolState =
                 new ProtocolState(
                     ImmutableMap.of(UInt64.fromNonNegativeLong(5L), "enacted-v2"),
-                    ImmutableList.of(pendingProtocolUpdate));
+                    ImmutableMap.of(
+                        pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion(),
+                        pendingProtocolUpdate));
 
             final var systemInfo = mock(InMemorySystemInfo.class);
             when(systemInfo.getCurrentRound())

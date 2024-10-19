@@ -151,11 +151,6 @@ pub fn to_api_ledger_proof(
     proof: LedgerProof,
 ) -> Result<models::LedgerProof, MappingError> {
     let api_origin = match &proof.origin {
-        LedgerProofOrigin::Genesis {
-            genesis_opaque_hash,
-        } => models::LedgerProofOrigin::GenesisLedgerProofOrigin {
-            genesis_opaque_hash: to_api_hash(genesis_opaque_hash),
-        },
         LedgerProofOrigin::Consensus {
             opaque,
             timestamped_signatures,
@@ -189,11 +184,28 @@ pub fn to_api_ledger_proof(
         }
         LedgerProofOrigin::ProtocolUpdate {
             protocol_version_name,
+            config_hash,
+            batch_group_index: _,
+            batch_group_descriptor: _,
             batch_index,
-        } => models::LedgerProofOrigin::ProtocolUpdateLedgerProofOrigin {
-            protocol_version_name: protocol_version_name.to_string(),
-            batch_idx: to_api_u32_as_i64(*batch_index),
-        },
+            is_end_of_update: _,
+        } => {
+            // todo!(FIX)
+            if protocol_version_name == &ProtocolVersionName::babylon() {
+                models::LedgerProofOrigin::GenesisLedgerProofOrigin {
+                    genesis_opaque_hash: to_api_hash(
+                        config_hash
+                            .as_ref()
+                            .expect("Genesis always has a config hash"),
+                    ),
+                }
+            } else {
+                models::LedgerProofOrigin::ProtocolUpdateLedgerProofOrigin {
+                    protocol_version_name: protocol_version_name.to_string(),
+                    batch_idx: to_api_index_as_i64(*batch_index)?,
+                }
+            }
+        }
     };
     Ok(models::LedgerProof {
         ledger_header: Box::new(to_api_ledger_header(mapping_context, proof.ledger_header)?),

@@ -165,7 +165,7 @@ public final class P2PModule extends AbstractModule {
         () -> {
           final var initialEpoch = latestProof.primaryProof().ledgerHeader().epoch().toLong();
           final var shouldClearAllBans =
-              initialProtocolState.pendingProtocolUpdates().stream()
+              initialProtocolState.pendingProtocolUpdates().values().stream()
                   .anyMatch(
                       pendingProtocolUpdate ->
                           switch (pendingProtocolUpdate

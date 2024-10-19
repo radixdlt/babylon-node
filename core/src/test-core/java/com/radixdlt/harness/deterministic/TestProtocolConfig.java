@@ -65,8 +65,6 @@
 package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.environment.ScenariosExecutionConfig;
-import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import java.util.Optional;
@@ -94,14 +92,6 @@ public record TestProtocolConfig(
     return new TestProtocolConfig(scenarios, this.protocolUpdateConfigs);
   }
 
-  public TestProtocolConfig withAllScenariosForConfiguredProtocolUpdates() {
-    return new TestProtocolConfig(
-        GenesisData.ALL_SCENARIOS,
-        this.protocolUpdateConfigs.stream()
-            .map(TestProtocolUpdateConfig::withAllApplicableScenarios)
-            .collect(ImmutableList.toImmutableList()));
-  }
-
   public TestProtocolConfig with(TestProtocolUpdateConfig protocolUpdateConfig) {
     return new TestProtocolConfig(
         this.genesisScenarios,
@@ -113,8 +103,7 @@ public record TestProtocolConfig(
 
   public static TestProtocolUpdateConfig updateTo(
       String protocolVersionName, ProtocolUpdateEnactmentCondition enactmentCondition) {
-    return new TestProtocolUpdateConfig(
-        protocolVersionName, enactmentCondition, Optional.empty(), ImmutableList.of());
+    return new TestProtocolUpdateConfig(protocolVersionName, enactmentCondition, Optional.empty());
   }
 
   public long lastProtocolUpdateEnactmentEpoch() {
@@ -127,22 +116,7 @@ public record TestProtocolConfig(
   public record TestProtocolUpdateConfig(
       String name,
       ProtocolUpdateEnactmentCondition enactmentCondition,
-      Optional<byte[]> rawOverride,
-      ImmutableList<String> postProtocolUpdateScenarios) {
-
-    public TestProtocolUpdateConfig withAllApplicableScenarios() {
-      final var allApplicableScenarios =
-          ScenariosExecutionConfig.ALL.afterProtocolUpdates().stream()
-              .filter(pu -> pu.protocolVersionName().equals(name))
-              .flatMap(pu -> pu.scenarioNames().stream())
-              .collect(ImmutableList.toImmutableList());
-      return this.withScenarios(allApplicableScenarios);
-    }
-
-    public TestProtocolUpdateConfig withScenarios(ImmutableList<String> scenarios) {
-      return new TestProtocolUpdateConfig(
-          this.name, this.enactmentCondition, this.rawOverride, scenarios);
-    }
+      Optional<byte[]> rawOverride) {
 
     public long enactmentEpoch() {
       if (this.enactmentCondition

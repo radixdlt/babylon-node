@@ -32,11 +32,12 @@ impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
 
     fn create_batch_generator(
         &self,
-        _network: &NetworkDefinition,
-        _database: Arc<DbLock<ActualStateManagerDatabase>>,
+        _context: ProtocolUpdateContext,
+        overrides_hash: Option<Hash>,
         overrides: Option<Self::Overrides>,
     ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
         Box::new(ArbitraryNodeBatchGenerator {
+            config_hash: overrides_hash.unwrap_or(Hash([0; Hash::LENGTH])),
             batches: {
                 overrides
                     .unwrap_or_default()
@@ -59,15 +60,38 @@ impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
 }
 
 pub struct ArbitraryNodeBatchGenerator {
+    pub config_hash: Hash,
     pub batches: Vec<ProtocolUpdateNodeBatch>,
 }
 
+impl ArbitraryNodeBatchGenerator {
+    pub const BATCH_DESCRIPTOR: &'static str = "SingleBatch";
+}
+
 impl ProtocolUpdateNodeBatchGenerator for ArbitraryNodeBatchGenerator {
-    fn generate_batch(&self, batch_idx: usize) -> ProtocolUpdateNodeBatch {
-        self.batches.get(batch_idx).unwrap().clone()
+    fn config_hash(&self) -> Hash {
+        self.config_hash
     }
 
-    fn batch_count(&self) -> usize {
-        self.batches.len()
+    fn generate_batch(
+        &self,
+        batch_group_index: usize,
+        batch_index: usize,
+    ) -> ProtocolUpdateNodeBatch {
+        match batch_group_index {
+            0 => self.batches.get(batch_index).unwrap().clone(),
+            _ => panic!("Incorrect batch_group_index: {batch_group_index}"),
+        }
+    }
+
+    fn batch_group_descriptors(&self) -> Vec<String> {
+        vec![Self::BATCH_DESCRIPTOR.to_string()]
+    }
+
+    fn batch_count(&self, batch_group_index: usize) -> usize {
+        match batch_group_index {
+            0 => self.batches.len(),
+            _ => panic!("Incorrect batch_group_index: {batch_group_index}"),
+        }
     }
 }

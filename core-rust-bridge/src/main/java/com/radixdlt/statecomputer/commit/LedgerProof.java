@@ -94,7 +94,15 @@ public record LedgerProof(LedgerHeader ledgerHeader, LedgerProofOrigin origin) {
             Option.some(new NextEpoch(UInt64.fromNonNegativeLong(1L), nextValidators)),
             Option.empty());
 
-    return new LedgerProof(genesisLedgerHeader, new LedgerProofOrigin.Genesis(HashUtils.zero256()));
+    return new LedgerProof(
+        genesisLedgerHeader,
+        new LedgerProofOrigin.ProtocolUpdate(
+            "babylon-genesis",
+            Option.some(HashUtils.zero256()),
+            UInt64.ZERO,
+            "-",
+            UInt64.ZERO,
+            false));
   }
 
   public long stateVersion() {

@@ -7,14 +7,21 @@ type Overrides<X> = <X as ProtocolUpdateDefinition>::Overrides;
 /// Intended to be an easy-to-use type in rust (or java) for configuring each update.
 #[derive(Default, ScryptoSbor)]
 pub struct ProtocolUpdateContentOverrides {
+    babylon: Option<Overrides<BabylonProtocolUpdateDefinition>>,
     anemone: Option<Overrides<AnemoneProtocolUpdateDefinition>>,
     bottlenose: Option<Overrides<BottlenoseProtocolUpdateDefinition>>,
+    cuttlefish: Option<Overrides<CuttlefishProtocolUpdateDefinition>>,
     custom: HashMap<ProtocolVersionName, Overrides<CustomProtocolUpdateDefinition>>,
 }
 
 impl ProtocolUpdateContentOverrides {
     pub fn empty() -> Self {
         Default::default()
+    }
+
+    pub fn with_babylon(mut self, config: Overrides<BabylonProtocolUpdateDefinition>) -> Self {
+        self.babylon = Some(config);
+        self
     }
 
     pub fn with_anemone(mut self, config: Overrides<AnemoneProtocolUpdateDefinition>) -> Self {
@@ -27,6 +34,14 @@ impl ProtocolUpdateContentOverrides {
         config: Overrides<BottlenoseProtocolUpdateDefinition>,
     ) -> Self {
         self.bottlenose = Some(config);
+        self
+    }
+
+    pub fn with_cuttlefish(
+        mut self,
+        config: Overrides<CuttlefishProtocolUpdateDefinition>,
+    ) -> Self {
+        self.cuttlefish = Some(config);
         self
     }
 
@@ -50,15 +65,27 @@ impl From<ProtocolUpdateContentOverrides> for RawProtocolUpdateContentOverrides 
     fn from(value: ProtocolUpdateContentOverrides) -> Self {
         let mut map = HashMap::default();
 
+        if let Some(config) = value.babylon {
+            map.insert(
+                ProtocolVersionName::babylon(),
+                scrypto_encode(&config).unwrap(),
+            );
+        }
         if let Some(config) = value.anemone {
             map.insert(
-                ProtocolVersionName::of(ANEMONE_PROTOCOL_VERSION).unwrap(),
+                ProtocolVersionName::anemone(),
                 scrypto_encode(&config).unwrap(),
             );
         }
         if let Some(config) = value.bottlenose {
             map.insert(
-                ProtocolVersionName::of(BOTTLENOSE_PROTOCOL_VERSION).unwrap(),
+                ProtocolVersionName::bottlenose(),
+                scrypto_encode(&config).unwrap(),
+            );
+        }
+        if let Some(config) = value.cuttlefish {
+            map.insert(
+                ProtocolVersionName::cuttlefish(),
                 scrypto_encode(&config).unwrap(),
             );
         }

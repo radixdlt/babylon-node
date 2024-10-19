@@ -65,8 +65,7 @@
 package com.radixdlt.environment;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.networks.Network;
-import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 
@@ -79,31 +78,20 @@ import com.radixdlt.sbor.codec.StructCodec;
  * them out is non-trivial (because of some persistence/hardcoding inherent to Genesis handling).
  */
 public record ScenariosExecutionConfig(
-    ImmutableList<ProtocolUpdateScenarios> afterProtocolUpdates) {
+    ImmutableMap<String, ImmutableList<String>> afterProtocolUpdates,
+    boolean runDefaultScenariosWhenUnspecified) {
 
   /** A default production-compatible configuration, which does not execute any Scenarios. */
   public static final ScenariosExecutionConfig NONE =
-      new ScenariosExecutionConfig(ImmutableList.of());
+      new ScenariosExecutionConfig(ImmutableMap.of(), false);
 
   /** A "full test" configuration, executing all Scenarios at appropriate Protocol Update states. */
-  public static final ScenariosExecutionConfig ALL =
-      new ScenariosExecutionConfig(
-          ImmutableList.of( // Note: no Anemone protocol scenarios existed.
-              new ProtocolUpdateScenarios(
-                  ProtocolUpdateTrigger.BOTTLENOSE,
-                  ImmutableList.of("account_locker", "maya_router", "access-controller-v2"))));
+  public static final ScenariosExecutionConfig ALL_FOR_NETWORK =
+      new ScenariosExecutionConfig(ImmutableMap.of(), true);
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         ScenariosExecutionConfig.class,
         codecs -> StructCodec.fromRecordComponents(ScenariosExecutionConfig.class, codecs));
-  }
-
-  public static ScenariosExecutionConfig resolveForNetwork(Network network) {
-    if (Network.PRODUCTION_NETWORKS.contains(network)) {
-      return ScenariosExecutionConfig.NONE;
-    } else {
-      return ScenariosExecutionConfig.ALL;
-    }
   }
 }

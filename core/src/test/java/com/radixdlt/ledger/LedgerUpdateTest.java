@@ -71,7 +71,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
-import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -82,8 +82,9 @@ public class LedgerUpdateTest {
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .withPrefabValues(
             LedgerProofOrigin.class,
-            new LedgerProofOrigin.Genesis(HashUtils.random256()),
-            new LedgerProofOrigin.ProtocolUpdate("asd", UInt32.fromNonNegativeInt(0)))
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), ImmutableList.of()),
+            new LedgerProofOrigin.ProtocolUpdate(
+                "asd", Option.some(HashUtils.random256()), UInt64.ZERO, "-", UInt64.ZERO, false))
         .withPrefabValues(
             ProtocolState.PendingProtocolUpdateState.class,
             new ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition(

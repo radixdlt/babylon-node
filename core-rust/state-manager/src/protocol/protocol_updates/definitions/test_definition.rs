@@ -29,8 +29,8 @@ impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
 
     fn create_batch_generator(
         &self,
-        _network: &NetworkDefinition,
-        _database: Arc<DbLock<ActualStateManagerDatabase>>,
+        _context: ProtocolUpdateContext,
+        _overrides_hash: Option<Hash>,
         _overrides: Option<Self::Overrides>,
     ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
         let batch = ProtocolUpdateBatch {
@@ -40,6 +40,7 @@ impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
             )],
         };
         Box::new(ArbitraryNodeBatchGenerator {
+            config_hash: Hash([0; Hash::LENGTH]),
             batches: vec![ProtocolUpdateNodeBatch::ProtocolUpdateBatch(batch)],
         })
     }

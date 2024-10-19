@@ -62,35 +62,27 @@
  * permissions under this License.
  */
 
-package com.radixdlt.rev2.modules;
+package com.radixdlt.genesis;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
+import com.google.common.hash.HashCode;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.crypto.Blake2b256Hasher;
 import com.radixdlt.crypto.Hasher;
-import com.radixdlt.genesis.GenesisProvider;
-import com.radixdlt.rev2.REv2LedgerInitializer;
-import com.radixdlt.statecomputer.RustStateComputer;
-import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.sbor.NodeSborCodecs;
+import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.utils.WrappedByteArray;
 
-public final class REv2LedgerInitializerModule extends AbstractModule {
-  private final GenesisProvider genesisProvider;
+public record RawGenesisDataWithHash(WrappedByteArray genesisData, HashCode genesisDataHash)
+    implements GenesisProvider {
+  private static final Hasher HASHER = new Blake2b256Hasher(DefaultSerialization.getInstance());
 
-  public REv2LedgerInitializerModule(GenesisProvider genesisProvider) {
-    this.genesisProvider = genesisProvider;
+  public static RawGenesisDataWithHash fromGenesisData(GenesisData genesisData) {
+    final var genesisDataBytes =
+        NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
+    return fromGenesisDataBytes(new WrappedByteArray(genesisDataBytes));
   }
 
-  @Provides
-  @Singleton
-  REv2LedgerInitializerToken initializeLedger(REv2LedgerInitializer ledgerInitializer) {
-    final var postGenesisEpochProof = ledgerInitializer.initialize(genesisProvider);
-    return new REv2LedgerInitializerToken(postGenesisEpochProof);
-  }
-
-  @Provides
-  @Singleton
-  REv2LedgerInitializer rev2LedgerInitializer(
-      Hasher hasher, RustStateComputer rustStateComputer, TransactionsAndProofReader reader) {
-    return new REv2LedgerInitializer(hasher, rustStateComputer, reader);
+  public static RawGenesisDataWithHash fromGenesisDataBytes(WrappedByteArray bytes) {
+    return new RawGenesisDataWithHash(bytes, HASHER.hashBytes(bytes.hashableBytes()));
   }
 }

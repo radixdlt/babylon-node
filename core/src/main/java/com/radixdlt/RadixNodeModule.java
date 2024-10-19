@@ -291,8 +291,6 @@ public final class RadixNodeModule extends AbstractModule {
             enableHistoricalSubstateValues,
             enableEntityListingIndices);
 
-    install(new REv2LedgerInitializerModule(genesisProvider));
-
     var vertexMaxTransactionCount =
         properties.get(
             "protocol.vertex.max_transaction_count",
@@ -380,6 +378,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(
         REv2StateManagerModule.create(
+            genesisProvider,
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
             databaseConfig,
@@ -388,7 +387,7 @@ public final class RadixNodeModule extends AbstractModule {
             ledgerProofsGcConfig,
             ledgerSyncLimitsConfig,
             protocolConfig,
-            ScenariosExecutionConfig.resolveForNetwork(network)));
+            ScenariosExecutionConfig.ALL_FOR_NETWORK));
 
     // Persistence
     install(new PersistentSafetyStateStoreModule());
