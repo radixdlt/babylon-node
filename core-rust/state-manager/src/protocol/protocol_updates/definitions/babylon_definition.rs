@@ -124,15 +124,26 @@ impl ProtocolUpdateDefinition for BabylonProtocolUpdateDefinition {
             proposer_timestamp_ms: babylon_settings.initial_time_ms,
             state_version: StateVersion::pre_genesis(),
         });
+
+        let base_batch_generator = EngineBatchGenerator::new(
+            context.database.clone(),
+            babylon_settings.create_batch_generator(),
+            Hash([0; Hash::LENGTH]), // This hash gets ignored by the fixed outer hash.
+        );
+
+        // Insert scenarios before the WrapUp batch group
+        let insert_scenarios_at = base_batch_generator
+            .batch_group_descriptors()
+            .iter()
+            .position(|n| n == "WrapUp")
+            .expect("Genesis should include the WrapUp batch group");
+
         Box::new(BatchGeneratorWithScenarios {
-            base_batch_generator: EngineBatchGenerator::new(
-                context.database.clone(),
-                babylon_settings.create_batch_generator(),
-                Hash([0; Hash::LENGTH]), // This hash gets ignored by the fixed outer hash.
-            ),
+            base_batch_generator,
             scenario_names,
             fixed_config_hash: Some(config_hash),
             genesis_start_identifiers,
+            insert_scenarios_batch_group_at: insert_scenarios_at,
         })
     }
 }

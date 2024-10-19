@@ -115,6 +115,7 @@ pub struct BatchGeneratorWithScenarios<B: ProtocolUpdateNodeBatchGenerator> {
     pub scenario_names: Vec<String>,
     pub fixed_config_hash: Option<Hash>,
     pub genesis_start_identifiers: Option<StartStateIdentifiers>,
+    pub insert_scenarios_batch_group_at: usize,
 }
 
 pub fn create_default_generator_with_scenarios<U: UpdateSettings>(
@@ -128,15 +129,18 @@ pub fn create_default_generator_with_scenarios<U: UpdateSettings>(
     let config_hash = overrides_hash.unwrap_or(Hash([0; Hash::LENGTH]));
     let config =
         overrides.unwrap_or_else(|| U::all_enabled_as_default_for_network(context.network));
+    let base_batch_generator = EngineBatchGenerator::new(
+        context.database.clone(),
+        config.create_batch_generator(),
+        config_hash,
+    );
+    let insert_scenarios_batch_group_at = base_batch_generator.batch_group_descriptors().len();
     BatchGeneratorWithScenarios {
-        base_batch_generator: EngineBatchGenerator::new(
-            context.database.clone(),
-            config.create_batch_generator(),
-            config_hash,
-        ),
+        base_batch_generator,
         scenario_names,
         fixed_config_hash: None,
         genesis_start_identifiers: None,
+        insert_scenarios_batch_group_at,
     }
 }
 
@@ -175,39 +179,48 @@ impl<B: ProtocolUpdateNodeBatchGenerator> ProtocolUpdateNodeBatchGenerator
         batch_group_index: usize,
         batch_index: usize,
     ) -> ProtocolUpdateNodeBatch {
-        let base_batch_groups_len = self.base_batch_generator.batch_group_descriptors().len();
+        if self.scenario_names.is_empty() {
+            return self
+                .base_batch_generator
+                .generate_batch(batch_group_index, batch_index);
+        }
+
         match batch_group_index {
-            x if x < base_batch_groups_len => self
+            x if x < self.insert_scenarios_batch_group_at => self
                 .base_batch_generator
                 .generate_batch(batch_group_index, batch_index),
-            x if x == base_batch_groups_len => {
+            x if x == self.insert_scenarios_batch_group_at => {
                 let scenario_name = self.scenario_names.get(batch_index).unwrap().clone();
                 ProtocolUpdateNodeBatch::Scenario(scenario_name)
             }
-            _ => {
-                panic!("Invalid batch group index: {batch_group_index}")
-            }
+            _ => self
+                .base_batch_generator
+                .generate_batch(batch_group_index - 1, batch_index),
         }
     }
 
     fn batch_group_descriptors(&self) -> Vec<String> {
         let mut base_groups = self.base_batch_generator.batch_group_descriptors();
         if !self.scenario_names.is_empty() {
-            base_groups.push("Scenarios".to_string())
+            base_groups.insert(
+                self.insert_scenarios_batch_group_at,
+                "Scenarios".to_string(),
+            )
         }
         base_groups
     }
 
     fn batch_count(&self, batch_group_index: usize) -> usize {
-        let base_batch_groups_len = self.base_batch_generator.batch_group_descriptors().len();
+        if self.scenario_names.is_empty() {
+            return self.base_batch_generator.batch_count(batch_group_index);
+        }
+
         match batch_group_index {
-            x if x < base_batch_groups_len => {
+            x if x < self.insert_scenarios_batch_group_at => {
                 self.base_batch_generator.batch_count(batch_group_index)
             }
-            x if x == base_batch_groups_len => self.scenario_names.len(),
-            _ => {
-                panic!("Invalid batch group index: {batch_group_index}")
-            }
+            x if x == self.insert_scenarios_batch_group_at => self.scenario_names.len(),
+            _ => self.base_batch_generator.batch_count(batch_group_index - 1),
         }
     }
 }
