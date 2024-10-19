@@ -1,7 +1,7 @@
 name: Docker v2
 
 on:
-  # pull_request:
+  pull_request:
   release:
     types: [published]
   push:
@@ -17,97 +17,8 @@ concurrency:
 env:
   TMP_LOCAL_IMAGE: localhost:5000/radixdlt/babylon-node-test
   REGISTRY_IMAGE: radixdlt/babylon-node-test
-  REGISTRY_TAG: latest
 
 jobs:
-  build_java:
-    strategy:
-      matrix:
-        os: ["ubuntu-latest-8-cores", "ubuntu-latest-arm-8-cores"]
-        arch: ["amd64", "arm64"]
-        exclude:
-          - os: ubuntu-latest-8-cores
-            arch: arm64
-          - os: ubuntu-latest-arm-8-cores
-            arch: amd64
-    name: Build Java artifacts
-    runs-on: ${{ matrix.os }}
-    container: radixdlt/build-layers:java
-    steps:
-      - name: Checkout
-        uses: RDXWorks-actions/checkout@main
-      - uses: RDXWorks-actions/gradle-cache-action@v2
-        name: Build
-        env:
-          SKIP_NATIVE_RUST_BUILD: "TRUE"
-          JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF8"
-        with:
-          job-id: jdk17
-          arguments: clean build -x test
-          gradle-version: wrapper
-          # Properties are passed as -Pname=value
-          properties: |
-            ci=true
-            rustBinaryBuildType=release
-      - name: Extract artifacts
-        run: |
-          cd core/build/distributions
-          unzip -j *.zip
-      - name: Upload artifacts
-        uses: RDXWorks-actions/upload-artifact-v4@main
-        with:
-          name: java-build-jars-${{ matrix.arch }}
-          path: core/build/distributions/*.jar
-          if-no-files-found: error
-          retention-days: 1
-          include-hidden-files: false
-      - name: Upload core script
-        uses: RDXWorks-actions/upload-artifact-v4@main
-        with:
-          name: java-build-core-${{ matrix.arch }}
-          path: core/build/distributions/core
-          if-no-files-found: error
-          retention-days: 1
-          include-hidden-files: false
-
-  build_rust:
-    strategy:
-      matrix:
-        os: ["ubuntu-latest-8-cores", "ubuntu-latest-arm-8-cores"]
-        arch: ["amd64", "arm64"]
-        exclude:
-          - os: ubuntu-latest-8-cores
-            arch: arm64
-          - os: ubuntu-latest-arm-8-cores
-            arch: amd64
-    name: Build libcorerust
-    runs-on: ${{ matrix.os }}
-    container:
-      image: radixdlt/build-layers:rust-full-build
-      options: --user root
-    steps:
-      - name: Checkout
-        uses: RDXWorks-actions/checkout@main
-      - name: Copy target directory
-        run: |
-          mv /app/core-rust/target ./core-rust/target
-      - name: Build
-        working-directory: core-rust
-        run: |
-          export PATH="$PATH:/root/.cargo/bin"
-          which cargo
-          rustup default 1.77
-          du -hs target
-          cargo build --profile=release
-      - name: Upload artifacts
-        uses: RDXWorks-actions/upload-artifact-v4@main
-        with:
-          name: rust-build-library-${{ matrix.arch }}
-          path: core-rust/target/release/libcorerust.so
-          if-no-files-found: error
-          retention-days: 1
-          include-hidden-files: false
-
   build_docker:
     strategy:
       matrix:
@@ -120,40 +31,21 @@ jobs:
             arch: amd64
     name: Build docker image
     runs-on: ${{ matrix.os }}
-    needs:
-      - build_java
-      - build_rust
     steps:
       - name: Checkout
         uses: RDXWorks-actions/checkout@main
-      - uses: RDXWorks-actions/download-artifact-v4@main
-        name: Download java artifacts
-        with:
-          name: java-build-jars-${{ matrix.arch }}
-          path: artifacts
-      - uses: RDXWorks-actions/download-artifact-v4@main
-        name: Download core script
-        with:
-          name: java-build-core-${{ matrix.arch }}
-          path: artifacts
-      - uses: RDXWorks-actions/download-artifact-v4@main
-        name: Download rust artifacts
-        with:
-          name: rust-build-library-${{ matrix.arch }}
-          path: artifacts
-      - run: ls -l artifacts
-      - name: Prepare
+      - name: Set up Docker Buildx
+        uses: RDXWorks-actions/setup-buildx-action@master
+      - name: Prepare build
         run: |
           mkdir -p /tmp/images
           platform=${{ matrix.arch }}
           echo "TARFILE=${platform}.tar" >> $GITHUB_ENV
           echo "TAG=${{ env.TMP_LOCAL_IMAGE }}:${platform}" >> $GITHUB_ENV
-      - name: Set up Docker Buildx
-        uses: RDXWorks-actions/setup-buildx-action@master
       - name: Build
         uses: RDXWorks-actions/build-push-action@v6
         with:
-          file: ./docker/dockerfiles/app.dockerfile
+          file: ./Dockerfile.v2
           context: .
           platforms: linux/${{ matrix.arch }}
           tags: ${{ env.TAG }}
@@ -236,6 +128,10 @@ jobs:
         run: |
           docker buildx imagetools create -t ${{ env.REGISTRY_IMAGE }}:${{ env.REGISTRY_TAG }} \
             $(docker image ls --format '{{.Repository}}:{{.Tag}}' '${{ env.TMP_LOCAL_IMAGE }}' | tr '\n' ' ')
+        env:
+          REGISTRY_TAG: ${{ steps.meta.outputs.tags }}
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ env.REGISTRY_TAG }}
+        env:
+          REGISTRY_TAG: ${{ steps.meta.outputs.tags }}
