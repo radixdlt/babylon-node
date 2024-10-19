@@ -1,14 +1,14 @@
 name: Docker v2
 
 on:
-  pull_request:
-  # release:
-  #   types: [published]
-  # push:
-  #   branches:
-  #     - develop
-  #     - main
-  #     - release\/*
+  # pull_request:
+  release:
+    types: [published]
+  push:
+    branches:
+      - develop
+      - main
+      - release\/*
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

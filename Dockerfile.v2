@@ -1,4 +1,4 @@
-FROM radixdlt/build-layers:java AS java-container
+FROM radixdlt/babylon-node-build-layers:v1.2.3-java AS java-container
 
 WORKDIR /radixdlt
 
@@ -30,7 +30,7 @@ RUN cd core/build/distributions && \
     cp *.jar /artifacts && \
     cp core /artifacts
 
-FROM radixdlt/build-layers:rust AS rust-container
+FROM radixdlt/babylon-node-build-layers:v1.2.3-rust AS rust-container
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN mkdir -p /artifacts && \
     /root/.cargo/bin/cargo build --profile=release && \
     cp target/release/libcorerust.so /artifacts/libcorerust.so
 
-FROM radixdlt/build-layers:app AS main
+FROM radixdlt/babylon-node-build-layers:v1.2.3-app AS main
 
 # Copy in the application artifacts
 COPY --from=java-container /artifacts/*.jar /opt/radixdlt/lib/
