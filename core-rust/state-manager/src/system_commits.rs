@@ -140,7 +140,7 @@ impl SystemPrepareResult {
             committed_transactions,
             ledger_hashes: end_state.ledger_hashes,
             next_epoch: end_state.epoch_change.map(|event| event.into()),
-            next_protocol_version: end_state.enacted_protocol_update,
+            next_protocol_version: end_state.next_protocol_version,
         }
     }
 }

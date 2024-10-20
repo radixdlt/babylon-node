@@ -556,7 +556,7 @@ impl Preparator {
             committed: committable_transactions,
             rejected: rejected_transactions,
             next_epoch: end_state.epoch_change.map(|ev| ev.into()),
-            next_protocol_version: end_state.enacted_protocol_update,
+            next_protocol_version: end_state.next_protocol_version,
             ledger_hashes: end_state.ledger_hashes,
         }
     }

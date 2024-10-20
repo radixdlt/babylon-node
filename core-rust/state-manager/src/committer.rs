@@ -409,7 +409,7 @@ impl Committer {
 
         self.verify_post_commit_protocol_version(
             commit_state_version,
-            &end_state.enacted_protocol_update,
+            &end_state.next_protocol_version,
             &proof.ledger_header.next_protocol_version,
         );
     }

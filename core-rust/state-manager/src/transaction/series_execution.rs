@@ -354,7 +354,7 @@ impl StateTracker {
             ledger_hashes: self.ledger_hashes,
             epoch_change: self.epoch_change,
             protocol_state: self.protocol_state,
-            enacted_protocol_update: next_protocol_version,
+            next_protocol_version,
         }
     }
 }
@@ -364,5 +364,5 @@ pub struct StateTrackerEndState {
     pub ledger_hashes: LedgerHashes,
     pub epoch_change: Option<EpochChangeEvent>,
     pub protocol_state: ProtocolState,
-    pub enacted_protocol_update: Option<ProtocolVersionName>,
+    pub next_protocol_version: Option<ProtocolVersionName>,
 }
