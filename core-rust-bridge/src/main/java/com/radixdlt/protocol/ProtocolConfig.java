@@ -95,8 +95,12 @@ public record ProtocolConfig(
     }
   }
 
-  public static ProtocolConfig testingDefault() {
+  public static ProtocolConfig onlyGenesis() {
     return new ProtocolConfig(ImmutableList.of());
+  }
+
+  public static ProtocolConfig testingDefault() {
+    return RustProtocolUpdate.resolveForNetwork(NetworkDefinition.INT_TEST_NET);
   }
 
   public static ProtocolConfig resolveForNetwork(NetworkDefinition networkDefinition) {
