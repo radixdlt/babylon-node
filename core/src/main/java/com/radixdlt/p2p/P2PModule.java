@@ -82,6 +82,7 @@ import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactImmediatelyAfterEndOfProtocolUpdate;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
@@ -183,6 +184,9 @@ public final class P2PModule extends AbstractModule {
                               // Clear if we're right before the update
                               yield initialEpoch == updateEpoch - 1;
                             }
+                            case EnactImmediatelyAfterEndOfProtocolUpdate ignored ->
+                            // Bans already cleared due to the preceding protocol update
+                            false;
                           });
           if (shouldClearAllBans) {
             addressBook.clearAllBans();

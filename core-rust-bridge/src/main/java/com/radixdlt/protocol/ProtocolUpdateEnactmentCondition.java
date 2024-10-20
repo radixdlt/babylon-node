@@ -129,4 +129,7 @@ public sealed interface ProtocolUpdateEnactmentCondition {
 
   record EnactAtStartOfEpochUnconditionally(UInt64 epoch)
       implements ProtocolUpdateEnactmentCondition {}
+
+  record EnactImmediatelyAfterEndOfProtocolUpdate(String protocolVersionName)
+      implements ProtocolUpdateEnactmentCondition {}
 }

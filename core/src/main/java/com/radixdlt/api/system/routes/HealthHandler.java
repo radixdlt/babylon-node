@@ -73,6 +73,7 @@ import com.radixdlt.api.system.health.HealthInfoService;
 import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.InMemorySystemInfoState;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally;
 import com.radixdlt.statecomputer.ProtocolState;
@@ -135,7 +136,7 @@ public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
                 .toList());
   }
 
-  private com.radixdlt.api.system.generated.models.PendingProtocolUpdate pendingProtocolUpdate(
+  private PendingProtocolUpdate pendingProtocolUpdate(
       ProtocolState.PendingProtocolUpdate pendingProtocolUpdate,
       PendingProtocolUpdate.ReadinessSignalStatusEnum readinessSignalStatus,
       InMemorySystemInfoState systemInfoState) {
@@ -254,6 +255,12 @@ public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
             .projectedEnactmentAtStartOfEpoch(enactmentEpoch)
             .projectedEnactmentTimestamp(
                 epochStartTimeCalculator.estimateStartOfEpoch(enactmentEpoch))
+            .readinessSignalStatus(readinessSignalStatus);
+      }
+      case ProtocolUpdateEnactmentCondition.EnactImmediatelyAfterEndOfProtocolUpdate condition -> {
+        yield new PendingProtocolUpdate()
+            .protocolVersion(pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion())
+            .state(new EmptyPendingProtocolUpdateState().type(PendingProtocolUpdateStateType.EMPTY))
             .readinessSignalStatus(readinessSignalStatus);
       }
     };

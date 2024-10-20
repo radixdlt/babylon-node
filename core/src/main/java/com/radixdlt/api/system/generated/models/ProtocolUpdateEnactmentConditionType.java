@@ -30,7 +30,9 @@ public enum ProtocolUpdateEnactmentConditionType {
   
   ENACTATSTARTOFEPOCHIFVALIDATORSREADY("EnactAtStartOfEpochIfValidatorsReady"),
   
-  ENACTATSTARTOFEPOCHUNCONDITIONALLY("EnactAtStartOfEpochUnconditionally");
+  ENACTATSTARTOFEPOCHUNCONDITIONALLY("EnactAtStartOfEpochUnconditionally"),
+  
+  ENACTIMMEDIATELYAFTERENDOFPROTOCOLUPDATE("EnactImmediatelyAfterEndOfProtocolUpdate");
 
   private String value;
 
