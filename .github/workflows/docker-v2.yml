@@ -121,13 +121,9 @@ jobs:
         with:
           images: radixdlt/babylon-node-test
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=ref,event=tag
+            type=sha,event=pr
+            type=sha,event=branch
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
       - uses: RDXWorks-actions/download-artifact-v4@main
         name: Download images (amd64)
         with:
@@ -164,6 +160,7 @@ jobs:
       - name: Push images to local registry
         run: |
           docker push -a ${{ env.TMP_LOCAL_IMAGE }}
+          docker images
       - name: Create manifest list and push
         run: |
           docker buildx imagetools create -t ${{ env.REGISTRY_TAG }} \
