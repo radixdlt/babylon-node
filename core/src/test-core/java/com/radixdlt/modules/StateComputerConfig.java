@@ -121,8 +121,7 @@ public sealed interface StateComputerConfig {
         LedgerSyncLimitsConfig.defaults(),
         ProtocolConfig.testingDefault(),
         ScenariosExecutionConfig.NONE,
-        false
-    );
+        false);
   }
 
   sealed interface MockedMempoolConfig {
@@ -214,7 +213,8 @@ public sealed interface StateComputerConfig {
 
   /**
    * Instead of using this constructor directly, please use `StateComputerConfig.rev2()` and then
-   * override only the things you need to, to keep your test as readable and churn-resistant as possible.
+   * override only the things you need to, to keep your test as readable and churn-resistant as
+   * possible.
    */
   record REv2StateComputerConfig(
       int networkId,
@@ -350,19 +350,20 @@ public sealed interface StateComputerConfig {
           noFees);
     }
 
-    public REv2StateComputerConfig withScenarioExecutionConfig(ScenariosExecutionConfig scenariosExecutionConfig) {
+    public REv2StateComputerConfig withScenarioExecutionConfig(
+        ScenariosExecutionConfig scenariosExecutionConfig) {
       return new REv2StateComputerConfig(
-              this.networkId,
-              this.genesis,
-              this.databaseConfig,
-              this.proposerConfig,
-              this.debugLogging,
-              this.stateTreeGcConfig,
-              this.ledgerProofsGcConfig,
-              this.ledgerSyncLimitsConfig,
-              this.protocolConfig,
-              scenariosExecutionConfig,
-              this.noFees);
+          this.networkId,
+          this.genesis,
+          this.databaseConfig,
+          this.proposerConfig,
+          this.debugLogging,
+          this.stateTreeGcConfig,
+          this.ledgerProofsGcConfig,
+          this.ledgerSyncLimitsConfig,
+          this.protocolConfig,
+          scenariosExecutionConfig,
+          this.noFees);
     }
   }
 

@@ -67,10 +67,7 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
-import com.radixdlt.environment.ScenariosExecutionConfig;
-import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -86,8 +83,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.testutil.TestStateReader;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
@@ -121,19 +116,20 @@ public final class LedgerProofsGcTest {
       int txnSize,
       int maxTxnCountUnderProof,
       int maxTxnPayloadSizeUnderProof) {
-    var genesis = GenesisBuilder.createTestGenesisWithNumValidators(
-        1,
-        Decimal.ONE,
-        GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-        roundsPerEpoch
-    ));
-    var proposerConfig = REV2ProposerConfig.transactionGenerator(
-            new SizedTransactionGenerator(NetworkDefinition.INT_TEST_NET, txnSize),
-            1);
-    var ledgerProofsGc = new LedgerProofsGcConfig(
-        UInt32.fromNonNegativeInt(GC_INTERVAL_SEC),
-        UInt64.fromNonNegativeLong(mostRecentFullResolutionEpochCount));
-    var ledgerSyncLimits = new LedgerSyncLimitsConfig(
+    var genesis =
+        GenesisBuilder.createTestGenesisWithNumValidators(
+            1,
+            Decimal.ONE,
+            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(roundsPerEpoch));
+    var proposerConfig =
+        REV2ProposerConfig.transactionGenerator(
+            new SizedTransactionGenerator(NetworkDefinition.INT_TEST_NET, txnSize), 1);
+    var ledgerProofsGc =
+        new LedgerProofsGcConfig(
+            UInt32.fromNonNegativeInt(GC_INTERVAL_SEC),
+            UInt64.fromNonNegativeLong(mostRecentFullResolutionEpochCount));
+    var ledgerSyncLimits =
+        new LedgerSyncLimitsConfig(
             UInt32.fromNonNegativeInt(maxTxnCountUnderProof),
             UInt32.fromNonNegativeInt(maxTxnPayloadSizeUnderProof));
 
@@ -149,10 +145,10 @@ public final class LedgerProofsGcTest {
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2()
-                            .withGenesis(genesis)
-                            .withProposerConfig(proposerConfig)
-                            .withLedgerProofsGcConfig(ledgerProofsGc)
-                            .withLedgerSyncLimitsConfig(ledgerSyncLimits),
+                        .withGenesis(genesis)
+                        .withProposerConfig(proposerConfig)
+                        .withLedgerProofsGcConfig(ledgerProofsGc)
+                        .withLedgerSyncLimitsConfig(ledgerSyncLimits),
                     SyncRelayConfig.of(100, 2, 200L))));
   }
 
