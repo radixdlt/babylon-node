@@ -1,7 +1,7 @@
 name: Docker
 
 on:
-  pull_request:
+  # pull_request:
   release:
     types: [published]
   push:
