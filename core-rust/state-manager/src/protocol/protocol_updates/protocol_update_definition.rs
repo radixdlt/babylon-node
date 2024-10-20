@@ -13,25 +13,6 @@ pub trait ProtocolUpdateDefinition {
     /// Additional (static) config which can be used to re-configure the updater.
     type Overrides: ScryptoDecode;
 
-    fn resolve_ledger_state_identifiers(
-        context: ProtocolUpdateContext,
-    ) -> (Epoch, i64, StateVersion) {
-        let db = context.database.lock();
-        let latest_header = db
-            .get_latest_proof()
-            .expect("Should be a latest proof")
-            .ledger_header;
-        let latest_epoch_header = db
-            .get_latest_epoch_proof()
-            .expect("Should be a latest epoch proof")
-            .ledger_header;
-        (
-            latest_epoch_header.epoch,
-            latest_header.proposer_timestamp_ms,
-            latest_header.state_version,
-        )
-    }
-
     /// Can be overriden for more efficient validation
     fn config_hash(
         &self,
@@ -63,7 +44,9 @@ pub struct ProtocolUpdateContext<'a> {
 /// A convenience trait for easier validation/parsing of [`ProtocolUpdateDefinition::Overrides`],
 /// automatically implemented for all [`ProtocolUpdateDefinition`].
 pub trait ConfigurableProtocolUpdateDefinition {
-    /// Resolves the configured config hash. This is used for a validation on boot-up.
+    /// Resolves the configured config hash. This is used to compare against the config
+    /// hash stored for enacted protocol updates on boot-up - to detect possible errors
+    /// causing by updating the configuration after the update has been enacted.
     fn resolve_config_hash(
         &self,
         context: ProtocolUpdateContext,
