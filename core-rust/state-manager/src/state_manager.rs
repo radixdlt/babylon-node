@@ -226,7 +226,6 @@ impl StateManager {
         ));
 
         let protocol_manager = Arc::new(ProtocolManager::new(
-            protocol_config.genesis_protocol_version,
             protocol_config.protocol_update_triggers,
             &protocol_config.protocol_update_content_overrides,
             ProtocolUpdateContext {

@@ -74,7 +74,6 @@ impl ResolvedProtocolVersion {
 /// work out what it should do for the update.
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
 pub struct ProtocolConfig {
-    pub genesis_protocol_version: ProtocolVersionName,
     pub protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
     /// This allows overriding the configuration of a protocol update.
     ///
@@ -98,7 +97,6 @@ impl ProtocolConfig {
         triggers: impl IntoIterator<Item = (ProtocolVersionName, ProtocolUpdateEnactmentCondition)>,
     ) -> Self {
         Self {
-            genesis_protocol_version: ProtocolVersionName::babylon(),
             protocol_update_triggers: triggers
                 .into_iter()
                 .map(|(version, enactment_condition)| {
@@ -110,11 +108,8 @@ impl ProtocolConfig {
     }
 
     pub fn validate(&self) -> Result<(), String> {
-        self.genesis_protocol_version
-            .validate()
-            .map_err(|err| format!("{err:?}"))?;
-
-        let mut protocol_versions = hashset!(&self.genesis_protocol_version);
+        let genesis = ProtocolVersionName::babylon();
+        let mut protocol_versions = hashset!(&genesis);
 
         for protocol_update_trigger in self.protocol_update_triggers.iter() {
             protocol_update_trigger.validate()?;
@@ -283,6 +278,7 @@ impl ProtocolUpdateTrigger {
         next_protocol_version: ProtocolVersionName,
         enactment_condition: ProtocolUpdateEnactmentCondition,
     ) -> Self {
+        next_protocol_version.validate().expect("The protocol update trigger version name should be valid");
         Self {
             next_protocol_version,
             enactment_condition,

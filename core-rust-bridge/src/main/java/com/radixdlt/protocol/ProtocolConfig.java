@@ -74,20 +74,11 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.util.Map;
 
 public record ProtocolConfig(
-    String genesisProtocolVersion,
     ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
     Map<String, byte[]> rawProtocolUpdateContentOverrides) {
 
-  public static final String GENESIS_PROTOCOL_VERSION_NAME = "babylon-genesis";
-
   public ProtocolConfig(ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers) {
     this(protocolUpdateTriggers, Map.of());
-  }
-
-  public ProtocolConfig(
-      ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
-      Map<String, byte[]> rawProtocolUpdateContentOverrides) {
-    this(GENESIS_PROTOCOL_VERSION_NAME, protocolUpdateTriggers, rawProtocolUpdateContentOverrides);
   }
 
   public static void registerCodec(CodecMap codecMap) {

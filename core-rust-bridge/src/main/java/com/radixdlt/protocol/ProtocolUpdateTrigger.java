@@ -72,6 +72,7 @@ public record ProtocolUpdateTrigger(
 
   public static final String ANEMONE = "anemone";
   public static final String BOTTLENOSE = "bottlenose";
+  public static final String CUTTLEFISH = "cuttlefish";
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(

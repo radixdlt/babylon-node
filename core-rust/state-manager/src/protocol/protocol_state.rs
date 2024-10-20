@@ -185,7 +185,6 @@ pub struct ProtocolManager {
 
 impl ProtocolManager {
     pub fn new(
-        genesis_protocol_version: ProtocolVersionName,
         protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
         protocol_update_overrides: &RawProtocolUpdateContentOverrides,
         protocol_update_context: ProtocolUpdateContext,
@@ -203,9 +202,8 @@ impl ProtocolManager {
                 initial_protocol_state
                     .enacted_protocol_updates
                     .last_key_value()
-                    .map(|(_, protocol_version)| protocol_version)
-                    .unwrap_or(&genesis_protocol_version)
-                    .clone(),
+                    .map(|(_, protocol_version)| protocol_version.clone())
+                    .unwrap_or(ProtocolVersionName::babylon()),
             ),
             protocol_state: lock_factory
                 .named("state")
@@ -213,7 +211,7 @@ impl ProtocolManager {
             newest_protocol_version: protocol_update_triggers
                 .last()
                 .map(|protocol_update| protocol_update.next_protocol_version.clone())
-                .unwrap_or(genesis_protocol_version),
+                .unwrap_or(ProtocolVersionName::babylon()),
         }
     }
 
