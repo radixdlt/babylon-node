@@ -125,7 +125,7 @@ public class HealthHandlerTest extends SystemApiTestBase {
             final var pendingProtocolUpdate =
                 new ProtocolState.PendingProtocolUpdate(
                     new ProtocolUpdateTrigger(
-                        "pending-v3",
+                        "custom-pending-3",
                         new ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady(
                             UInt64.fromNonNegativeLong(10L),
                             UInt64.fromNonNegativeLong(200L),
@@ -135,7 +135,7 @@ public class HealthHandlerTest extends SystemApiTestBase {
                         ImmutableList.of(tuple(threshold, thresholdState))));
             final var protocolState =
                 new ProtocolState(
-                    ImmutableMap.of(UInt64.fromNonNegativeLong(5L), "enacted-v2"),
+                    ImmutableMap.of(UInt64.fromNonNegativeLong(5L), "custom-enacted-2"),
                     ImmutableMap.of(
                         pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion(),
                         pendingProtocolUpdate));

@@ -234,7 +234,11 @@ public abstract class SystemApiTestBase {
         .when(sender)
         .send(anyString());
     handler.handleRequest(exchange(e, sender));
-    return objectMapper.readValue(response.get(), responseClass);
+    var deserializedResponse = objectMapper.readValue(response.get(), responseClass);
+    if (deserializedResponse == null || response.get().contains("\"code\":500")) {
+      throw new IllegalStateException("Unexpected response: " + response.get());
+    }
+    return deserializedResponse;
   }
 
   protected <T> T handleRequestWithExpectedResponse(
@@ -251,7 +255,7 @@ public abstract class SystemApiTestBase {
         .send(anyString());
     handler.handleRequest(exchange(requestBytes, sender));
     var deserializedResponse = objectMapper.readValue(response.get(), responseClass);
-    if (deserializedResponse == null) {
+    if (deserializedResponse == null || response.get().contains("\"code\":500")) {
       throw new IllegalStateException("Unexpected response: " + response.get());
     }
     return deserializedResponse;
@@ -266,6 +270,7 @@ public abstract class SystemApiTestBase {
 
   protected <T> T handleRequestWithExpectedResponse(HttpHandler handler, Class<T> responseClass)
       throws Exception {
+    var objectMapper = JSON.getDefault().getMapper();
     var sender = mock(Sender.class);
     var response = new AtomicReference<String>();
     doAnswer(
@@ -276,6 +281,10 @@ public abstract class SystemApiTestBase {
         .when(sender)
         .send(anyString());
     handler.handleRequest(exchange(sender));
-    return JSON.getDefault().getMapper().readValue(response.get(), responseClass);
+    var deserializedResponse = objectMapper.readValue(response.get(), responseClass);
+    if (deserializedResponse == null || response.get().contains("\"code\":500")) {
+      throw new IllegalStateException("Unexpected response: " + response.get());
+    }
+    return deserializedResponse;
   }
 }

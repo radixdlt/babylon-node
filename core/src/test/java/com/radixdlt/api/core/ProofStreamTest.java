@@ -237,7 +237,9 @@ public class ProofStreamTest extends DeterministicCoreApiTestBase {
                   new StreamProofsRequest()
                       .network(networkLogicalName)
                       .maxPageSize(1)
-                      .filter(new StreamProofsFilterProtocolUpdateExecution()));
+                      .filter(
+                          new StreamProofsFilterProtocolUpdateExecution()
+                              .protocolVersion("anemone")));
 
       page = responseUpdateExecutionFilterPage1.getPage();
       assertThat(page.size()).isEqualTo(1);
