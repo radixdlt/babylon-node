@@ -79,6 +79,7 @@ import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.api.core.generated.models.TransactionStatus;
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
@@ -115,6 +116,10 @@ public final class BottlenoseProtocolUpdateTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest(Module... extraModules) {
+    var genesis = GenesisBuilder.createTestGenesisWithNumValidators(
+      1,
+      Decimal.ONE,
+      GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5));
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -127,20 +132,9 @@ public final class BottlenoseProtocolUpdateTest {
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    new StateComputerConfig.REv2StateComputerConfig(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5)),
-                        new DatabaseConfig(true, false, false, false),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction(),
-                        false,
-                        StateTreeGcConfig.forTesting(),
-                        LedgerProofsGcConfig.forTesting(),
-                        LedgerSyncLimitsConfig.defaults(),
-                        PROTOCOL_CONFIG,
-                        false))));
+                        StateComputerConfig.rev2()
+                                .withGenesis(genesis)
+                                .withProtocolConfig(PROTOCOL_CONFIG))));
   }
 
   @Test

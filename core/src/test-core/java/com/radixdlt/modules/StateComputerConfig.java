@@ -75,6 +75,7 @@ import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.environment.DatabaseConfig;
 import com.radixdlt.environment.LedgerProofsGcConfig;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.harness.simulation.application.TransactionGenerator;
@@ -119,7 +120,9 @@ public sealed interface StateComputerConfig {
         LedgerProofsGcConfig.forTesting(),
         LedgerSyncLimitsConfig.defaults(),
         ProtocolConfig.testingDefault(),
-        false);
+        ScenariosExecutionConfig.NONE,
+        false
+    );
   }
 
   sealed interface MockedMempoolConfig {
@@ -209,6 +212,10 @@ public sealed interface StateComputerConfig {
     }
   }
 
+  /**
+   * Instead of using this constructor directly, please use `StateComputerConfig.rev2()` and then
+   * override only the things you need to, to keep your test as readable and churn-resistant as possible.
+   */
   record REv2StateComputerConfig(
       int networkId,
       GenesisData genesis,
@@ -219,6 +226,7 @@ public sealed interface StateComputerConfig {
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
+      ScenariosExecutionConfig scenariosExecutionConfig,
       boolean noFees)
       implements StateComputerConfig {
 
@@ -233,6 +241,7 @@ public sealed interface StateComputerConfig {
           this.ledgerProofsGcConfig,
           this.ledgerSyncLimitsConfig,
           this.protocolConfig,
+          this.scenariosExecutionConfig,
           this.noFees);
     }
 
@@ -247,6 +256,7 @@ public sealed interface StateComputerConfig {
           this.ledgerProofsGcConfig,
           this.ledgerSyncLimitsConfig,
           this.protocolConfig,
+          this.scenariosExecutionConfig,
           this.noFees);
     }
 
@@ -261,6 +271,7 @@ public sealed interface StateComputerConfig {
           this.ledgerProofsGcConfig,
           this.ledgerSyncLimitsConfig,
           this.protocolConfig,
+          this.scenariosExecutionConfig,
           this.noFees);
     }
 
@@ -275,6 +286,7 @@ public sealed interface StateComputerConfig {
           this.ledgerProofsGcConfig,
           this.ledgerSyncLimitsConfig,
           this.protocolConfig,
+          this.scenariosExecutionConfig,
           this.noFees);
     }
 
@@ -289,6 +301,7 @@ public sealed interface StateComputerConfig {
           ledgerProofsGc,
           this.ledgerSyncLimitsConfig,
           this.protocolConfig,
+          this.scenariosExecutionConfig,
           this.noFees);
     }
 
@@ -303,6 +316,7 @@ public sealed interface StateComputerConfig {
           this.ledgerProofsGcConfig,
           this.ledgerSyncLimitsConfig,
           protocolConfig,
+          this.scenariosExecutionConfig,
           this.noFees);
     }
 
@@ -317,6 +331,7 @@ public sealed interface StateComputerConfig {
           this.ledgerProofsGcConfig,
           config,
           this.protocolConfig,
+          this.scenariosExecutionConfig,
           this.noFees);
     }
 
@@ -331,7 +346,23 @@ public sealed interface StateComputerConfig {
           this.ledgerProofsGcConfig,
           this.ledgerSyncLimitsConfig,
           this.protocolConfig,
+          this.scenariosExecutionConfig,
           noFees);
+    }
+
+    public REv2StateComputerConfig withScenarioExecutionConfig(ScenariosExecutionConfig scenariosExecutionConfig) {
+      return new REv2StateComputerConfig(
+              this.networkId,
+              this.genesis,
+              this.databaseConfig,
+              this.proposerConfig,
+              this.debugLogging,
+              this.stateTreeGcConfig,
+              this.ledgerProofsGcConfig,
+              this.ledgerSyncLimitsConfig,
+              this.protocolConfig,
+              scenariosExecutionConfig,
+              this.noFees);
     }
   }
 
