@@ -91,10 +91,10 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
                 new ProtocolConfig(
                     ImmutableList.of(
                         new ProtocolUpdateTrigger(
-                            ProtocolUpdateTrigger.ANEMONE,
+                            ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME,
                             ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)),
                         new ProtocolUpdateTrigger(
-                            ProtocolUpdateTrigger.BOTTLENOSE,
+                            ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
                             ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L)))))
             .withScenarioExecutionConfig(ScenariosExecutionConfig.ALL_FOR_NETWORK)
             .withGenesis(

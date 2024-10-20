@@ -181,7 +181,7 @@ public final class SystemModelMapper {
 
   public ProtocolConfiguration protocolConfiguration(ProtocolConfig protocolConfig) {
     return new ProtocolConfiguration()
-        .genesisProtocolVersion(protocolConfig.genesisProtocolVersion())
+        .genesisProtocolVersion(ProtocolConfig.GENESIS_PROTOCOL_VERSION_NAME)
         .protocolUpdateTriggers(
             protocolConfig.protocolUpdateTriggers().stream()
                 .map(this::protocolUpdateTrigger)

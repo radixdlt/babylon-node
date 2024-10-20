@@ -66,6 +66,7 @@ package com.radixdlt.statecomputer.commit;
 
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
@@ -97,7 +98,7 @@ public record LedgerProof(LedgerHeader ledgerHeader, LedgerProofOrigin origin) {
     return new LedgerProof(
         genesisLedgerHeader,
         new LedgerProofOrigin.ProtocolUpdate(
-            "babylon-genesis",
+            ProtocolConfig.GENESIS_PROTOCOL_VERSION_NAME,
             Option.some(HashUtils.zero256()),
             UInt64.ZERO,
             "-",

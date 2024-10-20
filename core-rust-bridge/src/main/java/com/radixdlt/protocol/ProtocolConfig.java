@@ -77,6 +77,11 @@ public record ProtocolConfig(
     ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
     Map<String, byte[]> rawProtocolUpdateContentOverrides) {
 
+  public static final String GENESIS_PROTOCOL_VERSION_NAME = "babylon-genesis";
+  public static final String ANEMONE_PROTOCOL_VERSION_NAME = "anemone";
+  public static final String BOTTLENOSE_PROTOCOL_VERSION_NAME = "bottlenose";
+  public static final String CUTTLEFISH_PROTOCOL_VERSION_NAME = "cuttlefish";
+
   public ProtocolConfig(ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers) {
     this(protocolUpdateTriggers, Map.of());
   }

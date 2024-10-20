@@ -278,7 +278,9 @@ impl ProtocolUpdateTrigger {
         next_protocol_version: ProtocolVersionName,
         enactment_condition: ProtocolUpdateEnactmentCondition,
     ) -> Self {
-        next_protocol_version.validate().expect("The protocol update trigger version name should be valid");
+        next_protocol_version
+            .validate()
+            .expect("The protocol update trigger version name should be valid");
         Self {
             next_protocol_version,
             enactment_condition,

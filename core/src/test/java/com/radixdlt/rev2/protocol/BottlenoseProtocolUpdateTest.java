@@ -104,9 +104,11 @@ public final class BottlenoseProtocolUpdateTest {
           ImmutableList.of(
               // Update to Anemone at some arbitrary earlier moment (in case of dependencies):
               new ProtocolUpdateTrigger(
-                  ProtocolUpdateTrigger.ANEMONE, unconditionallyAtEpoch(BOTTLENOSE_EPOCH - 3)),
+                  ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME,
+                  unconditionallyAtEpoch(BOTTLENOSE_EPOCH - 3)),
               new ProtocolUpdateTrigger(
-                  ProtocolUpdateTrigger.BOTTLENOSE, unconditionallyAtEpoch(BOTTLENOSE_EPOCH))));
+                  ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
+                  unconditionallyAtEpoch(BOTTLENOSE_EPOCH))));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -153,7 +155,8 @@ public final class BottlenoseProtocolUpdateTest {
       final var stateComputer = test.getInstance(0, RustStateComputer.class);
       test.runUntilState(allAtOrOverEpoch(BOTTLENOSE_EPOCH - 1));
       assertNotEquals(
-          ProtocolUpdateTrigger.BOTTLENOSE, stateComputer.protocolState().currentProtocolVersion());
+          ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
+          stateComputer.protocolState().currentProtocolVersion());
 
       // Act: Preview a transaction trying to create an AccountLocker:
       final var callBeforeBottlenose =
@@ -166,7 +169,8 @@ public final class BottlenoseProtocolUpdateTest {
       // Arrange: Run the Bottlenose protocol update:
       test.runUntilState(allAtOrOverEpoch(BOTTLENOSE_EPOCH));
       assertEquals(
-          ProtocolUpdateTrigger.BOTTLENOSE, stateComputer.protocolState().currentProtocolVersion());
+          ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
+          stateComputer.protocolState().currentProtocolVersion());
 
       // Act: Preview the same transaction again:
       final var callAfterBottlenose =

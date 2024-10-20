@@ -425,7 +425,7 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
                 new ProtocolConfig(
                     ImmutableList.of(
                         new ProtocolUpdateTrigger(
-                            ProtocolUpdateTrigger.ANEMONE,
+                            ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME,
                             ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L)))))
             .withGenesis(
                 GenesisBuilder.createTestGenesisWithNumValidators(
