@@ -282,9 +282,22 @@ public final class REv2StateManagerModule extends AbstractModule {
           @Provides
           @Singleton
           REv2LedgerInitializerToken initializeLedger(TransactionsAndProofReader reader) {
-            // As of Cuttlefish, the ledger is initialized when the RustEnvironment is first created
-            // So this is trivial.
-            return new REv2LedgerInitializerToken(reader.getPostGenesisEpochProof().get());
+            // In the past, genesis was run manually when a particular guice module initialized.
+            // This made the "has genesis run" question quite implicit, so the
+            // REv2LedgerInitializerToken was created to allow adding an explicit dependency
+            // on genesis running for a test to run.
+            //
+            // As of Cuttlefish, the ledger is initialized when the RustEnvironment is created.
+            // And pretty much everything requires the RustEnvironment. But we have kept the
+            // `REv2LedgerInitializerToken` around for explicit inclusion if required.
+            //
+            // In particular, the TransactionsAndProofReader requires the RustEnvironment,
+            // so genesis must been executed by this point.
+            var postGenesisEpochProof = reader.getPostGenesisEpochProof();
+            if (postGenesisEpochProof.isEmpty()) {
+              throw new IllegalStateException("Genesis was unexpectedly not run on start-up.");
+            }
+            return new REv2LedgerInitializerToken(postGenesisEpochProof.get());
           }
 
           @Provides
