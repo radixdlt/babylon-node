@@ -422,7 +422,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
                         rev2Config.noFees(),
-                        ScenariosExecutionConfig.ALL_FOR_NETWORK));
+                        rev2Config.scenariosExecutionConfig()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(mempool.mempoolRelayerConfig()));
@@ -441,7 +441,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
                         rev2Config.noFees(),
-                        ScenariosExecutionConfig.ALL_FOR_NETWORK));
+                        rev2Config.scenariosExecutionConfig()));
               }
             }
           }

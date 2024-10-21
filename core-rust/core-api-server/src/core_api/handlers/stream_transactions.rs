@@ -146,6 +146,8 @@ pub(crate) async fn handle_stream_transactions(
     Ok(Json(response))
 }
 
+static ZERO_HASH: Hash = Hash([0; Hash::LENGTH]);
+
 pub fn to_api_ledger_proof(
     mapping_context: &MappingContext,
     proof: LedgerProof,
@@ -185,24 +187,35 @@ pub fn to_api_ledger_proof(
         LedgerProofOrigin::ProtocolUpdate {
             protocol_version_name,
             config_hash,
-            batch_group_index: _,
-            batch_group_descriptor: _,
+            batch_group_index,
+            batch_group_name,
             batch_index,
-            is_end_of_update: _,
+            batch_name,
+            is_end_of_update,
         } => {
-            // todo!(FIX)
             if protocol_version_name == &ProtocolVersionName::babylon() {
                 models::LedgerProofOrigin::GenesisLedgerProofOrigin {
+                    protocol_version_name: protocol_version_name.as_str().to_string(),
                     genesis_opaque_hash: to_api_hash(
                         config_hash
                             .as_ref()
                             .expect("Genesis always has a config hash"),
                     ),
+                    batch_group_idx: to_api_index_as_i64(*batch_group_index)?,
+                    batch_group_name: batch_group_name.to_string(),
+                    batch_idx: to_api_index_as_i64(*batch_index)?,
+                    batch_name: batch_name.to_string(),
+                    is_end_of_update: *is_end_of_update,
                 }
             } else {
                 models::LedgerProofOrigin::ProtocolUpdateLedgerProofOrigin {
                     protocol_version_name: protocol_version_name.to_string(),
+                    config_hash: to_api_hash(config_hash.as_ref().unwrap_or(&ZERO_HASH)),
+                    batch_group_idx: to_api_index_as_i64(*batch_group_index)?,
+                    batch_group_name: batch_group_name.to_string(),
                     batch_idx: to_api_index_as_i64(*batch_index)?,
+                    batch_name: batch_name.to_string(),
+                    is_end_of_update: *is_end_of_update,
                 }
             }
         }

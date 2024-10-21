@@ -90,7 +90,7 @@ public class ProofStreamTest extends DeterministicCoreApiTestBase {
                 new ProtocolConfig(
                     ImmutableList.of(
                         new ProtocolUpdateTrigger(
-                            ProtocolUpdateTrigger.ANEMONE,
+                            ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME,
                             ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)))))
             // This effectively disables the proofs' GC, so that we can have exact asserts:
             .withLedgerProofsGcConfig(new LedgerProofsGcConfig(UInt32.MAX_VALUE, UInt64.MAX_VALUE))
@@ -221,7 +221,7 @@ public class ProofStreamTest extends DeterministicCoreApiTestBase {
       page = responseUpdateInitializationsFilterPage1.getPage();
       assertThat(page.size()).isEqualTo(1);
       assertThat(page.get(0).getLedgerHeader().getNextProtocolVersion())
-          .isEqualTo(ProtocolUpdateTrigger.ANEMONE);
+          .isEqualTo(ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME);
       assertThat(page.get(0).getLedgerHeader().getNextEpoch()).isNotNull();
       assertThat(page.get(0).getLedgerHeader().getNextEpoch().getEpoch()).isEqualTo(3);
       assertThat(page.get(0).getLedgerHeader().getEpoch()).isEqualTo(2);
@@ -263,7 +263,7 @@ public class ProofStreamTest extends DeterministicCoreApiTestBase {
                       .maxPageSize(1)
                       .filter(
                           new StreamProofsFilterProtocolUpdateExecution()
-                              .protocolVersion(ProtocolUpdateTrigger.ANEMONE)));
+                              .protocolVersion(ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME)));
 
       assertThat(responseUpdateExecutionFilterPage1)
           .usingRecursiveComparison()

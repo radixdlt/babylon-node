@@ -65,8 +65,8 @@
 package com.radixdlt.harness.deterministic;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
-import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import java.util.Optional;
 
 public record TestProtocolConfig(
@@ -80,11 +80,11 @@ public record TestProtocolConfig(
   public TestProtocolConfig withAllProtocolUpdatesAtEarlyEpochs() {
     return this.with(
             TestProtocolConfig.updateTo(
-                ProtocolUpdateTrigger.ANEMONE,
+                ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME,
                 ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)))
         .with(
             TestProtocolConfig.updateTo(
-                ProtocolUpdateTrigger.BOTTLENOSE,
+                ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
                 ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L)));
   }
 

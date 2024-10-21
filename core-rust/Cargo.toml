@@ -26,18 +26,18 @@ resolver = "2"
 # Then use tag="release_name-BLAH" in the below dependencies.
 # =================================================================
 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7", features = ["serde"] }
-radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
-radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
-radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
-radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
-radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
-radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
-radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7", features = ["serde"] }
-radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7", features = ["serde"] }
-radix-engine-toolkit-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-372f9ee7" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023", features = ["serde"] }
+radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023" }
+radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023" }
+radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023" }
+radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023" }
+radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023" }
+radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023" }
+radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023", features = ["serde"] }
+radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023", features = ["serde"] }
+radix-engine-toolkit-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-28bbc023" }
 
 itertools = { version = "=0.10.5" }
 jni = { version = "=0.19.0" }

@@ -38,7 +38,7 @@ pub fn commit_round_updates_until_epoch(state_manager: &StateManager, epoch: Epo
     loop {
         let (prepare_result, _) = prepare_and_commit_round_update(state_manager);
         if prepare_result.next_protocol_version.is_some() {
-            state_manager.apply_known_pending_protocol_update();
+            state_manager.apply_known_pending_protocol_updates();
         }
         if let Some(next_epoch) = prepare_result.next_epoch {
             if next_epoch.epoch == epoch {

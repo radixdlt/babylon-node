@@ -51,7 +51,7 @@ impl NodeProtocolUpdateExecutor {
                 ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
                     protocol_version_name,
                 } => {
-                    info!("Starting update to {protocol_version_name:?}");
+                    info!("[UPDATE: {protocol_version_name}] Starting protocol update");
                     self.execute_protocol_update_actions(&protocol_version_name, 0, 0);
                     latest_enacted = Some(protocol_version_name.clone());
                 }
@@ -60,7 +60,7 @@ impl NodeProtocolUpdateExecutor {
                     last_batch_group_index,
                     last_batch_index,
                 } => {
-                    info!("Resuming update to {protocol_version_name:?}");
+                    info!("[UPDATE: {protocol_version_name}] Resuming protocol update");
                     self.execute_protocol_update_actions(
                         &protocol_version_name,
                         last_batch_group_index,
@@ -87,7 +87,7 @@ impl NodeProtocolUpdateExecutor {
             panic!("{protocol_version:?} is not a supported protocol version: {err:?}")
         });
         let protocol_update_definition = resolved.definition();
-        let batch_generator = protocol_update_definition.create_batch_generator_raw(
+        let update_generator = protocol_update_definition.create_update_generator_raw(
             ProtocolUpdateContext {
                 network: &self.network,
                 database: &self.database,
@@ -96,43 +96,57 @@ impl NodeProtocolUpdateExecutor {
             },
             overrides,
         );
-        let config_hash = batch_generator.config_hash();
+        let config_hash = update_generator.config_hash();
 
-        let batch_group_descriptors = batch_generator.batch_group_descriptors();
-        let total_batch_groups = batch_group_descriptors.len();
-        let remaining_batch_groups = batch_group_descriptors
+        let batch_groups = update_generator.batch_groups();
+        let total_batch_groups = batch_groups.len();
+        let remaining_batch_groups = batch_groups
             .into_iter()
             .enumerate()
             .skip(from_batch_group_index);
 
-        for (batch_group_index, batch_group_name) in remaining_batch_groups {
+        for (batch_group_index, batch_group) in remaining_batch_groups {
+            let batch_group_number = batch_group_index + 1;
+            let batch_group_name = batch_group.batch_group_name();
             let is_final_batch_group = batch_group_index == total_batch_groups - 1;
-            let batch_count = batch_generator.batch_count(batch_group_index);
             let start_at_batch = if batch_group_index == from_batch_group_index
                 && from_batch_index > 0
             {
-                info!("Continuing batch group {batch_group_index} - {batch_group_name:?} for {protocol_version:?}");
+                info!("[UPDATE: {protocol_version}] Continuing {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
                 from_batch_index
             } else {
-                info!("Starting batch group {batch_group_index} - {batch_group_name:?} for {protocol_version:?}");
+                info!("[UPDATE: {protocol_version}] Commencing {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
                 0
             };
-            for batch_index in start_at_batch..batch_count {
-                info!("Processing batch {batch_index} in batch group {batch_group_index} - {batch_group_name:?} for {protocol_version:?}");
-                let is_final_batch = is_final_batch_group && batch_index == batch_count - 1;
+            let batches = {
+                // In a separate block to ensure the database lock guard is dropped promptly.
+                batch_group.generate_batches(self.database.lock().deref())
+            };
+            let total_batches = batches.len();
+            let remaining_batches = batches.into_iter().enumerate().skip(start_at_batch);
+            for (batch_index, batch_generator) in remaining_batches {
+                let batch_number = batch_index + 1;
+                let batch_name = batch_generator.batch_name().to_string();
+                info!("[UPDATE: {protocol_version}] Processing {batch_name} (batch {batch_number}/{total_batches}) in {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
+                let is_final_batch = is_final_batch_group && batch_index == total_batches - 1;
                 let start_state_identifiers = self
-                    .resolve_batch_ledger_state_identifiers(batch_generator.genesis_start_state());
+                    .resolve_batch_ledger_state_identifiers(update_generator.genesis_start_state());
+                let batch = {
+                    // In a separate block to ensure the database lock guard is dropped promptly.
+                    batch_generator.generate_batch(self.database.lock().deref())
+                };
                 self.system_executor.execute_protocol_update_action(
                     ProtocolUpdateBatchDetails {
                         protocol_version,
                         config_hash,
                         batch_group_index,
-                        batch_group_descriptor: &batch_group_name,
+                        batch_group_name,
                         batch_index,
+                        batch_name: &batch_name,
                         is_final_batch,
                         start_state_identifiers,
                     },
-                    batch_generator.generate_batch(batch_group_index, batch_index),
+                    batch,
                 );
             }
         }
@@ -185,7 +199,6 @@ pub struct ProtocolManager {
 
 impl ProtocolManager {
     pub fn new(
-        genesis_protocol_version: ProtocolVersionName,
         protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
         protocol_update_overrides: &RawProtocolUpdateContentOverrides,
         protocol_update_context: ProtocolUpdateContext,
@@ -203,9 +216,8 @@ impl ProtocolManager {
                 initial_protocol_state
                     .enacted_protocol_updates
                     .last_key_value()
-                    .map(|(_, protocol_version)| protocol_version)
-                    .unwrap_or(&genesis_protocol_version)
-                    .clone(),
+                    .map(|(_, protocol_version)| protocol_version.clone())
+                    .unwrap_or(ProtocolVersionName::babylon()),
             ),
             protocol_state: lock_factory
                 .named("state")
@@ -213,7 +225,7 @@ impl ProtocolManager {
             newest_protocol_version: protocol_update_triggers
                 .last()
                 .map(|protocol_update| protocol_update.next_protocol_version.clone())
-                .unwrap_or(genesis_protocol_version),
+                .unwrap_or(ProtocolVersionName::babylon()),
         }
     }
 
@@ -418,7 +430,7 @@ fn compute_initial_after_protocol_update_status<S: QueryableProofStore + Iterabl
     store: &S,
     triggered_after_name: &ProtocolVersionName,
 ) -> InitialProtocolUpdateStatus {
-    let triggered_updates: IndexMap<ProtocolVersionName, StateVersion> = store
+    let mut triggered_updates: IndexMap<ProtocolVersionName, StateVersion> = store
         .get_protocol_update_init_proof_iter(StateVersion::pre_genesis())
         .map(|proof| {
             (
@@ -427,6 +439,8 @@ fn compute_initial_after_protocol_update_status<S: QueryableProofStore + Iterabl
             )
         })
         .collect();
+    triggered_updates.insert(ProtocolVersionName::babylon(), StateVersion::pre_genesis());
+
     if let Some(triggered_at) = triggered_updates.get(triggered_after_name) {
         let latest_execution_proof =
             latest_execution_proof(store, *triggered_at, triggered_after_name);
@@ -451,11 +465,14 @@ fn latest_execution_proof(
     init_state_version: StateVersion,
     version_name: &ProtocolVersionName,
 ) -> Option<LedgerProofV3> {
-    store.get_protocol_update_execution_proof_iter(init_state_version)
-        .take_while(|proof| matches!(
-            &proof.origin,
-            LedgerProofOrigin::ProtocolUpdate { protocol_version_name, .. } if protocol_version_name == version_name
-        ))
+    let first_execution_proof = init_state_version.next().unwrap();
+    store.get_protocol_update_execution_proof_iter(first_execution_proof)
+        .take_while(|proof| {
+            matches!(
+                &proof.origin,
+                LedgerProofOrigin::ProtocolUpdate { protocol_version_name, .. } if protocol_version_name == version_name
+            )
+        })
         .last()
 }
 

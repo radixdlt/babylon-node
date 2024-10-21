@@ -70,6 +70,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.hash.HashCode;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.crypto.HashUtils;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.GenesisData;
@@ -91,7 +92,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void stateManagerMaintainsCorrectTransactionMerkleTree() {
-    // Run and capture an example epoch
+    // Run and capture an example epoch (the first epoch without protocol updates)
     CapturedEpoch epoch = captureEpoch(3);
 
     // Collect the transaction hashes (note: we can no longer easily compute them from payload bytes
@@ -117,7 +118,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void stateManagerMaintainsCorrectReceiptMerkleTree() {
-    // Run and capture an example epoch
+    // Run and capture an example epoch (the first epoch without protocol updates)
     CapturedEpoch epoch = captureEpoch(3);
 
     // Compute the ledger receipt hashes
@@ -149,22 +150,23 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
                     GenesisConsensusManagerConfig.Builder.testDefaults()
                         .epochExactRoundCount(EPOCH_TRANSACTION_LENGTH),
                     // We run all scenarios for the case when RE decides to change invariants:
-                    GenesisData.ALL_SCENARIOS));
+                    GenesisData.ALL_SCENARIOS))
+            .withScenarioExecutionConfig(ScenariosExecutionConfig.ALL_FOR_NETWORK);
     try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       // Run the setup until 2 epoch proofs are captured
       var store = test.getInstance(0, REv2TransactionAndProofStore.class);
       var reader = test.getInstance(0, TestStateReader.class);
-      test.runUntilState(nodeAt(0, NodePredicate.atOrOverEpoch(epochNumber)), 1000);
-      var previousHeader = store.getEpochProof(epochNumber - 1).get().ledgerHeader();
-      var epochHeader = store.getEpochProof(epochNumber).get().ledgerHeader();
+      test.runUntilState(nodeAt(0, NodePredicate.atOrOverEpoch(epochNumber + 1)), 1000);
+      var initEpochHeader = store.getEpochProof(epochNumber).get().ledgerHeader();
+      var endOfEpochHeader = store.getEpochProof(epochNumber + 1).get().ledgerHeader();
 
       // Capture the transactions between these 2 proofs
       var epochTransactions =
           LongStream.range(
-                  previousHeader.stateVersion().toNonNegativeLong().unwrap() + 1,
-                  epochHeader.stateVersion().toNonNegativeLong().unwrap() + 1)
+                  initEpochHeader.stateVersion().toNonNegativeLong().unwrap() + 1,
+                  endOfEpochHeader.stateVersion().toNonNegativeLong().unwrap() + 1)
               .mapToObj(reader::getTransactionAtStateVersion)
               .map(Option::unwrap)
               .toList();
@@ -172,7 +174,7 @@ public class TransactionAccuTreeTest extends DeterministicCoreApiTestBase {
       // Assert a certain count (on which we rely during latter manual merkle computation)
       assertThat(epochTransactions.size()).isEqualTo(EPOCH_TRANSACTION_LENGTH);
 
-      return new CapturedEpoch(previousHeader, epochHeader, epochTransactions);
+      return new CapturedEpoch(initEpochHeader, endOfEpochHeader, epochTransactions);
     }
   }
 

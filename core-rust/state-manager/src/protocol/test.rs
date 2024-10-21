@@ -92,12 +92,20 @@ fn flash_protocol_update_test() {
             1,
         );
         // Now we can prepare the state updates based on the initialized database
-        let validator_fee_fix = AnemoneSettings::all_disabled()
-            .enable(|anemone_settings| &mut anemone_settings.validator_fee_fix)
-            .create_batch_generator()
-            .generate_batch(tmp_state_manager.database.access_direct().deref(), 0, 0)
-            .transactions
+        let generator = AnemoneSettings::all_disabled()
+            .enable_with(
+                |anemone_settings| &mut anemone_settings.validator_fee_fix,
+                AnemoneValidatorCreationFee::default_setting(&NetworkDefinition::mainnet()),
+            )
+            .create_generator();
+        let batch_group = generator.batch_groups().remove(0);
+        let batch = batch_group
+            .generate_batches(tmp_state_manager.database.access_direct().deref())
             .remove(0);
+        let mut transactions = batch
+            .generate_batch(tmp_state_manager.database.access_direct().deref())
+            .transactions;
+        let validator_fee_fix = transactions.remove(0);
         let ProtocolUpdateTransaction::FlashTransactionV1(flash) = validator_fee_fix else {
             panic!("Anenome validator fee fix is known to be a FlashTransactionV1");
         };
@@ -138,7 +146,7 @@ fn flash_protocol_update_test() {
     let pre_protocol_update_state_version = database.max_state_version();
 
     // Now let's apply the protocol update (this would normally be called by Java)
-    state_manager.apply_known_pending_protocol_update();
+    state_manager.apply_known_pending_protocol_updates();
 
     // Verify a transaction has been committed
     assert_eq!(
@@ -181,8 +189,9 @@ fn flash_protocol_update_test() {
             protocol_version_name: custom_v2_protocol_version,
             config_hash: Some(expected_config_hash),
             batch_group_index: 0,
-            batch_group_descriptor: ArbitraryNodeBatchGenerator::BATCH_DESCRIPTOR.to_string(),
+            batch_group_name: ArbitraryNodeBatchGenerator::BATCH_GROUP_DESCRIPTOR.to_string(),
             batch_index: 0,
+            batch_name: "batch-00".to_string(),
             is_end_of_update: true,
         }
     );

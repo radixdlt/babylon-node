@@ -185,10 +185,16 @@ public class REv2StateComputerTest {
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     // Ensure that genesis has run by pulling in REv2LedgerInitializerToken
     injector.getInstance(REv2LedgerInitializerToken.class);
-    var postGenesisLedgerHeader =
+    var latestLedgerHeader =
         injector
             .getInstance(REv2TransactionAndProofStore.class)
-            .getPostGenesisEpochProof()
+            .getLatestProof()
+            .orElseThrow()
+            .ledgerHeader();
+    var latestEpochHeader =
+        injector
+            .getInstance(REv2TransactionAndProofStore.class)
+            .getLatestEpochProof()
             .orElseThrow()
             .ledgerHeader();
     var validTransaction = TransactionBuilder.forTests().prepare().raw();
@@ -196,8 +202,8 @@ public class REv2StateComputerTest {
     // Act
     var roundDetails =
         new RoundDetails(
-            1, 1, false, 0, getValidatorFromEpochHeader(postGenesisLedgerHeader, 0), 1000, 1000);
-    var committedLedgerHashes = REv2ToConsensus.ledgerHashes(postGenesisLedgerHeader.hashes());
+            1, 1, false, 0, getValidatorFromEpochHeader(latestEpochHeader, 0), 1000, 1000);
+    var committedLedgerHashes = REv2ToConsensus.ledgerHashes(latestLedgerHeader.hashes());
     var result =
         stateComputer.prepare(
             committedLedgerHashes,
@@ -217,10 +223,16 @@ public class REv2StateComputerTest {
     var stateComputer = injector.getInstance(StateComputerLedger.StateComputer.class);
     // Ensure that genesis has run by pulling in REv2LedgerInitializerToken
     injector.getInstance(REv2LedgerInitializerToken.class);
-    var postGenesisLedgerHeader =
+    var latestLedgerHeader =
         injector
             .getInstance(REv2TransactionAndProofStore.class)
-            .getPostGenesisEpochProof()
+            .getLatestProof()
+            .orElseThrow()
+            .ledgerHeader();
+    var latestEpochHeader =
+        injector
+            .getInstance(REv2TransactionAndProofStore.class)
+            .getLatestEpochProof()
             .orElseThrow()
             .ledgerHeader();
     var invalidTransaction = RawNotarizedTransaction.create(new byte[1]);
@@ -228,8 +240,8 @@ public class REv2StateComputerTest {
     // Act
     var roundDetails =
         new RoundDetails(
-            1, 1, false, 0, getValidatorFromEpochHeader(postGenesisLedgerHeader, 0), 1000, 1000);
-    var committedLedgerHashes = REv2ToConsensus.ledgerHashes(postGenesisLedgerHeader.hashes());
+            1, 1, false, 0, getValidatorFromEpochHeader(latestEpochHeader, 0), 1000, 1000);
+    var committedLedgerHashes = REv2ToConsensus.ledgerHashes(latestLedgerHeader.hashes());
     var result =
         stateComputer.prepare(
             committedLedgerHashes,

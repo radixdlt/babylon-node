@@ -71,6 +71,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.protocol.ProtocolConfig;
@@ -90,11 +91,12 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
                 new ProtocolConfig(
                     ImmutableList.of(
                         new ProtocolUpdateTrigger(
-                            ProtocolUpdateTrigger.ANEMONE,
+                            ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME,
                             ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)),
                         new ProtocolUpdateTrigger(
-                            ProtocolUpdateTrigger.BOTTLENOSE,
+                            ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
                             ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L)))))
+            .withScenarioExecutionConfig(ScenariosExecutionConfig.ALL_FOR_NETWORK)
             .withGenesis(
                 GenesisBuilder.createTestGenesisWithNumValidators(
                     1,

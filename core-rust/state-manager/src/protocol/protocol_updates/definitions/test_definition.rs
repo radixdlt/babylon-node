@@ -32,16 +32,16 @@ impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
         _context: ProtocolUpdateContext,
         _overrides_hash: Option<Hash>,
         _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
         let batch = ProtocolUpdateBatch {
             transactions: vec![ProtocolUpdateTransaction::flash(
-                &format!("{}-txn", self.protocol_name),
+                format!("{}-txn", self.protocol_name),
                 StateUpdates::default(),
             )],
         };
         Box::new(ArbitraryNodeBatchGenerator {
             config_hash: Hash([0; Hash::LENGTH]),
-            batches: vec![ProtocolUpdateNodeBatch::ProtocolUpdateBatch(batch)],
+            batches: vec![NodeProtocolUpdateBatch::ProtocolUpdateBatch(batch)],
         })
     }
 }

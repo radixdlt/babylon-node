@@ -226,7 +226,6 @@ impl StateManager {
         ));
 
         let protocol_manager = Arc::new(ProtocolManager::new(
-            protocol_config.genesis_protocol_version,
             protocol_config.protocol_update_triggers,
             &protocol_config.protocol_update_content_overrides,
             ProtocolUpdateContext {
@@ -342,9 +341,6 @@ impl StateManager {
             genesis_data_resolver,
         ));
 
-        // If we are booting mid-protocol-update, ensure all required transactions are committed:
-        protocol_update_executor.resume_protocol_update_if_any();
-
         // Register the periodic background task for collecting the costly raw DB metrics...
         let raw_db_metrics_collector =
             RawDbMetricsCollector::new(database.clone(), metrics_registry);
@@ -373,7 +369,7 @@ impl StateManager {
             },
         );
 
-        Self {
+        let state_manager = Self {
             database,
             mempool,
             mempool_manager,
@@ -389,7 +385,11 @@ impl StateManager {
             protocol_manager,
             protocol_update_executor,
             ledger_metrics,
-        }
+        };
+
+        state_manager.resume_protocol_updates_if_any();
+
+        state_manager
     }
 
     /// Executes the actual protocol update transactions (on-ledger) and performs any changes to the
@@ -397,7 +397,7 @@ impl StateManager {
     /// Note: This method is only called from Java, after the consensus makes sure that the ledger
     /// is in particular state and ready for protocol update. Hence, we trust the input here and
     /// unconditionally update the internally-maintained protocol version to its new value.
-    pub fn apply_known_pending_protocol_update(&self) -> ProtocolUpdateResult {
+    pub fn apply_known_pending_protocol_updates(&self) -> ProtocolUpdateResult {
         let resultant_version = self
             .protocol_update_executor
             .resume_protocol_update_if_any();
@@ -406,6 +406,19 @@ impl StateManager {
             panic!("apply_protocol_update_and_any_following is only expected to be called if a pending protocol update is known");
         };
 
+        self.handle_completed_protocol_update(resultant_version)
+    }
+
+    pub fn resume_protocol_updates_if_any(&self) -> Option<ProtocolUpdateResult> {
+        self.protocol_update_executor
+            .resume_protocol_update_if_any()
+            .map(|resultant_version| self.handle_completed_protocol_update(resultant_version))
+    }
+
+    fn handle_completed_protocol_update(
+        &self,
+        resultant_version: ProtocolVersionName,
+    ) -> ProtocolUpdateResult {
         self.protocol_manager
             .set_current_protocol_version(&resultant_version);
 

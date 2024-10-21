@@ -240,15 +240,22 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
     try (var test = buildTest(true, 100L)) {
       test.suppressUnusedWarning();
 
-      // Reach a known state version:
+      // Run a little, but resolve current version as it might be higher due to protocol updates
       test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(10L));
+      var currentVersion =
+          getStatusApi()
+              .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName))
+              .getCurrentStateIdentifier()
+              .getStateVersion();
 
       // Assert that a future version is not available:
       var atTooOldVersion =
           assertErrorResponseOfType(
-              () -> previewAtVersion(Manifest.valid(), Optional.of(11L)), BasicErrorResponse.class);
+              () -> previewAtVersion(Manifest.valid(), Optional.of(currentVersion + 1)),
+              BasicErrorResponse.class);
       assertThat(atTooOldVersion.getMessage())
-          .containsIgnoringCase("state version ahead of the current top-of-ledger 10");
+          .containsIgnoringCase(
+              String.format("state version ahead of the current top-of-ledger %s", currentVersion));
     }
   }
 
@@ -257,17 +264,23 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
     try (var test = buildTest(false, 100L)) {
       test.suppressUnusedWarning();
 
-      // Reach a known state version:
+      // Run a little, but resolve current version as it might be higher due to protocol updates
       test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(10L));
+      var currentVersion =
+          getStatusApi()
+              .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName))
+              .getCurrentStateIdentifier()
+              .getStateVersion();
 
       // Assert that a historical state version is not available
       var atTooOldVersion =
           assertErrorResponseOfType(
-              () -> previewAtVersion(Manifest.valid(), Optional.of(9L)), BasicErrorResponse.class);
+              () -> previewAtVersion(Manifest.valid(), Optional.of(currentVersion - 1)),
+              BasicErrorResponse.class);
       assertThat(atTooOldVersion.getMessage()).containsIgnoringCase("feature must be enabled");
 
       // The current version can still be requested explicitly, though:
-      var atOldestVersion = previewAtVersion(Manifest.valid(), Optional.of(10L));
+      var atOldestVersion = previewAtVersion(Manifest.valid(), Optional.of(currentVersion));
       assertThat(atOldestVersion.getReceipt().getStatus()).isEqualTo(TransactionStatus.SUCCEEDED);
     }
   }

@@ -104,7 +104,7 @@ impl ProtocolUpdateDefinition for BabylonProtocolUpdateDefinition {
         context: ProtocolUpdateContext,
         overrides_hash: Option<Hash>,
         overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
         let genesis_data = match overrides {
             Some(overrides) => overrides,
             None => {
@@ -125,25 +125,24 @@ impl ProtocolUpdateDefinition for BabylonProtocolUpdateDefinition {
             state_version: StateVersion::pre_genesis(),
         });
 
-        let base_batch_generator = EngineBatchGenerator::new(
-            context.database.clone(),
-            babylon_settings.create_batch_generator(),
+        let base_batch_generator = WrappedProtocolUpdateGenerator::new(
+            Box::new(babylon_settings.create_generator()),
             Hash([0; Hash::LENGTH]), // This hash gets ignored by the fixed outer hash.
         );
 
         // Insert scenarios before the WrapUp batch group
-        let insert_scenarios_at = base_batch_generator
-            .batch_group_descriptors()
+        let insert_scenarios_batch_group_at = base_batch_generator
+            .batch_groups()
             .iter()
-            .position(|n| n == "WrapUp")
-            .expect("Genesis should include the WrapUp batch group");
+            .position(|generator| generator.batch_group_name() == "wrap-up")
+            .expect("Genesis should include the wrap-up batch group");
 
-        Box::new(BatchGeneratorWithScenarios {
+        Box::new(NodeProtocolUpdateWithScenariosGenerator {
             base_batch_generator,
             scenario_names,
             fixed_config_hash: Some(config_hash),
             genesis_start_identifiers,
-            insert_scenarios_batch_group_at: insert_scenarios_at,
+            insert_scenarios_batch_group_at,
         })
     }
 }
