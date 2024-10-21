@@ -2,7 +2,13 @@ use crate::prelude::*;
 
 define_single_versioned! {
     #[derive(Debug, Clone, Sbor)]
-    pub VersionedCommittedTransactionIdentifiers(CommittedTransactionIdentifiersVersions) => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
+    pub VersionedCommittedTransactionIdentifiers(CommittedTransactionIdentifiersVersions) => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_committed_transaction_identifiers.bin"
+        ))]
+    ]
 }
 
 #[derive(Debug, Clone, Sbor)]
@@ -234,7 +240,13 @@ pub struct LocalTransactionReceipt {
 
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoSbor)]
-    pub VersionedLedgerTransactionReceipt(LedgerTransactionReceiptVersions) => LedgerTransactionReceipt = LedgerTransactionReceiptV1
+    pub VersionedLedgerTransactionReceipt(LedgerTransactionReceiptVersions) => LedgerTransactionReceipt = LedgerTransactionReceiptV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_transaction_receipt.bin"
+        ))]
+    ]
 }
 
 /// A part of the [`LocalTransactionReceipt`] which is completely stored on ledger. It contains only
@@ -268,7 +280,13 @@ define_versioned! {
         latest_version: {
             2 => LocalTransactionExecution = LocalTransactionExecutionV2,
         },
-    }
+    },
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_local_transaction_execution.bin"
+        ))]
+    ]
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]

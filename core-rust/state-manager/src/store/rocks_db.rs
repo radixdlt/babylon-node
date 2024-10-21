@@ -328,7 +328,7 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         let status = extension_data_cf
             .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
             .map(|bytes| {
-                scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
+                scrypto_decode_with_nice_error::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
                     .fully_update_and_into_latest_version()
             });
@@ -436,7 +436,7 @@ impl<R: ReadableRocks> ConfigurableDatabase for StateManagerDatabase<R> {
             .cf(ExtensionsDataCf)
             .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
             .map(|bytes| {
-                scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
+                scrypto_decode_with_nice_error::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
                     .fully_update_and_into_latest_version()
             })
@@ -1244,7 +1244,7 @@ impl<R: WriteableRocks> StateTreeGcStore for StateManagerDatabase<R> {
         let status = extension_data_cf
             .get(&ExtensionsDataKey::StateTreeAssociatedValuesStatus)
             .map(|bytes| {
-                scrypto_decode::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
+                scrypto_decode_with_nice_error::<VersionedStateTreeAssociatedValuesStatus>(&bytes)
                     .unwrap()
                     .fully_update_and_into_latest_version()
             });
@@ -1451,8 +1451,9 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                     )
                 }
             };
-            let type_info = scrypto_decode::<TypeInfoSubstate>(created_type_info_value)
-                .expect("decode type info");
+            let type_info =
+                scrypto_decode_with_nice_error::<TypeInfoSubstate>(created_type_info_value)
+                    .expect("decode type info");
 
             let entity_type = node_id.entity_type().expect("type of upserted Entity");
             let creation_id = CreationId::new(state_version, index_within_txn);

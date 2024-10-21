@@ -62,11 +62,12 @@
  * permissions under this License.
  */
 
-use sbor::Sbor;
+use radix_common::prelude::*;
 
 /// Status of the migration
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Sbor, ScryptoSborAssertion)]
+#[sbor_assert(backwards_compatible(cuttlefish = "FILE:CF_SCHEMA_migration_status.bin"))]
 pub enum MigrationStatus {
     Completed,
 }
