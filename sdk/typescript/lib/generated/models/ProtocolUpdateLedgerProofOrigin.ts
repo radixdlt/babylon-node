@@ -33,10 +33,40 @@ export interface ProtocolUpdateLedgerProofOrigin {
     protocol_version_name: string;
     /**
      * 
+     * @type {string}
+     * @memberof ProtocolUpdateLedgerProofOrigin
+     */
+    config_hash: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProtocolUpdateLedgerProofOrigin
+     */
+    batch_group_idx: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProtocolUpdateLedgerProofOrigin
+     */
+    batch_group_name: string;
+    /**
+     * 
      * @type {number}
      * @memberof ProtocolUpdateLedgerProofOrigin
      */
     batch_idx: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProtocolUpdateLedgerProofOrigin
+     */
+    batch_name: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ProtocolUpdateLedgerProofOrigin
+     */
+    is_end_of_update: boolean;
 }
 
 
@@ -56,7 +86,12 @@ export function instanceOfProtocolUpdateLedgerProofOrigin(value: object): boolea
     let isInstance = true;
     isInstance = isInstance && "type" in value;
     isInstance = isInstance && "protocol_version_name" in value;
+    isInstance = isInstance && "config_hash" in value;
+    isInstance = isInstance && "batch_group_idx" in value;
+    isInstance = isInstance && "batch_group_name" in value;
     isInstance = isInstance && "batch_idx" in value;
+    isInstance = isInstance && "batch_name" in value;
+    isInstance = isInstance && "is_end_of_update" in value;
 
     return isInstance;
 }
@@ -73,7 +108,12 @@ export function ProtocolUpdateLedgerProofOriginFromJSONTyped(json: any, ignoreDi
         
         'type': json['type'],
         'protocol_version_name': json['protocol_version_name'],
+        'config_hash': json['config_hash'],
+        'batch_group_idx': json['batch_group_idx'],
+        'batch_group_name': json['batch_group_name'],
         'batch_idx': json['batch_idx'],
+        'batch_name': json['batch_name'],
+        'is_end_of_update': json['is_end_of_update'],
     };
 }
 
@@ -88,7 +128,12 @@ export function ProtocolUpdateLedgerProofOriginToJSON(value?: ProtocolUpdateLedg
         
         'type': value.type,
         'protocol_version_name': value.protocol_version_name,
+        'config_hash': value.config_hash,
+        'batch_group_idx': value.batch_group_idx,
+        'batch_group_name': value.batch_group_name,
         'batch_idx': value.batch_idx,
+        'batch_name': value.batch_name,
+        'is_end_of_update': value.is_end_of_update,
     };
 }
 

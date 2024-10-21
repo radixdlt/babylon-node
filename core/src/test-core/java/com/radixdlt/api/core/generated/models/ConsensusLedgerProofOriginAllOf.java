@@ -31,8 +31,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ConsensusLedgerProofOriginAllOf
+ * Represents a proof from the execution of a consensus round. 
  */
+@ApiModel(description = "Represents a proof from the execution of a consensus round. ")
 @JsonPropertyOrder({
   ConsensusLedgerProofOriginAllOf.JSON_PROPERTY_OPAQUE_HASH,
   ConsensusLedgerProofOriginAllOf.JSON_PROPERTY_TIMESTAMPED_SIGNATURES

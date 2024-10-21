@@ -38,8 +38,9 @@ impl ProtocolUpdateProgress {
             LedgerProofOrigin::ProtocolUpdate {
                 protocol_version_name,
                 config_hash: _,
+                batch_name: _,
                 batch_group_index,
-                batch_group_descriptor: _,
+                batch_group_name: _,
                 batch_index,
                 is_end_of_update,
             } => {

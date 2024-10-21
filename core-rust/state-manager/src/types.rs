@@ -515,8 +515,9 @@ pub enum LedgerProofOriginV2 {
         /// This is `None` if (and only if) the node ran the protocol update before this was captured.
         config_hash: Option<Hash>,
         batch_group_index: usize,
-        batch_group_descriptor: String,
+        batch_group_name: String,
         batch_index: usize,
+        batch_name: String,
         is_end_of_update: bool,
     },
 }
@@ -553,8 +554,9 @@ impl From<LedgerProofOriginV1> for LedgerProofOriginV2 {
                 protocol_version_name: ProtocolVersionName::babylon(),
                 config_hash: Some(genesis_opaque_hash),
                 batch_group_index: 0,
-                batch_group_descriptor: "".to_string(),
+                batch_group_name: "".to_string(),
                 batch_index: 0,
+                batch_name: "".to_string(),
                 is_end_of_update: false,
             },
             LedgerProofOriginV1::Consensus {
@@ -571,8 +573,9 @@ impl From<LedgerProofOriginV1> for LedgerProofOriginV2 {
                 protocol_version_name,
                 config_hash: None,
                 batch_group_index: 0,
-                batch_group_descriptor: "".to_string(),
+                batch_group_name: "".to_string(),
                 batch_index: batch_index as usize,
+                batch_name: "".to_string(),
                 is_end_of_update: false,
             },
         }

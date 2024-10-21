@@ -93,10 +93,10 @@ impl SystemExecutor {
     pub fn execute_protocol_update_action(
         &self,
         batch_details: ProtocolUpdateBatchDetails,
-        batch: ProtocolUpdateNodeBatch,
+        batch: NodeProtocolUpdateBatch,
     ) {
         match batch {
-            ProtocolUpdateNodeBatch::ProtocolUpdateBatch(batch) => {
+            NodeProtocolUpdateBatch::ProtocolUpdateBatch(batch) => {
                 let prepare_result = self
                     .preparator
                     .prepare_protocol_update(&batch_details, batch);
@@ -105,7 +105,7 @@ impl SystemExecutor {
                     .create(prepare_result);
                 self.committer.commit_system(commit_request);
             }
-            ProtocolUpdateNodeBatch::Scenario(scenario) => {
+            NodeProtocolUpdateBatch::Scenario(scenario) => {
                 let starting_nonce =
                     if batch_details.protocol_version != &ProtocolVersionName::babylon() {
                         // For non-genesis, we use the top-of-ledger's state version as a starting nonce for the
@@ -290,8 +290,9 @@ pub struct ProtocolUpdateBatchDetails<'a> {
     pub protocol_version: &'a ProtocolVersionName,
     pub config_hash: Hash,
     pub batch_group_index: usize,
-    pub batch_group_descriptor: &'a str,
+    pub batch_group_name: &'a str,
     pub batch_index: usize,
+    pub batch_name: &'a str,
     pub is_final_batch: bool,
     pub start_state_identifiers: StartStateIdentifiers,
 }
@@ -312,8 +313,9 @@ impl<'a> ProtocolUpdateBatchDetails<'a> {
             protocol_version_name: self.protocol_version.clone(),
             config_hash: Some(self.config_hash),
             batch_group_index: self.batch_group_index,
-            batch_group_descriptor: self.batch_group_descriptor.to_string(),
+            batch_group_name: self.batch_group_name.to_string(),
             batch_index: self.batch_index,
+            batch_name: self.batch_name.to_string(),
             is_end_of_update: self.is_final_batch,
         }
     }

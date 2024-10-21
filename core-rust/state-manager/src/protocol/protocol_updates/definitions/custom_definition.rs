@@ -35,7 +35,7 @@ impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
         _context: ProtocolUpdateContext,
         overrides_hash: Option<Hash>,
         overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
         Box::new(ArbitraryNodeBatchGenerator {
             config_hash: overrides_hash.unwrap_or(Hash([0; Hash::LENGTH])),
             batches: {
@@ -47,10 +47,10 @@ impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
                             let batch = ProtocolUpdateBatch {
                                 transactions: transactions.into_iter().map(|t| t.into()).collect(),
                             };
-                            ProtocolUpdateNodeBatch::ProtocolUpdateBatch(batch)
+                            NodeProtocolUpdateBatch::ProtocolUpdateBatch(batch)
                         }
                         CustomProtocolUpdateBatch::Scenario(scenario_name) => {
-                            ProtocolUpdateNodeBatch::Scenario(scenario_name)
+                            NodeProtocolUpdateBatch::Scenario(scenario_name)
                         }
                     })
                     .collect()
@@ -61,37 +61,23 @@ impl ProtocolUpdateDefinition for CustomProtocolUpdateDefinition {
 
 pub struct ArbitraryNodeBatchGenerator {
     pub config_hash: Hash,
-    pub batches: Vec<ProtocolUpdateNodeBatch>,
+    pub batches: Vec<NodeProtocolUpdateBatch>,
 }
 
 impl ArbitraryNodeBatchGenerator {
-    pub const BATCH_DESCRIPTOR: &'static str = "SingleBatch";
+    pub const BATCH_GROUP_DESCRIPTOR: &'static str = "principal";
 }
 
-impl ProtocolUpdateNodeBatchGenerator for ArbitraryNodeBatchGenerator {
+impl NodeProtocolUpdateGenerator for ArbitraryNodeBatchGenerator {
     fn config_hash(&self) -> Hash {
         self.config_hash
     }
 
-    fn generate_batch(
-        &self,
-        batch_group_index: usize,
-        batch_index: usize,
-    ) -> ProtocolUpdateNodeBatch {
-        match batch_group_index {
-            0 => self.batches.get(batch_index).unwrap().clone(),
-            _ => panic!("Incorrect batch_group_index: {batch_group_index}"),
+    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>> {
+        let mut batch_group = NodeFixedBatchGroupGenerator::named(Self::BATCH_GROUP_DESCRIPTOR);
+        for (index, batch) in self.batches.iter().enumerate() {
+            batch_group = batch_group.add_batch(format!("batch-{index:02}"), |_| batch.clone())
         }
-    }
-
-    fn batch_group_descriptors(&self) -> Vec<String> {
-        vec![Self::BATCH_DESCRIPTOR.to_string()]
-    }
-
-    fn batch_count(&self, batch_group_index: usize) -> usize {
-        match batch_group_index {
-            0 => self.batches.len(),
-            _ => panic!("Incorrect batch_group_index: {batch_group_index}"),
-        }
+        vec![batch_group.build()]
     }
 }

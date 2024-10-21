@@ -23,15 +23,37 @@ pub enum LedgerProofOrigin {
     },
     #[serde(rename="Genesis")]
     GenesisLedgerProofOrigin {
+        #[serde(rename = "protocol_version_name")]
+        protocol_version_name: String,
         #[serde(rename = "genesis_opaque_hash")]
         genesis_opaque_hash: String,
+        #[serde(rename = "batch_group_idx")]
+        batch_group_idx: i64,
+        #[serde(rename = "batch_group_name")]
+        batch_group_name: String,
+        #[serde(rename = "batch_idx")]
+        batch_idx: i64,
+        #[serde(rename = "batch_name")]
+        batch_name: String,
+        #[serde(rename = "is_end_of_update")]
+        is_end_of_update: bool,
     },
     #[serde(rename="ProtocolUpdate")]
     ProtocolUpdateLedgerProofOrigin {
         #[serde(rename = "protocol_version_name")]
         protocol_version_name: String,
+        #[serde(rename = "config_hash")]
+        config_hash: String,
+        #[serde(rename = "batch_group_idx")]
+        batch_group_idx: i64,
+        #[serde(rename = "batch_group_name")]
+        batch_group_name: String,
         #[serde(rename = "batch_idx")]
         batch_idx: i64,
+        #[serde(rename = "batch_name")]
+        batch_name: String,
+        #[serde(rename = "is_end_of_update")]
+        is_end_of_update: bool,
     },
 }
 

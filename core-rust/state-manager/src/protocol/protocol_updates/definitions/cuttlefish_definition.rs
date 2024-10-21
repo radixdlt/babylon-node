@@ -10,7 +10,7 @@ impl ProtocolUpdateDefinition for CuttlefishProtocolUpdateDefinition {
         context: ProtocolUpdateContext,
         overrides_hash: Option<Hash>,
         overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
         Box::new(create_default_generator_with_scenarios(
             context,
             overrides_hash,

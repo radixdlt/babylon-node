@@ -17,16 +17,31 @@ pub struct ProtocolUpdateLedgerProofOrigin {
     pub _type: crate::core_api::generated::models::LedgerProofOriginType,
     #[serde(rename = "protocol_version_name")]
     pub protocol_version_name: String,
+    #[serde(rename = "config_hash")]
+    pub config_hash: String,
+    #[serde(rename = "batch_group_idx")]
+    pub batch_group_idx: i64,
+    #[serde(rename = "batch_group_name")]
+    pub batch_group_name: String,
     #[serde(rename = "batch_idx")]
     pub batch_idx: i64,
+    #[serde(rename = "batch_name")]
+    pub batch_name: String,
+    #[serde(rename = "is_end_of_update")]
+    pub is_end_of_update: bool,
 }
 
 impl ProtocolUpdateLedgerProofOrigin {
-    pub fn new(_type: crate::core_api::generated::models::LedgerProofOriginType, protocol_version_name: String, batch_idx: i64) -> ProtocolUpdateLedgerProofOrigin {
+    pub fn new(_type: crate::core_api::generated::models::LedgerProofOriginType, protocol_version_name: String, config_hash: String, batch_group_idx: i64, batch_group_name: String, batch_idx: i64, batch_name: String, is_end_of_update: bool) -> ProtocolUpdateLedgerProofOrigin {
         ProtocolUpdateLedgerProofOrigin {
             _type,
             protocol_version_name,
+            config_hash,
+            batch_group_idx,
+            batch_group_name,
             batch_idx,
+            batch_name,
+            is_end_of_update,
         }
     }
 }

@@ -30,7 +30,7 @@ pub trait ProtocolUpdateDefinition {
         context: ProtocolUpdateContext,
         overrides_hash: Option<Hash>,
         overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator>;
+    ) -> Box<dyn NodeProtocolUpdateGenerator>;
 }
 
 #[derive(Copy, Clone)]
@@ -56,11 +56,11 @@ pub trait ConfigurableProtocolUpdateDefinition {
     /// Parses the given raw overrides and passes them to
     /// [`ProtocolUpdateDefinition::create_batch_generator`].
     /// Panics on any [`DecodeError`] from [`Self::validate_overrides()`].
-    fn create_batch_generator_raw(
+    fn create_update_generator_raw(
         &self,
         context: ProtocolUpdateContext,
         raw_overrides: Option<&[u8]>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator>;
+    ) -> Box<dyn NodeProtocolUpdateGenerator>;
 
     /// Checks that the given raw overrides can be parsed.
     fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError>;
@@ -82,11 +82,11 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
         self.config_hash(context, overrides_hash, overrides)
     }
 
-    fn create_batch_generator_raw(
+    fn create_update_generator_raw(
         &self,
         context: ProtocolUpdateContext,
         raw_overrides: Option<&[u8]>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
         let overrides = raw_overrides
             .map(scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>)
             .transpose()

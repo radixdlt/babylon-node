@@ -89,7 +89,7 @@ extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyKnownPendi
         |_: ()| -> JavaResult<ProtocolUpdateResult> {
             let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
                 .state_manager
-                .apply_known_pending_protocol_update();
+                .apply_known_pending_protocol_updates();
             Ok(result)
         },
     )

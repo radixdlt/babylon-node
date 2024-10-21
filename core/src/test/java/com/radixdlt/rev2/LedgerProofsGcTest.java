@@ -162,8 +162,8 @@ public final class LedgerProofsGcTest {
     try (var test = createTest(2, roundsPerEpoch, txnSize, 1000, maxTxnPayloadSizeUnderProof)) {
       test.startNode(0);
 
-      // Act: advance to epoch 5
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(5)));
+      // Act: advance to epoch 6
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)));
 
       // Assert: after an async GC, we expect certain number of proofs in each epoch:
       Awaitility.await()
@@ -171,30 +171,31 @@ public final class LedgerProofsGcTest {
           .untilAsserted(
               () -> {
                 var stateReader = test.getInstance(0, TestStateReader.class);
-                // - The epoch 5 has just started, hence it has no proofs
-                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(0);
+                // - The epoch 6 has just started, hence it has no proofs
+                assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
                 // - The 2 most recent completed epochs contain all their proofs (i.e. not pruned)
+                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(roundsPerEpoch);
                 assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(roundsPerEpoch);
-                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(roundsPerEpoch);
                 // - This epoch was pruned, and it has 2 proofs (to fit the size limit)
-                assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
+                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(2);
+                // - Note that epoch 2 includes protocol updates, so ignore this epoch
               });
 
       // Follow-up: Advance one more epoch
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)));
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(7)));
 
       // Assert: after an async GC...
       Awaitility.await()
           .atMost(2 * GC_INTERVAL_SEC, TimeUnit.SECONDS)
           .untilAsserted(
               () -> {
-                // ... the "pruning window" has progressed (i.e. now epoch 3 got pruned)
+                // ... the "pruning window" has progressed (i.e. now epoch 4 got pruned)
                 var stateReader = test.getInstance(0, TestStateReader.class);
-                assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
+                assertThat(stateReader.countProofsWithinEpoch(7)).isEqualTo(0);
+                assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(roundsPerEpoch);
                 assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(roundsPerEpoch);
-                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(roundsPerEpoch);
+                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(2);
                 assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(2);
-                assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(2);
               });
     }
   }
@@ -207,8 +208,8 @@ public final class LedgerProofsGcTest {
     try (var test = createTest(2, roundsPerEpoch, 1024, maxTxnCountUnderProof, 16 * 1024 * 1024)) {
       test.startNode(0);
 
-      // Act: advance to epoch 5
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(5)));
+      // Act: advance to epoch 6
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)));
 
       // Act: after an async GC, we expect certain number of proofs in each epoch:
       Awaitility.await()
@@ -217,29 +218,30 @@ public final class LedgerProofsGcTest {
               () -> {
                 var stateReader = test.getInstance(0, TestStateReader.class);
                 // - The epoch 5 has just started, hence it has no proofs
-                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(0);
+                assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
                 // - The 2 most recent completed epochs contain all their proofs (i.e. not pruned)
+                assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(roundsPerEpoch);
                 assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(roundsPerEpoch);
-                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(roundsPerEpoch);
                 // - This epoch was pruned, and it has 4 proofs (to fit the count limit)
-                assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(4);
+                assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(4);
+                // - Note that epoch 2 includes protocol updates, so ignore this epoch
               });
 
       // Follow-up: Advance one more epoch
-      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(6)));
+      test.runUntilState(NodesPredicate.nodeAt(0, NodePredicate.atOrOverEpoch(7)));
 
       // Assert: after an async GC...
       Awaitility.await()
           .atMost(2 * GC_INTERVAL_SEC, TimeUnit.SECONDS)
           .untilAsserted(
               () -> {
-                // ... the "pruning window" has progressed (i.e. now epoch 3 got pruned)
+                // ... the "pruning window" has progressed (i.e. now epoch 4 got pruned)
                 var stateReader = test.getInstance(0, TestStateReader.class);
-                assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(0);
+                assertThat(stateReader.countProofsWithinEpoch(7)).isEqualTo(0);
+                assertThat(stateReader.countProofsWithinEpoch(6)).isEqualTo(roundsPerEpoch);
                 assertThat(stateReader.countProofsWithinEpoch(5)).isEqualTo(roundsPerEpoch);
-                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(roundsPerEpoch);
+                assertThat(stateReader.countProofsWithinEpoch(4)).isEqualTo(4);
                 assertThat(stateReader.countProofsWithinEpoch(3)).isEqualTo(4);
-                assertThat(stateReader.countProofsWithinEpoch(2)).isEqualTo(4);
               });
     }
   }

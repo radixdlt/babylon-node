@@ -103,6 +103,7 @@ public record LedgerProof(LedgerHeader ledgerHeader, LedgerProofOrigin origin) {
             UInt64.ZERO,
             "-",
             UInt64.ZERO,
+            "-",
             false));
   }
 

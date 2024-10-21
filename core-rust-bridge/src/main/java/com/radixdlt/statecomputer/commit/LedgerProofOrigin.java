@@ -85,8 +85,9 @@ public sealed interface LedgerProofOrigin {
       String protocolVersionName,
       Option<HashCode> configHash,
       UInt64 batchGroupIndex,
-      String batchGroupDescriptor,
+      String batchGroupName,
       UInt64 batchIndex,
+      String batchName,
       boolean isEndOfUpdate)
       implements LedgerProofOrigin {}
 }
