@@ -455,9 +455,11 @@ public class TransactionStreamTest extends DeterministicCoreApiTestBase {
       // Just a quick sanity check that the expected number of created/updates substates was
       // returned
 
-      // Consensus manager config update (1 updated)
+      // Consensus manager config update (0 updated)
+      // This is because on INT_TEST_NET in the engine codebase, we've fixed it to stay at 1USD,
+      // so the node filters out the state update for the transaction.
       assertEquals(
-          1,
+          0,
           protocolUpdateTxns
               .getTransactions()
               .get(0)
