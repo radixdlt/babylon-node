@@ -109,7 +109,8 @@ impl ProtocolUpdateDefinition for BabylonProtocolUpdateDefinition {
             Some(overrides) => overrides,
             None => {
                 let raw_genesis_data = context.genesis_data_resolver.get_raw_genesis_data();
-                scrypto_decode(&raw_genesis_data).expect("Could not decode genesis data")
+                scrypto_decode_with_nice_error(&raw_genesis_data)
+                    .expect("Could not decode genesis data")
             }
         };
 

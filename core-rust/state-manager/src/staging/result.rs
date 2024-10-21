@@ -447,12 +447,13 @@ impl GlobalBalanceSummary {
                         panic!("broken invariant: vault {:?} deleted", vault_id)
                     }
                 };
-                let resultant_balance =
-                    scrypto_decode::<FungibleVaultBalanceFieldSubstate>(resultant_balance_substate)
-                        .expect("cannot decode vault balance substate")
-                        .into_payload()
-                        .fully_update_and_into_latest_version()
-                        .amount();
+                let resultant_balance = scrypto_decode_with_nice_error::<
+                    FungibleVaultBalanceFieldSubstate,
+                >(resultant_balance_substate)
+                .expect("cannot decode vault balance substate")
+                .into_payload()
+                .fully_update_and_into_latest_version()
+                .amount();
                 let balance_existed = resultant_fungible_account_balances
                     .entry(root_address)
                     .or_insert_with(index_map_new::<ResourceAddress, Decimal>)

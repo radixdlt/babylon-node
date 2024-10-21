@@ -74,7 +74,13 @@ pub struct SafetyStateV1 {
 
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoSbor)]
-    pub VersionedSafetyState(SafetyStateVersions) => SafetyState = SafetyStateV1
+    pub VersionedSafetyState(SafetyStateVersions) => SafetyState = SafetyStateV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_safety_state.bin"
+        ))]
+    ]
 }
 
 /// Safety state components. Note that these structs are intended only for proper encoding/deconding

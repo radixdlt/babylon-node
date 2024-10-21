@@ -463,7 +463,13 @@ define_versioned!(
         latest_version: {
             3 => LedgerProof = LedgerProofV3,
         },
-    }
+    },
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_proof.bin"
+        ))]
+    ]
 );
 
 #[derive(Debug, Clone, ScryptoSbor)]

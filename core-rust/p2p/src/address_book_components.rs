@@ -105,7 +105,13 @@ pub struct AddressBookEntryV1 {
 
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoSbor)]
-    pub VersionedAddressBookEntry(AddressBookEntryVersions) => AddressBookEntry = AddressBookEntryV1
+    pub VersionedAddressBookEntry(AddressBookEntryVersions) => AddressBookEntry = AddressBookEntryV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_address_book_entry.bin"
+        ))]
+    ]
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
@@ -113,5 +119,11 @@ pub struct HighPriorityPeersV1(Vec<NodeIdDTO>);
 
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoSbor)]
-    pub VersionedHighPriorityPeers(HighPriorityPeersVersions) => HighPriorityPeers = HighPriorityPeersV1
+    pub VersionedHighPriorityPeers(HighPriorityPeersVersions) => HighPriorityPeers = HighPriorityPeersV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_high_priority_peers.bin"
+        ))]
+    ]
 }
