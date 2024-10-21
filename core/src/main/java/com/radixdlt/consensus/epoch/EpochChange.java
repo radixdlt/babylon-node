@@ -67,8 +67,8 @@ package com.radixdlt.consensus.epoch;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.ledger.LedgerProofBundle;
 
-public record EpochChange(LedgerProofBundle proof, BFTConfiguration bftConfiguration) {
+public record EpochChange(LedgerProofBundle proofBundle, BFTConfiguration bftConfiguration) {
   public long nextEpoch() {
-    return proof.resultantEpoch();
+    return proofBundle.resultantEpoch();
   }
 }

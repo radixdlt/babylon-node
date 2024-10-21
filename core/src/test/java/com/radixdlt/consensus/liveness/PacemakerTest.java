@@ -77,6 +77,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.crypto.Blake2b256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;

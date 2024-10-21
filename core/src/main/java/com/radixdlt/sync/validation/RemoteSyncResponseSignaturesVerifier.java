@@ -104,7 +104,6 @@ public final class RemoteSyncResponseSignaturesVerifier {
         }
         yield true;
       }
-      case LedgerProofOrigin.Genesis genesisOrigin -> false;
       case LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin -> false;
     };
   }

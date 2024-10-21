@@ -97,7 +97,6 @@ public class RemoteSyncResponseValidatorSetVerifier {
                 });
         yield validationState.complete();
       }
-      case LedgerProofOrigin.Genesis genesis -> false;
       case LedgerProofOrigin.ProtocolUpdate protocolUpdate -> false;
     };
   }

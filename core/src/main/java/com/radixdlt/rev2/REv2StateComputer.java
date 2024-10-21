@@ -313,8 +313,8 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
     var newLatestProof = proof;
     var latestProofWhichInitiatedAnEpochChange =
         this.latestProof.latestProofWhichInitiatedAnEpochChange();
-    var latestProofWhichInitiatedAProtocolUpdate =
-        this.latestProof.latestProofWhichInitiatedAProtocolUpdate();
+    var latestProofWhichInitiatedOneOrMoreProtocolUpdates =
+        this.latestProof.latestProofWhichInitiatedOneOrMoreProtocolUpdates();
     var latestProtocolUpdateExecutionProof = this.latestProof.latestProtocolUpdateExecutionProof();
 
     if (newLatestProof.ledgerHeader().nextProtocolVersion().isPresent()
@@ -323,25 +323,19 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
           "Initial protocol update triggers must happen at epoch boundary");
     }
 
-    // A loop here allows us to enact protocol updates back-to-back
-    LedgerProof lastHandledProof;
     Option<com.radixdlt.statecomputer.commit.NextEpoch> maybeNextEpoch = none();
-    do {
-      lastHandledProof = newLatestProof;
-      final var newHeader = newLatestProof.ledgerHeader();
-      if (newHeader.nextEpoch().isPresent()) {
-        latestProofWhichInitiatedAnEpochChange = newLatestProof;
-        maybeNextEpoch = newHeader.nextEpoch();
-      }
-      if (newHeader.nextProtocolVersion().isPresent()) {
-        final var nextProtocolVersion = newHeader.nextProtocolVersion().unwrap();
-        latestProofWhichInitiatedAProtocolUpdate = Option.some(newLatestProof);
-        final var finalExecutionProof =
-            this.rustProtocolUpdate.applyProtocolUpdate(nextProtocolVersion).postUpdateProof();
-        newLatestProof = finalExecutionProof;
-        latestProtocolUpdateExecutionProof = Option.some(finalExecutionProof);
-      }
-    } while (newLatestProof != lastHandledProof);
+    final var newHeader = newLatestProof.ledgerHeader();
+    if (newHeader.nextEpoch().isPresent()) {
+      latestProofWhichInitiatedAnEpochChange = newLatestProof;
+      maybeNextEpoch = newHeader.nextEpoch();
+    }
+    if (newHeader.nextProtocolVersion().isPresent()) {
+      latestProofWhichInitiatedOneOrMoreProtocolUpdates = Option.some(newLatestProof);
+      final var finalExecutionProof =
+          this.rustProtocolUpdate.applyKnownPendingProtocolUpdate().postUpdateProof();
+      newLatestProof = finalExecutionProof;
+      latestProtocolUpdateExecutionProof = Option.some(finalExecutionProof);
+    }
 
     // This presence of the protocol update in the proof is validated in rust - to ensure that if
     // any protocol update is present, our node agrees it should be committed.
@@ -351,7 +345,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new LedgerProofBundle(
             newLatestProof,
             latestProofWhichInitiatedAnEpochChange,
-            latestProofWhichInitiatedAProtocolUpdate,
+            latestProofWhichInitiatedOneOrMoreProtocolUpdates,
             latestProtocolUpdateExecutionProof);
 
     final var maybeEpochChange =

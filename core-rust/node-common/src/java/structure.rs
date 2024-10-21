@@ -75,9 +75,9 @@ pub trait StructToJava {
     fn to_java(&self) -> JavaResult<Vec<u8>>;
 }
 
-impl<T: ScryptoDecode> StructFromJava for T {
+impl<T: ScryptoDecode + ScryptoDescribe> StructFromJava for T {
     fn from_java(data: &[u8]) -> JavaResult<Self> {
-        Ok(scrypto_decode(data)?)
+        Ok(scrypto_decode_with_nice_error(data)?)
     }
 }
 
@@ -90,14 +90,13 @@ impl<T: ScryptoEncode> StructToJava for T {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sbor::{Decode, Encode};
 
-    #[derive(Debug, Encode, Decode, PartialEq, Eq)]
+    #[derive(Debug, Sbor, PartialEq, Eq)]
     pub struct TypeA {
         bytes_a: Vec<u8>,
     }
 
-    #[derive(Debug, Encode, Decode, PartialEq, Eq)]
+    #[derive(Debug, Sbor, PartialEq, Eq)]
     pub struct TypeB {
         bytes_b: Vec<u8>,
         a: TypeA,

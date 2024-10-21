@@ -66,7 +66,7 @@ package com.radixdlt.bootstrap;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.crypto.Blake2b256Hasher;
 import com.radixdlt.genesis.FixedGenesisLoader;
 import com.radixdlt.networks.Network;
 import com.radixdlt.serialization.DefaultSerialization;

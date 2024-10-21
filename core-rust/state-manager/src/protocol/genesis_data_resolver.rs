@@ -62,22 +62,112 @@
  * permissions under this License.
  */
 
-package com.radixdlt.environment;
+use crate::engine_prelude::*;
+use jni::objects::{GlobalRef, JObject, JValue};
+use jni::{JNIEnv, JavaVM};
+use std::ops::Deref;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.sbor.codec.CodecMap;
-import com.radixdlt.sbor.codec.StructCodec;
+use node_common::java::*;
 
-/**
- * A configuration of "Engine test Scenarios" to be run automatically after a specific Protocol
- * Update.
- */
-public record ProtocolUpdateScenarios(
-    String protocolVersionName, ImmutableList<String> scenarioNames) {
+use super::JavaGenesisData;
 
-  public static void registerCodec(CodecMap codecMap) {
-    codecMap.register(
-        ProtocolUpdateScenarios.class,
-        codecs -> StructCodec.fromRecordComponents(ProtocolUpdateScenarios.class, codecs));
-  }
+pub trait ResolveGenesisData: Send + Sync + 'static {
+    fn get_genesis_data_hash(&self) -> Hash {
+        hash(self.get_raw_genesis_data())
+    }
+
+    fn get_raw_genesis_data(&self) -> Vec<u8>;
+}
+
+pub struct FixedGenesisDataResolver {
+    raw_data: Vec<u8>,
+    raw_data_hash: Hash,
+}
+
+impl FixedGenesisDataResolver {
+    pub fn new(genesis_data: JavaGenesisData) -> Self {
+        let raw_data = scrypto_encode(&genesis_data).unwrap();
+        let raw_data_hash = hash(&raw_data);
+        Self {
+            raw_data,
+            raw_data_hash,
+        }
+    }
+}
+
+impl ResolveGenesisData for FixedGenesisDataResolver {
+    fn get_raw_genesis_data(&self) -> Vec<u8> {
+        self.raw_data.clone()
+    }
+
+    fn get_genesis_data_hash(&self) -> Hash {
+        self.raw_data_hash
+    }
+}
+
+/// A Java dispatcher for reading the GenesisData lazily.
+pub struct JavaGenesisDataResolver {
+    jvm: JavaVM,
+    j_rust_global_context_ref: GlobalRef,
+}
+
+impl ResolveGenesisData for JavaGenesisDataResolver {
+    fn get_raw_genesis_data(&self) -> Vec<u8> {
+        self.read_raw_genesis_data()
+            .expect("Genesis data should be readable from Java")
+    }
+
+    fn get_genesis_data_hash(&self) -> Hash {
+        self.read_raw_genesis_data_hash()
+            .expect("Genesis hash should be readable from Java")
+    }
+}
+
+// Similar to the MempoolRelayDispatcher
+// TODO: If a number of Rust->Java calls grows, we could invest in a small util for building the
+// "method IDs" (i.e. especially these descriptors) in some more convenient way.
+impl JavaGenesisDataResolver {
+    /// The Java trigger method's descriptor string (i.e. as defined by
+    /// [JVMS](https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-4.3.3)).
+    const NO_ARGS_RETURNS_BYTES_METHOD_DESCRIPTOR: &'static str = "()[B";
+
+    /// Creates a long-lived dispatcher from the given short-lived JNI context and Java state
+    /// manager reference.
+    pub fn new(env: &JNIEnv, j_rust_global_context: JObject) -> jni::errors::Result<Self> {
+        Ok(Self {
+            jvm: env.get_java_vm()?,
+            j_rust_global_context_ref: env.new_global_ref(j_rust_global_context)?,
+        })
+    }
+
+    pub fn read_raw_genesis_data_hash(&self) -> JavaResult<Hash> {
+        let bytes = self.read_byte_array("readGenesisDataHash")?;
+        let array = bytes.try_into().map_err(|_| {
+            JavaError("readGenesisDataHash returned the wrong number of bytes".to_string())
+        })?;
+        Ok(Hash::from_bytes(array))
+    }
+
+    pub fn read_raw_genesis_data(&self) -> JavaResult<Vec<u8>> {
+        self.read_byte_array("readGenesisData")
+    }
+
+    fn read_byte_array(&self, method_name: &str) -> JavaResult<Vec<u8>> {
+        let attachment = self.jvm.attach_current_thread()?;
+        let env = attachment.deref();
+        let j_rust_global_context = self.j_rust_global_context_ref.as_obj();
+        let result = env.call_method(
+            j_rust_global_context,
+            method_name,
+            Self::NO_ARGS_RETURNS_BYTES_METHOD_DESCRIPTOR,
+            &[],
+        );
+        if result.is_err() && env.exception_check()? {
+            env.exception_clear()?;
+        }
+        let JValue::Object(jobject) = result? else {
+            panic!("Unexpected value returned from {}", method_name);
+        };
+        jni_jbytearray_to_vector(env, *jobject)
+    }
 }

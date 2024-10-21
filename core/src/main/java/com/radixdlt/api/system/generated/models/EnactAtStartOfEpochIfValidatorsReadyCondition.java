@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.system.generated.models.EnactAtStartOfEpochIfValidatorsReadyCondition;
 import com.radixdlt.api.system.generated.models.EnactAtStartOfEpochIfValidatorsReadyConditionAllOf;
 import com.radixdlt.api.system.generated.models.EnactAtStartOfEpochUnconditionallyCondition;
+import com.radixdlt.api.system.generated.models.EnactImmediatelyAfterEndOfProtocolUpdate;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentConditionType;
 import com.radixdlt.api.system.generated.models.SignalledReadinessThreshold;
@@ -52,6 +53,7 @@ import com.radixdlt.api.common.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = EnactAtStartOfEpochIfValidatorsReadyCondition.class, name = "EnactAtStartOfEpochIfValidatorsReady"),
   @JsonSubTypes.Type(value = EnactAtStartOfEpochUnconditionallyCondition.class, name = "EnactAtStartOfEpochUnconditionally"),
+  @JsonSubTypes.Type(value = EnactImmediatelyAfterEndOfProtocolUpdate.class, name = "EnactImmediatelyAfterEndOfProtocolUpdate"),
 })
 
 public class EnactAtStartOfEpochIfValidatorsReadyCondition extends ProtocolUpdateEnactmentCondition {
@@ -230,6 +232,7 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("EnactAtStartOfEpochIfValidatorsReady", EnactAtStartOfEpochIfValidatorsReadyCondition.class);
   mappings.put("EnactAtStartOfEpochUnconditionally", EnactAtStartOfEpochUnconditionallyCondition.class);
+  mappings.put("EnactImmediatelyAfterEndOfProtocolUpdate", EnactImmediatelyAfterEndOfProtocolUpdate.class);
   mappings.put("EnactAtStartOfEpochIfValidatorsReadyCondition", EnactAtStartOfEpochIfValidatorsReadyCondition.class);
   JSON.registerDiscriminator(EnactAtStartOfEpochIfValidatorsReadyCondition.class, "type", mappings);
 }

@@ -367,7 +367,6 @@ pub mod proofs {
 
     #[derive(Clone, Debug, ScryptoSbor)]
     pub enum GetSyncableTxnsAndProofError {
-        RefusedToServeGenesis { refused_proof: Box<LedgerProof> },
         RefusedToServeProtocolUpdate { refused_proof: Box<LedgerProof> },
         NothingToServeAtTheGivenStateVersion,
         FailedToPrepareAResponseWithinLimits,

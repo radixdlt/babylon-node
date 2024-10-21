@@ -21,7 +21,7 @@ import {
 } from './TimestampedValidatorSignature';
 
 /**
- * 
+ * Represents a proof from the execution of a consensus round.
  * @export
  * @interface ConsensusLedgerProofOriginAllOf
  */

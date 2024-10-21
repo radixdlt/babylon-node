@@ -85,6 +85,7 @@ import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
+import com.radixdlt.crypto.Blake2b256Hasher;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;

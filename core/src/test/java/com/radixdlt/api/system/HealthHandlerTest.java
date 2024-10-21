@@ -68,6 +68,7 @@ import static com.radixdlt.lang.Tuple.tuple;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -77,6 +78,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.radixdlt.api.SystemApiTestBase;
 import com.radixdlt.api.system.generated.models.HealthResponse;
+import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
 import com.radixdlt.api.system.generated.models.SignalledReadinessPendingProtocolUpdateState;
 import com.radixdlt.api.system.routes.HealthHandler;
 import com.radixdlt.consensus.bft.Round;
@@ -125,7 +127,7 @@ public class HealthHandlerTest extends SystemApiTestBase {
             final var pendingProtocolUpdate =
                 new ProtocolState.PendingProtocolUpdate(
                     new ProtocolUpdateTrigger(
-                        "pending-v3",
+                        "custom-pending-3",
                         new ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady(
                             UInt64.fromNonNegativeLong(10L),
                             UInt64.fromNonNegativeLong(200L),
@@ -133,10 +135,22 @@ public class HealthHandlerTest extends SystemApiTestBase {
                     new ProtocolState.PendingProtocolUpdateState
                         .ForSignalledReadinessSupportCondition(
                         ImmutableList.of(tuple(threshold, thresholdState))));
+            final var pendingProtocolUpdateTwo =
+                new ProtocolState.PendingProtocolUpdate(
+                    new ProtocolUpdateTrigger(
+                        "custom-pending-4",
+                        new ProtocolUpdateEnactmentCondition
+                            .EnactImmediatelyAfterEndOfProtocolUpdate("custom-pending-3")),
+                    new ProtocolState.PendingProtocolUpdateState.Empty());
+
             final var protocolState =
                 new ProtocolState(
-                    ImmutableMap.of(UInt64.fromNonNegativeLong(5L), "enacted-v2"),
-                    ImmutableList.of(pendingProtocolUpdate));
+                    ImmutableMap.of(UInt64.fromNonNegativeLong(5L), "custom-enacted-2"),
+                    ImmutableMap.of(
+                        pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion(),
+                        pendingProtocolUpdate,
+                        pendingProtocolUpdateTwo.protocolUpdateTrigger().nextProtocolVersion(),
+                        pendingProtocolUpdateTwo));
 
             final var systemInfo = mock(InMemorySystemInfo.class);
             when(systemInfo.getCurrentRound())
@@ -174,7 +188,9 @@ public class HealthHandlerTest extends SystemApiTestBase {
     // Act
     final var response = handleRequestWithExpectedResponse(sut, HealthResponse.class);
 
-    // Assert
+    // Assert first pending enactment
+    assertEquals(
+        "custom-pending-3", response.getPendingProtocolUpdates().get(0).getProtocolVersion());
     assertEquals(
         EXPECTED_PROJECTED_ENACTMENT_EPOCH,
         requireNonNull(
@@ -202,5 +218,21 @@ public class HealthHandlerTest extends SystemApiTestBase {
     assertEquals(
         EXPECTED_PROJECTED_ENACTMENT_TIMESTAMP,
         requireNonNull(thresholdState.getProjectedFulfillmentTimestamp()).longValue());
+
+    // Assert second pending enactment (immediately after custom-pending-3)
+    assertEquals(
+        "custom-pending-4", response.getPendingProtocolUpdates().get(1).getProtocolVersion());
+    assertEquals(
+        PendingProtocolUpdate.ReadinessSignalStatusEnum.NO_SIGNAL_REQUIRED,
+        response.getPendingProtocolUpdates().get(1).getReadinessSignalStatus());
+    // It could be argued for us to copy the custom-pending-3 values, but for now let's just
+    // use "null" because:
+    // (A) it's not ~technically~ at the start of this epoch
+    // (B) this will only be used on testnets
+    // (C) this will likely not even be observable on testnets because
+    //     this setting will be used to trigger updates straight off of genesis,
+    //     before the System API boots, so we'll never be able to observe it as "pending"
+    assertNull(response.getPendingProtocolUpdates().get(1).getProjectedEnactmentAtStartOfEpoch());
+    assertNull(response.getPendingProtocolUpdates().get(1).getProjectedEnactmentTimestamp());
   }
 }

@@ -6,7 +6,7 @@ use ProtocolUpdateEnactmentCondition::*;
 pub fn mainnet_protocol_config() -> ProtocolConfig {
     // See config_printer.rs
     ProtocolConfig::new_with_triggers(hashmap! {
-        ANEMONE_PROTOCOL_VERSION => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::anemone() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "anemone"
             // READINESS_SIGNAL: "220e2a4a4e86e3e6000000000anemone"
@@ -25,7 +25,7 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
                 },
             ],
         },
-        BOTTLENOSE_PROTOCOL_VERSION => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::bottlenose() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "bottlenose"
             // READINESS_SIGNAL: "86894b9104afb73a000000bottlenose"

@@ -134,7 +134,7 @@ public final class MockedStateComputer implements StateComputer {
                 : latestProof.latestProofWhichInitiatedAnEpochChange(),
             ledgerExtension.proof().ledgerHeader().nextProtocolVersion().isPresent()
                 ? Option.some(ledgerExtension.proof())
-                : latestProof.latestProofWhichInitiatedAProtocolUpdate(),
+                : latestProof.latestProofWhichInitiatedOneOrMoreProtocolUpdates(),
             Option.empty());
 
     final var maybeEpochChange =

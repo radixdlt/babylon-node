@@ -27,6 +27,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.system.generated.models.EnactAtStartOfEpochIfValidatorsReadyCondition;
 import com.radixdlt.api.system.generated.models.EnactAtStartOfEpochUnconditionallyCondition;
 import com.radixdlt.api.system.generated.models.EnactImmediatelyAfterEndOfProtocolUpdate;
+import com.radixdlt.api.system.generated.models.EnactImmediatelyAfterEndOfProtocolUpdateAllOf;
+import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentCondition;
 import com.radixdlt.api.system.generated.models.ProtocolUpdateEnactmentConditionType;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -35,54 +37,52 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.common.JSON;
 /**
- * ProtocolUpdateEnactmentCondition
+ * EnactImmediatelyAfterEndOfProtocolUpdate
  */
 @JsonPropertyOrder({
-  ProtocolUpdateEnactmentCondition.JSON_PROPERTY_TYPE
+  EnactImmediatelyAfterEndOfProtocolUpdate.JSON_PROPERTY_TRIGGER_AFTER
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = EnactAtStartOfEpochIfValidatorsReadyCondition.class, name = "EnactAtStartOfEpochIfValidatorsReady"),
-  @JsonSubTypes.Type(value = EnactAtStartOfEpochIfValidatorsReadyCondition.class, name = "EnactAtStartOfEpochIfValidatorsReadyCondition"),
   @JsonSubTypes.Type(value = EnactAtStartOfEpochUnconditionallyCondition.class, name = "EnactAtStartOfEpochUnconditionally"),
-  @JsonSubTypes.Type(value = EnactAtStartOfEpochUnconditionallyCondition.class, name = "EnactAtStartOfEpochUnconditionallyCondition"),
   @JsonSubTypes.Type(value = EnactImmediatelyAfterEndOfProtocolUpdate.class, name = "EnactImmediatelyAfterEndOfProtocolUpdate"),
 })
 
-public class ProtocolUpdateEnactmentCondition {
-  public static final String JSON_PROPERTY_TYPE = "type";
-  private ProtocolUpdateEnactmentConditionType type;
+public class EnactImmediatelyAfterEndOfProtocolUpdate extends ProtocolUpdateEnactmentCondition {
+  public static final String JSON_PROPERTY_TRIGGER_AFTER = "trigger_after";
+  private String triggerAfter;
 
 
-  public ProtocolUpdateEnactmentCondition type(ProtocolUpdateEnactmentConditionType type) {
-    this.type = type;
+  public EnactImmediatelyAfterEndOfProtocolUpdate triggerAfter(String triggerAfter) {
+    this.triggerAfter = triggerAfter;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get triggerAfter
+   * @return triggerAfter
   **/
   @javax.annotation.Nonnull
   @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRIGGER_AFTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public ProtocolUpdateEnactmentConditionType getType() {
-    return type;
+  public String getTriggerAfter() {
+    return triggerAfter;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TYPE)
+  @JsonProperty(JSON_PROPERTY_TRIGGER_AFTER)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setType(ProtocolUpdateEnactmentConditionType type) {
-    this.type = type;
+  public void setTriggerAfter(String triggerAfter) {
+    this.triggerAfter = triggerAfter;
   }
 
 
   /**
-   * Return true if this ProtocolUpdateEnactmentCondition object is equal to o.
+   * Return true if this EnactImmediatelyAfterEndOfProtocolUpdate object is equal to o.
    */
   @Override
   public boolean equals(Object o) {
@@ -92,20 +92,22 @@ public class ProtocolUpdateEnactmentCondition {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ProtocolUpdateEnactmentCondition protocolUpdateEnactmentCondition = (ProtocolUpdateEnactmentCondition) o;
-    return Objects.equals(this.type, protocolUpdateEnactmentCondition.type);
+    EnactImmediatelyAfterEndOfProtocolUpdate enactImmediatelyAfterEndOfProtocolUpdate = (EnactImmediatelyAfterEndOfProtocolUpdate) o;
+    return Objects.equals(this.triggerAfter, enactImmediatelyAfterEndOfProtocolUpdate.triggerAfter) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type);
+    return Objects.hash(triggerAfter, super.hashCode());
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ProtocolUpdateEnactmentCondition {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("class EnactImmediatelyAfterEndOfProtocolUpdate {\n");
+    sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    triggerAfter: ").append(toIndentedString(triggerAfter)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -125,12 +127,10 @@ static {
   // Initialize and register the discriminator mappings.
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("EnactAtStartOfEpochIfValidatorsReady", EnactAtStartOfEpochIfValidatorsReadyCondition.class);
-  mappings.put("EnactAtStartOfEpochIfValidatorsReadyCondition", EnactAtStartOfEpochIfValidatorsReadyCondition.class);
   mappings.put("EnactAtStartOfEpochUnconditionally", EnactAtStartOfEpochUnconditionallyCondition.class);
-  mappings.put("EnactAtStartOfEpochUnconditionallyCondition", EnactAtStartOfEpochUnconditionallyCondition.class);
   mappings.put("EnactImmediatelyAfterEndOfProtocolUpdate", EnactImmediatelyAfterEndOfProtocolUpdate.class);
-  mappings.put("ProtocolUpdateEnactmentCondition", ProtocolUpdateEnactmentCondition.class);
-  JSON.registerDiscriminator(ProtocolUpdateEnactmentCondition.class, "type", mappings);
+  mappings.put("EnactImmediatelyAfterEndOfProtocolUpdate", EnactImmediatelyAfterEndOfProtocolUpdate.class);
+  JSON.registerDiscriminator(EnactImmediatelyAfterEndOfProtocolUpdate.class, "type", mappings);
 }
 }
 

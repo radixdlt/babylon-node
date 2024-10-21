@@ -74,20 +74,17 @@ import com.radixdlt.sbor.exceptions.SborDecodeException;
 import java.util.Map;
 
 public record ProtocolConfig(
-    String genesisProtocolVersion,
     ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
     Map<String, byte[]> rawProtocolUpdateContentOverrides) {
 
   public static final String GENESIS_PROTOCOL_VERSION_NAME = "babylon-genesis";
+  public static final String ANEMONE_PROTOCOL_VERSION_NAME = "anemone";
+  public static final String BOTTLENOSE_PROTOCOL_VERSION_NAME = "bottlenose";
+
+  public static final String LATEST_PROTOCOL_VERSION_NAME = BOTTLENOSE_PROTOCOL_VERSION_NAME;
 
   public ProtocolConfig(ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers) {
     this(protocolUpdateTriggers, Map.of());
-  }
-
-  public ProtocolConfig(
-      ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
-      Map<String, byte[]> rawProtocolUpdateContentOverrides) {
-    this(GENESIS_PROTOCOL_VERSION_NAME, protocolUpdateTriggers, rawProtocolUpdateContentOverrides);
   }
 
   public static void registerCodec(CodecMap codecMap) {
@@ -104,8 +101,12 @@ public record ProtocolConfig(
     }
   }
 
-  public static ProtocolConfig testingDefault() {
+  public static ProtocolConfig onlyGenesis() {
     return new ProtocolConfig(ImmutableList.of());
+  }
+
+  public static ProtocolConfig testingDefault() {
+    return RustProtocolUpdate.resolveForNetwork(NetworkDefinition.INT_TEST_NET);
   }
 
   public static ProtocolConfig resolveForNetwork(NetworkDefinition networkDefinition) {

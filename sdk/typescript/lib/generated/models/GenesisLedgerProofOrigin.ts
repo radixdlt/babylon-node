@@ -30,7 +30,43 @@ export interface GenesisLedgerProofOrigin {
      * @type {string}
      * @memberof GenesisLedgerProofOrigin
      */
+    protocol_version_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOrigin
+     */
     genesis_opaque_hash: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof GenesisLedgerProofOrigin
+     */
+    batch_group_idx: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOrigin
+     */
+    batch_group_name: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof GenesisLedgerProofOrigin
+     */
+    batch_idx: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOrigin
+     */
+    batch_name: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof GenesisLedgerProofOrigin
+     */
+    is_end_of_update: boolean;
 }
 
 
@@ -49,7 +85,13 @@ export type GenesisLedgerProofOriginTypeEnum = typeof GenesisLedgerProofOriginTy
 export function instanceOfGenesisLedgerProofOrigin(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "type" in value;
+    isInstance = isInstance && "protocol_version_name" in value;
     isInstance = isInstance && "genesis_opaque_hash" in value;
+    isInstance = isInstance && "batch_group_idx" in value;
+    isInstance = isInstance && "batch_group_name" in value;
+    isInstance = isInstance && "batch_idx" in value;
+    isInstance = isInstance && "batch_name" in value;
+    isInstance = isInstance && "is_end_of_update" in value;
 
     return isInstance;
 }
@@ -65,7 +107,13 @@ export function GenesisLedgerProofOriginFromJSONTyped(json: any, ignoreDiscrimin
     return {
         
         'type': json['type'],
+        'protocol_version_name': json['protocol_version_name'],
         'genesis_opaque_hash': json['genesis_opaque_hash'],
+        'batch_group_idx': json['batch_group_idx'],
+        'batch_group_name': json['batch_group_name'],
+        'batch_idx': json['batch_idx'],
+        'batch_name': json['batch_name'],
+        'is_end_of_update': json['is_end_of_update'],
     };
 }
 
@@ -79,7 +127,13 @@ export function GenesisLedgerProofOriginToJSON(value?: GenesisLedgerProofOrigin 
     return {
         
         'type': value.type,
+        'protocol_version_name': value.protocol_version_name,
         'genesis_opaque_hash': value.genesis_opaque_hash,
+        'batch_group_idx': value.batch_group_idx,
+        'batch_group_name': value.batch_group_name,
+        'batch_idx': value.batch_idx,
+        'batch_name': value.batch_name,
+        'is_end_of_update': value.is_end_of_update,
     };
 }
 

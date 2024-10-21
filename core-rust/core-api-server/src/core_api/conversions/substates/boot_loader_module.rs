@@ -47,7 +47,7 @@ pub fn to_api_kernel_boot_substate(
     let value = match substate {
         // Note: this is how OpenAPI generator represents an empty object type, even when named:
         KernelBoot::V1 => serde_json::Value::Object(serde_json::Map::default()),
-        KernelBoot::V2(_) => todo!(),
+        KernelBoot::V2 { .. } => todo!(),
     };
 
     Ok(models::Substate::BootLoaderModuleFieldKernelBootSubstate {

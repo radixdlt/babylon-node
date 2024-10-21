@@ -5,7 +5,7 @@ use ProtocolUpdateEnactmentCondition::*;
 
 pub fn stokenet_protocol_config() -> ProtocolConfig {
     ProtocolConfig::new_with_triggers(hashmap! {
-        ANEMONE_PROTOCOL_VERSION => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::anemone() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "anemone"
             // READINESS_SIGNAL: "811c31d2bc6a2631000000000anemone"
@@ -17,7 +17,7 @@ pub fn stokenet_protocol_config() -> ProtocolConfig {
                 required_consecutive_completed_epochs_of_support: 10,
             }],
         },
-        BOTTLENOSE_PROTOCOL_VERSION => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::bottlenose() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "bottlenose"
             // READINESS_SIGNAL: "35701a6147bfd870000000bottlenose"

@@ -65,6 +65,8 @@
 package com.radixdlt.helper;
 
 import com.radixdlt.environment.*;
+import com.radixdlt.genesis.GenesisData;
+import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.protocol.ProtocolConfig;
@@ -98,6 +100,7 @@ public final class NodeRustEnvironmentBuilder {
             ScenariosExecutionConfig.NONE);
 
     return new NodeRustEnvironment(
+        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty()),
         tx -> {}, // A no-op dispatcher of transactions to be relayed.
         () -> {}, // A no-op fatal panic handler. Please note that a JNI-invoking test (like this
         // one) will observe

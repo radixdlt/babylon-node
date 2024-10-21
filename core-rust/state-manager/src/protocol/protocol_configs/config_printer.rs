@@ -26,8 +26,8 @@ fn print_protocol_config_code() {
         base_epoch_effective_start: DateTime::<Utc>::from_str("2024-05-09T18:01:00.000Z").unwrap(),
     };
 
-    let version = BOTTLENOSE_PROTOCOL_VERSION;
-    let version_const = stringify!(BOTTLENOSE_PROTOCOL_VERSION);
+    let version = ProtocolVersionName::babylon();
+    let version_code = stringify!(ProtocolVersionName::babylon());
     let target_start = DateTime::<Utc>::from_str("2024-06-03T18:00:00.000Z").unwrap();
     let enactment_window = Duration::days(28);
     let proposed_thresholds = [(dec!(0.75), Duration::days(14))];
@@ -52,7 +52,7 @@ fn print_protocol_config_code() {
         .collect::<Vec<_>>();
 
     let trigger = ProtocolUpdateTrigger::of(
-        version,
+        version.clone(),
         ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
             lower_bound_inclusive: start_epoch,
             upper_bound_exclusive: end_epoch,
@@ -64,11 +64,14 @@ fn print_protocol_config_code() {
         .expect("Generated protocol update trigger should be valid");
 
     let base_indent = "        ";
-    println!("{base_indent}{version_const} => EnactAtStartOfEpochIfValidatorsReady {{");
+    println!("{base_indent}{version_code} => EnactAtStartOfEpochIfValidatorsReady {{");
     println!(
         "{base_indent}    // ================================================================="
     );
-    println!("{base_indent}    // PROTOCOL_VERSION: \"{version}\"");
+    println!(
+        "{base_indent}    // PROTOCOL_VERSION: \"{}\"",
+        version.as_str()
+    );
     println!(
         "{base_indent}    // READINESS_SIGNAL: \"{}\"",
         trigger.readiness_signal_name()

@@ -404,7 +404,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           case REv2StateComputerConfig rev2Config -> {
             final var genesisProvider =
                 RawGenesisDataWithHash.fromGenesisData(rev2Config.genesis());
-            install(new REv2LedgerInitializerModule(genesisProvider));
             install(new REv2LedgerRecoveryModule());
             install(new REv2ConsensusRecoveryModule());
 
@@ -413,6 +412,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     REv2StateManagerModule.createForTesting(
+                        genesisProvider,
                         ProposalLimitsConfig.testDefaults(),
                         rev2Config.databaseConfig(),
                         Option.none(),
@@ -422,7 +422,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
                         rev2Config.noFees(),
-                        ScenariosExecutionConfig.ALL));
+                        rev2Config.scenariosExecutionConfig()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(mempool.mempoolRelayerConfig()));
@@ -431,6 +431,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(mempool.mempoolReceiverConfig().asModule());
                 install(
                     REv2StateManagerModule.createForTesting(
+                        genesisProvider,
                         mempool.proposalLimitsConfig(),
                         rev2Config.databaseConfig(),
                         Option.some(mempool.mempoolConfig()),
@@ -440,7 +441,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
                         rev2Config.noFees(),
-                        ScenariosExecutionConfig.ALL));
+                        rev2Config.scenariosExecutionConfig()));
               }
             }
           }
