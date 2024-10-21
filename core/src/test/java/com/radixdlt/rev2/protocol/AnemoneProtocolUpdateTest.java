@@ -226,7 +226,18 @@ public final class AnemoneProtocolUpdateTest {
               .map(txn -> ((FlashLedgerTransaction) txn.getLedgerTransaction()).getName())
               .toList());
 
-      ProtocolUpdateTestUtils.verifyFlashTransactionReceipts(committedFlashTransactions);
+      // We filter out "anemone-validator-fee-fix" because it's a no-op on inttestnet
+      var transactionsToVerify =
+          committedFlashTransactions.stream()
+              .filter(
+                  txn ->
+                      !((FlashLedgerTransaction) txn.getLedgerTransaction())
+                          .getName()
+                          .equals("anemone-validator-fee-fix"))
+              .toList();
+
+      // Now verify the transactions
+      ProtocolUpdateTestUtils.verifyFlashTransactionReceipts(transactionsToVerify);
     }
   }
 }
