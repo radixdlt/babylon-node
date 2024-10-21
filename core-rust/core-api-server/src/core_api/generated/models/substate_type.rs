@@ -120,6 +120,10 @@ pub enum SubstateType {
     BootLoaderModuleFieldSystemBoot,
     #[serde(rename = "BootLoaderModuleFieldKernelBoot")]
     BootLoaderModuleFieldKernelBoot,
+    #[serde(rename = "BootLoaderModuleFieldTransactionValidationConfiguration")]
+    BootLoaderModuleFieldTransactionValidationConfiguration,
+    #[serde(rename = "ProtocolUpdateStatusModuleFieldSummary")]
+    ProtocolUpdateStatusModuleFieldSummary,
 
 }
 
@@ -180,6 +184,8 @@ impl ToString for SubstateType {
             Self::AccountLockerAccountClaimsEntry => String::from("AccountLockerAccountClaimsEntry"),
             Self::BootLoaderModuleFieldSystemBoot => String::from("BootLoaderModuleFieldSystemBoot"),
             Self::BootLoaderModuleFieldKernelBoot => String::from("BootLoaderModuleFieldKernelBoot"),
+            Self::BootLoaderModuleFieldTransactionValidationConfiguration => String::from("BootLoaderModuleFieldTransactionValidationConfiguration"),
+            Self::ProtocolUpdateStatusModuleFieldSummary => String::from("ProtocolUpdateStatusModuleFieldSummary"),
         }
     }
 }

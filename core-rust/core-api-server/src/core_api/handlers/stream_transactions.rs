@@ -340,14 +340,26 @@ pub fn to_api_ledger_transaction(
                     })?;
             models::LedgerTransaction::UserLedgerTransaction {
                 payload_hex,
-                notarized_transaction: Box::new(to_api_notarized_transaction(
+                notarized_transaction: Box::new(to_api_notarized_transaction_v1(
                     context,
                     tx,
                     &user_hashes,
                 )?),
             }
         }
-        LedgerTransaction::UserV2(..) => todo!(),
+        LedgerTransaction::UserV2(tx) => {
+            let user_hashes =
+                hashes
+                    .as_user()
+                    .ok_or_else(|| MappingError::MismatchedTransactionIdentifiers {
+                        message: "Transaction hashes for notarized transaction were not user"
+                            .to_string(),
+                    })?;
+            models::LedgerTransaction::UserLedgerTransactionV2 {
+                payload_hex,
+                notarized_transaction: Box::new(to_api_notarized_transaction_v2(context, tx, &user_hashes)?),
+            }
+        }
         LedgerTransaction::RoundUpdateV1(tx) => {
             models::LedgerTransaction::RoundUpdateLedgerTransaction {
                 payload_hex,
@@ -380,7 +392,7 @@ pub fn to_api_ledger_transaction(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_notarized_transaction(
+pub fn to_api_notarized_transaction_v1(
     context: &MappingContext,
     notarized: &NotarizedTransactionV1,
     user_hashes: &UserTransactionHashes,
@@ -410,6 +422,16 @@ pub fn to_api_notarized_transaction(
             &user_hashes.signed_transaction_intent_hash,
         )?),
         notary_signature: Some(to_api_signature(&notarized.notary_signature.0)),
+    })
+}
+
+pub fn to_api_notarized_transaction_v2(
+    context: &MappingContext,
+    notarized: &NotarizedTransactionV2,
+    user_hashes: &UserTransactionHashes,
+) -> Result<models::NotarizedTransactionV2, MappingError> {
+    Ok(models::NotarizedTransactionV2 {
+        todo: Some("TODO:CUTTLEFISH".to_string()),
     })
 }
 

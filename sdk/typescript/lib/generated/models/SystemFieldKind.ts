@@ -21,7 +21,9 @@ export const SystemFieldKind = {
     VmBoot: 'VmBoot',
     TypeInfo: 'TypeInfo',
     SystemBoot: 'SystemBoot',
-    KernelBoot: 'KernelBoot'
+    KernelBoot: 'KernelBoot',
+    TransactionValidationConfiguration: 'TransactionValidationConfiguration',
+    ProtocolUpdateStatusSummary: 'ProtocolUpdateStatusSummary'
 } as const;
 export type SystemFieldKind = typeof SystemFieldKind[keyof typeof SystemFieldKind];
 

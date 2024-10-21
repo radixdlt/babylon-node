@@ -134,7 +134,11 @@ public enum SubstateType {
   
   BOOTLOADERMODULEFIELDSYSTEMBOOT("BootLoaderModuleFieldSystemBoot"),
   
-  BOOTLOADERMODULEFIELDKERNELBOOT("BootLoaderModuleFieldKernelBoot");
+  BOOTLOADERMODULEFIELDKERNELBOOT("BootLoaderModuleFieldKernelBoot"),
+  
+  BOOTLOADERMODULEFIELDTRANSACTIONVALIDATIONCONFIGURATION("BootLoaderModuleFieldTransactionValidationConfiguration"),
+  
+  PROTOCOLUPDATESTATUSMODULEFIELDSUMMARY("ProtocolUpdateStatusModuleFieldSummary");
 
   private String value;
 

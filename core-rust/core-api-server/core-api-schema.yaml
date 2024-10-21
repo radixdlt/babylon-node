@@ -148,7 +148,7 @@ tags:
 
       Once submitted, a transaction payload can end up being either rejected or committed. Transactions get rejected if they fail to pass certain criteria at the given time.
       A transaction payload can be marked as a:
-      - **Permanent Rejection** if it is never possible for it to be committed (eg it's statically invalid, or only valid up until epoch 100 and it's now epoch 101)
+      - **Permanent Rejection** if it is never possible for it to be committed (e.g. it's statically invalid, or only valid up until epoch 100 and it's now epoch 101)
       - **Temporary Rejection** if it still may be possible that the transaction payload could be committed
 
       A given intent typically is only part of one submitted notarized payload, but it's possible for a notary to notarize and submit multiple payloads for the same intent.
@@ -1444,6 +1444,12 @@ components:
         message:
           description: The optional transaction message. Only returned if present and enabled in `TransactionFormatOptions` on your request.
           $ref: "#/components/schemas/TransactionMessage"
+    NotarizedTransactionV2:
+      type: object
+      properties:
+        todo:
+          type: string
+      # TODO:CUTTLEFISH
     TransactionMessageType:
       type: string
       enum:
@@ -2152,6 +2158,7 @@ components:
         - Main
         - Schema
         - BootLoader
+        - ProtocolUpdateStatus
     PartitionKind:
       type: string
       description: |
@@ -3291,6 +3298,8 @@ components:
         - TypeInfo
         - SystemBoot
         - KernelBoot
+        - TransactionValidationConfiguration
+        - ProtocolUpdateStatusSummary
     ObjectSubstateTypeReferenceType:
       type: string
       enum:
@@ -3796,7 +3805,7 @@ components:
           # - [SubstateSpecifier] is either:
           #   - Field[SubstateDescriptor] for Field partitions
           #   - [SubstateDescriptor]Entry for Collection partitions (KeyValueStore, Index and SortedIndex)
-          # - [SubstateTypeVersion] is empty ("") for V1 substates, but will eg be V2/V3/V4 for newer substate versions
+          # - [SubstateTypeVersion] is empty ("") for V1 substates, but will e.g. be V2/V3/V4 for newer substate versions
           #
           # And then define:
           # - [SubstateName] = [SubstateType]Substate
@@ -3812,6 +3821,8 @@ components:
           BootLoaderModuleFieldSystemBoot: '#/components/schemas/BootLoaderModuleFieldSystemBootSubstate'
           BootLoaderModuleFieldVmBoot: '#/components/schemas/BootLoaderModuleFieldVmBootSubstate'
           BootLoaderModuleFieldKernelBoot: '#/components/schemas/BootLoaderModuleFieldKernelBootSubstate'
+          BootLoaderModuleFieldTransactionValidationConfiguration: '#/components/schemas/BootLoaderModuleFieldTransactionValidationConfigurationSubstate'
+          ProtocolUpdateStatusModuleFieldSummary: '#/components/schemas/ProtocolUpdateStatusModuleFieldSummarySubstate'
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
           RoleAssignmentModuleFieldOwnerRole: '#/components/schemas/RoleAssignmentModuleFieldOwnerRoleSubstate'
           RoleAssignmentModuleRuleEntry: '#/components/schemas/RoleAssignmentModuleRuleEntrySubstate'
@@ -3918,6 +3929,8 @@ components:
         - AccountLockerAccountClaimsEntry
         - BootLoaderModuleFieldSystemBoot
         - BootLoaderModuleFieldKernelBoot
+        - BootLoaderModuleFieldTransactionValidationConfiguration
+        - ProtocolUpdateStatusModuleFieldSummary
 ################################################
 # GENERAL / SHARED MODELS - substate key types #
 ################################################
@@ -4085,8 +4098,16 @@ components:
       required:
         - system_parameters
       properties:
+        system_version:
+          $ref: '#/components/schemas/SystemVersion'
         system_parameters:
           $ref: '#/components/schemas/SystemParameters'
+    SystemVersion:
+      description: The SystemVersion was added at Cuttlefish. Before that it can be assumed to be V1.
+      type: string
+      enum:
+        - V1
+        - V2
     SystemParameters:
       type: object
       required:
@@ -4291,6 +4312,29 @@ components:
               $ref: '#/components/schemas/BootLoaderModuleFieldKernelBootValue'
     BootLoaderModuleFieldKernelBootValue:
       type: object
+      properties:
+        always_visible_nodes_version:
+          $ref: '#/components/schemas/AlwaysVisibleGlobalNodesVersion'
+    AlwaysVisibleGlobalNodesVersion:
+      type: string
+      description: |
+        This was added in Cuttlefish. Before that, this value was missing, but can be assumed to be V1.
+      enum:
+        - V1
+        - V2
+    BootLoaderModuleFieldTransactionValidationConfigurationSubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+        # TODO:CUTTLEFISH
+    ProtocolUpdateStatusModuleFieldSummarySubstate:
+      allOf:
+        - $ref: '#/components/schemas/Substate'
+        - type: object
+          description: |
+            This substate is only used in resim to track protocol update status.
+            It isn't expected to be seen in the node, which uses proofs to track protocol update status.
+        # TODO:CUTTLEFISH
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -6895,6 +6939,7 @@ components:
         - SignedTransactionIntent
         - TransactionIntent
         - LedgerTransaction
+        - NotarizedTransactionV2
     ParsedTransaction:
       type: object
       required:
@@ -6907,6 +6952,7 @@ components:
         mapping:
           # NOTE: These need to match ParsedTransactionType
           NotarizedTransaction: '#/components/schemas/ParsedNotarizedTransaction'
+          NotarizedTransactionV2: '#/components/schemas/ParsedNotarizedTransactionV2'
           SignedTransactionIntent: '#/components/schemas/ParsedSignedTransactionIntent'
           TransactionIntent: '#/components/schemas/ParsedTransactionIntent'
           LedgerTransaction: '#/components/schemas/ParsedLedgerTransaction'
@@ -6927,7 +6973,38 @@ components:
                 If the transaction is known to not be valid, this gives a reason.
                 Different levels of validation are performed, dependent on the validation mode.
                 Note that, even if validation mode is Static or Full, the transaction may
-                still be rejected or fail due to issues at runtime (eg if the loan cannot be repaid).
+                still be rejected or fail due to issues at runtime (e.g. if the loan cannot be repaid).
+              required:
+                - reason
+                - is_permanent
+              properties:
+                reason:
+                  type: string
+                  description: |
+                    The error message.
+                is_permanent:
+                  type: boolean
+                  description: |
+                    Whether the error is known to be permanent, or not.
+                    This relates to whether the transaction would be rejected permanently or temporarily if submitted.
+    ParsedNotarizedTransactionV2:
+      allOf:
+        - $ref: "#/components/schemas/ParsedTransaction"
+        - type: object
+          required:
+            - identifiers
+          properties:
+            notarized_transaction:
+              $ref: "#/components/schemas/NotarizedTransactionV2"
+            identifiers:
+              $ref: "#/components/schemas/ParsedNotarizedTransactionIdentifiers"
+            validation_error:
+              type: object
+              description: |
+                If the transaction is known to not be valid, this gives a reason.
+                Different levels of validation are performed, dependent on the validation mode.
+                Note that, even if validation mode is Static or Full, the transaction may
+                still be rejected or fail due to issues at runtime (e.g. if the loan cannot be repaid).
               required:
                 - reason
                 - is_permanent
@@ -8110,6 +8187,7 @@ components:
           # NOTE: These need to match LedgerTransactionType
           Genesis: '#/components/schemas/GenesisLedgerTransaction'
           User: '#/components/schemas/UserLedgerTransaction'
+          UserV2: '#/components/schemas/UserLedgerTransactionV2'
           RoundUpdate: '#/components/schemas/RoundUpdateLedgerTransaction'
           Flash: '#/components/schemas/FlashLedgerTransaction'
     GenesisLedgerTransaction:
@@ -8135,6 +8213,15 @@ components:
           properties:
             notarized_transaction:
               $ref: "#/components/schemas/NotarizedTransaction"
+    UserLedgerTransactionV2:
+      allOf:
+        - $ref: "#/components/schemas/LedgerTransaction"
+        - type: object
+          required:
+            - notarized_transaction
+          properties:
+            notarized_transaction:
+              $ref: "#/components/schemas/NotarizedTransactionV2"
     RoundUpdateLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/LedgerTransaction"

@@ -42,6 +42,7 @@ models/AllOfProofRule.ts
 models/AllOfProofRuleAllOf.ts
 models/AllowAllAccessRule.ts
 models/AllowAllAccessRuleAllOf.ts
+models/AlwaysVisibleGlobalNodesVersion.ts
 models/AmountOfProofRule.ts
 models/AmountOfProofRuleAllOf.ts
 models/AnyOfAccessRuleNode.ts
@@ -83,9 +84,12 @@ models/BlueprintTypeReferenceKind.ts
 models/BlueprintVersionKey.ts
 models/BootLoaderModuleFieldKernelBootSubstate.ts
 models/BootLoaderModuleFieldKernelBootSubstateAllOf.ts
+models/BootLoaderModuleFieldKernelBootValue.ts
 models/BootLoaderModuleFieldSystemBootSubstate.ts
 models/BootLoaderModuleFieldSystemBootSubstateAllOf.ts
 models/BootLoaderModuleFieldSystemBootValue.ts
+models/BootLoaderModuleFieldTransactionValidationConfigurationSubstate.ts
+models/BootLoaderModuleFieldTransactionValidationConfigurationSubstateAllOf.ts
 models/BootLoaderModuleFieldVmBootSubstate.ts
 models/BootLoaderModuleFieldVmBootSubstateAllOf.ts
 models/BootLoaderModuleFieldVmBootValue.ts
@@ -362,6 +366,7 @@ models/NonFungibleVaultFieldFrozenStatusSubstate.ts
 models/NonFungibleVaultFieldFrozenStatusSubstateAllOf.ts
 models/NonFungibleVaultFieldFrozenStatusValue.ts
 models/NotarizedTransaction.ts
+models/NotarizedTransactionV2.ts
 models/ObjectFieldStructure.ts
 models/ObjectFieldStructureAllOf.ts
 models/ObjectHook.ts
@@ -424,6 +429,8 @@ models/ParsedNotarizedTransaction.ts
 models/ParsedNotarizedTransactionAllOf.ts
 models/ParsedNotarizedTransactionAllOfValidationError.ts
 models/ParsedNotarizedTransactionIdentifiers.ts
+models/ParsedNotarizedTransactionV2.ts
+models/ParsedNotarizedTransactionV2AllOf.ts
 models/ParsedSignedTransactionIntent.ts
 models/ParsedSignedTransactionIntentAllOf.ts
 models/ParsedSignedTransactionIntentIdentifiers.ts
@@ -460,6 +467,8 @@ models/ProtectedAccessRule.ts
 models/ProtectedAccessRuleAllOf.ts
 models/ProtocolUpdateLedgerProofOrigin.ts
 models/ProtocolUpdateLedgerProofOriginAllOf.ts
+models/ProtocolUpdateStatusModuleFieldSummarySubstate.ts
+models/ProtocolUpdateStatusModuleFieldSummarySubstateAllOf.ts
 models/ProtocolVersionReadiness.ts
 models/PublicKey.ts
 models/PublicKeyBase.ts
@@ -612,6 +621,7 @@ models/SystemParameters.ts
 models/SystemSchemaStructure.ts
 models/SystemSchemaStructureAllOf.ts
 models/SystemTransaction.ts
+models/SystemVersion.ts
 models/TargetIdentifier.ts
 models/TargetIdentifierBase.ts
 models/TargetIdentifierType.ts
@@ -671,6 +681,8 @@ models/TypeInfoType.ts
 models/UpdatedSubstate.ts
 models/UserLedgerTransaction.ts
 models/UserLedgerTransactionAllOf.ts
+models/UserLedgerTransactionV2.ts
+models/UserLedgerTransactionV2AllOf.ts
 models/ValidatorFeeChangeRequest.ts
 models/ValidatorFieldProtocolUpdateReadinessSignalSubstate.ts
 models/ValidatorFieldProtocolUpdateReadinessSignalSubstateAllOf.ts

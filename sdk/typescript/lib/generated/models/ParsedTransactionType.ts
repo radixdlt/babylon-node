@@ -21,7 +21,8 @@ export const ParsedTransactionType = {
     NotarizedTransaction: 'NotarizedTransaction',
     SignedTransactionIntent: 'SignedTransactionIntent',
     TransactionIntent: 'TransactionIntent',
-    LedgerTransaction: 'LedgerTransaction'
+    LedgerTransaction: 'LedgerTransaction',
+    NotarizedTransactionV2: 'NotarizedTransactionV2'
 } as const;
 export type ParsedTransactionType = typeof ParsedTransactionType[keyof typeof ParsedTransactionType];
 

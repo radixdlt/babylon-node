@@ -71,7 +71,9 @@ export const SubstateType = {
     TransactionTrackerCollectionEntry: 'TransactionTrackerCollectionEntry',
     AccountLockerAccountClaimsEntry: 'AccountLockerAccountClaimsEntry',
     BootLoaderModuleFieldSystemBoot: 'BootLoaderModuleFieldSystemBoot',
-    BootLoaderModuleFieldKernelBoot: 'BootLoaderModuleFieldKernelBoot'
+    BootLoaderModuleFieldKernelBoot: 'BootLoaderModuleFieldKernelBoot',
+    BootLoaderModuleFieldTransactionValidationConfiguration: 'BootLoaderModuleFieldTransactionValidationConfiguration',
+    ProtocolUpdateStatusModuleFieldSummary: 'ProtocolUpdateStatusModuleFieldSummary'
 } as const;
 export type SubstateType = typeof SubstateType[keyof typeof SubstateType];
 
