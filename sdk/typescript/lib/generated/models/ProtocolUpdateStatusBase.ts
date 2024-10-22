@@ -12,30 +12,62 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+import type { ProtocolUpdateStatusType } from './ProtocolUpdateStatusType';
+import {
+    ProtocolUpdateStatusTypeFromJSON,
+    ProtocolUpdateStatusTypeFromJSONTyped,
+    ProtocolUpdateStatusTypeToJSON,
+} from './ProtocolUpdateStatusType';
 
 /**
- * The type of the ledger transaction
+ * 
  * @export
+ * @interface ProtocolUpdateStatusBase
  */
-export const LedgerTransactionType = {
-    Genesis: 'Genesis',
-    User: 'User',
-    UserV2: 'UserV2',
-    RoundUpdate: 'RoundUpdate',
-    Flash: 'Flash'
-} as const;
-export type LedgerTransactionType = typeof LedgerTransactionType[keyof typeof LedgerTransactionType];
-
-
-export function LedgerTransactionTypeFromJSON(json: any): LedgerTransactionType {
-    return LedgerTransactionTypeFromJSONTyped(json, false);
+export interface ProtocolUpdateStatusBase {
+    /**
+     * 
+     * @type {ProtocolUpdateStatusType}
+     * @memberof ProtocolUpdateStatusBase
+     */
+    type: ProtocolUpdateStatusType;
 }
 
-export function LedgerTransactionTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerTransactionType {
-    return json as LedgerTransactionType;
+/**
+ * Check if a given object implements the ProtocolUpdateStatusBase interface.
+ */
+export function instanceOfProtocolUpdateStatusBase(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "type" in value;
+
+    return isInstance;
 }
 
-export function LedgerTransactionTypeToJSON(value?: LedgerTransactionType | null): any {
-    return value as any;
+export function ProtocolUpdateStatusBaseFromJSON(json: any): ProtocolUpdateStatusBase {
+    return ProtocolUpdateStatusBaseFromJSONTyped(json, false);
+}
+
+export function ProtocolUpdateStatusBaseFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateStatusBase {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'type': ProtocolUpdateStatusTypeFromJSON(json['type']),
+    };
+}
+
+export function ProtocolUpdateStatusBaseToJSON(value?: ProtocolUpdateStatusBase | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'type': ProtocolUpdateStatusTypeToJSON(value.type),
+    };
 }
 

@@ -15,14 +15,14 @@
 pub enum ParsedTransactionType {
     #[serde(rename = "NotarizedTransaction")]
     NotarizedTransaction,
+    #[serde(rename = "NotarizedTransactionV2")]
+    NotarizedTransactionV2,
     #[serde(rename = "SignedTransactionIntent")]
     SignedTransactionIntent,
     #[serde(rename = "TransactionIntent")]
     TransactionIntent,
     #[serde(rename = "LedgerTransaction")]
     LedgerTransaction,
-    #[serde(rename = "NotarizedTransactionV2")]
-    NotarizedTransactionV2,
 
 }
 
@@ -30,10 +30,10 @@ impl ToString for ParsedTransactionType {
     fn to_string(&self) -> String {
         match self {
             Self::NotarizedTransaction => String::from("NotarizedTransaction"),
+            Self::NotarizedTransactionV2 => String::from("NotarizedTransactionV2"),
             Self::SignedTransactionIntent => String::from("SignedTransactionIntent"),
             Self::TransactionIntent => String::from("TransactionIntent"),
             Self::LedgerTransaction => String::from("LedgerTransaction"),
-            Self::NotarizedTransactionV2 => String::from("NotarizedTransactionV2"),
         }
     }
 }

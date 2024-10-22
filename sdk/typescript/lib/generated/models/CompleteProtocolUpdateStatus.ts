@@ -12,30 +12,65 @@
  * Do not edit the class manually.
  */
 
+import { exists, mapValues } from '../runtime';
+/**
+ * 
+ * @export
+ * @interface CompleteProtocolUpdateStatus
+ */
+export interface CompleteProtocolUpdateStatus {
+    /**
+     * 
+     * @type {string}
+     * @memberof CompleteProtocolUpdateStatus
+     */
+    type: CompleteProtocolUpdateStatusTypeEnum;
+}
+
 
 /**
- * The type of the ledger transaction
  * @export
  */
-export const LedgerTransactionType = {
-    Genesis: 'Genesis',
-    User: 'User',
-    UserV2: 'UserV2',
-    RoundUpdate: 'RoundUpdate',
-    Flash: 'Flash'
+export const CompleteProtocolUpdateStatusTypeEnum = {
+    Complete: 'Complete'
 } as const;
-export type LedgerTransactionType = typeof LedgerTransactionType[keyof typeof LedgerTransactionType];
+export type CompleteProtocolUpdateStatusTypeEnum = typeof CompleteProtocolUpdateStatusTypeEnum[keyof typeof CompleteProtocolUpdateStatusTypeEnum];
 
 
-export function LedgerTransactionTypeFromJSON(json: any): LedgerTransactionType {
-    return LedgerTransactionTypeFromJSONTyped(json, false);
+/**
+ * Check if a given object implements the CompleteProtocolUpdateStatus interface.
+ */
+export function instanceOfCompleteProtocolUpdateStatus(value: object): boolean {
+    let isInstance = true;
+    isInstance = isInstance && "type" in value;
+
+    return isInstance;
 }
 
-export function LedgerTransactionTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerTransactionType {
-    return json as LedgerTransactionType;
+export function CompleteProtocolUpdateStatusFromJSON(json: any): CompleteProtocolUpdateStatus {
+    return CompleteProtocolUpdateStatusFromJSONTyped(json, false);
 }
 
-export function LedgerTransactionTypeToJSON(value?: LedgerTransactionType | null): any {
-    return value as any;
+export function CompleteProtocolUpdateStatusFromJSONTyped(json: any, ignoreDiscriminator: boolean): CompleteProtocolUpdateStatus {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    return {
+        
+        'type': json['type'],
+    };
+}
+
+export function CompleteProtocolUpdateStatusToJSON(value?: CompleteProtocolUpdateStatus | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    return {
+        
+        'type': value.type,
+    };
 }
 

@@ -64,6 +64,9 @@
 
 package com.radixdlt.protocol;
 
+import static com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.immediatelyAfter;
+import static com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.rev2.NetworkDefinition;
@@ -71,6 +74,8 @@ import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public record ProtocolConfig(
@@ -82,7 +87,15 @@ public record ProtocolConfig(
   public static final String BOTTLENOSE_PROTOCOL_VERSION_NAME = "bottlenose";
   public static final String CUTTLEFISH_PROTOCOL_VERSION_NAME = "cuttlefish";
 
-  public static final String LATEST_PROTOCOL_VERSION_NAME = CUTTLEFISH_PROTOCOL_VERSION_NAME;
+  public static ImmutableList<String> VERSION_NAMES =
+      ImmutableList.of(
+          GENESIS_PROTOCOL_VERSION_NAME,
+          ANEMONE_PROTOCOL_VERSION_NAME,
+          BOTTLENOSE_PROTOCOL_VERSION_NAME,
+          CUTTLEFISH_PROTOCOL_VERSION_NAME);
+
+  public static final String LATEST_PROTOCOL_VERSION_NAME =
+      VERSION_NAMES.get(VERSION_NAMES.size() - 1);
 
   public ProtocolConfig(ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers) {
     this(protocolUpdateTriggers, Map.of());
@@ -104,6 +117,43 @@ public record ProtocolConfig(
 
   public static ProtocolConfig onlyGenesis() {
     return new ProtocolConfig(ImmutableList.of());
+  }
+
+  public static ProtocolConfig launchAt(String upToProtocolVersionName) {
+    String newVersion = null;
+    List<ProtocolUpdateTrigger> protocolUpdateTriggers = new ArrayList<>();
+    for (String version : VERSION_NAMES) {
+      var lastVersion = newVersion;
+      newVersion = version;
+      if (lastVersion != null) {
+        protocolUpdateTriggers.add(
+            new ProtocolUpdateTrigger(newVersion, immediatelyAfter(lastVersion)));
+      }
+      if (newVersion.equals(upToProtocolVersionName)) {
+        break;
+      }
+    }
+    return new ProtocolConfig(ImmutableList.copyOf(protocolUpdateTriggers));
+  }
+
+  public static ProtocolConfig enactAtEpoch(String upToProtocolVersionName, long epoch) {
+    String newVersion = null;
+    List<ProtocolUpdateTrigger> protocolUpdateTriggers = new ArrayList<>();
+    for (String version : VERSION_NAMES) {
+      var lastVersion = newVersion;
+      newVersion = version;
+      if (lastVersion != null) {
+        if (newVersion.equals(upToProtocolVersionName)) {
+          protocolUpdateTriggers.add(
+              new ProtocolUpdateTrigger(newVersion, unconditionallyAtEpoch(epoch)));
+          break;
+        } else {
+          protocolUpdateTriggers.add(
+              new ProtocolUpdateTrigger(newVersion, immediatelyAfter(lastVersion)));
+        }
+      }
+    }
+    return new ProtocolConfig(ImmutableList.copyOf(protocolUpdateTriggers));
   }
 
   public static ProtocolConfig testingDefault() {

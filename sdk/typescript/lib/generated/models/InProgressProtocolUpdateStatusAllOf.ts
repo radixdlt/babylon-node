@@ -13,77 +13,69 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { ProtocolUpdateStatus } from './ProtocolUpdateStatus';
+import type { ProtocolUpdateStatusLatestCommit } from './ProtocolUpdateStatusLatestCommit';
 import {
-    ProtocolUpdateStatusFromJSON,
-    ProtocolUpdateStatusFromJSONTyped,
-    ProtocolUpdateStatusToJSON,
-} from './ProtocolUpdateStatus';
+    ProtocolUpdateStatusLatestCommitFromJSON,
+    ProtocolUpdateStatusLatestCommitFromJSONTyped,
+    ProtocolUpdateStatusLatestCommitToJSON,
+} from './ProtocolUpdateStatusLatestCommit';
 
 /**
  * 
  * @export
- * @interface ProtocolUpdateStatusModuleFieldSummarySubstateAllOf
+ * @interface InProgressProtocolUpdateStatusAllOf
  */
-export interface ProtocolUpdateStatusModuleFieldSummarySubstateAllOf {
+export interface InProgressProtocolUpdateStatusAllOf {
+    /**
+     * 
+     * @type {ProtocolUpdateStatusLatestCommit}
+     * @memberof InProgressProtocolUpdateStatusAllOf
+     */
+    latest_commit: ProtocolUpdateStatusLatestCommit;
     /**
      * 
      * @type {string}
-     * @memberof ProtocolUpdateStatusModuleFieldSummarySubstateAllOf
+     * @memberof InProgressProtocolUpdateStatusAllOf
      */
-    protocol_version: string;
-    /**
-     * 
-     * @type {ProtocolUpdateStatus}
-     * @memberof ProtocolUpdateStatusModuleFieldSummarySubstateAllOf
-     */
-    update_status: ProtocolUpdateStatus;
-    /**
-     * 
-     * @type {string}
-     * @memberof ProtocolUpdateStatusModuleFieldSummarySubstateAllOf
-     */
-    substate_type?: ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum;
+    type?: InProgressProtocolUpdateStatusAllOfTypeEnum;
 }
 
 
 /**
  * @export
  */
-export const ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum = {
-    ProtocolUpdateStatusModuleFieldSummary: 'ProtocolUpdateStatusModuleFieldSummary'
+export const InProgressProtocolUpdateStatusAllOfTypeEnum = {
+    InProgress: 'InProgress'
 } as const;
-export type ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum = typeof ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum[keyof typeof ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum];
+export type InProgressProtocolUpdateStatusAllOfTypeEnum = typeof InProgressProtocolUpdateStatusAllOfTypeEnum[keyof typeof InProgressProtocolUpdateStatusAllOfTypeEnum];
 
 
 /**
- * Check if a given object implements the ProtocolUpdateStatusModuleFieldSummarySubstateAllOf interface.
+ * Check if a given object implements the InProgressProtocolUpdateStatusAllOf interface.
  */
-export function instanceOfProtocolUpdateStatusModuleFieldSummarySubstateAllOf(value: object): boolean {
+export function instanceOfInProgressProtocolUpdateStatusAllOf(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "protocol_version" in value;
-    isInstance = isInstance && "update_status" in value;
+    isInstance = isInstance && "latest_commit" in value;
 
     return isInstance;
 }
 
-export function ProtocolUpdateStatusModuleFieldSummarySubstateAllOfFromJSON(json: any): ProtocolUpdateStatusModuleFieldSummarySubstateAllOf {
-    return ProtocolUpdateStatusModuleFieldSummarySubstateAllOfFromJSONTyped(json, false);
+export function InProgressProtocolUpdateStatusAllOfFromJSON(json: any): InProgressProtocolUpdateStatusAllOf {
+    return InProgressProtocolUpdateStatusAllOfFromJSONTyped(json, false);
 }
 
-export function ProtocolUpdateStatusModuleFieldSummarySubstateAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateStatusModuleFieldSummarySubstateAllOf {
+export function InProgressProtocolUpdateStatusAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): InProgressProtocolUpdateStatusAllOf {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'protocol_version': json['protocol_version'],
-        'update_status': ProtocolUpdateStatusFromJSON(json['update_status']),
-        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
+        'latest_commit': ProtocolUpdateStatusLatestCommitFromJSON(json['latest_commit']),
+        'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
 
-export function ProtocolUpdateStatusModuleFieldSummarySubstateAllOfToJSON(value?: ProtocolUpdateStatusModuleFieldSummarySubstateAllOf | null): any {
+export function InProgressProtocolUpdateStatusAllOfToJSON(value?: InProgressProtocolUpdateStatusAllOf | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +84,8 @@ export function ProtocolUpdateStatusModuleFieldSummarySubstateAllOfToJSON(value?
     }
     return {
         
-        'protocol_version': value.protocol_version,
-        'update_status': ProtocolUpdateStatusToJSON(value.update_status),
-        'substate_type': value.substate_type,
+        'latest_commit': ProtocolUpdateStatusLatestCommitToJSON(value.latest_commit),
+        'type': value.type,
     };
 }
 

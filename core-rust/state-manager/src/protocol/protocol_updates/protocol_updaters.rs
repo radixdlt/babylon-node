@@ -27,6 +27,8 @@ pub trait NodeProtocolUpdateGenerator {
     /// A summary of the configuration of this protocol update, to detect divergence.
     fn config_hash(&self) -> Hash;
 
+    fn insert_status_tracking_flash_transactions(&self) -> bool;
+
     fn genesis_start_state(&self) -> Option<StartStateIdentifiers> {
         None
     }
@@ -98,6 +100,11 @@ impl WrappedProtocolUpdateGenerator {
 impl NodeProtocolUpdateGenerator for WrappedProtocolUpdateGenerator {
     fn config_hash(&self) -> Hash {
         self.config_hash
+    }
+
+    fn insert_status_tracking_flash_transactions(&self) -> bool {
+        self.engine_generator
+            .insert_status_tracking_flash_transactions()
     }
 
     fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>> {
@@ -205,6 +212,11 @@ impl<B: NodeProtocolUpdateGenerator> NodeProtocolUpdateGenerator
 {
     fn genesis_start_state(&self) -> Option<StartStateIdentifiers> {
         self.genesis_start_identifiers.clone()
+    }
+
+    fn insert_status_tracking_flash_transactions(&self) -> bool {
+        self.base_batch_generator
+            .insert_status_tracking_flash_transactions()
     }
 
     fn config_hash(&self) -> Hash {

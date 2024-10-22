@@ -98,6 +98,8 @@ models/CommittedStateIdentifier.ts
 models/CommittedStateIdentifierAllOf.ts
 models/CommittedTransaction.ts
 models/CommittedTransactionBalanceChanges.ts
+models/CompleteProtocolUpdateStatus.ts
+models/CompleteProtocolUpdateStatusAllOf.ts
 models/ComponentMethodTargetIdentifier.ts
 models/ComponentMethodTargetIdentifierAllOf.ts
 models/ConsensusLedgerProofOrigin.ts
@@ -226,6 +228,8 @@ models/GenesisLedgerProofOriginAllOf.ts
 models/GenesisLedgerTransaction.ts
 models/GenesisLedgerTransactionAllOf.ts
 models/HookExport.ts
+models/InProgressProtocolUpdateStatus.ts
+models/InProgressProtocolUpdateStatusAllOf.ts
 models/IndexBlueprintCollectionSchema.ts
 models/IndexBlueprintCollectionSchemaAllOf.ts
 models/IndexedStateSchema.ts
@@ -467,8 +471,12 @@ models/ProtectedAccessRule.ts
 models/ProtectedAccessRuleAllOf.ts
 models/ProtocolUpdateLedgerProofOrigin.ts
 models/ProtocolUpdateLedgerProofOriginAllOf.ts
+models/ProtocolUpdateStatus.ts
+models/ProtocolUpdateStatusBase.ts
+models/ProtocolUpdateStatusLatestCommit.ts
 models/ProtocolUpdateStatusModuleFieldSummarySubstate.ts
 models/ProtocolUpdateStatusModuleFieldSummarySubstateAllOf.ts
+models/ProtocolUpdateStatusType.ts
 models/ProtocolVersionReadiness.ts
 models/PublicKey.ts
 models/PublicKeyBase.ts

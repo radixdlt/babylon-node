@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
-import io.swagger.annotations.ApiModel;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -25,23 +24,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * The type of the parsed (partial) transaction payload
+ * Gets or Sets ProtocolUpdateStatusType
  */
-public enum ParsedTransactionType {
+public enum ProtocolUpdateStatusType {
   
-  NOTARIZEDTRANSACTION("NotarizedTransaction"),
+  INPROGRESS("InProgress"),
   
-  NOTARIZEDTRANSACTIONV2("NotarizedTransactionV2"),
-  
-  SIGNEDTRANSACTIONINTENT("SignedTransactionIntent"),
-  
-  TRANSACTIONINTENT("TransactionIntent"),
-  
-  LEDGERTRANSACTION("LedgerTransaction");
+  COMPLETE("Complete");
 
   private String value;
 
-  ParsedTransactionType(String value) {
+  ProtocolUpdateStatusType(String value) {
     this.value = value;
   }
 
@@ -56,8 +49,8 @@ public enum ParsedTransactionType {
   }
 
   @JsonCreator
-  public static ParsedTransactionType fromValue(String value) {
-    for (ParsedTransactionType b : ParsedTransactionType.values()) {
+  public static ProtocolUpdateStatusType fromValue(String value) {
+    for (ProtocolUpdateStatusType b : ProtocolUpdateStatusType.values()) {
       if (b.value.equals(value)) {
         return b;
       }

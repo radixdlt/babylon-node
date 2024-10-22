@@ -148,7 +148,7 @@ public final class BottlenoseProtocolUpdateTest {
                     .type(TargetIdentifierType.FUNCTION))
             .addArgumentsItem("4d0101"); // hex-encoded SBOR `true` (for `allow_recover` parameter)
 
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Arrange: Start a single node network, reach state just before Bottlenose:
       test.startAllNodes();
@@ -184,7 +184,7 @@ public final class BottlenoseProtocolUpdateTest {
 
   @Test
   public void core_api_streams_bottlenose_flash_transactions() throws Exception {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Arrange: Start a single Node network and capture the state version right before Bottlenose:
       test.startAllNodes();

@@ -73,6 +73,10 @@ impl NodeProtocolUpdateGenerator for ArbitraryNodeBatchGenerator {
         self.config_hash
     }
 
+    fn insert_status_tracking_flash_transactions(&self) -> bool {
+        false
+    }
+
     fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>> {
         let mut batch_group = NodeFixedBatchGroupGenerator::named(Self::BATCH_GROUP_DESCRIPTOR);
         for (index, batch) in self.batches.iter().enumerate() {

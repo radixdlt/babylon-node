@@ -17,13 +17,19 @@ pub struct ProtocolUpdateStatusModuleFieldSummarySubstate {
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
+    #[serde(rename = "protocol_version")]
+    pub protocol_version: String,
+    #[serde(rename = "update_status")]
+    pub update_status: Option<crate::core_api::generated::models::ProtocolUpdateStatus>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl ProtocolUpdateStatusModuleFieldSummarySubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool) -> ProtocolUpdateStatusModuleFieldSummarySubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, protocol_version: String, update_status: crate::core_api::generated::models::ProtocolUpdateStatus) -> ProtocolUpdateStatusModuleFieldSummarySubstate {
         ProtocolUpdateStatusModuleFieldSummarySubstate {
             substate_type,
             is_locked,
+            protocol_version,
+            update_status: Option::Some(update_status),
         }
     }
 }

@@ -158,21 +158,20 @@ impl SystemExecutor {
                         output,
                     },
             },
-        ) = self.preparator.prepare_scenario(
-            batch_details.to_batch_situation(),
-            scenario_name,
-            scenario,
-        );
+        ) = self
+            .preparator
+            .prepare_scenario(&batch_details, scenario_name, scenario);
 
         // Note:
         // We want to store the information on each executed scenario in the DB (for inspection).
+        //
         // Ideally, we should write it atomically in the same batch as the `commit_system()` call
-        // below - however, it would require breaking some abstraction (i.e. atomicity is currently
-        // driven by the DB layer) or making an API exception for the Scenarios (i.e. accept some
-        // extra params in the commit request). Since Scenarios only exist for test purposes, we
-        // chose to simply write it non-atomically here, before commit. Worst case (i.e. if Node is
-        // restarted right after this line), we will see a duplicate entry in the informative-only
-        // "executed Scenarios" table.
+        // below - however, in the interests of time and abstraction purity, at this point we
+        // haven't added extra params in the commit request for this.
+        //
+        // Since Scenarios only exist for test purposes, we chose to simply write it non-atomically
+        // here, before commit. Worst case (i.e. if Node is restarted right after this line),
+        // we will see a duplicate entry in the informative-only "executed Scenarios" table.
         let executed_scenario = self.create_executed_scenario_entry(
             scenario_name,
             &prepare_result.committed_transactions,
@@ -180,9 +179,9 @@ impl SystemExecutor {
             output,
         );
         log_executed_scenario_details(&executed_scenario);
-        let database = self.database.lock();
-        database.put_next_scenario(executed_scenario);
-        drop(database);
+        {
+            self.database.lock().put_next_scenario(executed_scenario);
+        }
 
         if prepare_result.committed_transactions.is_empty() {
             info!(
@@ -291,13 +290,43 @@ pub struct ProtocolUpdateBatchDetails<'a> {
     pub config_hash: Hash,
     pub batch_group_index: usize,
     pub batch_group_name: &'a str,
+    pub total_batch_groups: usize,
     pub batch_index: usize,
     pub batch_name: &'a str,
-    pub is_final_batch: bool,
+    pub total_batches: usize,
+    pub enable_status_reporting: bool,
     pub start_state_identifiers: StartStateIdentifiers,
 }
 
 impl<'a> ProtocolUpdateBatchDetails<'a> {
+    fn is_final_batch_group(&self) -> bool {
+        self.batch_group_index == self.total_batch_groups - 1
+    }
+
+    fn is_final_batch(&self) -> bool {
+        self.is_final_batch_group() && self.batch_index == self.total_batches - 1
+    }
+
+    pub fn generate_update_status_flash_transaction(&self) -> Option<ProtocolUpdateTransaction> {
+        if !self.enable_status_reporting {
+            return None;
+        }
+        let protocol_version = self
+            .protocol_version
+            .validate()
+            .unwrap()
+            .resolve_engine_version()?;
+        Some(generate_update_status_flash_transaction(
+            protocol_version,
+            self.batch_group_index,
+            self.batch_group_name,
+            self.total_batch_groups,
+            self.batch_index,
+            self.batch_name,
+            self.total_batches,
+        ))
+    }
+
     fn create_system_commit_factory(&self) -> SystemCommitRequestFactory {
         SystemCommitRequestFactory {
             epoch: self.start_state_identifiers.epoch,
@@ -316,14 +345,14 @@ impl<'a> ProtocolUpdateBatchDetails<'a> {
             batch_group_name: self.batch_group_name.to_string(),
             batch_index: self.batch_index,
             batch_name: self.batch_name.to_string(),
-            is_end_of_update: self.is_final_batch,
+            is_end_of_update: self.is_final_batch(),
         }
     }
 
     pub fn to_batch_situation(&self) -> BatchSituation {
         BatchSituation::ProtocolUpdate {
             update: self.protocol_version.clone(),
-            is_final_batch: self.is_final_batch,
+            is_final_batch: self.is_final_batch(),
         }
     }
 }

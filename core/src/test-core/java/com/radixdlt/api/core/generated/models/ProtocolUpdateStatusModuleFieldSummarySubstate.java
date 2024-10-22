@@ -67,7 +67,9 @@ import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySu
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
+import com.radixdlt.api.core.generated.models.ProtocolUpdateStatus;
 import com.radixdlt.api.core.generated.models.ProtocolUpdateStatusModuleFieldSummarySubstate;
+import com.radixdlt.api.core.generated.models.ProtocolUpdateStatusModuleFieldSummarySubstateAllOf;
 import com.radixdlt.api.core.generated.models.RoleAssignmentModuleFieldOwnerRoleSubstate;
 import com.radixdlt.api.core.generated.models.RoleAssignmentModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
@@ -91,6 +93,8 @@ import com.radixdlt.api.core.generated.client.JSON;
  * ProtocolUpdateStatusModuleFieldSummarySubstate
  */
 @JsonPropertyOrder({
+  ProtocolUpdateStatusModuleFieldSummarySubstate.JSON_PROPERTY_PROTOCOL_VERSION,
+  ProtocolUpdateStatusModuleFieldSummarySubstate.JSON_PROPERTY_UPDATE_STATUS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -156,8 +160,66 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class ProtocolUpdateStatusModuleFieldSummarySubstate extends Substate {
+  public static final String JSON_PROPERTY_PROTOCOL_VERSION = "protocol_version";
+  private String protocolVersion;
+
+  public static final String JSON_PROPERTY_UPDATE_STATUS = "update_status";
+  private ProtocolUpdateStatus updateStatus;
+
   public ProtocolUpdateStatusModuleFieldSummarySubstate() { 
   }
+
+  public ProtocolUpdateStatusModuleFieldSummarySubstate protocolVersion(String protocolVersion) {
+    this.protocolVersion = protocolVersion;
+    return this;
+  }
+
+   /**
+   * Get protocolVersion
+   * @return protocolVersion
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getProtocolVersion() {
+    return protocolVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setProtocolVersion(String protocolVersion) {
+    this.protocolVersion = protocolVersion;
+  }
+
+
+  public ProtocolUpdateStatusModuleFieldSummarySubstate updateStatus(ProtocolUpdateStatus updateStatus) {
+    this.updateStatus = updateStatus;
+    return this;
+  }
+
+   /**
+   * Get updateStatus
+   * @return updateStatus
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_UPDATE_STATUS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public ProtocolUpdateStatus getUpdateStatus() {
+    return updateStatus;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_UPDATE_STATUS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setUpdateStatus(ProtocolUpdateStatus updateStatus) {
+    this.updateStatus = updateStatus;
+  }
+
 
   /**
    * Return true if this ProtocolUpdateStatusModuleFieldSummarySubstate object is equal to o.
@@ -170,12 +232,15 @@ public class ProtocolUpdateStatusModuleFieldSummarySubstate extends Substate {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    return super.equals(o);
+    ProtocolUpdateStatusModuleFieldSummarySubstate protocolUpdateStatusModuleFieldSummarySubstate = (ProtocolUpdateStatusModuleFieldSummarySubstate) o;
+    return Objects.equals(this.protocolVersion, protocolUpdateStatusModuleFieldSummarySubstate.protocolVersion) &&
+        Objects.equals(this.updateStatus, protocolUpdateStatusModuleFieldSummarySubstate.updateStatus) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode());
+    return Objects.hash(protocolVersion, updateStatus, super.hashCode());
   }
 
   @Override
@@ -183,6 +248,8 @@ public class ProtocolUpdateStatusModuleFieldSummarySubstate extends Substate {
     StringBuilder sb = new StringBuilder();
     sb.append("class ProtocolUpdateStatusModuleFieldSummarySubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    protocolVersion: ").append(toIndentedString(protocolVersion)).append("\n");
+    sb.append("    updateStatus: ").append(toIndentedString(updateStatus)).append("\n");
     sb.append("}");
     return sb.toString();
   }

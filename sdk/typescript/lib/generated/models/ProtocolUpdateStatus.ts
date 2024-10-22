@@ -12,30 +12,61 @@
  * Do not edit the class manually.
  */
 
+import {
+    CompleteProtocolUpdateStatus,
+    instanceOfCompleteProtocolUpdateStatus,
+    CompleteProtocolUpdateStatusFromJSON,
+    CompleteProtocolUpdateStatusFromJSONTyped,
+    CompleteProtocolUpdateStatusToJSON,
+} from './CompleteProtocolUpdateStatus';
+import {
+    InProgressProtocolUpdateStatus,
+    instanceOfInProgressProtocolUpdateStatus,
+    InProgressProtocolUpdateStatusFromJSON,
+    InProgressProtocolUpdateStatusFromJSONTyped,
+    InProgressProtocolUpdateStatusToJSON,
+} from './InProgressProtocolUpdateStatus';
 
 /**
- * The type of the ledger transaction
+ * @type ProtocolUpdateStatus
+ * 
  * @export
  */
-export const LedgerTransactionType = {
-    Genesis: 'Genesis',
-    User: 'User',
-    UserV2: 'UserV2',
-    RoundUpdate: 'RoundUpdate',
-    Flash: 'Flash'
-} as const;
-export type LedgerTransactionType = typeof LedgerTransactionType[keyof typeof LedgerTransactionType];
+export type ProtocolUpdateStatus = { type: 'Complete' } & CompleteProtocolUpdateStatus | { type: 'InProgress' } & InProgressProtocolUpdateStatus;
 
-
-export function LedgerTransactionTypeFromJSON(json: any): LedgerTransactionType {
-    return LedgerTransactionTypeFromJSONTyped(json, false);
+export function ProtocolUpdateStatusFromJSON(json: any): ProtocolUpdateStatus {
+    return ProtocolUpdateStatusFromJSONTyped(json, false);
 }
 
-export function LedgerTransactionTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerTransactionType {
-    return json as LedgerTransactionType;
+export function ProtocolUpdateStatusFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateStatus {
+    if ((json === undefined) || (json === null)) {
+        return json;
+    }
+    switch (json['type']) {
+        case 'Complete':
+            return {...CompleteProtocolUpdateStatusFromJSONTyped(json, true), type: 'Complete'};
+        case 'InProgress':
+            return {...InProgressProtocolUpdateStatusFromJSONTyped(json, true), type: 'InProgress'};
+        default:
+            throw new Error(`No variant of ProtocolUpdateStatus exists with 'type=${json['type']}'`);
+    }
 }
 
-export function LedgerTransactionTypeToJSON(value?: LedgerTransactionType | null): any {
-    return value as any;
+export function ProtocolUpdateStatusToJSON(value?: ProtocolUpdateStatus | null): any {
+    if (value === undefined) {
+        return undefined;
+    }
+    if (value === null) {
+        return null;
+    }
+    switch (value['type']) {
+        case 'Complete':
+            return CompleteProtocolUpdateStatusToJSON(value);
+        case 'InProgress':
+            return InProgressProtocolUpdateStatusToJSON(value);
+        default:
+            throw new Error(`No variant of ProtocolUpdateStatus exists with 'type=${value['type']}'`);
+    }
+
 }
 

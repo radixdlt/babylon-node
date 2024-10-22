@@ -13,6 +13,13 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { ProtocolUpdateStatus } from './ProtocolUpdateStatus';
+import {
+    ProtocolUpdateStatusFromJSON,
+    ProtocolUpdateStatusFromJSONTyped,
+    ProtocolUpdateStatusToJSON,
+} from './ProtocolUpdateStatus';
+
 /**
  * 
  * @export
@@ -31,6 +38,18 @@ export interface ProtocolUpdateStatusModuleFieldSummarySubstate {
      * @memberof ProtocolUpdateStatusModuleFieldSummarySubstate
      */
     is_locked: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProtocolUpdateStatusModuleFieldSummarySubstate
+     */
+    protocol_version: string;
+    /**
+     * 
+     * @type {ProtocolUpdateStatus}
+     * @memberof ProtocolUpdateStatusModuleFieldSummarySubstate
+     */
+    update_status: ProtocolUpdateStatus;
 }
 
 
@@ -50,6 +69,8 @@ export function instanceOfProtocolUpdateStatusModuleFieldSummarySubstate(value: 
     let isInstance = true;
     isInstance = isInstance && "substate_type" in value;
     isInstance = isInstance && "is_locked" in value;
+    isInstance = isInstance && "protocol_version" in value;
+    isInstance = isInstance && "update_status" in value;
 
     return isInstance;
 }
@@ -66,6 +87,8 @@ export function ProtocolUpdateStatusModuleFieldSummarySubstateFromJSONTyped(json
         
         'substate_type': json['substate_type'],
         'is_locked': json['is_locked'],
+        'protocol_version': json['protocol_version'],
+        'update_status': ProtocolUpdateStatusFromJSON(json['update_status']),
     };
 }
 
@@ -80,6 +103,8 @@ export function ProtocolUpdateStatusModuleFieldSummarySubstateToJSON(value?: Pro
         
         'substate_type': value.substate_type,
         'is_locked': value.is_locked,
+        'protocol_version': value.protocol_version,
+        'update_status': ProtocolUpdateStatusToJSON(value.update_status),
     };
 }
 

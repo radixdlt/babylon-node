@@ -196,7 +196,7 @@ public final class AnemoneProtocolUpdateTest {
 
   @Test
   public void core_api_streams_anemone_flash_transactions() throws Exception {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Start a single node network and run until protocol update:
       test.startAllNodes();

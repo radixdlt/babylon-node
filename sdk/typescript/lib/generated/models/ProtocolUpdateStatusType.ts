@@ -14,28 +14,25 @@
 
 
 /**
- * The type of the ledger transaction
+ * 
  * @export
  */
-export const LedgerTransactionType = {
-    Genesis: 'Genesis',
-    User: 'User',
-    UserV2: 'UserV2',
-    RoundUpdate: 'RoundUpdate',
-    Flash: 'Flash'
+export const ProtocolUpdateStatusType = {
+    InProgress: 'InProgress',
+    Complete: 'Complete'
 } as const;
-export type LedgerTransactionType = typeof LedgerTransactionType[keyof typeof LedgerTransactionType];
+export type ProtocolUpdateStatusType = typeof ProtocolUpdateStatusType[keyof typeof ProtocolUpdateStatusType];
 
 
-export function LedgerTransactionTypeFromJSON(json: any): LedgerTransactionType {
-    return LedgerTransactionTypeFromJSONTyped(json, false);
+export function ProtocolUpdateStatusTypeFromJSON(json: any): ProtocolUpdateStatusType {
+    return ProtocolUpdateStatusTypeFromJSONTyped(json, false);
 }
 
-export function LedgerTransactionTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): LedgerTransactionType {
-    return json as LedgerTransactionType;
+export function ProtocolUpdateStatusTypeFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateStatusType {
+    return json as ProtocolUpdateStatusType;
 }
 
-export function LedgerTransactionTypeToJSON(value?: LedgerTransactionType | null): any {
+export function ProtocolUpdateStatusTypeToJSON(value?: ProtocolUpdateStatusType | null): any {
     return value as any;
 }
 

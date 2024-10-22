@@ -3818,9 +3818,9 @@ components:
           #   - value - which references the type [SubstateValue]
           #   - key (if it's in a collection partition) - which references a substate key type [X]Key for some X.
           #   - is_locked - this is added to all substates via inclusion on the `Substate` object
+          BootLoaderModuleFieldKernelBoot: '#/components/schemas/BootLoaderModuleFieldKernelBootSubstate'
           BootLoaderModuleFieldSystemBoot: '#/components/schemas/BootLoaderModuleFieldSystemBootSubstate'
           BootLoaderModuleFieldVmBoot: '#/components/schemas/BootLoaderModuleFieldVmBootSubstate'
-          BootLoaderModuleFieldKernelBoot: '#/components/schemas/BootLoaderModuleFieldKernelBootSubstate'
           BootLoaderModuleFieldTransactionValidationConfiguration: '#/components/schemas/BootLoaderModuleFieldTransactionValidationConfigurationSubstate'
           ProtocolUpdateStatusModuleFieldSummary: '#/components/schemas/ProtocolUpdateStatusModuleFieldSummarySubstate'
           TypeInfoModuleFieldTypeInfo: '#/components/schemas/TypeInfoModuleFieldTypeInfoSubstate'
@@ -3875,7 +3875,11 @@ components:
     SubstateType:
       type: string
       enum:
+        - BootLoaderModuleFieldSystemBoot
+        - BootLoaderModuleFieldKernelBoot
         - BootLoaderModuleFieldVmBoot
+        - BootLoaderModuleFieldTransactionValidationConfiguration
+        - ProtocolUpdateStatusModuleFieldSummary
         - TypeInfoModuleFieldTypeInfo
         - RoleAssignmentModuleFieldOwnerRole
         - RoleAssignmentModuleRuleEntry
@@ -3927,10 +3931,6 @@ components:
         - TransactionTrackerFieldState
         - TransactionTrackerCollectionEntry
         - AccountLockerAccountClaimsEntry
-        - BootLoaderModuleFieldSystemBoot
-        - BootLoaderModuleFieldKernelBoot
-        - BootLoaderModuleFieldTransactionValidationConfiguration
-        - ProtocolUpdateStatusModuleFieldSummary
 ################################################
 # GENERAL / SHARED MODELS - substate key types #
 ################################################
@@ -4331,10 +4331,63 @@ components:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
-          description: |
-            This substate is only used in resim to track protocol update status.
-            It isn't expected to be seen in the node, which uses proofs to track protocol update status.
-        # TODO:CUTTLEFISH
+          required:
+            - protocol_version
+            - update_status
+          properties:
+            protocol_version:
+              type: string
+            update_status:
+              $ref: '#/components/schemas/ProtocolUpdateStatus'
+    ProtocolUpdateStatusType:
+      type: string
+      enum:
+        - InProgress
+        - Complete
+    ProtocolUpdateStatus:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/ProtocolUpdateStatusType'
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match ProtocolUpdateStatusType options above
+          InProgress: '#/components/schemas/InProgressProtocolUpdateStatus'
+          Complete: '#/components/schemas/CompleteProtocolUpdateStatus'
+    InProgressProtocolUpdateStatus:
+      allOf:
+        - $ref: '#/components/schemas/ProtocolUpdateStatus'
+        - type: object
+          required:
+            - latest_commit
+          properties:
+            latest_commit:
+              $ref: '#/components/schemas/ProtocolUpdateStatusLatestCommit'
+    ProtocolUpdateStatusLatestCommit:
+      type: object
+      required:
+        - batch_group_index
+        - batch_group_name
+        - batch_index
+        - batch_name
+      properties:
+        batch_group_index:
+          type: integer
+          format: int64
+        batch_group_name:
+          type: string
+        batch_index:
+          type: integer
+          format: int64
+        batch_name:
+          type: string
+    CompleteProtocolUpdateStatus:
+      allOf:
+        - $ref: '#/components/schemas/ProtocolUpdateStatus'
+        - type: object
     TypeInfoModuleFieldTypeInfoSubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -6936,10 +6989,10 @@ components:
       description: The type of the parsed (partial) transaction payload
       enum:
         - NotarizedTransaction
+        - NotarizedTransactionV2
         - SignedTransactionIntent
         - TransactionIntent
         - LedgerTransaction
-        - NotarizedTransactionV2
     ParsedTransaction:
       type: object
       required:
@@ -8169,6 +8222,7 @@ components:
       enum:
         - Genesis
         - User
+        - UserV2
         - RoundUpdate
         - Flash
     LedgerTransaction:

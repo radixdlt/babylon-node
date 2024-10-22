@@ -13,77 +13,69 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { ProtocolUpdateStatus } from './ProtocolUpdateStatus';
-import {
-    ProtocolUpdateStatusFromJSON,
-    ProtocolUpdateStatusFromJSONTyped,
-    ProtocolUpdateStatusToJSON,
-} from './ProtocolUpdateStatus';
-
 /**
  * 
  * @export
- * @interface ProtocolUpdateStatusModuleFieldSummarySubstateAllOf
+ * @interface ProtocolUpdateStatusLatestCommit
  */
-export interface ProtocolUpdateStatusModuleFieldSummarySubstateAllOf {
+export interface ProtocolUpdateStatusLatestCommit {
+    /**
+     * 
+     * @type {number}
+     * @memberof ProtocolUpdateStatusLatestCommit
+     */
+    batch_group_index: number;
     /**
      * 
      * @type {string}
-     * @memberof ProtocolUpdateStatusModuleFieldSummarySubstateAllOf
+     * @memberof ProtocolUpdateStatusLatestCommit
      */
-    protocol_version: string;
+    batch_group_name: string;
     /**
      * 
-     * @type {ProtocolUpdateStatus}
-     * @memberof ProtocolUpdateStatusModuleFieldSummarySubstateAllOf
+     * @type {number}
+     * @memberof ProtocolUpdateStatusLatestCommit
      */
-    update_status: ProtocolUpdateStatus;
+    batch_index: number;
     /**
      * 
      * @type {string}
-     * @memberof ProtocolUpdateStatusModuleFieldSummarySubstateAllOf
+     * @memberof ProtocolUpdateStatusLatestCommit
      */
-    substate_type?: ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum;
+    batch_name: string;
 }
 
-
 /**
- * @export
+ * Check if a given object implements the ProtocolUpdateStatusLatestCommit interface.
  */
-export const ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum = {
-    ProtocolUpdateStatusModuleFieldSummary: 'ProtocolUpdateStatusModuleFieldSummary'
-} as const;
-export type ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum = typeof ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum[keyof typeof ProtocolUpdateStatusModuleFieldSummarySubstateAllOfSubstateTypeEnum];
-
-
-/**
- * Check if a given object implements the ProtocolUpdateStatusModuleFieldSummarySubstateAllOf interface.
- */
-export function instanceOfProtocolUpdateStatusModuleFieldSummarySubstateAllOf(value: object): boolean {
+export function instanceOfProtocolUpdateStatusLatestCommit(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "protocol_version" in value;
-    isInstance = isInstance && "update_status" in value;
+    isInstance = isInstance && "batch_group_index" in value;
+    isInstance = isInstance && "batch_group_name" in value;
+    isInstance = isInstance && "batch_index" in value;
+    isInstance = isInstance && "batch_name" in value;
 
     return isInstance;
 }
 
-export function ProtocolUpdateStatusModuleFieldSummarySubstateAllOfFromJSON(json: any): ProtocolUpdateStatusModuleFieldSummarySubstateAllOf {
-    return ProtocolUpdateStatusModuleFieldSummarySubstateAllOfFromJSONTyped(json, false);
+export function ProtocolUpdateStatusLatestCommitFromJSON(json: any): ProtocolUpdateStatusLatestCommit {
+    return ProtocolUpdateStatusLatestCommitFromJSONTyped(json, false);
 }
 
-export function ProtocolUpdateStatusModuleFieldSummarySubstateAllOfFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateStatusModuleFieldSummarySubstateAllOf {
+export function ProtocolUpdateStatusLatestCommitFromJSONTyped(json: any, ignoreDiscriminator: boolean): ProtocolUpdateStatusLatestCommit {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'protocol_version': json['protocol_version'],
-        'update_status': ProtocolUpdateStatusFromJSON(json['update_status']),
-        'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
+        'batch_group_index': json['batch_group_index'],
+        'batch_group_name': json['batch_group_name'],
+        'batch_index': json['batch_index'],
+        'batch_name': json['batch_name'],
     };
 }
 
-export function ProtocolUpdateStatusModuleFieldSummarySubstateAllOfToJSON(value?: ProtocolUpdateStatusModuleFieldSummarySubstateAllOf | null): any {
+export function ProtocolUpdateStatusLatestCommitToJSON(value?: ProtocolUpdateStatusLatestCommit | null): any {
     if (value === undefined) {
         return undefined;
     }
@@ -92,9 +84,10 @@ export function ProtocolUpdateStatusModuleFieldSummarySubstateAllOfToJSON(value?
     }
     return {
         
-        'protocol_version': value.protocol_version,
-        'update_status': ProtocolUpdateStatusToJSON(value.update_status),
-        'substate_type': value.substate_type,
+        'batch_group_index': value.batch_group_index,
+        'batch_group_name': value.batch_group_name,
+        'batch_index': value.batch_index,
+        'batch_name': value.batch_name,
     };
 }
 

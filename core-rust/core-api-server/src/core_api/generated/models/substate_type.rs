@@ -12,8 +12,16 @@
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
 pub enum SubstateType {
+    #[serde(rename = "BootLoaderModuleFieldSystemBoot")]
+    BootLoaderModuleFieldSystemBoot,
+    #[serde(rename = "BootLoaderModuleFieldKernelBoot")]
+    BootLoaderModuleFieldKernelBoot,
     #[serde(rename = "BootLoaderModuleFieldVmBoot")]
     BootLoaderModuleFieldVmBoot,
+    #[serde(rename = "BootLoaderModuleFieldTransactionValidationConfiguration")]
+    BootLoaderModuleFieldTransactionValidationConfiguration,
+    #[serde(rename = "ProtocolUpdateStatusModuleFieldSummary")]
+    ProtocolUpdateStatusModuleFieldSummary,
     #[serde(rename = "TypeInfoModuleFieldTypeInfo")]
     TypeInfoModuleFieldTypeInfo,
     #[serde(rename = "RoleAssignmentModuleFieldOwnerRole")]
@@ -116,21 +124,17 @@ pub enum SubstateType {
     TransactionTrackerCollectionEntry,
     #[serde(rename = "AccountLockerAccountClaimsEntry")]
     AccountLockerAccountClaimsEntry,
-    #[serde(rename = "BootLoaderModuleFieldSystemBoot")]
-    BootLoaderModuleFieldSystemBoot,
-    #[serde(rename = "BootLoaderModuleFieldKernelBoot")]
-    BootLoaderModuleFieldKernelBoot,
-    #[serde(rename = "BootLoaderModuleFieldTransactionValidationConfiguration")]
-    BootLoaderModuleFieldTransactionValidationConfiguration,
-    #[serde(rename = "ProtocolUpdateStatusModuleFieldSummary")]
-    ProtocolUpdateStatusModuleFieldSummary,
 
 }
 
 impl ToString for SubstateType {
     fn to_string(&self) -> String {
         match self {
+            Self::BootLoaderModuleFieldSystemBoot => String::from("BootLoaderModuleFieldSystemBoot"),
+            Self::BootLoaderModuleFieldKernelBoot => String::from("BootLoaderModuleFieldKernelBoot"),
             Self::BootLoaderModuleFieldVmBoot => String::from("BootLoaderModuleFieldVmBoot"),
+            Self::BootLoaderModuleFieldTransactionValidationConfiguration => String::from("BootLoaderModuleFieldTransactionValidationConfiguration"),
+            Self::ProtocolUpdateStatusModuleFieldSummary => String::from("ProtocolUpdateStatusModuleFieldSummary"),
             Self::TypeInfoModuleFieldTypeInfo => String::from("TypeInfoModuleFieldTypeInfo"),
             Self::RoleAssignmentModuleFieldOwnerRole => String::from("RoleAssignmentModuleFieldOwnerRole"),
             Self::RoleAssignmentModuleRuleEntry => String::from("RoleAssignmentModuleRuleEntry"),
@@ -182,17 +186,13 @@ impl ToString for SubstateType {
             Self::TransactionTrackerFieldState => String::from("TransactionTrackerFieldState"),
             Self::TransactionTrackerCollectionEntry => String::from("TransactionTrackerCollectionEntry"),
             Self::AccountLockerAccountClaimsEntry => String::from("AccountLockerAccountClaimsEntry"),
-            Self::BootLoaderModuleFieldSystemBoot => String::from("BootLoaderModuleFieldSystemBoot"),
-            Self::BootLoaderModuleFieldKernelBoot => String::from("BootLoaderModuleFieldKernelBoot"),
-            Self::BootLoaderModuleFieldTransactionValidationConfiguration => String::from("BootLoaderModuleFieldTransactionValidationConfiguration"),
-            Self::ProtocolUpdateStatusModuleFieldSummary => String::from("ProtocolUpdateStatusModuleFieldSummary"),
         }
     }
 }
 
 impl Default for SubstateType {
     fn default() -> SubstateType {
-        Self::BootLoaderModuleFieldVmBoot
+        Self::BootLoaderModuleFieldSystemBoot
     }
 }
 

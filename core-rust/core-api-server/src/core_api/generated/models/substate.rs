@@ -341,6 +341,10 @@ pub enum Substate {
     ProtocolUpdateStatusModuleFieldSummarySubstate {
         #[serde(rename = "is_locked")]
         is_locked: bool,
+        #[serde(rename = "protocol_version")]
+        protocol_version: String,
+        #[serde(rename = "update_status")]
+        update_status: Box<crate::core_api::generated::models::ProtocolUpdateStatus>,
     },
     #[serde(rename="RoleAssignmentModuleFieldOwnerRole")]
     RoleAssignmentModuleFieldOwnerRoleSubstate {
