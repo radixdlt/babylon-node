@@ -139,9 +139,11 @@ public final class NodeSborCodecs {
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);
     PreparedIntent.registerCodec(codecMap);
+    PreparedTransactionIntentV2.registerCodec(codecMap);
     PreparedSignedIntent.registerCodec(codecMap);
     PreparedNotarizedTransaction.registerCodec(codecMap);
-    IntentHash.registerCodec(codecMap);
+    TransactionIntentHash.registerCodec(codecMap);
+    SubintentHash.registerCodec(codecMap);
     SignedIntentHash.registerCodec(codecMap);
     NotarizedTransactionHash.registerCodec(codecMap);
     LedgerTransactionHash.registerCodec(codecMap);
@@ -205,6 +207,7 @@ public final class NodeSborCodecs {
     NonFungibleGlobalId.registerCodec(codecMap);
     InternalAddress.registerCodec(codecMap);
     PrepareIntentRequest.registerCodec(codecMap);
+    PrepareTransactionIntentV2Request.registerCodec(codecMap);
     TransactionMessage.registerCodec(codecMap);
     PlaintextTransactionMessage.registerCodec(codecMap);
     EncryptedTransactionMessage.registerCodec(codecMap);

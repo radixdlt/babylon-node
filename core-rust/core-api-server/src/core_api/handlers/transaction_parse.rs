@@ -4,7 +4,8 @@ use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode}
 use models::transaction_parse_response::TransactionParseResponse;
 
 use super::{
-    to_api_intent_v1, to_api_ledger_transaction, to_api_notarized_transaction_v1, to_api_notarized_transaction_v2, to_api_signed_intent
+    to_api_intent_v1, to_api_ledger_transaction, to_api_notarized_transaction_v1,
+    to_api_notarized_transaction_v2, to_api_signed_intent,
 };
 
 pub struct ParseContext<'a> {
@@ -176,7 +177,7 @@ fn attempt_parsing_as_notarized_transaction(
 fn to_api_parsed_notarized_transaction(
     context: &ParseContext,
     parsed: ParsedNotarizedTransaction,
-) -> Result<models::ParsedTransaction, ResponseError<()>> { 
+) -> Result<models::ParsedTransaction, ResponseError<()>> {
     let validation_error = parsed
         .validation
         .and_then(|result| result.err())
@@ -197,18 +198,21 @@ fn to_api_parsed_notarized_transaction(
                     &parsed.hashes,
                 )?)),
             };
-        
+
             let ledger_hash =
                 PreparedLedgerTransactionInner::User(PreparedUserTransaction::V1(prepared))
                     .get_ledger_hash();
-        
+
             Ok(models::ParsedTransaction::ParsedNotarizedTransaction {
                 notarized_transaction: model,
-                identifiers: Box::new(to_api_parsed_notarized_transaction_identifiers(context, &parsed.hashes, ledger_hash)?),
+                identifiers: Box::new(to_api_parsed_notarized_transaction_identifiers(
+                    context,
+                    &parsed.hashes,
+                    ledger_hash,
+                )?),
                 validation_error,
             })
-        
-        },
+        }
         (UserTransaction::V2(model), PreparedUserTransaction::V2(prepared)) => {
             let model = match context.response_mode {
                 ResponseMode::Basic => None,
@@ -218,18 +222,24 @@ fn to_api_parsed_notarized_transaction(
                     &parsed.hashes,
                 )?)),
             };
-        
+
             let ledger_hash =
                 PreparedLedgerTransactionInner::User(PreparedUserTransaction::V2(prepared))
                     .get_ledger_hash();
-        
+
             Ok(models::ParsedTransaction::ParsedNotarizedTransactionV2 {
                 notarized_transaction: model,
-                identifiers: Box::new(to_api_parsed_notarized_transaction_identifiers(context, &parsed.hashes, ledger_hash)?),
+                identifiers: Box::new(to_api_parsed_notarized_transaction_identifiers(
+                    context,
+                    &parsed.hashes,
+                    ledger_hash,
+                )?),
                 validation_error,
             })
-        },
-        (UserTransaction::V1(_), _) | (UserTransaction::V2(_), _) => panic!("Unexpected combination"),
+        }
+        (UserTransaction::V1(_), _) | (UserTransaction::V2(_), _) => {
+            panic!("Unexpected combination")
+        }
     }
 }
 
@@ -251,9 +261,7 @@ fn to_api_parsed_notarized_transaction_identifiers(
             &context.mapping_context,
             &hashes.signed_transaction_intent_hash,
         )?,
-        payload_hash: to_api_notarized_transaction_hash(
-            &hashes.notarized_transaction_hash,
-        ),
+        payload_hash: to_api_notarized_transaction_hash(&hashes.notarized_transaction_hash),
         payload_hash_bech32m: to_api_hash_bech32m(
             &context.mapping_context,
             &hashes.notarized_transaction_hash,

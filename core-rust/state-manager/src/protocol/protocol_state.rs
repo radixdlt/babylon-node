@@ -4,11 +4,12 @@ use crate::prelude::*;
 // node.
 
 pub struct NodeProtocolUpdateExecutor {
-    network: NetworkDefinition,
+    network_definition: NetworkDefinition,
     protocol_update_content_overrides: RawProtocolUpdateContentOverrides,
     scenarios_execution_config: ScenariosExecutionConfig,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     system_executor: Arc<SystemExecutor>,
+    transaction_validator: Arc<RwLock<TransactionValidator>>,
     genesis_data_resolver: Arc<dyn ResolveGenesisData>,
 }
 
@@ -19,14 +20,16 @@ impl NodeProtocolUpdateExecutor {
         scenarios_execution_config: ScenariosExecutionConfig,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         system_executor: Arc<SystemExecutor>,
+        transaction_validator: Arc<RwLock<TransactionValidator>>,
         genesis_data_resolver: Arc<dyn ResolveGenesisData>,
     ) -> Self {
         Self {
-            network,
+            network_definition: network,
             protocol_update_content_overrides,
             scenarios_execution_config,
             database,
             system_executor,
+            transaction_validator,
             genesis_data_resolver,
         }
     }
@@ -89,7 +92,7 @@ impl NodeProtocolUpdateExecutor {
         let protocol_update_definition = resolved.definition();
         let update_generator = protocol_update_definition.create_update_generator_raw(
             ProtocolUpdateContext {
-                network: &self.network,
+                network: &self.network_definition,
                 database: &self.database,
                 genesis_data_resolver: &self.genesis_data_resolver,
                 scenario_config: &self.scenarios_execution_config,
@@ -148,6 +151,14 @@ impl NodeProtocolUpdateExecutor {
                     },
                     batch,
                 );
+                {
+                    // Update the transaction validator in case any of its configuration was updated.
+                    // This ensures that scenarios will execute correctly.
+                    *self.transaction_validator.write() = TransactionValidator::new(
+                        self.database.lock().deref(),
+                        &self.network_definition,
+                    );
+                }
             }
         }
         info!("Protocol update to {protocol_version:?} is complete");

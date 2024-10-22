@@ -164,6 +164,7 @@ impl StateManagerConfig {
 
 #[derive(Clone)]
 pub struct StateManager {
+    pub network_definition: NetworkDefinition,
     pub database: Arc<DbLock<ActualStateManagerDatabase>>,
     pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
@@ -338,6 +339,7 @@ impl StateManager {
             scenarios_execution_config,
             database.clone(),
             system_executor.clone(),
+            transaction_validator.clone(),
             genesis_data_resolver,
         ));
 
@@ -370,6 +372,7 @@ impl StateManager {
         );
 
         let state_manager = Self {
+            network_definition,
             database,
             mempool,
             mempool_manager,
@@ -422,8 +425,13 @@ impl StateManager {
         self.protocol_manager
             .set_current_protocol_version(&resultant_version);
 
-        // Protocol update might change transaction execution rules, so we need to clear the cache
+        // Protocol update might change transaction execution rules, so we need to update our
+        // validator and clear our tree-based execution caches
+        *self.transaction_validator.write() =
+            TransactionValidator::new(self.database.lock().deref(), &self.network_definition);
         self.execution_cache_manager.clear();
+        // We could also clear the mempool and the pending tranasction result cache here
+        // ... but that doesn't guarantee it's still accurate, so it's not required.
 
         ProtocolUpdateResult {
             post_update_proof: self

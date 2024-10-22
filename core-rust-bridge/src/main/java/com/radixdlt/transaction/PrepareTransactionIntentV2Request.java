@@ -62,23 +62,20 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.transaction;
 
-import com.radixdlt.lang.Option;
+import com.radixdlt.rev2.NetworkDefinition;
+import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.*;
-import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 
-public record CommittableTransaction(
-    Option<UInt32> index,
-    RawLedgerTransaction raw,
-    Option<TransactionIntentHash> intentHash,
-    Option<NotarizedTransactionHash> notarizedTransactionHash,
-    LedgerTransactionHash ledgerTransactionHash) {
+public record PrepareTransactionIntentV2Request(
+    NetworkDefinition network, TransactionHeader header, UInt64 subintentCount) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        CommittableTransaction.class,
-        codecs -> StructCodec.fromRecordComponents(CommittableTransaction.class, codecs));
+        PrepareTransactionIntentV2Request.class,
+        codecs ->
+            StructCodec.fromRecordComponents(PrepareTransactionIntentV2Request.class, codecs));
   }
 }

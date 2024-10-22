@@ -357,7 +357,11 @@ pub fn to_api_ledger_transaction(
                     })?;
             models::LedgerTransaction::UserLedgerTransactionV2 {
                 payload_hex,
-                notarized_transaction: Box::new(to_api_notarized_transaction_v2(context, tx, &user_hashes)?),
+                notarized_transaction: Box::new(to_api_notarized_transaction_v2(
+                    context,
+                    tx,
+                    &user_hashes,
+                )?),
             }
         }
         LedgerTransaction::RoundUpdateV1(tx) => {
@@ -426,9 +430,9 @@ pub fn to_api_notarized_transaction_v1(
 }
 
 pub fn to_api_notarized_transaction_v2(
-    context: &MappingContext,
-    notarized: &NotarizedTransactionV2,
-    user_hashes: &UserTransactionHashes,
+    _context: &MappingContext,
+    _notarized: &NotarizedTransactionV2,
+    _user_hashes: &UserTransactionHashes,
 ) -> Result<models::NotarizedTransactionV2, MappingError> {
     Ok(models::NotarizedTransactionV2 {
         todo: Some("TODO:CUTTLEFISH".to_string()),

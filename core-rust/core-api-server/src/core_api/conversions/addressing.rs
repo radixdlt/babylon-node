@@ -146,9 +146,11 @@ pub fn to_api_substate_id(
             SubstateType::BootLoaderModuleFieldTransactionValidationConfiguration,
             models::PartitionKind::Field,
         ),
-        TypedSubstateKey::ProtocolUpdateStatus(TypedProtocolUpdateStatusSubstateKey::ProtocolUpdateStatusField(
-            ProtocolUpdateStatusField::Summary
-        )) => (
+        TypedSubstateKey::ProtocolUpdateStatus(
+            TypedProtocolUpdateStatusSubstateKey::ProtocolUpdateStatusField(
+                ProtocolUpdateStatusField::Summary,
+            ),
+        ) => (
             SubstateType::ProtocolUpdateStatusModuleFieldSummary,
             models::PartitionKind::Field,
         ),

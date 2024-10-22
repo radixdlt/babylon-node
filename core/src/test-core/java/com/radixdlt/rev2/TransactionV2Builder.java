@@ -65,13 +65,10 @@
 package com.radixdlt.rev2;
 
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.lang.Functions;
-import com.radixdlt.message.TransactionMessage;
 import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -80,100 +77,81 @@ import java.util.stream.IntStream;
  * minimal valid transaction, but this can be re-configured using the builder pattern. Note - this
  * builder is stateful, not immutable
  */
-public class TransactionBuilder {
+public class TransactionV2Builder {
   public static final ECKeyPair DEFAULT_NOTARY = generateKeyPair(1);
 
   public static final AtomicInteger NONCE = new AtomicInteger(0);
 
+  // Currently this is missing lots of settings...
+  // But it's good enough to get Cuttlefish out.
   private final NetworkDefinition networkDefinition;
   private long fromEpoch;
   private int numEpochsValidFor;
   private int nonce;
   private ECKeyPair notary;
   private boolean notaryIsSignatory;
-  private String manifest;
-  private List<byte[]> blobs;
-  private Optional<TransactionMessage> message;
+  private long subintentCount;
   private List<ECKeyPair> signatories;
 
-  public TransactionBuilder(NetworkDefinition networkDefinition) {
+  public TransactionV2Builder(NetworkDefinition networkDefinition) {
     this.networkDefinition = networkDefinition;
     this.fromEpoch = 0;
     this.numEpochsValidFor = 100;
     this.nonce = NONCE.getAndIncrement();
     this.notary = DEFAULT_NOTARY;
     this.notaryIsSignatory = false;
-    this.blobs = List.of();
-    this.message = Optional.empty();
+    this.subintentCount = 0;
     this.signatories = List.of();
-    // Set a valid manifest
-    this.manifest(Manifest.valid());
   }
 
-  public static TransactionBuilder forTests() {
-    return new TransactionBuilder(NetworkDefinition.INT_TEST_NET);
+  public static TransactionV2Builder forTests() {
+    return new TransactionV2Builder(NetworkDefinition.INT_TEST_NET);
   }
 
-  public static TransactionBuilder forNetwork(NetworkDefinition networkDefinition) {
-    return new TransactionBuilder(networkDefinition);
+  public static TransactionV2Builder forNetwork(NetworkDefinition networkDefinition) {
+    return new TransactionV2Builder(networkDefinition);
   }
 
   public static ECKeyPair generateKeyPair(int keySource) {
     return PrivateKeys.numeric(keySource).findFirst().orElseThrow();
   }
 
-  public TransactionBuilder manifest(String manifest) {
-    this.manifest = manifest;
-    return this;
-  }
-
-  public TransactionBuilder manifest(
-      Functions.Func1<Manifest.Parameters, String> manifestConstructor) {
-    this.manifest = manifestConstructor.apply(new Manifest.Parameters(this.networkDefinition));
-    return this;
-  }
-
-  public TransactionBuilder fromEpoch(long fromEpoch) {
+  public TransactionV2Builder fromEpoch(long fromEpoch) {
     this.fromEpoch = fromEpoch;
     return this;
   }
 
-  public TransactionBuilder numEpochsValidFor(int numEpochsValidFor) {
+  public TransactionV2Builder numEpochsValidFor(int numEpochsValidFor) {
     this.numEpochsValidFor = numEpochsValidFor;
     return this;
   }
 
-  public TransactionBuilder nonce(int nonce) {
+  public TransactionV2Builder nonce(int nonce) {
     this.nonce = nonce;
     return this;
   }
 
-  public TransactionBuilder notary(ECKeyPair notary) {
+  public TransactionV2Builder notary(ECKeyPair notary) {
     this.notary = notary;
     return this;
   }
 
-  public TransactionBuilder notaryIsSignatory(boolean notaryIsSignatory) {
+  public TransactionV2Builder notaryIsSignatory(boolean notaryIsSignatory) {
     this.notaryIsSignatory = notaryIsSignatory;
     return this;
   }
 
-  public TransactionBuilder blobs(List<byte[]> blobs) {
-    this.blobs = blobs;
+  public TransactionV2Builder subintentCount(long subintentCount) {
+    this.subintentCount = subintentCount;
     return this;
   }
 
-  public TransactionBuilder message(TransactionMessage message) {
-    this.message = Optional.of(message);
-    return this;
-  }
-
-  public TransactionBuilder signatories(List<ECKeyPair> signatories) {
+  public TransactionV2Builder signatories(List<ECKeyPair> signatories) {
     this.signatories = signatories;
     return this;
   }
 
-  public TransactionBuilder signatories(int number) {
+  public TransactionV2Builder signatories(int number) {
     this.signatories = createNumericSignatories(number);
     return this;
   }
@@ -188,8 +166,7 @@ public class TransactionBuilder {
             this.notary.getPublicKey().toPublicKey(),
             this.notaryIsSignatory);
     var intent =
-        TransactionPreparer.prepareIntent(
-            networkDefinition, header, this.manifest, this.blobs, this.message);
+        TransactionPreparer.prepareTransactionIntentV2(networkDefinition, header, subintentCount);
     var intentSignatures =
         this.signatories.stream()
             .map(
@@ -199,9 +176,10 @@ public class TransactionBuilder {
                         .toSignatureWithPublicKey())
             .toList();
     var signedIntent =
-        TransactionPreparer.prepareSignedIntent(intent.intentBytes(), intentSignatures);
+        TransactionPreparer.prepareSignedIntentV2(
+            intent.transactionIntentBytes(), intentSignatures);
     var notarySignature = this.notary.sign(signedIntent.signedIntentHash().inner()).toSignature();
-    return TransactionPreparer.prepareNotarizedTransaction(
+    return TransactionPreparer.prepareNotarizedTransactionV2(
         signedIntent.signedIntentBytes(), notarySignature);
   }
 

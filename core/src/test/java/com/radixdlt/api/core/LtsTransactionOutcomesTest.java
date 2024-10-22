@@ -77,7 +77,7 @@ import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
-import com.radixdlt.transactions.IntentHash;
+import com.radixdlt.transactions.TransactionIntentHash;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -343,18 +343,18 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       validateAccountTransactions(
           account1Address,
           List.of(
-              account1FaucetClaim.intentHash(),
-              account1SelfXrdTransfer.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromAccount1.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromAccount2.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromFaucet.intentHash()));
+              account1FaucetClaim.transactionIntentHash(),
+              account1SelfXrdTransfer.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount1.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount2.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromFaucet.transactionIntentHash()));
       validateAccountTransactions(
           account2Address,
           List.of(
-              account2FaucetClaim.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromAccount1.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromAccount2.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromFaucet.intentHash()));
+              account2FaucetClaim.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount1.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount2.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromFaucet.transactionIntentHash()));
 
       var faucetFreeXrdAmount = 10000L;
       assertNonFeeXrdBalanceChange(
@@ -473,7 +473,8 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   }
 
   private void validateAccountTransactions(
-      ComponentAddress accountAddress, List<IntentHash> intentHashes) throws Exception {
+      ComponentAddress accountAddress, List<TransactionIntentHash> transactionIntentHashes)
+      throws Exception {
     var accountOutcomesResponse =
         getLtsApi()
             .ltsStreamAccountTransactionOutcomesPost(
@@ -483,7 +484,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
                     .limit(1000)
                     .accountAddress(addressing.encode(accountAddress)));
     var outcomes = accountOutcomesResponse.getCommittedTransactionOutcomes();
-    assertThat(outcomes.size()).isEqualTo(intentHashes.size());
+    assertThat(outcomes.size()).isEqualTo(transactionIntentHashes.size());
     for (var i = 0; i < outcomes.size(); i++) {
       var outcome = outcomes.get(i);
       if (outcome.getStatus() != LtsCommittedTransactionStatus.SUCCESS) {
@@ -491,7 +492,8 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       }
       var transactionIdentifiers = outcome.getUserTransactionIdentifiers();
       assertThat(transactionIdentifiers).isNotNull();
-      assertThat(transactionIdentifiers.getIntentHash()).isEqualTo(intentHashes.get(i).hex());
+      assertThat(transactionIdentifiers.getIntentHash())
+          .isEqualTo(transactionIntentHashes.get(i).hex());
     }
   }
 }

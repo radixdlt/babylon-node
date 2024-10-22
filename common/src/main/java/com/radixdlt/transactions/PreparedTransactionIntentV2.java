@@ -62,23 +62,50 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.transactions;
 
-import com.radixdlt.lang.Option;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.*;
-import com.radixdlt.utils.UInt32;
+import java.util.Objects;
 
-public record CommittableTransaction(
-    Option<UInt32> index,
-    RawLedgerTransaction raw,
-    Option<TransactionIntentHash> intentHash,
-    Option<NotarizedTransactionHash> notarizedTransactionHash,
-    LedgerTransactionHash ledgerTransactionHash) {
+public record PreparedTransactionIntentV2(
+    byte[] transactionIntentBytes,
+    TransactionIntentHash transactionIntentHash,
+    ImmutableList<SubintentHash> subintentHashes) {
+  public PreparedTransactionIntentV2 {
+    Objects.requireNonNull(transactionIntentBytes);
+    Objects.requireNonNull(transactionIntentHash);
+    Objects.requireNonNull(subintentHashes);
+  }
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        CommittableTransaction.class,
-        codecs -> StructCodec.fromRecordComponents(CommittableTransaction.class, codecs));
+        PreparedTransactionIntentV2.class,
+        codecs -> StructCodec.fromRecordComponents(PreparedTransactionIntentV2.class, codecs));
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(transactionIntentHash);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof PreparedTransactionIntentV2 other)) {
+      return false;
+    }
+
+    return Objects.equals(this.transactionIntentHash, other.transactionIntentHash);
+  }
+
+  public String hexIntentHash() {
+    return this.transactionIntentHash.hex();
+  }
+
+  @Override
+  public String toString() {
+    return String.format(
+        "%s{intentHash=%s}", this.getClass().getSimpleName(), this.hexIntentHash());
   }
 }

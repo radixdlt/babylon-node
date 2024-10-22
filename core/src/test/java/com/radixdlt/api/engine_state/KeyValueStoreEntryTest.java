@@ -71,7 +71,7 @@ import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.models.*;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.testutil.TestStateReader;
-import com.radixdlt.transactions.IntentHash;
+import com.radixdlt.transactions.TransactionIntentHash;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
@@ -87,7 +87,7 @@ public final class KeyValueStoreEntryTest extends DeterministicEngineStateApiTes
       final var intentHash =
           getCoreApiHelper()
               .submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of())
-              .intentHash();
+              .transactionIntentHash();
       final var epoch = test.getInstance(0, TestStateReader.class).getEpoch();
 
       // fetch the value by SBOR-encoded transaction hash in programmatic JSON format:
@@ -136,7 +136,7 @@ public final class KeyValueStoreEntryTest extends DeterministicEngineStateApiTes
                       "type_name", "Hash",
                       "kind", "Bytes",
                       "element_kind", "U8",
-                      "hex", new IntentHash(HashCode.fromBytes(new byte[32])).hex()));
+                      "hex", new TransactionIntentHash(HashCode.fromBytes(new byte[32])).hex()));
       final var errorResponse =
           assertErrorResponse(
               () ->

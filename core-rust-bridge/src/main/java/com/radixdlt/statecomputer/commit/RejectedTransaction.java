@@ -67,14 +67,14 @@ package com.radixdlt.statecomputer.commit;
 import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.transactions.LedgerTransactionHash;
 import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.TransactionIntentHash;
 import com.radixdlt.utils.UInt32;
 
 public record RejectedTransaction(
     UInt32 index,
-    Option<IntentHash> intentHash,
+    Option<TransactionIntentHash> intentHash,
     Option<NotarizedTransactionHash> notarizedTransactionHash,
     Option<LedgerTransactionHash> ledgerTransactionHash,
     String error) {

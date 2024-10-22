@@ -62,23 +62,35 @@
  * permissions under this License.
  */
 
-package com.radixdlt.statecomputer.commit;
+package com.radixdlt.transactions;
 
-import com.radixdlt.lang.Option;
+import com.google.common.hash.HashCode;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
-import com.radixdlt.transactions.*;
-import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.Bytes;
+import java.util.Objects;
 
-public record CommittableTransaction(
-    Option<UInt32> index,
-    RawLedgerTransaction raw,
-    Option<TransactionIntentHash> intentHash,
-    Option<NotarizedTransactionHash> notarizedTransactionHash,
-    LedgerTransactionHash ledgerTransactionHash) {
+public record TransactionIntentHash(HashCode inner) {
+  public TransactionIntentHash {
+    Objects.requireNonNull(inner);
+  }
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        CommittableTransaction.class,
-        codecs -> StructCodec.fromRecordComponents(CommittableTransaction.class, codecs));
+        TransactionIntentHash.class,
+        codecs ->
+            StructCodec.transparent(
+                TransactionIntentHash::new,
+                codecs.of(HashCode.class),
+                TransactionIntentHash::inner));
+  }
+
+  public String hex() {
+    return Bytes.toHexString(this.inner.asBytes());
+  }
+
+  @Override
+  public String toString() {
+    return this.hex();
   }
 }

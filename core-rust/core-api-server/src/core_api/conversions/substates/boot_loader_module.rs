@@ -9,18 +9,16 @@ pub fn to_api_system_boot_substate(
     substate: &SystemBoot,
 ) -> Result<models::Substate, MappingError> {
     let value = match substate {
-        SystemBoot::V1(system_parameters) => {
-            models::BootLoaderModuleFieldSystemBootValue {
-                system_version: None,
-                system_parameters: Box::new(to_api_system_parameters(context, system_parameters)?),
-            }
+        SystemBoot::V1(system_parameters) => models::BootLoaderModuleFieldSystemBootValue {
+            system_version: None,
+            system_parameters: Box::new(to_api_system_parameters(context, system_parameters)?),
         },
         SystemBoot::V2(system_version, system_parameters) => {
             models::BootLoaderModuleFieldSystemBootValue {
                 system_version: Some(to_api_system_version(system_version)),
                 system_parameters: Box::new(to_api_system_parameters(context, system_parameters)?),
             }
-        },
+        }
     };
 
     Ok(models::Substate::BootLoaderModuleFieldSystemBootSubstate {
@@ -29,9 +27,7 @@ pub fn to_api_system_boot_substate(
     })
 }
 
-fn to_api_system_version(
-    system_version: &SystemVersion
-) -> models::SystemVersion {
+fn to_api_system_version(system_version: &SystemVersion) -> models::SystemVersion {
     match system_version {
         SystemVersion::V1 => models::SystemVersion::V1,
         SystemVersion::V2 => models::SystemVersion::V2,
@@ -62,18 +58,16 @@ pub fn to_api_kernel_boot_substate(
 ) -> Result<models::Substate, MappingError> {
     let value = match substate {
         // Note: this is how OpenAPI generator represents an empty object type, even when named:
-        KernelBoot::V1 => {
-            models::BootLoaderModuleFieldKernelBootValue {
-                always_visible_nodes_version: None,
-            }
+        KernelBoot::V1 => models::BootLoaderModuleFieldKernelBootValue {
+            always_visible_nodes_version: None,
         },
-        KernelBoot::V2 { global_nodes_version  } => {
-            models::BootLoaderModuleFieldKernelBootValue {
-                always_visible_nodes_version: Some(match global_nodes_version {
-                    AlwaysVisibleGlobalNodesVersion::V1 => models::AlwaysVisibleGlobalNodesVersion::V1,
-                    AlwaysVisibleGlobalNodesVersion::V2 => models::AlwaysVisibleGlobalNodesVersion::V2,
-                }),
-            }
+        KernelBoot::V2 {
+            global_nodes_version,
+        } => models::BootLoaderModuleFieldKernelBootValue {
+            always_visible_nodes_version: Some(match global_nodes_version {
+                AlwaysVisibleGlobalNodesVersion::V1 => models::AlwaysVisibleGlobalNodesVersion::V1,
+                AlwaysVisibleGlobalNodesVersion::V2 => models::AlwaysVisibleGlobalNodesVersion::V2,
+            }),
         },
     };
 
@@ -201,7 +195,8 @@ pub fn to_api_transaction_validator_configuration_substate(
     _context: &MappingContext,
     substate: &TransactionValidationConfigurationSubstate,
 ) -> Result<models::Substate, MappingError> {
-    let value = match substate.as_versions() {
+    #[allow(unused)] // TODO:CUTTLEFISH
+    match substate.as_versions() {
         TransactionValidationConfigurationVersions::V1(config) => {
             let TransactionValidationConfigV1 {
                 max_signer_signatures_per_intent,
@@ -223,8 +218,12 @@ pub fn to_api_transaction_validator_configuration_substate(
             } = config;
 
             // TODO: Add this to the substate.
-        },
+        }
     };
 
-    Ok(models::Substate::BootLoaderModuleFieldTransactionValidationConfigurationSubstate { is_locked: false })
+    Ok(
+        models::Substate::BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
+            is_locked: false,
+        },
+    )
 }

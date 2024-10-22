@@ -20,12 +20,12 @@ pub fn to_api_substate(
         TypedSubstateValue::BootLoader(BootLoaderSubstateValue::Kernel(kernel_boot_substate)) => {
             to_api_kernel_boot_substate(context, state_mapping_lookups, kernel_boot_substate)?
         }
-        TypedSubstateValue::BootLoader(BootLoaderSubstateValue::TransactionValidation(substate)) => {
-            to_api_transaction_validator_configuration_substate(context, substate)?
-        }
-        TypedSubstateValue::ProtocolUpdateStatus(ProtocolUpdateStatusSubstateValue::Summary(substate)) => {
-            to_api_protocol_update_status_substate(context, substate)?
-        },
+        TypedSubstateValue::BootLoader(BootLoaderSubstateValue::TransactionValidation(
+            substate,
+        )) => to_api_transaction_validator_configuration_substate(context, substate)?,
+        TypedSubstateValue::ProtocolUpdateStatus(ProtocolUpdateStatusSubstateValue::Summary(
+            substate,
+        )) => to_api_protocol_update_status_substate(context, substate)?,
         TypedSubstateValue::TypeInfoModule(TypedTypeInfoModuleSubstateValue::TypeInfo(
             type_info_substate,
         )) => to_api_type_info_substate(context, state_mapping_lookups, type_info_substate)?,

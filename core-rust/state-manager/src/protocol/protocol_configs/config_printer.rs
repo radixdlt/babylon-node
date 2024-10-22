@@ -21,12 +21,10 @@ fn print_fixed_config_code() {
     let version = ProtocolVersionName::cuttlefish();
     let start_epoch = Epoch::of(1);
     let end_epoch = Epoch::of(10000000);
-    let thresholds = vec![
-        SignalledReadinessThreshold {
-            required_ratio_of_stake_supported: dec!(0.8),
-            required_consecutive_completed_epochs_of_support: 10,
-        }
-    ];
+    let thresholds = vec![SignalledReadinessThreshold {
+        required_ratio_of_stake_supported: dec!(0.8),
+        required_consecutive_completed_epochs_of_support: 10,
+    }];
     output(version, start_epoch, end_epoch, thresholds, None)
 }
 
@@ -64,7 +62,13 @@ fn print_calculated_protocol_config_code() {
         })
         .collect::<Vec<_>>();
 
-    output(version, start_epoch, end_epoch, thresholds, Some(calculator))
+    output(
+        version,
+        start_epoch,
+        end_epoch,
+        thresholds,
+        Some(calculator),
+    )
 }
 
 fn output(
@@ -88,7 +92,9 @@ fn output(
         .expect("Generated protocol update trigger should be valid");
 
     let base_indent = "        ";
-    println!("{base_indent}ProtocolVersionName::{version}() => EnactAtStartOfEpochIfValidatorsReady {{");
+    println!(
+        "{base_indent}ProtocolVersionName::{version}() => EnactAtStartOfEpochIfValidatorsReady {{"
+    );
     println!(
         "{base_indent}    // ================================================================="
     );
