@@ -56,9 +56,10 @@
 /**/*.swo
 /**/*.swp
 /**/*~
-# ignore jar files, but keep Gradle wrapper
+# ignore jar files, but keep Gradle wrapper and build artifacts
 /**/*.jar
 !gradle/wrapper/gradle-wrapper.jar
+!artifacts/*.jar
 
 # node
 /**/node_modules/
