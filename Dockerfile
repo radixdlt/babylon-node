@@ -56,7 +56,7 @@ RUN apt-get update \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.12+7-2~deb12u1 \
+    openjdk-17-jdk=17.0.13+11-2~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
