@@ -19,6 +19,7 @@
  */
 export const ParsedTransactionType = {
     NotarizedTransaction: 'NotarizedTransaction',
+    NotarizedTransactionV2: 'NotarizedTransactionV2',
     SignedTransactionIntent: 'SignedTransactionIntent',
     TransactionIntent: 'TransactionIntent',
     LedgerTransaction: 'LedgerTransaction'

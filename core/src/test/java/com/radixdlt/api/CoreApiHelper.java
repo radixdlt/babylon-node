@@ -75,7 +75,7 @@ import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.lang.Functions;
 import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.NetworkDefinition; // for disambiguation with models.* only
-import com.radixdlt.transactions.IntentHash;
+import com.radixdlt.transactions.TransactionIntentHash;
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Objects;
@@ -114,7 +114,7 @@ public class CoreApiHelper {
       DeterministicTest test,
       Functions.Func1<Manifest.Parameters, String> manifest,
       List<ECKeyPair> signatories,
-      Functions.Func3<IntentHash, TransactionOutcome, LtsTransactionStatusResponse, T>
+      Functions.Func3<TransactionIntentHash, TransactionOutcome, LtsTransactionStatusResponse, T>
           outcomeMapper)
       throws Exception {
     var metadata =
@@ -152,15 +152,21 @@ public class CoreApiHelper {
       switch (statusResponse.getIntentStatus()) {
         case COMMITTEDSUCCESS -> {
           return outcomeMapper.apply(
-              transaction.intentHash(), TransactionOutcome.CommittedSuccess, statusResponse);
+              transaction.transactionIntentHash(),
+              TransactionOutcome.CommittedSuccess,
+              statusResponse);
         }
         case COMMITTEDFAILURE -> {
           return outcomeMapper.apply(
-              transaction.intentHash(), TransactionOutcome.CommittedFailure, statusResponse);
+              transaction.transactionIntentHash(),
+              TransactionOutcome.CommittedFailure,
+              statusResponse);
         }
         case PERMANENTREJECTION -> {
           return outcomeMapper.apply(
-              transaction.intentHash(), TransactionOutcome.PermanentRejection, statusResponse);
+              transaction.transactionIntentHash(),
+              TransactionOutcome.PermanentRejection,
+              statusResponse);
         }
         default -> test.runForCount(messagesProcessedPerAttempt);
       }
@@ -236,5 +242,7 @@ public class CoreApiHelper {
   }
 
   public record CommittedResult(
-      IntentHash intentHash, long stateVersion, Optional<String> errorMessage) {}
+      TransactionIntentHash transactionIntentHash,
+      long stateVersion,
+      Optional<String> errorMessage) {}
 }

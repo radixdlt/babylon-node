@@ -19,6 +19,12 @@ import {
     SystemParametersFromJSONTyped,
     SystemParametersToJSON,
 } from './SystemParameters';
+import type { SystemVersion } from './SystemVersion';
+import {
+    SystemVersionFromJSON,
+    SystemVersionFromJSONTyped,
+    SystemVersionToJSON,
+} from './SystemVersion';
 
 /**
  * 
@@ -26,6 +32,12 @@ import {
  * @interface BootLoaderModuleFieldSystemBootValue
  */
 export interface BootLoaderModuleFieldSystemBootValue {
+    /**
+     * 
+     * @type {SystemVersion}
+     * @memberof BootLoaderModuleFieldSystemBootValue
+     */
+    system_version?: SystemVersion;
     /**
      * 
      * @type {SystemParameters}
@@ -54,6 +66,7 @@ export function BootLoaderModuleFieldSystemBootValueFromJSONTyped(json: any, ign
     }
     return {
         
+        'system_version': !exists(json, 'system_version') ? undefined : SystemVersionFromJSON(json['system_version']),
         'system_parameters': SystemParametersFromJSON(json['system_parameters']),
     };
 }
@@ -67,6 +80,7 @@ export function BootLoaderModuleFieldSystemBootValueToJSON(value?: BootLoaderMod
     }
     return {
         
+        'system_version': SystemVersionToJSON(value.system_version),
         'system_parameters': SystemParametersToJSON(value.system_parameters),
     };
 }

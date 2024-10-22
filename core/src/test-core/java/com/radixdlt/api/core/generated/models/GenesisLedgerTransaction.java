@@ -33,6 +33,7 @@ import com.radixdlt.api.core.generated.models.LedgerTransactionType;
 import com.radixdlt.api.core.generated.models.RoundUpdateLedgerTransaction;
 import com.radixdlt.api.core.generated.models.SystemTransaction;
 import com.radixdlt.api.core.generated.models.UserLedgerTransaction;
+import com.radixdlt.api.core.generated.models.UserLedgerTransactionV2;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -57,6 +58,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = GenesisLedgerTransaction.class, name = "Genesis"),
   @JsonSubTypes.Type(value = RoundUpdateLedgerTransaction.class, name = "RoundUpdate"),
   @JsonSubTypes.Type(value = UserLedgerTransaction.class, name = "User"),
+  @JsonSubTypes.Type(value = UserLedgerTransactionV2.class, name = "UserV2"),
 })
 
 public class GenesisLedgerTransaction extends LedgerTransaction {
@@ -172,6 +174,7 @@ static {
   mappings.put("Genesis", GenesisLedgerTransaction.class);
   mappings.put("RoundUpdate", RoundUpdateLedgerTransaction.class);
   mappings.put("User", UserLedgerTransaction.class);
+  mappings.put("UserV2", UserLedgerTransactionV2.class);
   mappings.put("GenesisLedgerTransaction", GenesisLedgerTransaction.class);
   JSON.registerDiscriminator(GenesisLedgerTransaction.class, "type", mappings);
 }

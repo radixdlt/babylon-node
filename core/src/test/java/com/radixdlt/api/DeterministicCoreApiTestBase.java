@@ -76,7 +76,6 @@ import com.radixdlt.api.core.generated.api.*;
 import com.radixdlt.api.core.generated.client.ApiClient;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.environment.*;
 import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
@@ -237,7 +236,7 @@ public abstract class DeterministicCoreApiTestBase {
             .transactionReceiptPost(
                 new TransactionReceiptRequest()
                     .network(networkLogicalName)
-                    .intentHash(committedNewResourceTxn.intentHash().hex()));
+                    .intentHash(committedNewResourceTxn.transactionIntentHash().hex()));
 
     final var newResourceAddressStr =
         receipt

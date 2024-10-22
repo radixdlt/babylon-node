@@ -40,7 +40,9 @@ public enum EntityModule {
   
   SCHEMA("Schema"),
   
-  BOOTLOADER("BootLoader");
+  BOOTLOADER("BootLoader"),
+  
+  PROTOCOLUPDATESTATUS("ProtocolUpdateStatus");
 
   private String value;
 

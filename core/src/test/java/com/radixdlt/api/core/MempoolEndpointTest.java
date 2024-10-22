@@ -104,7 +104,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                   .payloadHash(transaction.hexNotarizedTransactionHash())
                   .payloadHashBech32m(addressing.encode(transaction.notarizedTransactionHash()))
                   .intentHash(transaction.hexIntentHash())
-                  .intentHashBech32m(addressing.encode(transaction.intentHash())));
+                  .intentHashBech32m(addressing.encode(transaction.transactionIntentHash())));
 
       var mempoolTransactionByHex =
           getMempoolApi()

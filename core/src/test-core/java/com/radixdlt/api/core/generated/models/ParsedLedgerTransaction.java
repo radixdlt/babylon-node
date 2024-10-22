@@ -30,6 +30,7 @@ import com.radixdlt.api.core.generated.models.ParsedLedgerTransaction;
 import com.radixdlt.api.core.generated.models.ParsedLedgerTransactionAllOf;
 import com.radixdlt.api.core.generated.models.ParsedLedgerTransactionIdentifiers;
 import com.radixdlt.api.core.generated.models.ParsedNotarizedTransaction;
+import com.radixdlt.api.core.generated.models.ParsedNotarizedTransactionV2;
 import com.radixdlt.api.core.generated.models.ParsedSignedTransactionIntent;
 import com.radixdlt.api.core.generated.models.ParsedTransaction;
 import com.radixdlt.api.core.generated.models.ParsedTransactionIntent;
@@ -56,6 +57,7 @@ import com.radixdlt.api.core.generated.client.JSON;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = ParsedLedgerTransaction.class, name = "LedgerTransaction"),
   @JsonSubTypes.Type(value = ParsedNotarizedTransaction.class, name = "NotarizedTransaction"),
+  @JsonSubTypes.Type(value = ParsedNotarizedTransactionV2.class, name = "NotarizedTransactionV2"),
   @JsonSubTypes.Type(value = ParsedSignedTransactionIntent.class, name = "SignedTransactionIntent"),
   @JsonSubTypes.Type(value = ParsedTransactionIntent.class, name = "TransactionIntent"),
 })
@@ -171,6 +173,7 @@ static {
   Map<String, Class<?>> mappings = new HashMap<String, Class<?>>();
   mappings.put("LedgerTransaction", ParsedLedgerTransaction.class);
   mappings.put("NotarizedTransaction", ParsedNotarizedTransaction.class);
+  mappings.put("NotarizedTransactionV2", ParsedNotarizedTransactionV2.class);
   mappings.put("SignedTransactionIntent", ParsedSignedTransactionIntent.class);
   mappings.put("TransactionIntent", ParsedTransactionIntent.class);
   mappings.put("ParsedLedgerTransaction", ParsedLedgerTransaction.class);

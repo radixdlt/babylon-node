@@ -112,6 +112,10 @@ public sealed interface ProtocolUpdateEnactmentCondition {
     return new EnactAtStartOfEpochUnconditionally(UInt64.fromNonNegativeLong(epoch));
   }
 
+  static ProtocolUpdateEnactmentCondition immediatelyAfter(String protocolVersionName) {
+    return new EnactImmediatelyAfterEndOfProtocolUpdate(protocolVersionName);
+  }
+
   record EnactAtStartOfEpochIfValidatorsReady(
       UInt64 lowerBoundInclusive,
       UInt64 upperBoundExclusive,

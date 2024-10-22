@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.SystemParameters;
+import com.radixdlt.api.core.generated.models.SystemVersion;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -32,15 +33,45 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * BootLoaderModuleFieldSystemBootValue
  */
 @JsonPropertyOrder({
+  BootLoaderModuleFieldSystemBootValue.JSON_PROPERTY_SYSTEM_VERSION,
   BootLoaderModuleFieldSystemBootValue.JSON_PROPERTY_SYSTEM_PARAMETERS
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class BootLoaderModuleFieldSystemBootValue {
+  public static final String JSON_PROPERTY_SYSTEM_VERSION = "system_version";
+  private SystemVersion systemVersion;
+
   public static final String JSON_PROPERTY_SYSTEM_PARAMETERS = "system_parameters";
   private SystemParameters systemParameters;
 
   public BootLoaderModuleFieldSystemBootValue() { 
   }
+
+  public BootLoaderModuleFieldSystemBootValue systemVersion(SystemVersion systemVersion) {
+    this.systemVersion = systemVersion;
+    return this;
+  }
+
+   /**
+   * Get systemVersion
+   * @return systemVersion
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_SYSTEM_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public SystemVersion getSystemVersion() {
+    return systemVersion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SYSTEM_VERSION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setSystemVersion(SystemVersion systemVersion) {
+    this.systemVersion = systemVersion;
+  }
+
 
   public BootLoaderModuleFieldSystemBootValue systemParameters(SystemParameters systemParameters) {
     this.systemParameters = systemParameters;
@@ -80,18 +111,20 @@ public class BootLoaderModuleFieldSystemBootValue {
       return false;
     }
     BootLoaderModuleFieldSystemBootValue bootLoaderModuleFieldSystemBootValue = (BootLoaderModuleFieldSystemBootValue) o;
-    return Objects.equals(this.systemParameters, bootLoaderModuleFieldSystemBootValue.systemParameters);
+    return Objects.equals(this.systemVersion, bootLoaderModuleFieldSystemBootValue.systemVersion) &&
+        Objects.equals(this.systemParameters, bootLoaderModuleFieldSystemBootValue.systemParameters);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(systemParameters);
+    return Objects.hash(systemVersion, systemParameters);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BootLoaderModuleFieldSystemBootValue {\n");
+    sb.append("    systemVersion: ").append(toIndentedString(systemVersion)).append("\n");
     sb.append("    systemParameters: ").append(toIndentedString(systemParameters)).append("\n");
     sb.append("}");
     return sb.toString();

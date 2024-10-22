@@ -18,7 +18,11 @@
  * @export
  */
 export const SubstateType = {
+    BootLoaderModuleFieldSystemBoot: 'BootLoaderModuleFieldSystemBoot',
+    BootLoaderModuleFieldKernelBoot: 'BootLoaderModuleFieldKernelBoot',
     BootLoaderModuleFieldVmBoot: 'BootLoaderModuleFieldVmBoot',
+    BootLoaderModuleFieldTransactionValidationConfiguration: 'BootLoaderModuleFieldTransactionValidationConfiguration',
+    ProtocolUpdateStatusModuleFieldSummary: 'ProtocolUpdateStatusModuleFieldSummary',
     TypeInfoModuleFieldTypeInfo: 'TypeInfoModuleFieldTypeInfo',
     RoleAssignmentModuleFieldOwnerRole: 'RoleAssignmentModuleFieldOwnerRole',
     RoleAssignmentModuleRuleEntry: 'RoleAssignmentModuleRuleEntry',
@@ -69,9 +73,7 @@ export const SubstateType = {
     MultiResourcePoolFieldState: 'MultiResourcePoolFieldState',
     TransactionTrackerFieldState: 'TransactionTrackerFieldState',
     TransactionTrackerCollectionEntry: 'TransactionTrackerCollectionEntry',
-    AccountLockerAccountClaimsEntry: 'AccountLockerAccountClaimsEntry',
-    BootLoaderModuleFieldSystemBoot: 'BootLoaderModuleFieldSystemBoot',
-    BootLoaderModuleFieldKernelBoot: 'BootLoaderModuleFieldKernelBoot'
+    AccountLockerAccountClaimsEntry: 'AccountLockerAccountClaimsEntry'
 } as const;
 export type SubstateType = typeof SubstateType[keyof typeof SubstateType];
 

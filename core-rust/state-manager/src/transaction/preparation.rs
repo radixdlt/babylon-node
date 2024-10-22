@@ -95,59 +95,25 @@ impl Preparator {
     pub fn prepare_protocol_update(
         &self,
         batch_details: &ProtocolUpdateBatchDetails,
-        protocol_update_batch: ProtocolUpdateBatch,
+        mut protocol_update_batch: ProtocolUpdateBatch,
     ) -> SystemPrepareResult {
         let database = self.database.lock();
         let mut series_executor = self
             .transaction_executor_factory
             .start_series_execution(database.deref());
 
+        if let Some(transaction) = batch_details.generate_update_status_flash_transaction() {
+            protocol_update_batch.mut_add(transaction);
+        }
+
         let mut committed_transactions = Vec::new();
 
         for transaction in protocol_update_batch.transactions {
-            let ledger_transaction = match transaction {
-                // Ideally we'd be able to get rid of all this `LedgerTransaction::Genesis` special-casing
-                // and just make it a protocol update... but sadly that wouldn't be backwards compatible!
-                ProtocolUpdateTransaction::FlashTransactionV1(flash_transaction) => {
-                    if batch_details.protocol_version == &ProtocolVersionName::babylon() {
-                        LedgerTransaction::Genesis(Box::new(GenesisTransaction::Flash))
-                    } else {
-                        LedgerTransaction::FlashV1(Box::new(flash_transaction))
-                    }
-                }
-                ProtocolUpdateTransaction::SystemTransactionV1(transaction) => {
-                    if batch_details.protocol_version == &ProtocolVersionName::babylon() {
-                        let genesis_transaction =
-                            GenesisTransaction::Transaction(Box::new(transaction.transaction));
-                        LedgerTransaction::Genesis(Box::new(genesis_transaction))
-                    } else {
-                        // This would be easy to change - we would just need to add a new variant
-                        // LedgerTransaction::ProtocolUpdateSystemTransaction
-                        panic!("We don't currently support non-flash non-genesis protocol update transactions")
-                    }
-                }
-            };
-            let raw = ledger_transaction
-                .to_raw()
-                .expect("Could not encode protocol update transaction");
-
-            let IdentifiedLedgerExecutable { executable, hashes } = raw
-                .create_identifiable_ledger_executable(
-                    self.transaction_validator.read().deref(),
-                    AcceptedLedgerTransactionKind::Any,
-                )
-                .expect("Could not prepare and validate protocol update transaction");
-
-            series_executor
-                .execute_and_update_state(&executable, &hashes, "protocol update")
-                .expect("protocol update not committable")
-                .expect_success("protocol update");
-
-            committed_transactions.push(ProcessedLedgerTransaction {
-                raw,
-                executable,
-                hashes,
-            });
+            committed_transactions.push(self.process_protocol_update_transaction(
+                &mut series_executor,
+                batch_details,
+                transaction,
+            ));
         }
 
         let end_state = series_executor.finalize_series(batch_details.to_batch_situation());
@@ -157,7 +123,7 @@ impl Preparator {
 
     pub fn prepare_scenario(
         &self,
-        batch_situation: BatchSituation,
+        batch_details: &ProtocolUpdateBatchDetails,
         scenario_name: &str,
         mut scenario: Box<dyn ScenarioInstance>,
     ) -> (SystemPrepareResult, PreparedScenarioMetadata) {
@@ -194,9 +160,18 @@ impl Preparator {
                     previous_engine_receipt = Some(engine_receipt);
                 }
                 NextAction::Completed(end_state) => {
+                    if let Some(transaction) =
+                        batch_details.generate_update_status_flash_transaction()
+                    {
+                        committed_transactions.push(self.process_protocol_update_transaction(
+                            &mut series_executor,
+                            batch_details,
+                            transaction,
+                        ));
+                    }
                     let prepare_result = SystemPrepareResult::from_committed_series(
                         committed_transactions,
-                        series_executor.finalize_series(batch_situation),
+                        series_executor.finalize_series(batch_details.to_batch_situation()),
                     );
                     let scenario_metadata = PreparedScenarioMetadata {
                         committed_transaction_names,
@@ -205,6 +180,58 @@ impl Preparator {
                     return (prepare_result, scenario_metadata);
                 }
             }
+        }
+    }
+
+    fn process_protocol_update_transaction(
+        &self,
+        series_executor: &mut TransactionSeriesExecutor<ActualStateManagerDatabase>,
+        batch_details: &ProtocolUpdateBatchDetails,
+        transaction: ProtocolUpdateTransaction,
+    ) -> ProcessedLedgerTransaction {
+        let ledger_transaction = match transaction {
+            // Ideally we'd be able to get rid of all this `LedgerTransaction::Genesis` special-casing
+            // and just make it a protocol update... but sadly that wouldn't be backwards compatible!
+            ProtocolUpdateTransaction::FlashTransactionV1(flash_transaction) => {
+                if batch_details.protocol_version == &ProtocolVersionName::babylon() {
+                    LedgerTransaction::Genesis(Box::new(GenesisTransaction::Flash))
+                } else {
+                    LedgerTransaction::FlashV1(Box::new(flash_transaction))
+                }
+            }
+            ProtocolUpdateTransaction::SystemTransactionV1(transaction) => {
+                if batch_details.protocol_version == &ProtocolVersionName::babylon() {
+                    let genesis_transaction =
+                        GenesisTransaction::Transaction(Box::new(transaction.transaction));
+                    LedgerTransaction::Genesis(Box::new(genesis_transaction))
+                } else {
+                    // This would be easy to change - we would just need to add a new variant
+                    // LedgerTransaction::ProtocolUpdateSystemTransaction
+                    panic!("We don't currently support non-flash non-genesis protocol update transactions")
+                }
+            }
+        };
+
+        let raw = ledger_transaction
+            .to_raw()
+            .expect("Could not encode protocol update transaction");
+
+        let IdentifiedLedgerExecutable { executable, hashes } = raw
+            .create_identifiable_ledger_executable(
+                self.transaction_validator.read().deref(),
+                AcceptedLedgerTransactionKind::Any,
+            )
+            .expect("Could not prepare and validate protocol update transaction");
+
+        series_executor
+            .execute_and_update_state(&executable, &hashes, "protocol update")
+            .expect("protocol update not committable")
+            .expect_success("protocol update");
+
+        ProcessedLedgerTransaction {
+            raw,
+            executable,
+            hashes,
         }
     }
 

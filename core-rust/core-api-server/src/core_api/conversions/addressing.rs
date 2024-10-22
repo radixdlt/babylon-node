@@ -142,8 +142,18 @@ pub fn to_api_substate_id(
         ),
         TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
             BootLoaderField::TransactionValidationConfiguration,
-        )) => todo!(),
-        TypedSubstateKey::ProtocolUpdateStatus(_) => todo!(),
+        )) => (
+            SubstateType::BootLoaderModuleFieldTransactionValidationConfiguration,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::ProtocolUpdateStatus(
+            TypedProtocolUpdateStatusSubstateKey::ProtocolUpdateStatusField(
+                ProtocolUpdateStatusField::Summary,
+            ),
+        ) => (
+            SubstateType::ProtocolUpdateStatusModuleFieldSummary,
+            models::PartitionKind::Field,
+        ),
         TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
             TypeInfoField::TypeInfo,
         )) => (
@@ -463,7 +473,7 @@ pub fn to_api_substate_id(
 
     let entity_module = match typed_substate_key {
         TypedSubstateKey::BootLoader(_) => models::EntityModule::BootLoader,
-        TypedSubstateKey::ProtocolUpdateStatus(_) => todo!(),
+        TypedSubstateKey::ProtocolUpdateStatus(_) => models::EntityModule::ProtocolUpdateStatus,
         TypedSubstateKey::TypeInfo(_) => models::EntityModule::TypeInfo,
         TypedSubstateKey::RoleAssignmentModule(_) => models::EntityModule::RoleAssignment,
         TypedSubstateKey::RoyaltyModule(_) => models::EntityModule::Royalty,

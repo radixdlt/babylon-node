@@ -70,16 +70,17 @@ import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.Bytes;
 import java.util.Objects;
 
-public record IntentHash(HashCode inner) {
-  public IntentHash {
+public record SubintentHash(HashCode inner) {
+  public SubintentHash {
     Objects.requireNonNull(inner);
   }
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
-        IntentHash.class,
+        SubintentHash.class,
         codecs ->
-            StructCodec.transparent(IntentHash::new, codecs.of(HashCode.class), IntentHash::inner));
+            StructCodec.transparent(
+                SubintentHash::new, codecs.of(HashCode.class), SubintentHash::inner));
   }
 
   public String hex() {

@@ -33,6 +33,7 @@ import com.radixdlt.api.core.generated.models.AccountResourcePreferenceEntrySubs
 import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootSubstate;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldTransactionValidationConfigurationSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -66,6 +67,7 @@ import com.radixdlt.api.core.generated.models.PackageCodeInstrumentedCodeEntrySu
 import com.radixdlt.api.core.generated.models.PackageCodeOriginalCodeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageCodeVmTypeEntrySubstate;
 import com.radixdlt.api.core.generated.models.PackageFieldRoyaltyAccumulatorSubstate;
+import com.radixdlt.api.core.generated.models.ProtocolUpdateStatusModuleFieldSummarySubstate;
 import com.radixdlt.api.core.generated.models.RoleAssignmentModuleFieldOwnerRoleSubstate;
 import com.radixdlt.api.core.generated.models.RoleAssignmentModuleRuleEntrySubstate;
 import com.radixdlt.api.core.generated.models.RoyaltyModuleFieldStateSubstate;
@@ -114,6 +116,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = BootLoaderModuleFieldKernelBootSubstate.class, name = "BootLoaderModuleFieldKernelBootSubstate"),
   @JsonSubTypes.Type(value = BootLoaderModuleFieldSystemBootSubstate.class, name = "BootLoaderModuleFieldSystemBoot"),
   @JsonSubTypes.Type(value = BootLoaderModuleFieldSystemBootSubstate.class, name = "BootLoaderModuleFieldSystemBootSubstate"),
+  @JsonSubTypes.Type(value = BootLoaderModuleFieldTransactionValidationConfigurationSubstate.class, name = "BootLoaderModuleFieldTransactionValidationConfiguration"),
+  @JsonSubTypes.Type(value = BootLoaderModuleFieldTransactionValidationConfigurationSubstate.class, name = "BootLoaderModuleFieldTransactionValidationConfigurationSubstate"),
   @JsonSubTypes.Type(value = BootLoaderModuleFieldVmBootSubstate.class, name = "BootLoaderModuleFieldVmBoot"),
   @JsonSubTypes.Type(value = BootLoaderModuleFieldVmBootSubstate.class, name = "BootLoaderModuleFieldVmBootSubstate"),
   @JsonSubTypes.Type(value = ConsensusManagerFieldConfigSubstate.class, name = "ConsensusManagerFieldConfig"),
@@ -180,6 +184,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = PackageCodeVmTypeEntrySubstate.class, name = "PackageCodeVmTypeEntrySubstate"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulator"),
   @JsonSubTypes.Type(value = PackageFieldRoyaltyAccumulatorSubstate.class, name = "PackageFieldRoyaltyAccumulatorSubstate"),
+  @JsonSubTypes.Type(value = ProtocolUpdateStatusModuleFieldSummarySubstate.class, name = "ProtocolUpdateStatusModuleFieldSummary"),
+  @JsonSubTypes.Type(value = ProtocolUpdateStatusModuleFieldSummarySubstate.class, name = "ProtocolUpdateStatusModuleFieldSummarySubstate"),
   @JsonSubTypes.Type(value = RoleAssignmentModuleFieldOwnerRoleSubstate.class, name = "RoleAssignmentModuleFieldOwnerRole"),
   @JsonSubTypes.Type(value = RoleAssignmentModuleFieldOwnerRoleSubstate.class, name = "RoleAssignmentModuleFieldOwnerRoleSubstate"),
   @JsonSubTypes.Type(value = RoleAssignmentModuleRuleEntrySubstate.class, name = "RoleAssignmentModuleRuleEntry"),
@@ -327,6 +333,8 @@ static {
   mappings.put("BootLoaderModuleFieldKernelBootSubstate", BootLoaderModuleFieldKernelBootSubstate.class);
   mappings.put("BootLoaderModuleFieldSystemBoot", BootLoaderModuleFieldSystemBootSubstate.class);
   mappings.put("BootLoaderModuleFieldSystemBootSubstate", BootLoaderModuleFieldSystemBootSubstate.class);
+  mappings.put("BootLoaderModuleFieldTransactionValidationConfiguration", BootLoaderModuleFieldTransactionValidationConfigurationSubstate.class);
+  mappings.put("BootLoaderModuleFieldTransactionValidationConfigurationSubstate", BootLoaderModuleFieldTransactionValidationConfigurationSubstate.class);
   mappings.put("BootLoaderModuleFieldVmBoot", BootLoaderModuleFieldVmBootSubstate.class);
   mappings.put("BootLoaderModuleFieldVmBootSubstate", BootLoaderModuleFieldVmBootSubstate.class);
   mappings.put("ConsensusManagerFieldConfig", ConsensusManagerFieldConfigSubstate.class);
@@ -393,6 +401,8 @@ static {
   mappings.put("PackageCodeVmTypeEntrySubstate", PackageCodeVmTypeEntrySubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulator", PackageFieldRoyaltyAccumulatorSubstate.class);
   mappings.put("PackageFieldRoyaltyAccumulatorSubstate", PackageFieldRoyaltyAccumulatorSubstate.class);
+  mappings.put("ProtocolUpdateStatusModuleFieldSummary", ProtocolUpdateStatusModuleFieldSummarySubstate.class);
+  mappings.put("ProtocolUpdateStatusModuleFieldSummarySubstate", ProtocolUpdateStatusModuleFieldSummarySubstate.class);
   mappings.put("RoleAssignmentModuleFieldOwnerRole", RoleAssignmentModuleFieldOwnerRoleSubstate.class);
   mappings.put("RoleAssignmentModuleFieldOwnerRoleSubstate", RoleAssignmentModuleFieldOwnerRoleSubstate.class);
   mappings.put("RoleAssignmentModuleRuleEntry", RoleAssignmentModuleRuleEntrySubstate.class);

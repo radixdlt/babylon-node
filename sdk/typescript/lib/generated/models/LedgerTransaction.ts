@@ -40,13 +40,20 @@ import {
     UserLedgerTransactionFromJSONTyped,
     UserLedgerTransactionToJSON,
 } from './UserLedgerTransaction';
+import {
+    UserLedgerTransactionV2,
+    instanceOfUserLedgerTransactionV2,
+    UserLedgerTransactionV2FromJSON,
+    UserLedgerTransactionV2FromJSONTyped,
+    UserLedgerTransactionV2ToJSON,
+} from './UserLedgerTransactionV2';
 
 /**
  * @type LedgerTransaction
  * 
  * @export
  */
-export type LedgerTransaction = { type: 'Flash' } & FlashLedgerTransaction | { type: 'Genesis' } & GenesisLedgerTransaction | { type: 'RoundUpdate' } & RoundUpdateLedgerTransaction | { type: 'User' } & UserLedgerTransaction;
+export type LedgerTransaction = { type: 'Flash' } & FlashLedgerTransaction | { type: 'Genesis' } & GenesisLedgerTransaction | { type: 'RoundUpdate' } & RoundUpdateLedgerTransaction | { type: 'User' } & UserLedgerTransaction | { type: 'UserV2' } & UserLedgerTransactionV2;
 
 export function LedgerTransactionFromJSON(json: any): LedgerTransaction {
     return LedgerTransactionFromJSONTyped(json, false);
@@ -65,6 +72,8 @@ export function LedgerTransactionFromJSONTyped(json: any, ignoreDiscriminator: b
             return {...RoundUpdateLedgerTransactionFromJSONTyped(json, true), type: 'RoundUpdate'};
         case 'User':
             return {...UserLedgerTransactionFromJSONTyped(json, true), type: 'User'};
+        case 'UserV2':
+            return {...UserLedgerTransactionV2FromJSONTyped(json, true), type: 'UserV2'};
         default:
             throw new Error(`No variant of LedgerTransaction exists with 'type=${json['type']}'`);
     }
@@ -86,6 +95,8 @@ export function LedgerTransactionToJSON(value?: LedgerTransaction | null): any {
             return RoundUpdateLedgerTransactionToJSON(value);
         case 'User':
             return UserLedgerTransactionToJSON(value);
+        case 'UserV2':
+            return UserLedgerTransactionV2ToJSON(value);
         default:
             throw new Error(`No variant of LedgerTransaction exists with 'type=${value['type']}'`);
     }

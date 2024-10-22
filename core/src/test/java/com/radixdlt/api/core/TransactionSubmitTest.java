@@ -76,9 +76,10 @@ import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.TransactionBuilder;
+import com.radixdlt.rev2.TransactionV2Builder;
 import org.junit.Test;
 
-public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
+public class TransactionSubmitTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_can_submit_and_commit_transaction() throws Exception {
     try (var test = buildRunningServerTest(defaultConfig())) {
@@ -304,10 +305,62 @@ public class NetworkSubmitTransactionTest extends DeterministicCoreApiTestBase {
               .transactionStatusPost(
                   new TransactionStatusRequest()
                       .network(networkLogicalName)
-                      .intentHash(addressing.encode(transaction.intentHash())));
+                      .intentHash(addressing.encode(transaction.transactionIntentHash())));
 
       assertThat(statusResponse2.getIntentStatus())
           .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
+    }
+  }
+
+  @Test
+  public void test_core_api_can_submit_and_commit_transaction_v2_after_cuttlefish()
+      throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      // By default we're already at cuttlefish
+      test.suppressUnusedWarning();
+
+      var transaction = TransactionV2Builder.forTests().prepare();
+
+      // Submit transaction
+      var response =
+          getTransactionApi()
+              .transactionSubmitPost(
+                  new TransactionSubmitRequest()
+                      .network(networkLogicalName)
+                      .notarizedTransactionHex(transaction.hexPayloadBytes()));
+
+      assertThat(response.getDuplicate()).isFalse();
+
+      // Check that it's in mempool
+      var statusResponse1 =
+          getTransactionApi()
+              .transactionStatusPost(
+                  new TransactionStatusRequest()
+                      .network(networkLogicalName)
+                      .intentHash(transaction.hexIntentHash()));
+
+      assertThat(statusResponse1.getIntentStatus()).isEqualTo(TransactionIntentStatus.INMEMPOOL);
+
+      // Now we run consensus
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), 1000);
+
+      // Check the status response again
+      var statusResponse2 =
+          getTransactionApi()
+              .transactionStatusPost(
+                  new TransactionStatusRequest()
+                      .network(networkLogicalName)
+                      .intentHash(transaction.hexIntentHash()));
+
+      assertThat(statusResponse2.getIntentStatus())
+          .isEqualTo(TransactionIntentStatus.COMMITTEDSUCCESS);
+      assertThat(
+              statusResponse2.getKnownPayloads().stream()
+                  .filter(
+                      payload -> payload.getStatus() == TransactionPayloadStatus.COMMITTEDSUCCESS)
+                  .collect(MoreCollectors.onlyElement())
+                  .getStateVersion())
+          .isNotNull();
     }
   }
 }

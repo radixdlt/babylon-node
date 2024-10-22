@@ -34,7 +34,11 @@ public enum SystemFieldKind {
   
   SYSTEMBOOT("SystemBoot"),
   
-  KERNELBOOT("KernelBoot");
+  KERNELBOOT("KernelBoot"),
+  
+  TRANSACTIONVALIDATIONCONFIGURATION("TransactionValidationConfiguration"),
+  
+  PROTOCOLUPDATESTATUSSUMMARY("ProtocolUpdateStatusSummary");
 
   private String value;
 

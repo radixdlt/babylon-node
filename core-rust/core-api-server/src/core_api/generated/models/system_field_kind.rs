@@ -20,6 +20,10 @@ pub enum SystemFieldKind {
     SystemBoot,
     #[serde(rename = "KernelBoot")]
     KernelBoot,
+    #[serde(rename = "TransactionValidationConfiguration")]
+    TransactionValidationConfiguration,
+    #[serde(rename = "ProtocolUpdateStatusSummary")]
+    ProtocolUpdateStatusSummary,
 
 }
 
@@ -30,6 +34,8 @@ impl ToString for SystemFieldKind {
             Self::TypeInfo => String::from("TypeInfo"),
             Self::SystemBoot => String::from("SystemBoot"),
             Self::KernelBoot => String::from("KernelBoot"),
+            Self::TransactionValidationConfiguration => String::from("TransactionValidationConfiguration"),
+            Self::ProtocolUpdateStatusSummary => String::from("ProtocolUpdateStatusSummary"),
         }
     }
 }

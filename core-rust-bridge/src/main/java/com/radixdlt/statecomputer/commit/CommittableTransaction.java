@@ -73,7 +73,7 @@ import com.radixdlt.utils.UInt32;
 public record CommittableTransaction(
     Option<UInt32> index,
     RawLedgerTransaction raw,
-    Option<IntentHash> intentHash,
+    Option<TransactionIntentHash> intentHash,
     Option<NotarizedTransactionHash> notarizedTransactionHash,
     LedgerTransactionHash ledgerTransactionHash) {
   public static void registerCodec(CodecMap codecMap) {
