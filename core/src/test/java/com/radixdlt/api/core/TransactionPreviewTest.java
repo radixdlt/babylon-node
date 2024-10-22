@@ -207,7 +207,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   @Test
   public void transaction_preview_refuses_too_old_state_version() throws Exception {
     final var historyLength = 7L;
-    final var inspectedAtVersion = 23L;
+    final var inspectedAtVersion = 123L;
     final var oldestAvailableVersion = inspectedAtVersion - historyLength;
     try (var test = buildTest(true, historyLength)) {
       test.suppressUnusedWarning();
