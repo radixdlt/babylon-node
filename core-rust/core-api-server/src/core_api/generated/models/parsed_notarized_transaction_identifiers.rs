@@ -13,16 +13,16 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ParsedNotarizedTransactionIdentifiers {
-    /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
+    /// The hex-encoded transaction intent hash for a user transaction, also known as the transaction id. This hash identifies the core \"intent\" of the transaction. Each transaction intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
     #[serde(rename = "intent_hash")]
     pub intent_hash: String,
-    /// The Bech32m-encoded human readable `IntentHash`.
+    /// The Bech32m-encoded human readable `TransactionIntentHash`.
     #[serde(rename = "intent_hash_bech32m")]
     pub intent_hash_bech32m: String,
-    /// The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. 
+    /// The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable `NotarizedTransaction`. 
     #[serde(rename = "signed_intent_hash")]
     pub signed_intent_hash: String,
-    /// The Bech32m-encoded human readable `SignedIntentHash`.
+    /// The Bech32m-encoded human readable `SignedTransactionIntentHash`.
     #[serde(rename = "signed_intent_hash_bech32m")]
     pub signed_intent_hash_bech32m: String,
     /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 

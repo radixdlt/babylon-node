@@ -48,6 +48,8 @@ export interface TransactionHeader {
     end_epoch_exclusive: number;
     /**
      * An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).
+     * 
+     * As of Cuttlefish and V2 transaction models, this is now referred to in documentation as the `intent_discriminator`.
      * @type {number}
      * @memberof TransactionHeader
      */

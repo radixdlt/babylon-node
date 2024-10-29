@@ -243,10 +243,10 @@ pub fn to_api_consensus_manager_state_substate(
             is_started: *started,
             effective_epoch_start: Box::new(to_api_clamped_instant_from_epoch_milli(
                 *effective_epoch_start_milli,
-            )?),
+            )),
             actual_epoch_start: Box::new(to_api_clamped_instant_from_epoch_milli(
                 *actual_epoch_start_milli,
-            )?),
+            )),
             current_leader: current_leader
                 .as_ref()
                 .map(|validator_index| to_api_active_validator_index(*validator_index))
@@ -330,7 +330,7 @@ pub fn to_api_current_time_substate(
         ConsensusManagerFieldCurrentTime,
         ProposerMilliTimestampSubstate { epoch_milli },
         Value {
-            proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(*epoch_milli)?),
+            proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(*epoch_milli)),
         }
     ))
 }
@@ -344,7 +344,7 @@ pub fn to_api_current_time_rounded_to_minutes_substate(
         ProposerMinuteTimestampSubstate { epoch_minute },
         Value {
             proposer_timestamp_rounded_down_to_minute: Box::new(
-                to_api_clamped_instant_from_epoch_milli(i64::from(*epoch_minute) * 60 * 1000)?,
+                to_api_clamped_instant_from_epoch_milli(i64::from(*epoch_minute) * 60 * 1000),
             ),
         }
     ))

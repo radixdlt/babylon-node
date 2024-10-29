@@ -13,6 +13,19 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { Signature } from './Signature';
+import {
+    SignatureFromJSON,
+    SignatureFromJSONTyped,
+    SignatureToJSON,
+} from './Signature';
+import type { SignedTransactionIntentV2 } from './SignedTransactionIntentV2';
+import {
+    SignedTransactionIntentV2FromJSON,
+    SignedTransactionIntentV2FromJSONTyped,
+    SignedTransactionIntentV2ToJSON,
+} from './SignedTransactionIntentV2';
+
 /**
  * 
  * @export
@@ -20,11 +33,36 @@ import { exists, mapValues } from '../runtime';
  */
 export interface NotarizedTransactionV2 {
     /**
-     * 
+     * The hex-encoded notarized transaction hash for a user transaction.
+     * This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature.
      * @type {string}
      * @memberof NotarizedTransactionV2
      */
-    todo?: string;
+    hash: string;
+    /**
+     * The Bech32m-encoded human readable `NotarizedTransactionHash`.
+     * @type {string}
+     * @memberof NotarizedTransactionV2
+     */
+    hash_bech32m: string;
+    /**
+     * The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
+     * @type {string}
+     * @memberof NotarizedTransactionV2
+     */
+    payload_hex?: string;
+    /**
+     * 
+     * @type {SignedTransactionIntentV2}
+     * @memberof NotarizedTransactionV2
+     */
+    signed_transaction_intent: SignedTransactionIntentV2;
+    /**
+     * 
+     * @type {Signature}
+     * @memberof NotarizedTransactionV2
+     */
+    notary_signature: Signature;
 }
 
 /**
@@ -32,6 +70,10 @@ export interface NotarizedTransactionV2 {
  */
 export function instanceOfNotarizedTransactionV2(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "hash" in value;
+    isInstance = isInstance && "hash_bech32m" in value;
+    isInstance = isInstance && "signed_transaction_intent" in value;
+    isInstance = isInstance && "notary_signature" in value;
 
     return isInstance;
 }
@@ -46,7 +88,11 @@ export function NotarizedTransactionV2FromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
         
-        'todo': !exists(json, 'todo') ? undefined : json['todo'],
+        'hash': json['hash'],
+        'hash_bech32m': json['hash_bech32m'],
+        'payload_hex': !exists(json, 'payload_hex') ? undefined : json['payload_hex'],
+        'signed_transaction_intent': SignedTransactionIntentV2FromJSON(json['signed_transaction_intent']),
+        'notary_signature': SignatureFromJSON(json['notary_signature']),
     };
 }
 
@@ -59,7 +105,11 @@ export function NotarizedTransactionV2ToJSON(value?: NotarizedTransactionV2 | nu
     }
     return {
         
-        'todo': value.todo,
+        'hash': value.hash,
+        'hash_bech32m': value.hash_bech32m,
+        'payload_hex': value.payload_hex,
+        'signed_transaction_intent': SignedTransactionIntentV2ToJSON(value.signed_transaction_intent),
+        'notary_signature': SignatureToJSON(value.notary_signature),
     };
 }
 

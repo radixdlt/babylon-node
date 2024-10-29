@@ -13,14 +13,29 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct NotarizedTransactionV2 {
-    #[serde(rename = "todo", skip_serializing_if = "Option::is_none")]
-    pub todo: Option<String>,
+    /// The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
+    #[serde(rename = "hash")]
+    pub hash: String,
+    /// The Bech32m-encoded human readable `NotarizedTransactionHash`.
+    #[serde(rename = "hash_bech32m")]
+    pub hash_bech32m: String,
+    /// The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
+    #[serde(rename = "payload_hex", skip_serializing_if = "Option::is_none")]
+    pub payload_hex: Option<String>,
+    #[serde(rename = "signed_transaction_intent")]
+    pub signed_transaction_intent: Box<crate::core_api::generated::models::SignedTransactionIntentV2>,
+    #[serde(rename = "notary_signature")]
+    pub notary_signature: Option<crate::core_api::generated::models::Signature>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl NotarizedTransactionV2 {
-    pub fn new() -> NotarizedTransactionV2 {
+    pub fn new(hash: String, hash_bech32m: String, signed_transaction_intent: crate::core_api::generated::models::SignedTransactionIntentV2, notary_signature: crate::core_api::generated::models::Signature) -> NotarizedTransactionV2 {
         NotarizedTransactionV2 {
-            todo: None,
+            hash,
+            hash_bech32m,
+            payload_hex: None,
+            signed_transaction_intent: Box::new(signed_transaction_intent),
+            notary_signature: Option::Some(notary_signature),
         }
     }
 }

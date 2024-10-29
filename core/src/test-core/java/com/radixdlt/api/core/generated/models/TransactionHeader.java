@@ -156,13 +156,13 @@ public class TransactionHeader {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 
+   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).  As of Cuttlefish and V2 transaction models, this is now referred to in documentation as the &#x60;intent_discriminator&#x60;. 
    * minimum: 0
    * maximum: 4294967295
    * @return nonce
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). ")
+  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).  As of Cuttlefish and V2 transaction models, this is now referred to in documentation as the `intent_discriminator`. ")
   @JsonProperty(JSON_PROPERTY_NONCE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

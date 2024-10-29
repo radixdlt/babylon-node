@@ -16,6 +16,10 @@ pub fn to_api_notarized_transaction_hash(
     to_hex(notarized_transaction_hash)
 }
 
+pub fn to_api_subintent_hash(subintent_hash: &SubintentHash) -> String {
+    to_hex(subintent_hash)
+}
+
 pub fn to_api_ledger_hash(ledger_hash: &LedgerTransactionHash) -> String {
     to_hex(ledger_hash)
 }

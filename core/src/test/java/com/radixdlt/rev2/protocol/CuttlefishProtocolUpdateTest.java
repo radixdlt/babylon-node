@@ -184,7 +184,7 @@ public final class CuttlefishProtocolUpdateTest {
   }
 
   @Test
-  public void tracking_behaviour_across_cuttlefish() throws ApiException {
+  public void protocol_update_process_updates_status_summary() throws ApiException {
     final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var ignored = createTest(IMMEDIATELY_CUTTLEFISH, coreApiHelper.module())) {
       var latestStateVersion =

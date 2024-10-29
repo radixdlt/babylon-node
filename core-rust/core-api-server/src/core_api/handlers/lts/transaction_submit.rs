@@ -65,13 +65,13 @@ pub(crate) async fn handle_lts_transaction_submit(
                         retry_from_timestamp: match rejection.retry_from {
                             RetryFrom::Never => None,
                             RetryFrom::FromTime(time) => Some(Box::new(
-                                to_api_clamped_instant_from_epoch_milli(to_unix_timestamp_ms(time)?)?,
+                                to_api_clamped_instant_from_epoch_milli(to_unix_timestamp_ms(time)?),
                             )),
                             RetryFrom::FromEpoch(_) => None,
                             RetryFrom::Whenever => {
                                 Some(Box::new(to_api_clamped_instant_from_epoch_milli(
                                     to_unix_timestamp_ms(std::time::SystemTime::now())?,
-                                )?))
+                                )))
                             }
                         },
                         retry_from_epoch: match rejection.retry_from {

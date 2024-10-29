@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.api.core.generated.models.Signature;
+import com.radixdlt.api.core.generated.models.SignedTransactionIntentV2;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -31,39 +33,159 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * NotarizedTransactionV2
  */
 @JsonPropertyOrder({
-  NotarizedTransactionV2.JSON_PROPERTY_TODO
+  NotarizedTransactionV2.JSON_PROPERTY_HASH,
+  NotarizedTransactionV2.JSON_PROPERTY_HASH_BECH32M,
+  NotarizedTransactionV2.JSON_PROPERTY_PAYLOAD_HEX,
+  NotarizedTransactionV2.JSON_PROPERTY_SIGNED_TRANSACTION_INTENT,
+  NotarizedTransactionV2.JSON_PROPERTY_NOTARY_SIGNATURE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class NotarizedTransactionV2 {
-  public static final String JSON_PROPERTY_TODO = "todo";
-  private String todo;
+  public static final String JSON_PROPERTY_HASH = "hash";
+  private String hash;
+
+  public static final String JSON_PROPERTY_HASH_BECH32M = "hash_bech32m";
+  private String hashBech32m;
+
+  public static final String JSON_PROPERTY_PAYLOAD_HEX = "payload_hex";
+  private String payloadHex;
+
+  public static final String JSON_PROPERTY_SIGNED_TRANSACTION_INTENT = "signed_transaction_intent";
+  private SignedTransactionIntentV2 signedTransactionIntent;
+
+  public static final String JSON_PROPERTY_NOTARY_SIGNATURE = "notary_signature";
+  private Signature notarySignature;
 
   public NotarizedTransactionV2() { 
   }
 
-  public NotarizedTransactionV2 todo(String todo) {
-    this.todo = todo;
+  public NotarizedTransactionV2 hash(String hash) {
+    this.hash = hash;
     return this;
   }
 
    /**
-   * Get todo
-   * @return todo
+   * The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. 
+   * @return hash
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
-  @JsonProperty(JSON_PROPERTY_TODO)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The hex-encoded notarized transaction hash for a user transaction. This hash identifies the full submittable notarized transaction - ie the signed intent, plus the notary signature. ")
+  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public String getTodo() {
-    return todo;
+  public String getHash() {
+    return hash;
   }
 
 
-  @JsonProperty(JSON_PROPERTY_TODO)
+  @JsonProperty(JSON_PROPERTY_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setHash(String hash) {
+    this.hash = hash;
+  }
+
+
+  public NotarizedTransactionV2 hashBech32m(String hashBech32m) {
+    this.hashBech32m = hashBech32m;
+    return this;
+  }
+
+   /**
+   * The Bech32m-encoded human readable &#x60;NotarizedTransactionHash&#x60;.
+   * @return hashBech32m
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `NotarizedTransactionHash`.")
+  @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getHashBech32m() {
+    return hashBech32m;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setHashBech32m(String hashBech32m) {
+    this.hashBech32m = hashBech32m;
+  }
+
+
+  public NotarizedTransactionV2 payloadHex(String payloadHex) {
+    this.payloadHex = payloadHex;
+    return this;
+  }
+
+   /**
+   * The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
+   * @return payloadHex
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).")
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-  public void setTodo(String todo) {
-    this.todo = todo;
+
+  public String getPayloadHex() {
+    return payloadHex;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PAYLOAD_HEX)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setPayloadHex(String payloadHex) {
+    this.payloadHex = payloadHex;
+  }
+
+
+  public NotarizedTransactionV2 signedTransactionIntent(SignedTransactionIntentV2 signedTransactionIntent) {
+    this.signedTransactionIntent = signedTransactionIntent;
+    return this;
+  }
+
+   /**
+   * Get signedTransactionIntent
+   * @return signedTransactionIntent
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION_INTENT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public SignedTransactionIntentV2 getSignedTransactionIntent() {
+    return signedTransactionIntent;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SIGNED_TRANSACTION_INTENT)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSignedTransactionIntent(SignedTransactionIntentV2 signedTransactionIntent) {
+    this.signedTransactionIntent = signedTransactionIntent;
+  }
+
+
+  public NotarizedTransactionV2 notarySignature(Signature notarySignature) {
+    this.notarySignature = notarySignature;
+    return this;
+  }
+
+   /**
+   * Get notarySignature
+   * @return notarySignature
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_NOTARY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Signature getNotarySignature() {
+    return notarySignature;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_NOTARY_SIGNATURE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setNotarySignature(Signature notarySignature) {
+    this.notarySignature = notarySignature;
   }
 
 
@@ -79,19 +201,27 @@ public class NotarizedTransactionV2 {
       return false;
     }
     NotarizedTransactionV2 notarizedTransactionV2 = (NotarizedTransactionV2) o;
-    return Objects.equals(this.todo, notarizedTransactionV2.todo);
+    return Objects.equals(this.hash, notarizedTransactionV2.hash) &&
+        Objects.equals(this.hashBech32m, notarizedTransactionV2.hashBech32m) &&
+        Objects.equals(this.payloadHex, notarizedTransactionV2.payloadHex) &&
+        Objects.equals(this.signedTransactionIntent, notarizedTransactionV2.signedTransactionIntent) &&
+        Objects.equals(this.notarySignature, notarizedTransactionV2.notarySignature);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(todo);
+    return Objects.hash(hash, hashBech32m, payloadHex, signedTransactionIntent, notarySignature);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class NotarizedTransactionV2 {\n");
-    sb.append("    todo: ").append(toIndentedString(todo)).append("\n");
+    sb.append("    hash: ").append(toIndentedString(hash)).append("\n");
+    sb.append("    hashBech32m: ").append(toIndentedString(hashBech32m)).append("\n");
+    sb.append("    payloadHex: ").append(toIndentedString(payloadHex)).append("\n");
+    sb.append("    signedTransactionIntent: ").append(toIndentedString(signedTransactionIntent)).append("\n");
+    sb.append("    notarySignature: ").append(toIndentedString(notarySignature)).append("\n");
     sb.append("}");
     return sb.toString();
   }

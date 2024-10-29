@@ -237,6 +237,9 @@ models/InstanceSchemaBlueprintTypeReference.ts
 models/InstanceSchemaBlueprintTypeReferenceAllOf.ts
 models/InstantMs.ts
 models/InstructionResourceChanges.ts
+models/IntentCoreV2.ts
+models/IntentHeaderV2.ts
+models/IntentSignatures.ts
 models/KeyValueBasedStructure.ts
 models/KeyValueBlueprintCollectionSchema.ts
 models/KeyValueBlueprintCollectionSchemaAllOf.ts
@@ -545,6 +548,7 @@ models/SignatureBase.ts
 models/SignatureWithPublicKey.ts
 models/SignatureWithPublicKeyBase.ts
 models/SignedTransactionIntent.ts
+models/SignedTransactionIntentV2.ts
 models/SignificantProtocolUpdateReadinessEntry.ts
 models/SortedIndexBlueprintCollectionSchema.ts
 models/SortedIndexBlueprintCollectionSchemaAllOf.ts
@@ -608,6 +612,7 @@ models/StreamTransactionsRequest.ts
 models/StreamTransactionsResponse.ts
 models/StringPlaintextMessageContent.ts
 models/StringPlaintextMessageContentAllOf.ts
+models/SubintentV2.ts
 models/Substate.ts
 models/SubstateBase.ts
 models/SubstateFormatOptions.ts
@@ -638,10 +643,12 @@ models/TransactionCallPreviewRequest.ts
 models/TransactionCallPreviewResponse.ts
 models/TransactionFormatOptions.ts
 models/TransactionHeader.ts
+models/TransactionHeaderV2.ts
 models/TransactionIdKey.ts
 models/TransactionIdentifiers.ts
 models/TransactionIntent.ts
 models/TransactionIntentStatus.ts
+models/TransactionIntentV2.ts
 models/TransactionMessage.ts
 models/TransactionMessageBase.ts
 models/TransactionMessageType.ts

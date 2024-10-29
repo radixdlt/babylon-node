@@ -1335,53 +1335,9 @@ components:
       description: |
         A string-encoded fixed-precision decimal to 18 decimal places.
         A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`.
-##########################################
-# GENERAL / SHARED MODELS - Transactions #
-##########################################
-    TransactionStatus:
-      type: string
-      enum:
-        - Succeeded
-        - Failed
-        - Rejected
-      description: The status of the transaction
-    TransactionReceipt:
-      type: object
-      description: The transaction execution receipt
-      required:
-        - status
-        - state_updates
-        - fee_summary
-        - costing_parameters
-      properties:
-        status:
-          $ref: "#/components/schemas/TransactionStatus"
-        fee_summary:
-          $ref: "#/components/schemas/FeeSummary"
-        costing_parameters:
-          $ref: "#/components/schemas/CostingParameters"
-        fee_source:
-          description: Only present if the `status` is not `Rejected`.
-          $ref: "#/components/schemas/FeeSource"
-        fee_destination:
-          description: Only present if the `status` is not `Rejected`.
-          $ref: "#/components/schemas/FeeDestination"
-        state_updates:
-          $ref: "#/components/schemas/StateUpdates"
-        events:
-          type: array
-          items:
-            $ref: "#/components/schemas/Event"
-        next_epoch:
-          $ref: "#/components/schemas/NextEpoch"
-        output:
-          type: array
-          description: The manifest line-by-line engine return data (only present if `status` is `Succeeded`)
-          items:
-            $ref: "#/components/schemas/SborData"
-        error_message:
-          type: string
-          description: Error message (only present if status is `Failed` or `Rejected`)
+##################################################
+# GENERAL / SHARED MODELS - TransactionV1 Models #
+##################################################
     NotarizedTransaction:
       type: object
       required:
@@ -1410,9 +1366,9 @@ components:
         - intent_signatures
       properties:
         hash:
-          $ref: "#/components/schemas/SignedIntentHash"
+          $ref: "#/components/schemas/SignedTransactionIntentHash"
         hash_bech32m:
-          $ref: "#/components/schemas/SignedIntentHashBech32m"
+          $ref: "#/components/schemas/SignedTransactionIntentHashBech32m"
         intent:
           $ref: "#/components/schemas/TransactionIntent"
         intent_signatures:
@@ -1427,9 +1383,9 @@ components:
         - header
       properties:
         hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
         header:
           $ref: "#/components/schemas/TransactionHeader"
         instructions:
@@ -1444,12 +1400,6 @@ components:
         message:
           description: The optional transaction message. Only returned if present and enabled in `TransactionFormatOptions` on your request.
           $ref: "#/components/schemas/TransactionMessage"
-    NotarizedTransactionV2:
-      type: object
-      properties:
-        todo:
-          type: string
-      # TODO:CUTTLEFISH
     TransactionMessageType:
       type: string
       enum:
@@ -1574,8 +1524,11 @@ components:
         aes_wrapped_key_hex:
           type: string
           description: |
-            The hex-encoded wrapped key bytes from applying RFC 3394 (256-bit) AES-KeyWrap to the 128-bit message ephemeral public key, with the secret KEK provided by static Diffie-Helman between the decryptor public key, and the `dh_ephemeral_public_key` for that curve type.
-            The bytes are serialized (according to RFC 3394) as the concatenation `IV (first 8 bytes) || Cipher (wrapped 128-bit key, encoded as two 64-bit blocks)`.
+            The hex-encoded wrapped key bytes from applying RFC 3394 (256-bit) AES-KeyWrap to the message ephemeral public key, with the secret KEK provided by static Diffie-Helman between the decryptor public key, and the `dh_ephemeral_public_key` for that curve type.
+            The bytes are serialized (according to RFC 3394) as the concatenation `IV (first 8 bytes) || Cipher`.
+
+            The message ephemeral public key is 128-bit in V1 transactions, but 256-bit in V2 transactions.
+            The Cipher is the wrapped ephemeral public key, and is encoded as two 64-bit blocks in V1, and four 64-bit blocks in V2.
     TransactionHeader:
       type: object
       required:
@@ -1612,6 +1565,8 @@ components:
           maximum: 4294967295
           description: |
             An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).
+  
+            As of Cuttlefish and V2 transaction models, this is now referred to in documentation as the `intent_discriminator`.
         notary_public_key:
           $ref: "#/components/schemas/PublicKey"
         notary_is_signatory:
@@ -1629,6 +1584,186 @@ components:
       format: int32
       minimum: 0
       maximum: 255
+##################################################
+# GENERAL / SHARED MODELS - TransactionV2 Models #
+##################################################
+    NotarizedTransactionV2:
+      type: object
+      required:
+        - hash
+        - hash_bech32m
+        - signed_transaction_intent
+        - notary_signature
+      properties:
+        hash:
+          $ref: "#/components/schemas/NotarizedTransactionHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
+        payload_hex:
+          type: string
+          description: The hex-encoded full notarized transaction payload. Returning this can be disabled in TransactionFormatOptions on your request (default true).
+        signed_transaction_intent:
+          $ref: "#/components/schemas/SignedTransactionIntentV2"
+        notary_signature:
+          $ref: "#/components/schemas/Signature"
+    SignedTransactionIntentV2:
+      type: object
+      required:
+        - hash
+        - hash_bech32m
+        - transaction_intent
+        - transaction_intent_signatures
+        - non_root_subintent_signatures
+      properties:
+        hash:
+          $ref: "#/components/schemas/SignedTransactionIntentHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/SignedTransactionIntentHashBech32m"
+        transaction_intent:
+          $ref: "#/components/schemas/TransactionIntentV2"
+        transaction_intent_signatures:
+          $ref: "#/components/schemas/IntentSignatures"
+        non_root_subintent_signatures:
+          description: |
+            This gives the signatures for each subintent in `non_root_subintents` in `TransactionIntentV2`.
+            For committed transactions, these arrays are of equal length and correspond one-to-one in order.
+          type: array
+          items:
+            $ref: "#/components/schemas/IntentSignatures"
+    IntentSignatures:
+      type: object
+      description: Signatures against the given intent.
+      required:
+        - signatures
+      properties:
+        signatures:
+          type: array
+          items:
+            $ref: "#/components/schemas/SignatureWithPublicKey"
+    TransactionIntentV2:
+      type: object
+      required:
+        - hash
+        - hash_bech32m
+        - transaction_header
+        - root_intent_core
+        - non_root_subintents
+      properties:
+        hash:
+          $ref: "#/components/schemas/TransactionIntentHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
+        transaction_header:
+          $ref: "#/components/schemas/TransactionHeaderV2"
+        root_intent_core:
+          $ref: "#/components/schemas/IntentCoreV2"
+        non_root_subintents:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubintentV2"
+    TransactionHeaderV2:
+      type: object
+      required:
+        - notary_public_key
+        - notary_is_signatory
+        - tip_basis_points
+      properties:
+        notary_public_key:
+          $ref: "#/components/schemas/PublicKey"
+        notary_is_signatory:
+          type: boolean
+          description: Specifies whether the notary public key should be included in the transaction signers list
+        tip_basis_points:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+          description: |
+            An integer between `0` and `2^32 - 1 = 4294967295`, giving the validator tip as a basis points amount.
+            That is, a value of `1` corresponds to an additional tip on 0.01% of the base fee.
+    SubintentV2:
+      type: object
+      required:
+        - hash
+        - hash_bech32m
+        - intent_core
+      properties:
+        hash:
+          $ref: "#/components/schemas/SubintentHash"
+        hash_bech32m:
+          $ref: "#/components/schemas/SubintentHashBech32m"
+        intent_core:
+          $ref: "#/components/schemas/IntentCoreV2"
+    IntentCoreV2:
+      type: object
+      required:
+        - intent_header
+        - children_specifiers
+      properties:
+        intent_header:
+          $ref: "#/components/schemas/IntentHeaderV2"
+        children_specifiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubintentHashBech32m"
+        blobs_hex:
+          type: object
+          description: A map of the hex-encoded blob hash, to hex-encoded blob content. Only returned if enabled in `TransactionFormatOptions` on your request.
+          additionalProperties:
+            type: string
+            description: The hex-encoded blob content
+        message:
+          description: The optional transaction message. Only returned if present and enabled in `TransactionFormatOptions` on your request.
+          $ref: "#/components/schemas/TransactionMessage"
+        instructions:
+          type: string
+          description: The decompiled transaction manifest instructions. Only returned if enabled in `TransactionFormatOptions` on your request.
+    IntentHeaderV2:
+      type: object
+      description: |
+        The metadata common to both transaction intents and subintents.
+
+        The `min_proposer_timestamp_inclusive` and `max_proposer_timestamp_exclusive` are both optional.
+      required:
+        - network_id
+        - start_epoch_inclusive
+        - end_epoch_exclusive
+        - intent_discriminator
+      properties:
+        network_id:
+          $ref: "#/components/schemas/NetworkIdentifierByte"
+        start_epoch_inclusive:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch from which the transaction can be submitted.
+            In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`.
+        end_epoch_exclusive:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000
+          description: |
+            An integer between `0` and `10^10`, marking the epoch from which the transaction will no longer be valid, and be rejected.
+            In the case of uncommitted transactions, a value of `10^10` indicates that the epoch was >= `10^10`.
+        min_proposer_timestamp_inclusive:
+          $ref: "#/components/schemas/ScryptoInstant"
+        max_proposer_timestamp_exclusive:
+          $ref: "#/components/schemas/ScryptoInstant"
+        intent_discriminator:
+          type: string
+          description: |
+            The string representation of an integer between `0` and `2^64 - 1`, which can be chosen to ensure that
+            a unique intent can be created. It only needs to be unique for a particular intent content and epoch/timestamp,
+            and can be safely selected randomly to very high probability.
+
+            This field was called `nonce` in the V1 models, but was a misleading name, as it got confused with a
+            cryptographic nonce or an Ethereum-style nonce, and it is neither.
+#####################################################
+# GENERAL / SHARED MODELS - Transaction Descriptors #
+#####################################################
     LedgerStateSummary:
       type: object
       required:
@@ -1703,46 +1838,58 @@ components:
         - payload_hash_bech32m
       properties:
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         intent_hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
         signed_intent_hash:
-          $ref: "#/components/schemas/SignedIntentHash"
+          $ref: "#/components/schemas/SignedTransactionIntentHash"
         signed_intent_hash_bech32m:
-          $ref: "#/components/schemas/SignedIntentHashBech32m"
+          $ref: "#/components/schemas/SignedTransactionIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
         payload_hash_bech32m:
           $ref: "#/components/schemas/NotarizedTransactionHashBech32m"
-    IntentHashInput:
+    TransactionIntentHashInput:
       type: string
       description: |
-        The intent hash for a user transaction, also known as the transaction id.
-        This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
+        The transaction intent hash for a user transaction, also known as the transaction id.
+        This hash identifies the core "intent" of the transaction. Each transaction intent can only be committed once.
         This hash gets signed by any signatories on the transaction, to create the signed intent.
         Either hex or Bech32m-encoded strings are supported.
-    IntentHash:
+    TransactionIntentHash:
       type: string
       minLength: 64
       maxLength: 64
       description: |
-        The hex-encoded intent hash for a user transaction, also known as the transaction id.
-        This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
+        The hex-encoded transaction intent hash for a user transaction, also known as the transaction id.
+        This hash identifies the core "intent" of the transaction. Each transaction intent can only be committed once.
         This hash gets signed by any signatories on the transaction, to create the signed intent.
-    IntentHashBech32m:
+    TransactionIntentHashBech32m:
       type: string
-      description: The Bech32m-encoded human readable `IntentHash`.
-    SignedIntentHash:
+      description: The Bech32m-encoded human readable `TransactionIntentHash`.
+    SubintentHash:
+      type: string
+      minLength: 64
+      maxLength: 64
+      description: |
+        The hex-encoded subintent hash for a subintent, also known as the partial transaction id.
+        This hash identifies the subintent. Each subintent can only be *successfully* committed once,
+        but unlike a transaction intent, could be committed as a failure zero or more times first.
+        This hash gets signed by any signatories on subintent.
+    SubintentHashBech32m:
+      type: string
+      description: The Bech32m-encoded human readable `SubintentHash`.
+    SignedTransactionIntentHash:
       type: string
       minLength: 64
       maxLength: 64
       description: |
         The hex-encoded signed intent hash for a user transaction.
         This hash identifies the transaction intent, plus additional signatures.
-        This hash is signed by the notary, to create the submittable NotarizedTransaction.
-    SignedIntentHashBech32m:
+        This hash is signed by the notary, to create the submittable `NotarizedTransaction`.
+    SignedTransactionIntentHashBech32m:
       type: string
-      description: The Bech32m-encoded human readable `SignedIntentHash`.
+      description: The Bech32m-encoded human readable `SignedTransactionIntentHash`.
     NotarizedTransactionHashInput:
       type: string
       description: |
@@ -1792,6 +1939,50 @@ components:
 ######################################
 # GENERAL / SHARED MODELS - Receipts #
 ######################################
+    TransactionStatus:
+      type: string
+      enum:
+        - Succeeded
+        - Failed
+        - Rejected
+      description: The status of the transaction
+    TransactionReceipt:
+      type: object
+      description: The transaction execution receipt
+      required:
+        - status
+        - state_updates
+        - fee_summary
+        - costing_parameters
+      properties:
+        status:
+          $ref: "#/components/schemas/TransactionStatus"
+        fee_summary:
+          $ref: "#/components/schemas/FeeSummary"
+        costing_parameters:
+          $ref: "#/components/schemas/CostingParameters"
+        fee_source:
+          description: Only present if the `status` is not `Rejected`.
+          $ref: "#/components/schemas/FeeSource"
+        fee_destination:
+          description: Only present if the `status` is not `Rejected`.
+          $ref: "#/components/schemas/FeeDestination"
+        state_updates:
+          $ref: "#/components/schemas/StateUpdates"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        next_epoch:
+          $ref: "#/components/schemas/NextEpoch"
+        output:
+          type: array
+          description: The manifest line-by-line engine return data (only present if `status` is `Succeeded`)
+          items:
+            $ref: "#/components/schemas/SborData"
+        error_message:
+          type: string
+          description: Error message (only present if status is `Failed` or `Rejected`)
     FeeSummary:
       type: object
       required:
@@ -4064,9 +4255,9 @@ components:
         - intent_hash_bech32m
       properties:
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         intent_hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
     AccountAddressKey:
       type: object
       required:
@@ -5868,7 +6059,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHashInput"
+          $ref: "#/components/schemas/TransactionIntentHashInput"
     LtsTransactionStatusResponse:
       type: object
       required:
@@ -6838,9 +7029,9 @@ components:
         state_version:
           $ref: "#/components/schemas/StateVersion"
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         intent_hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
     DescribedAddress:
       type: string
       description: An arbitrary Bech32m-encoded human readable address (its type should be inferred from `logical_name`).
@@ -6872,9 +7063,9 @@ components:
         - payload_hash_bech32m
       properties:
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         intent_hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
         payload_hash_bech32m:
@@ -7084,13 +7275,13 @@ components:
         - ledger_hash_bech32m
       properties:
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         intent_hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
         signed_intent_hash:
-          $ref: "#/components/schemas/SignedIntentHash"
+          $ref: "#/components/schemas/SignedTransactionIntentHash"
         signed_intent_hash_bech32m:
-          $ref: "#/components/schemas/SignedIntentHashBech32m"
+          $ref: "#/components/schemas/SignedTransactionIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
         payload_hash_bech32m:
@@ -7119,13 +7310,13 @@ components:
         - signed_intent_hash_bech32m
       properties:
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         intent_hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
         signed_intent_hash:
-          $ref: "#/components/schemas/SignedIntentHash"
+          $ref: "#/components/schemas/SignedTransactionIntentHash"
         signed_intent_hash_bech32m:
-          $ref: "#/components/schemas/SignedIntentHashBech32m"
+          $ref: "#/components/schemas/SignedTransactionIntentHashBech32m"
     ParsedTransactionIntent:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -7144,9 +7335,9 @@ components:
         - intent_hash_bech32m
       properties:
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         intent_hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
     ParsedLedgerTransaction:
       allOf:
         - $ref: "#/components/schemas/ParsedTransaction"
@@ -7165,13 +7356,13 @@ components:
         - ledger_hash_bech32m
       properties:
         intent_hash:
-          $ref: "#/components/schemas/IntentHash"
+          $ref: "#/components/schemas/TransactionIntentHash"
         intent_hash_bech32m:
-          $ref: "#/components/schemas/IntentHashBech32m"
+          $ref: "#/components/schemas/TransactionIntentHashBech32m"
         signed_intent_hash:
-          $ref: "#/components/schemas/SignedIntentHash"
+          $ref: "#/components/schemas/SignedTransactionIntentHash"
         signed_intent_hash_bech32m:
-          $ref: "#/components/schemas/SignedIntentHashBech32m"
+          $ref: "#/components/schemas/SignedTransactionIntentHashBech32m"
         payload_hash:
           $ref: "#/components/schemas/NotarizedTransactionHash"
         payload_hash_bech32m:
@@ -7328,7 +7519,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHashInput"
+          $ref: "#/components/schemas/TransactionIntentHashInput"
     TransactionStatusResponse:
       type: object
       required:
@@ -7412,7 +7603,7 @@ components:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
         intent_hash:
-          $ref: "#/components/schemas/IntentHashInput"
+          $ref: "#/components/schemas/TransactionIntentHashInput"
         transaction_format_options:
           $ref: "#/components/schemas/TransactionFormatOptions"
     TransactionReceiptResponse:

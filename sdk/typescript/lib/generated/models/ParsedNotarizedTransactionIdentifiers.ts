@@ -20,15 +20,15 @@ import { exists, mapValues } from '../runtime';
  */
 export interface ParsedNotarizedTransactionIdentifiers {
     /**
-     * The hex-encoded intent hash for a user transaction, also known as the transaction id.
-     * This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
+     * The hex-encoded transaction intent hash for a user transaction, also known as the transaction id.
+     * This hash identifies the core "intent" of the transaction. Each transaction intent can only be committed once.
      * This hash gets signed by any signatories on the transaction, to create the signed intent.
      * @type {string}
      * @memberof ParsedNotarizedTransactionIdentifiers
      */
     intent_hash: string;
     /**
-     * The Bech32m-encoded human readable `IntentHash`.
+     * The Bech32m-encoded human readable `TransactionIntentHash`.
      * @type {string}
      * @memberof ParsedNotarizedTransactionIdentifiers
      */
@@ -36,13 +36,13 @@ export interface ParsedNotarizedTransactionIdentifiers {
     /**
      * The hex-encoded signed intent hash for a user transaction.
      * This hash identifies the transaction intent, plus additional signatures.
-     * This hash is signed by the notary, to create the submittable NotarizedTransaction.
+     * This hash is signed by the notary, to create the submittable `NotarizedTransaction`.
      * @type {string}
      * @memberof ParsedNotarizedTransactionIdentifiers
      */
     signed_intent_hash: string;
     /**
-     * The Bech32m-encoded human readable `SignedIntentHash`.
+     * The Bech32m-encoded human readable `SignedTransactionIntentHash`.
      * @type {string}
      * @memberof ParsedNotarizedTransactionIdentifiers
      */

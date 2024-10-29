@@ -164,7 +164,7 @@ pub fn to_api_ledger_header_summary(
         }),
         proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(
             state_summary.proposer_timestamp_ms,
-        )?),
+        )),
     })
 }
 

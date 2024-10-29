@@ -63,11 +63,11 @@ public class SignedTransactionIntent {
   }
 
    /**
-   * The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. 
+   * The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable &#x60;NotarizedTransaction&#x60;. 
    * @return hash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. ")
+  @ApiModelProperty(required = true, value = "The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable `NotarizedTransaction`. ")
   @JsonProperty(JSON_PROPERTY_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -89,11 +89,11 @@ public class SignedTransactionIntent {
   }
 
    /**
-   * The Bech32m-encoded human readable &#x60;SignedIntentHash&#x60;.
+   * The Bech32m-encoded human readable &#x60;SignedTransactionIntentHash&#x60;.
    * @return hashBech32m
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `SignedIntentHash`.")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `SignedTransactionIntentHash`.")
   @JsonProperty(JSON_PROPERTY_HASH_BECH32M)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
