@@ -107,7 +107,6 @@ final class NetworkQueryHostIp {
           makeurl("https://ipv4.icanhazip.com/"),
           makeurl("https://myexternalip.com/raw"),
           makeurl("https://ipecho.net/plain"),
-          makeurl("https://ifconfig.me"),
           makeurl("https://www.trackip.net/ip"),
           makeurl("https://ifconfig.co/ip"));
 
@@ -148,33 +147,29 @@ final class NetworkQueryHostIp {
   }
 
   VotedResult get() {
-    return publicIp((count() + 1) / 2); // Round up
-  }
-
-  VotedResult publicIp(int threshold) {
     // Make sure we don't DoS the first one on the list
     Collections.shuffle(this.hosts);
     log.debug("Using hosts {}", this.hosts);
     final Map<HostIp, AtomicInteger> successCounts = Maps.newHashMap();
     final ImmutableMap.Builder<URL, Result<HostIp, IOException>> queryResults =
         ImmutableMap.builder();
+    int maxCount = 0;
+    Optional<HostIp> maxResult = Optional.empty();
     for (URL url : this.hosts) {
       final Result<HostIp, IOException> result = query(url);
       queryResults.put(url, result);
-      final Optional<HostIp> success = result.toOptional();
-      if (success.isPresent()) {
+      if (result.isSuccess()) {
         int newCount =
             successCounts
-                .computeIfAbsent(success.get(), k -> new AtomicInteger())
+                .computeIfAbsent(result.unwrap(), k -> new AtomicInteger())
                 .incrementAndGet();
-        if (newCount >= threshold) {
-          log.debug("Found address {}", success.get());
-          return new VotedResult(success, queryResults.build());
+        if (newCount > maxCount) {
+          maxCount = newCount;
+          maxResult = result.toOptional();
         }
       }
     }
-    log.debug("No suitable address found");
-    return new VotedResult(Optional.empty(), queryResults.build());
+    return new VotedResult(maxResult, queryResults.build());
   }
 
   Result<HostIp, IOException> query(URL url) {
