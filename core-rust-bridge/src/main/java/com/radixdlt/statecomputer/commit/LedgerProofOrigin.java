@@ -65,9 +65,10 @@
 package com.radixdlt.statecomputer.commit;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.EnumCodec;
-import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 
 public sealed interface LedgerProofOrigin {
@@ -77,10 +78,16 @@ public sealed interface LedgerProofOrigin {
         (codecs) -> EnumCodec.fromPermittedRecordSubclasses(LedgerProofOrigin.class, codecs));
   }
 
-  record Genesis(HashCode genesisOpaqueHash) implements LedgerProofOrigin {}
-
   record Consensus(HashCode opaque, List<TimestampedValidatorSignature> signatures)
       implements LedgerProofOrigin {}
 
-  record ProtocolUpdate(String protocolVersionName, UInt32 batchIdx) implements LedgerProofOrigin {}
+  record ProtocolUpdate(
+      String protocolVersionName,
+      Option<HashCode> configHash,
+      UInt64 batchGroupIndex,
+      String batchGroupName,
+      UInt64 batchIndex,
+      String batchName,
+      boolean isEndOfUpdate)
+      implements LedgerProofOrigin {}
 }

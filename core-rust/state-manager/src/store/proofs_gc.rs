@@ -233,17 +233,6 @@ impl LedgerProofsGc {
                             // No more proofs
                             return None;
                         }
-                        GetSyncableTxnsAndProofError::RefusedToServeGenesis { refused_proof } => {
-                            // We have encountered the genesis proof, which shouldn't be pruned.
-                            // Skipping to the next (post-proof) state version.
-                            skipped_proofs += 1;
-                            from_state_version_inclusive = refused_proof
-                                .ledger_header
-                                .state_version
-                                .next()
-                                .expect("state version overflow");
-                            continue;
-                        }
                         GetSyncableTxnsAndProofError::RefusedToServeProtocolUpdate {
                             refused_proof,
                         } => {
@@ -292,7 +281,7 @@ impl ProofPruneRange {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test::{commit_round_updates_until_epoch, create_state_manager};
+    use crate::test::{commit_round_updates_until_epoch, create_bootstrapped_state_manager};
 
     #[test]
     fn test_retain_protocol_update_proofs() {
@@ -310,29 +299,26 @@ mod tests {
                     5,
                 ))
         });
-        let state_manager = create_state_manager(config);
-
-        let db = state_manager.database.clone();
 
         // Testing config with 10 rounds per epoch
-        let consensus_manager_config = ConsensusManagerConfig {
-            max_validators: 10,
-            epoch_change_condition: EpochChangeCondition {
-                min_round_count: 10,
-                max_round_count: 10,
-                target_duration_millis: 0,
-            },
-            num_unstake_epochs: 1,
-            total_emission_xrd_per_epoch: Decimal::one(),
-            min_validator_reliability: Decimal::one(),
-            num_owner_stake_units_unlock_epochs: 2,
-            num_fee_increase_delay_epochs: 1,
-            validator_creation_usd_cost: Decimal::one(),
-        };
+        let babylon_settings =
+            BabylonSettings::test_default().with_consensus_manager_config(ConsensusManagerConfig {
+                max_validators: 10,
+                epoch_change_condition: EpochChangeCondition {
+                    min_round_count: 10,
+                    max_round_count: 10,
+                    target_duration_millis: 0,
+                },
+                num_unstake_epochs: 1,
+                total_emission_xrd_per_epoch: Decimal::one(),
+                min_validator_reliability: Decimal::one(),
+                num_owner_stake_units_unlock_epochs: 2,
+                num_fee_increase_delay_epochs: 1,
+                validator_creation_usd_cost: Decimal::one(),
+            });
+        let state_manager = create_bootstrapped_state_manager(config, babylon_settings);
 
-        state_manager
-            .system_executor
-            .execute_genesis_for_unit_tests_with_config(consensus_manager_config);
+        let db = state_manager.database.clone();
 
         let sync_limits_config = LedgerSyncLimitsConfig {
             // Max 8 txns (0.8 epoch worth of round changes)
@@ -360,19 +346,19 @@ mod tests {
             .number()
             .checked_add(1)
             .unwrap();
-        assert_eq!(6, first_post_genesis_state_version);
+        assert_eq!(7, first_post_genesis_state_version);
 
         // Calculated manually given: 10 rounds (txns) per epoch and a sync limit of 8 txns.
         // The values are: (start_state_version_inclusive, end_state_version_exclusive, expected_skipped_proofs)
         let expected_deleted_state_version_ranges = vec![
-            (6, 13, 0),  // Ends mid epoch (8 txn response limit)
-            (14, 15, 0), // Up to the end of epoch
-            (16, 23, 0), // The pattern repeats
-            (24, 25, 0), // -||-
-            (26, 33, 0), // -||-
-            (34, 35, 0), // This ends at an epoch change with a protocol update
-            (37, 44, 1), // We're skipping the protocol update proof (version 36)
-            (45, 46, 0), // Up to the end of final (5) epoch
+            (7, 14, 0),  // Ends mid epoch (8 txn response limit)
+            (15, 16, 0), // Up to the end of epoch
+            (17, 24, 0), // The pattern repeats
+            (25, 26, 0), // -||-
+            (27, 34, 0), // -||-
+            (35, 36, 0), // This ends at an epoch change with a protocol update
+            (38, 45, 1), // We're skipping the protocol update proof (version 37)
+            (46, 47, 0), // Up to the end of final (5) epoch
                          // We're keeping 2 completed epochs of proofs (that is 6 and 7), so nothing more pruned
         ];
 
@@ -417,7 +403,7 @@ mod tests {
             );
             assert!(matches!(
                 res,
-                Err(GetSyncableTxnsAndProofError::RefusedToServeGenesis { .. })
+                Err(GetSyncableTxnsAndProofError::RefusedToServeProtocolUpdate { .. })
             ));
             total_state_versions_tried += 1;
         }

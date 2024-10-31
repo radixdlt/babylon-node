@@ -67,7 +67,6 @@ package com.radixdlt.rev2;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.consensus.Blake2b256Hasher;
 import com.radixdlt.environment.*;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
@@ -75,10 +74,7 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.serialization.DefaultSerialization;
-import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
-import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.io.IOException;
 import java.util.HashSet;
@@ -96,7 +92,6 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_add() throws Exception {
     try (var nodeRustEnvironment = createNodeRustEnvironment()) {
-      initStateComputer(nodeRustEnvironment);
       final var rustMempool =
           new RustMempool(new MetricsInitializer().initialize(), nodeRustEnvironment);
       final var transaction1 = constructValidTransaction(0, 0);
@@ -137,7 +132,6 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_getTxns() throws Exception {
     try (var nodeRustEnvironment = createNodeRustEnvironment()) {
-      initStateComputer(nodeRustEnvironment);
       final var rustMempool =
           new RustMempool(new MetricsInitializer().initialize(), nodeRustEnvironment);
       final var transaction1 = constructValidTransaction(0, 0);
@@ -261,7 +255,6 @@ public final class RustMempoolTest {
   @Test
   public void test_rust_mempool_getRelayTxns() throws Exception {
     try (var nodeRustEnvironment = createNodeRustEnvironment()) {
-      initStateComputer(nodeRustEnvironment);
       final var rustMempool =
           new RustMempool(new MetricsInitializer().initialize(), nodeRustEnvironment);
       final var transaction1 = constructValidTransaction(0, 0);
@@ -324,6 +317,7 @@ public final class RustMempoolTest {
             ScenariosExecutionConfig.NONE);
 
     return new NodeRustEnvironment(
+        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty()),
         tx -> {}, // A no-op dispatcher of transactions to be relayed.
         () -> {}, // A no-op fatal panic handler. Please note that a JNI-invoking test (like this
         // one) will observe
@@ -331,20 +325,6 @@ public final class RustMempoolTest {
         // test
         // gracefully anyway.
         config);
-  }
-
-  private static void initStateComputer(NodeRustEnvironment nodeRustEnvironment) {
-    final var metrics = new MetricsInitializer().initialize();
-    final var genesisProvider =
-        RawGenesisDataWithHash.fromGenesisData(GenesisData.testingDefaultEmpty());
-    new REv2LedgerInitializer(
-            new Blake2b256Hasher(DefaultSerialization.getInstance()),
-            new RustStateComputer(metrics, nodeRustEnvironment),
-            new REv2TransactionsAndProofReader(
-                new REv2TransactionAndProofStore(metrics, nodeRustEnvironment),
-                LedgerSyncLimitsConfig.defaults(),
-                metrics))
-        .initialize(genesisProvider);
   }
 
   private static PreparedNotarizedTransaction constructValidTransaction(long fromEpoch, int nonce) {

@@ -66,6 +66,7 @@ package com.radixdlt.statecomputer.commit;
 
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.lang.Option;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
@@ -94,7 +95,16 @@ public record LedgerProof(LedgerHeader ledgerHeader, LedgerProofOrigin origin) {
             Option.some(new NextEpoch(UInt64.fromNonNegativeLong(1L), nextValidators)),
             Option.empty());
 
-    return new LedgerProof(genesisLedgerHeader, new LedgerProofOrigin.Genesis(HashUtils.zero256()));
+    return new LedgerProof(
+        genesisLedgerHeader,
+        new LedgerProofOrigin.ProtocolUpdate(
+            ProtocolConfig.GENESIS_PROTOCOL_VERSION_NAME,
+            Option.some(HashUtils.zero256()),
+            UInt64.ZERO,
+            "-",
+            UInt64.ZERO,
+            "-",
+            false));
   }
 
   public long stateVersion() {

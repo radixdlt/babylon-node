@@ -14,7 +14,19 @@
 
 import { exists, mapValues } from '../runtime';
 /**
+ * Represents a proof from the execution of the babylon genesis protocol update, which starts
+ * the babylon-node ledger.
+ * Behind-the-scenes, this is now the same as a `ProtocolUpdateLedgerProofOrigin`,
+ * but is kept separate for backwards-compatibility.
  * 
+ * NOTE: Some of these values may be placeholder values on nodes which haven't resynced since
+ * Cuttlefish. In particular, the following values might be invalid on such nodes:
+ * 
+ * * `batch_group_idx` (placeholder of 0)
+ * * `batch_group_name` (placeholder of "")
+ * * `batch_idx` (whatever the non-grouped index was)
+ * * `batch_name` (placeholder of "")
+ * * `is_end_of_update` (placeholder of false)
  * @export
  * @interface GenesisLedgerProofOriginAllOf
  */
@@ -24,7 +36,43 @@ export interface GenesisLedgerProofOriginAllOf {
      * @type {string}
      * @memberof GenesisLedgerProofOriginAllOf
      */
+    protocol_version_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOriginAllOf
+     */
     genesis_opaque_hash: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof GenesisLedgerProofOriginAllOf
+     */
+    batch_group_idx: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOriginAllOf
+     */
+    batch_group_name: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof GenesisLedgerProofOriginAllOf
+     */
+    batch_idx: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof GenesisLedgerProofOriginAllOf
+     */
+    batch_name: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof GenesisLedgerProofOriginAllOf
+     */
+    is_end_of_update: boolean;
     /**
      * 
      * @type {string}
@@ -48,7 +96,13 @@ export type GenesisLedgerProofOriginAllOfTypeEnum = typeof GenesisLedgerProofOri
  */
 export function instanceOfGenesisLedgerProofOriginAllOf(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "protocol_version_name" in value;
     isInstance = isInstance && "genesis_opaque_hash" in value;
+    isInstance = isInstance && "batch_group_idx" in value;
+    isInstance = isInstance && "batch_group_name" in value;
+    isInstance = isInstance && "batch_idx" in value;
+    isInstance = isInstance && "batch_name" in value;
+    isInstance = isInstance && "is_end_of_update" in value;
 
     return isInstance;
 }
@@ -63,7 +117,13 @@ export function GenesisLedgerProofOriginAllOfFromJSONTyped(json: any, ignoreDisc
     }
     return {
         
+        'protocol_version_name': json['protocol_version_name'],
         'genesis_opaque_hash': json['genesis_opaque_hash'],
+        'batch_group_idx': json['batch_group_idx'],
+        'batch_group_name': json['batch_group_name'],
+        'batch_idx': json['batch_idx'],
+        'batch_name': json['batch_name'],
+        'is_end_of_update': json['is_end_of_update'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -77,7 +137,13 @@ export function GenesisLedgerProofOriginAllOfToJSON(value?: GenesisLedgerProofOr
     }
     return {
         
+        'protocol_version_name': value.protocol_version_name,
         'genesis_opaque_hash': value.genesis_opaque_hash,
+        'batch_group_idx': value.batch_group_idx,
+        'batch_group_name': value.batch_group_name,
+        'batch_idx': value.batch_idx,
+        'batch_name': value.batch_name,
+        'is_end_of_update': value.is_end_of_update,
         'type': value.type,
     };
 }

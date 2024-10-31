@@ -92,39 +92,9 @@ impl Preparator {
         }
     }
 
-    pub fn prepare_genesis(&self, genesis_transaction: GenesisTransaction) -> SystemPrepareResult {
-        let raw = LedgerTransaction::Genesis(Box::new(genesis_transaction))
-            .to_raw()
-            .expect("Could not encode genesis transaction");
-        let IdentifiedLedgerExecutable { executable, hashes } = raw
-            .create_identifiable_ledger_executable(
-                self.transaction_validator.read().deref(),
-                AcceptedLedgerTransactionKind::GenesisOnly,
-            )
-            .expect("Could not prepare and validate genesis transaction");
-
-        let database = self.database.lock();
-        let mut series_executor = self
-            .transaction_executor_factory
-            .start_series_execution(database.deref());
-
-        series_executor
-            .execute_and_update_state(&executable, &hashes, "genesis")
-            .expect("genesis not committable")
-            .expect_success("genesis");
-
-        SystemPrepareResult::from_committed_series(
-            vec![ProcessedLedgerTransaction {
-                raw,
-                executable,
-                hashes,
-            }],
-            series_executor,
-        )
-    }
-
     pub fn prepare_protocol_update(
         &self,
+        batch_details: &ProtocolUpdateBatchDetails,
         protocol_update_batch: ProtocolUpdateBatch,
     ) -> SystemPrepareResult {
         let database = self.database.lock();
@@ -135,17 +105,36 @@ impl Preparator {
         let mut committed_transactions = Vec::new();
 
         for transaction in protocol_update_batch.transactions {
-            let ProtocolUpdateTransaction::FlashTransactionV1(flash_transaction) = transaction
-            else {
-                panic!("Non-flash transactions not yet supported in the node");
+            let ledger_transaction = match transaction {
+                // Ideally we'd be able to get rid of all this `LedgerTransaction::Genesis` special-casing
+                // and just make it a protocol update... but sadly that wouldn't be backwards compatible!
+                ProtocolUpdateTransaction::FlashTransactionV1(flash_transaction) => {
+                    if batch_details.protocol_version == &ProtocolVersionName::babylon() {
+                        LedgerTransaction::Genesis(Box::new(GenesisTransaction::Flash))
+                    } else {
+                        LedgerTransaction::FlashV1(Box::new(flash_transaction))
+                    }
+                }
+                ProtocolUpdateTransaction::SystemTransactionV1(transaction) => {
+                    if batch_details.protocol_version == &ProtocolVersionName::babylon() {
+                        let genesis_transaction =
+                            GenesisTransaction::Transaction(Box::new(transaction.transaction));
+                        LedgerTransaction::Genesis(Box::new(genesis_transaction))
+                    } else {
+                        // This would be easy to change - we would just need to add a new variant
+                        // LedgerTransaction::ProtocolUpdateSystemTransaction
+                        panic!("We don't currently support non-flash non-genesis protocol update transactions")
+                    }
+                }
             };
-            let raw = LedgerTransaction::FlashV1(Box::new(flash_transaction))
+            let raw = ledger_transaction
                 .to_raw()
                 .expect("Could not encode protocol update transaction");
+
             let IdentifiedLedgerExecutable { executable, hashes } = raw
                 .create_identifiable_ledger_executable(
                     self.transaction_validator.read().deref(),
-                    AcceptedLedgerTransactionKind::ProtocolUpdateOnly,
+                    AcceptedLedgerTransactionKind::Any,
                 )
                 .expect("Could not prepare and validate protocol update transaction");
 
@@ -161,11 +150,14 @@ impl Preparator {
             });
         }
 
-        SystemPrepareResult::from_committed_series(committed_transactions, series_executor)
+        let end_state = series_executor.finalize_series(batch_details.to_batch_situation());
+
+        SystemPrepareResult::from_committed_series(committed_transactions, end_state)
     }
 
     pub fn prepare_scenario(
         &self,
+        batch_situation: BatchSituation,
         scenario_name: &str,
         mut scenario: Box<dyn ScenarioInstance>,
     ) -> (SystemPrepareResult, PreparedScenarioMetadata) {
@@ -204,7 +196,7 @@ impl Preparator {
                 NextAction::Completed(end_state) => {
                     let prepare_result = SystemPrepareResult::from_committed_series(
                         committed_transactions,
-                        series_executor,
+                        series_executor.finalize_series(batch_situation),
                     );
                     let scenario_metadata = PreparedScenarioMetadata {
                         committed_transaction_names,
@@ -382,14 +374,6 @@ impl Preparator {
             .into_iter()
             .enumerate()
         {
-            // Don't process any additional transactions if protocol update has been enacted.
-            // Note that if a protocol update happens at the end of epoch
-            // then a ProtocolUpdate stop reason is returned.
-            if series_executor.next_protocol_version().is_some() {
-                stop_reason = VertexPrepareStopReason::ProtocolUpdate;
-                break;
-            }
-
             // Don't process any additional transactions if epoch change has occurred
             if series_executor.epoch_change().is_some() {
                 stop_reason = VertexPrepareStopReason::EpochChange;
@@ -566,12 +550,14 @@ impl Preparator {
             stop_reason,
         );
 
+        let end_state = series_executor.finalize_series(BatchSituation::NonSystem);
+
         PrepareResult {
             committed: committable_transactions,
             rejected: rejected_transactions,
-            next_epoch: series_executor.epoch_change().map(|ev| ev.into()),
-            next_protocol_version: series_executor.next_protocol_version(),
-            ledger_hashes: *series_executor.latest_ledger_hashes(),
+            next_epoch: end_state.epoch_change.map(|ev| ev.into()),
+            next_protocol_version: end_state.next_protocol_version,
+            ledger_hashes: end_state.ledger_hashes,
         }
     }
 

@@ -129,12 +129,6 @@ public final class REv2TransactionsAndProofReader implements TransactionsAndProo
                   .unfulfilledSyncRequests()
                   .label(new UnfulfilledSyncRequest(NOTHING_TO_SERVE_AT_THE_GIVEN_STATE_VERSION));
             }
-            case RefusedToServeGenesis unused -> {
-              metrics
-                  .sync()
-                  .unfulfilledSyncRequests()
-                  .label(new UnfulfilledSyncRequest(REFUSED_TO_SERVE_GENESIS));
-            }
             case RefusedToServeProtocolUpdate unused -> {
               metrics
                   .sync()

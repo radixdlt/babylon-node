@@ -85,7 +85,7 @@ pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
 }
 
 /// A convenience method for a `jni_call()` which uses SBOR codec for its argument and result.
-pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
+pub fn jni_sbor_coded_call<Args: ScryptoDecode + ScryptoDescribe, Response: ScryptoEncode>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
     method: impl FnOnce(Args) -> Response,
@@ -95,7 +95,10 @@ pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
 
 /// A convenience method for a `jni_call()` which uses SBOR codec for its argument and its
 /// potentially-erroneous result.
-pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode>(
+pub fn jni_sbor_coded_fallible_call<
+    Args: ScryptoDecode + ScryptoDescribe,
+    Response: ScryptoEncode,
+>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
     method: impl FnOnce(Args) -> JavaResult<Response>,

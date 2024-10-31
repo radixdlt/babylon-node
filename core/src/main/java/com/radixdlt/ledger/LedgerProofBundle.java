@@ -80,9 +80,10 @@ public record LedgerProofBundle(
     // Latest (with respect to `primaryProof`) epoch change proof.
     // Could be the `primaryProof` itself.
     LedgerProof latestProofWhichInitiatedAnEpochChange,
-    // Latest (with respect to primaryProof) proof that initiated a protocol update.
+    // Latest (with respect to primaryProof) proof from the previous epoch which
+    // initiated one or more protocol updates.
     // Could be the `primaryProof` itself.
-    Option<LedgerProof> latestProofWhichInitiatedAProtocolUpdate,
+    Option<LedgerProof> latestProofWhichInitiatedOneOrMoreProtocolUpdates,
     // Latest (with respect to `primaryProof`) proof of ProtocolUpdate `origin`.
     Option<LedgerProof> latestProtocolUpdateExecutionProof) {
 
@@ -122,15 +123,7 @@ public record LedgerProofBundle(
    * we're in the next epoch post-commit, then the returned round is 0.
    */
   public Round resultantRound() {
-    final var maybeEpochChangeHeader =
-        switch (primaryProof.origin()) {
-          case LedgerProofOrigin.Consensus consensus -> primaryProof.ledgerHeader();
-          case LedgerProofOrigin.Genesis genesis -> primaryProof.ledgerHeader();
-          case LedgerProofOrigin.ProtocolUpdate protocolUpdate ->
-          // This assumes that protocol updates always happen at epoch boundary
-          // (which is true, for now)
-          latestProofWhichInitiatedAProtocolUpdate.unwrap().ledgerHeader();
-        };
+    final var maybeEpochChangeHeader = trimProtocolUpdate().ledgerHeader();
 
     return maybeEpochChangeHeader.nextEpoch().isPresent()
         ? Round.epochInitial()
@@ -152,21 +145,19 @@ public record LedgerProofBundle(
 
   /**
    * If the primary proof of this bundle is of ProtocolUpdate origin, then it will be trimmed and
-   * the closest non-protocol update proof will be returned. Currently (2024-01-05) protocol updates
-   * only happen at epoch change, so the resultant proof will be an epoch change proof.
+   * the closest non-protocol update proof will be returned.
    */
   public LedgerProof trimProtocolUpdate() {
     return switch (primaryProof.origin()) {
         // Just return the proof if it originates from consensus or genesis
       case LedgerProofOrigin.Consensus consensus -> primaryProof;
-      case LedgerProofOrigin.Genesis genesis -> primaryProof;
-      case LedgerProofOrigin.ProtocolUpdate protocolUpdate ->
-      // If our latest proof is of protocol update origin,
-      // then we're returning the closest proof that initializes a protocol update.
-      // Since protocol updates can't themselves trigger another protocol update,
-      // this is guaranteed to be a consensus (or, possibly in some testing corner case, genesis)
-      // proof.
-      latestProofWhichInitiatedAProtocolUpdate().unwrap();
+      case LedgerProofOrigin.ProtocolUpdate ignored -> {
+        if (latestProofWhichInitiatedOneOrMoreProtocolUpdates().isPresent()) {
+          yield latestProofWhichInitiatedOneOrMoreProtocolUpdates().unwrap();
+        } else {
+          yield latestProofWhichInitiatedAnEpochChange();
+        }
+      }
     };
   }
 }

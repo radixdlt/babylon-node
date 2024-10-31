@@ -67,7 +67,6 @@ package com.radixdlt.rev2;
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
 
 import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.LedgerProofsGcConfig;
 import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
@@ -83,10 +82,7 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.modules.StateComputerConfig.REV2ProposerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.testutil.TestStateReader;
-import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
 import java.util.concurrent.atomic.AtomicLong;
@@ -102,6 +98,14 @@ public final class StateTreeGcTest {
 
   private DeterministicTest createTest(
       long stateVersionHistoryLength, boolean storeHistoricalSubstates) {
+    var genesis =
+        GenesisBuilder.createTestGenesisWithNumValidators(
+            1, Decimal.ONE, GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100));
+    var databaseConfig = new DatabaseConfig(false, false, storeHistoricalSubstates, false);
+    var proposerConfig = REV2ProposerConfig.noUserTransactions();
+    var stateTreeGcConfig =
+        new StateTreeGcConfig(
+            UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(stateVersionHistoryLength));
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -113,22 +117,11 @@ public final class StateTreeGcTest {
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
-                    new StateComputerConfig.REv2StateComputerConfig(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100)),
-                        new DatabaseConfig(false, false, storeHistoricalSubstates, false),
-                        REV2ProposerConfig.noUserTransactions(),
-                        false,
-                        new StateTreeGcConfig(
-                            UInt32.fromNonNegativeInt(1),
-                            UInt64.fromNonNegativeLong(stateVersionHistoryLength)),
-                        LedgerProofsGcConfig.forTesting(),
-                        LedgerSyncLimitsConfig.defaults(),
-                        ProtocolConfig.testingDefault(),
-                        false))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(genesis)
+                        .withDatabaseConfig(databaseConfig)
+                        .withProposerConfig(proposerConfig)
+                        .withStateTreeGcConfig(stateTreeGcConfig))));
   }
 
   @Test

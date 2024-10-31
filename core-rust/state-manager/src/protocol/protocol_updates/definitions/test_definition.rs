@@ -29,18 +29,19 @@ impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
 
     fn create_batch_generator(
         &self,
-        _network: &NetworkDefinition,
-        _database: Arc<DbLock<ActualStateManagerDatabase>>,
+        _context: ProtocolUpdateContext,
+        _overrides_hash: Option<Hash>,
         _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
         let batch = ProtocolUpdateBatch {
             transactions: vec![ProtocolUpdateTransaction::flash(
-                &format!("{}-txn", self.protocol_name),
+                format!("{}-txn", self.protocol_name),
                 StateUpdates::default(),
             )],
         };
         Box::new(ArbitraryNodeBatchGenerator {
-            batches: vec![ProtocolUpdateNodeBatch::ProtocolUpdateBatch(batch)],
+            config_hash: Hash([0; Hash::LENGTH]),
+            batches: vec![NodeProtocolUpdateBatch::ProtocolUpdateBatch(batch)],
         })
     }
 }

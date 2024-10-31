@@ -72,6 +72,7 @@ import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.liveness.*;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.crypto.Blake2b256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;

@@ -9,6 +9,7 @@ pub struct NodeProtocolUpdateExecutor {
     scenarios_execution_config: ScenariosExecutionConfig,
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     system_executor: Arc<SystemExecutor>,
+    genesis_data_resolver: Arc<dyn ResolveGenesisData>,
 }
 
 impl NodeProtocolUpdateExecutor {
@@ -18,6 +19,7 @@ impl NodeProtocolUpdateExecutor {
         scenarios_execution_config: ScenariosExecutionConfig,
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         system_executor: Arc<SystemExecutor>,
+        genesis_data_resolver: Arc<dyn ResolveGenesisData>,
     ) -> Self {
         Self {
             network,
@@ -25,69 +27,165 @@ impl NodeProtocolUpdateExecutor {
             scenarios_execution_config,
             database,
             system_executor,
+            genesis_data_resolver,
         }
     }
 
     /// Executes any remaining parts of the currently-effective protocol update.
     /// This method is meant to be called during the boot-up, to support resuming after a restart.
-    pub fn resume_protocol_update_if_any(&self) {
-        match ProtocolUpdateProgress::resolve(self.database.lock().deref()) {
-            ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
-                protocol_version_name,
-            } => {
-                info!(
-                    "Starting a {} protocol update execution",
-                    protocol_version_name
-                );
-                self.execute_protocol_update_actions(&protocol_version_name, 0);
-            }
-            ProtocolUpdateProgress::UpdateInProgress {
-                protocol_version_name,
-                last_batch_index: last_batch_idx,
-            } => {
-                let next_batch_idx = last_batch_idx.checked_add(1).unwrap();
-                info!(
-                    "Resuming a {} protocol update execution from batch idx {}",
-                    protocol_version_name, next_batch_idx
-                );
-                self.execute_protocol_update_actions(&protocol_version_name, next_batch_idx);
-            }
-            ProtocolUpdateProgress::NotUpdating => {} // No protocol update in progress
-        }
-    }
+    ///
+    /// Returns the resultant protocol version.
+    pub fn resume_protocol_update_if_any(&self) -> Option<ProtocolVersionName> {
+        let mut latest_enacted: Option<ProtocolVersionName> = None;
 
-    /// Executes all transactions for the given new protocol update.
-    /// This method is meant to be called by the consensus process, at exactly the right ledger
-    /// state to begin the protocol update.
-    pub fn execute_protocol_update(&self, new_protocol_version: &ProtocolVersionName) {
-        info!("Executing {} protocol update", new_protocol_version);
-        self.execute_protocol_update_actions(new_protocol_version, 0)
+        // We loop because we might need to run back-to-back protocol updates.
+        loop {
+            let progress = ProtocolUpdateProgress::resolve(self.database.lock().deref());
+            //=========================== Helpful Notice (to future me) ============================
+            // It may look sensible to inline `progress` below, but trust me, it isn't.
+            // You get a deadlock because rust doesn't drop the database lock guard as soon as you'd expect.
+            // This notice was installed after doing this refactor twice, 6 months apart...
+            // And then having to play the fun "hunt for the deadlock" game.
+            //======================================================================================
+            match progress {
+                ProtocolUpdateProgress::UpdateInitiatedButNothingCommitted {
+                    protocol_version_name,
+                } => {
+                    info!("[UPDATE: {protocol_version_name}] Starting protocol update");
+                    self.execute_protocol_update_actions(&protocol_version_name, 0, 0);
+                    latest_enacted = Some(protocol_version_name.clone());
+                }
+                ProtocolUpdateProgress::UpdateInProgress {
+                    protocol_version_name,
+                    last_batch_group_index,
+                    last_batch_index,
+                } => {
+                    info!("[UPDATE: {protocol_version_name}] Resuming protocol update");
+                    self.execute_protocol_update_actions(
+                        &protocol_version_name,
+                        last_batch_group_index,
+                        last_batch_index.checked_add(1).unwrap(),
+                    );
+                    latest_enacted = Some(protocol_version_name.clone());
+                }
+                ProtocolUpdateProgress::NotUpdating => {
+                    return latest_enacted;
+                }
+            }
+        }
     }
 
     /// Executes the (remaining part of the) given protocol update's transactions.
     fn execute_protocol_update_actions(
         &self,
         protocol_version: &ProtocolVersionName,
-        from_batch_idx: usize,
+        from_batch_group_index: usize,
+        from_batch_index: usize,
     ) {
         let overrides = self.protocol_update_content_overrides.get(protocol_version);
-        let protocol_update_transactions = resolve_update_definition_for_version(protocol_version)
-            .unwrap_or_else(|| panic!("{}", protocol_version.as_str().to_string()))
-            .create_batch_generator_raw(&self.network, self.database.clone(), overrides);
+        let resolved = protocol_version.validate().unwrap_or_else(|err| {
+            panic!("{protocol_version:?} is not a supported protocol version: {err:?}")
+        });
+        let protocol_update_definition = resolved.definition();
+        let update_generator = protocol_update_definition.create_update_generator_raw(
+            ProtocolUpdateContext {
+                network: &self.network,
+                database: &self.database,
+                genesis_data_resolver: &self.genesis_data_resolver,
+                scenario_config: &self.scenarios_execution_config,
+            },
+            overrides,
+        );
+        let config_hash = update_generator.config_hash();
 
-        let transactions_and_scenarios = WithScenariosNodeBatchGenerator {
-            base_batch_generator: protocol_update_transactions.deref(),
-            scenario_names: self
-                .scenarios_execution_config
-                .to_run_after_protocol_update(protocol_version),
-        };
+        let batch_groups = update_generator.batch_groups();
+        let total_batch_groups = batch_groups.len();
+        let remaining_batch_groups = batch_groups
+            .into_iter()
+            .enumerate()
+            .skip(from_batch_group_index);
 
-        for batch_index in from_batch_idx..transactions_and_scenarios.batch_count() {
-            self.system_executor.execute_protocol_update_action(
-                protocol_version,
-                batch_index,
-                transactions_and_scenarios.generate_batch(batch_index),
-            );
+        for (batch_group_index, batch_group) in remaining_batch_groups {
+            let batch_group_number = batch_group_index + 1;
+            let batch_group_name = batch_group.batch_group_name();
+            let is_final_batch_group = batch_group_index == total_batch_groups - 1;
+            let start_at_batch = if batch_group_index == from_batch_group_index
+                && from_batch_index > 0
+            {
+                info!("[UPDATE: {protocol_version}] Continuing {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
+                from_batch_index
+            } else {
+                info!("[UPDATE: {protocol_version}] Commencing {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
+                0
+            };
+            let batches = {
+                // In a separate block to ensure the database lock guard is dropped promptly.
+                batch_group.generate_batches(self.database.lock().deref())
+            };
+            let total_batches = batches.len();
+            let remaining_batches = batches.into_iter().enumerate().skip(start_at_batch);
+            for (batch_index, batch_generator) in remaining_batches {
+                let batch_number = batch_index + 1;
+                let batch_name = batch_generator.batch_name().to_string();
+                info!("[UPDATE: {protocol_version}] Processing {batch_name} (batch {batch_number}/{total_batches}) in {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
+                let is_final_batch = is_final_batch_group && batch_index == total_batches - 1;
+                let start_state_identifiers = self
+                    .resolve_batch_ledger_state_identifiers(update_generator.genesis_start_state());
+                let batch = {
+                    // In a separate block to ensure the database lock guard is dropped promptly.
+                    batch_generator.generate_batch(self.database.lock().deref())
+                };
+                self.system_executor.execute_protocol_update_action(
+                    ProtocolUpdateBatchDetails {
+                        protocol_version,
+                        config_hash,
+                        batch_group_index,
+                        batch_group_name,
+                        batch_index,
+                        batch_name: &batch_name,
+                        is_final_batch,
+                        start_state_identifiers,
+                    },
+                    batch,
+                );
+            }
+        }
+        info!("[UPDATE: {protocol_version}] The protocol update has completed successfully");
+    }
+
+    fn resolve_batch_ledger_state_identifiers(
+        &self,
+        genesis_fallback: Option<StartStateIdentifiers>,
+    ) -> StartStateIdentifiers {
+        let db = self.database.lock();
+
+        match db.get_latest_epoch_proof() {
+            Some(latest_epoch_proof) => {
+                let latest_proof = db
+                    .get_latest_proof()
+                    .expect("If there's an epoch proof, there must be any proof");
+                StartStateIdentifiers {
+                    epoch: latest_epoch_proof.ledger_header.next_epoch.unwrap().epoch,
+                    proposer_timestamp_ms: latest_proof.ledger_header.proposer_timestamp_ms,
+                    state_version: latest_proof.ledger_header.state_version,
+                }
+            }
+            None => {
+                // We must be mid-genesis
+                let genesis_fallback = genesis_fallback
+                    .expect("There is no epoch proof, but we're not executing genesis");
+                match db.get_latest_proof() {
+                    Some(latest_proof) => {
+                        let latest_header = latest_proof.ledger_header;
+                        StartStateIdentifiers {
+                            epoch: genesis_fallback.epoch,
+                            proposer_timestamp_ms: latest_header.proposer_timestamp_ms,
+                            state_version: latest_header.state_version,
+                        }
+                    }
+                    None => genesis_fallback,
+                }
+            }
         }
     }
 }
@@ -100,24 +198,26 @@ pub struct ProtocolManager {
 }
 
 impl ProtocolManager {
-    pub fn new<S: QueryableProofStore + IterableProofStore + QueryableTransactionStore>(
-        genesis_protocol_version: ProtocolVersionName,
+    pub fn new(
         protocol_update_triggers: Vec<ProtocolUpdateTrigger>,
-        database: &S,
+        protocol_update_overrides: &RawProtocolUpdateContentOverrides,
+        protocol_update_context: ProtocolUpdateContext,
         lock_factory: &LockFactory,
         metric_registry: &MetricRegistry,
     ) -> Self {
-        let initial_protocol_state =
-            ProtocolState::compute_initial(database, &protocol_update_triggers);
+        let initial_protocol_state = ProtocolState::compute_initial(
+            protocol_update_overrides,
+            protocol_update_context,
+            &protocol_update_triggers,
+        );
         Self {
             protocol_metrics: ProtocolMetrics::new(metric_registry, &initial_protocol_state),
             current_protocol_version: lock_factory.named("current_version").new_rwlock(
                 initial_protocol_state
                     .enacted_protocol_updates
                     .last_key_value()
-                    .map(|(_, protocol_version)| protocol_version)
-                    .unwrap_or(&genesis_protocol_version)
-                    .clone(),
+                    .map(|(_, protocol_version)| protocol_version.clone())
+                    .unwrap_or(ProtocolVersionName::babylon()),
             ),
             protocol_state: lock_factory
                 .named("state")
@@ -125,7 +225,7 @@ impl ProtocolManager {
             newest_protocol_version: protocol_update_triggers
                 .last()
                 .map(|protocol_update| protocol_update.next_protocol_version.clone())
-                .unwrap_or(genesis_protocol_version),
+                .unwrap_or(ProtocolVersionName::babylon()),
         }
     }
 
@@ -147,16 +247,10 @@ impl ProtocolManager {
         self.current_protocol_version.read().deref().clone()
     }
 
-    pub fn update_protocol_state_and_metrics(
-        &self,
-        new_protocol_state: ProtocolState,
-        epoch_change_event: Option<&EpochChangeEvent>,
-    ) {
-        if let Some(epoch_change_event) = epoch_change_event {
-            self.protocol_metrics
-                .update(&new_protocol_state, epoch_change_event);
-        }
-        *self.protocol_state.write() = new_protocol_state;
+    pub fn update_protocol_state_and_metrics(&self, end_state: &StateTrackerEndState) {
+        self.protocol_metrics
+            .update(&end_state.protocol_state, end_state.epoch_change.as_ref());
+        *self.protocol_state.write() = end_state.protocol_state.clone();
     }
 
     pub fn newest_protocol_version(&self) -> ProtocolVersionName {
@@ -173,7 +267,7 @@ pub struct ProtocolState {
     /// A list of all protocol updates that have been enacted.
     pub enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName>,
     /// A list of protocol updates that haven't yet been enacted, but still can be in the future.
-    pub pending_protocol_updates: Vec<PendingProtocolUpdate>,
+    pub pending_protocol_updates: IndexMap<ProtocolVersionName, PendingProtocolUpdate>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ScryptoSbor)]
@@ -231,6 +325,9 @@ fn compute_initial_protocol_update_status<
         ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(epoch) => {
             compute_initial_at_epoch_protocol_update_status(store, *epoch)
         }
+        ProtocolUpdateEnactmentCondition::EnactImmediatelyAfterEndOfProtocolUpdate {
+            trigger_after,
+        } => compute_initial_after_protocol_update_status(store, trigger_after),
     }
 }
 
@@ -329,11 +426,60 @@ fn compute_initial_at_epoch_protocol_update_status<S: QueryableProofStore>(
     }
 }
 
+fn compute_initial_after_protocol_update_status<S: QueryableProofStore + IterableProofStore>(
+    store: &S,
+    triggered_after_name: &ProtocolVersionName,
+) -> InitialProtocolUpdateStatus {
+    let mut triggered_updates: IndexMap<ProtocolVersionName, StateVersion> = store
+        .get_protocol_update_init_proof_iter(StateVersion::pre_genesis())
+        .map(|proof| {
+            (
+                proof.ledger_header.next_protocol_version.unwrap(),
+                proof.ledger_header.state_version,
+            )
+        })
+        .collect();
+    triggered_updates.insert(ProtocolVersionName::babylon(), StateVersion::pre_genesis());
+
+    if let Some(triggered_at) = triggered_updates.get(triggered_after_name) {
+        let latest_execution_proof =
+            latest_execution_proof(store, *triggered_at, triggered_after_name);
+        if let Some(latest_execution_proof) = latest_execution_proof {
+            if let LedgerProofOrigin::ProtocolUpdate {
+                is_end_of_update, ..
+            } = &latest_execution_proof.origin
+            {
+                if *is_end_of_update {
+                    return InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(
+                        latest_execution_proof.ledger_header.state_version,
+                    );
+                }
+            }
+        }
+    }
+    InitialProtocolUpdateStatus::Pending(PendingProtocolUpdateState::Empty)
+}
+
+fn latest_execution_proof(
+    store: &impl IterableProofStore,
+    init_state_version: StateVersion,
+    version_name: &ProtocolVersionName,
+) -> Option<LedgerProofV3> {
+    let first_execution_proof = init_state_version.next().unwrap();
+    store.get_protocol_update_execution_proof_iter(first_execution_proof)
+        .take_while(|proof| {
+            matches!(
+                &proof.origin,
+                LedgerProofOrigin::ProtocolUpdate { protocol_version_name, .. } if protocol_version_name == version_name
+            )
+        })
+        .last()
+}
+
 impl ProtocolState {
-    pub fn compute_initial<
-        S: QueryableProofStore + IterableProofStore + QueryableTransactionStore,
-    >(
-        store: &S,
+    pub fn compute_initial(
+        raw_protocol_overrides: &RawProtocolUpdateContentOverrides,
+        protocol_update_context: ProtocolUpdateContext,
         protocol_update_triggers: &[ProtocolUpdateTrigger],
     ) -> ProtocolState {
         // For each configured allowed protocol update we calculate its expected status against
@@ -351,7 +497,10 @@ impl ProtocolState {
             .map(|protocol_update| {
                 (
                     protocol_update,
-                    compute_initial_protocol_update_status(store, protocol_update),
+                    compute_initial_protocol_update_status(
+                        protocol_update_context.database.lock().deref(),
+                        protocol_update,
+                    ),
                 )
             })
             .collect();
@@ -371,20 +520,22 @@ impl ProtocolState {
                 })
                 .collect();
 
-        let enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName> = store
-            .get_protocol_update_init_proof_iter(StateVersion::pre_genesis())
-            .map(|proof| {
-                (
-                    proof.ledger_header.state_version,
-                    ProtocolVersionName::of_unchecked(
+        let enacted_protocol_updates: BTreeMap<StateVersion, ProtocolVersionName> =
+            protocol_update_context
+                .database
+                .lock()
+                .get_protocol_update_init_proof_iter(StateVersion::pre_genesis())
+                .map(|proof| {
+                    let init_state_version = proof.ledger_header.state_version;
+                    let version_name = ProtocolVersionName::of_unchecked(
                         proof
                             .ledger_header
                             .next_protocol_version
                             .expect("next_protocol_version is missing in protocol update proof"),
-                    ),
-                )
-            })
-            .collect();
+                    );
+                    (init_state_version, version_name)
+                })
+                .collect();
 
         if expected_already_enacted_protocol_updates != enacted_protocol_updates {
             panic!(
@@ -396,14 +547,62 @@ impl ProtocolState {
             );
         }
 
+        for (init_state_version, protocol_version) in expected_already_enacted_protocol_updates {
+            let stored_config_hash = latest_execution_proof(
+                protocol_update_context.database.lock().deref(),
+                init_state_version,
+                &protocol_version,
+            )
+            .and_then(|proof| {
+                if let LedgerProofOrigin::ProtocolUpdate { config_hash, .. } = &proof.origin {
+                    *config_hash
+                } else {
+                    None
+                }
+            });
+            if let Some(stored_config_hash) = stored_config_hash {
+                let resolved_config_hash = {
+                    let overrides = raw_protocol_overrides.get(&protocol_version);
+                    let resolved = protocol_version.validate().unwrap_or_else(|err| {
+                        panic!(
+                            "{} is not a supported protocol version: {err:?}",
+                            protocol_version.as_str()
+                        )
+                    });
+                    let protocol_update_definition = resolved.definition();
+                    protocol_update_definition
+                        .resolve_config_hash(protocol_update_context, overrides)
+                };
+                if stored_config_hash != resolved_config_hash {
+                    if protocol_version == ProtocolVersionName::babylon() {
+                        panic!("\
+                            The genesis data (of hash {resolved_config_hash}) doesn't match the genesis data that has previously been \
+                            used to initialize the database ({stored_config_hash}). \
+                            Make sure your configuration is correct (check `network.id` and/or `network.genesis_data` \
+                            and/or `network.genesis_data_file`).\
+                        ")
+                    } else {
+                        panic!("\
+                            The overrides for {protocol_version:?} have changed since the update was run. \
+                            The current hash is {resolved_config_hash}, but the stored hash is {stored_config_hash}.
+                        ")
+                    }
+                }
+            }
+        }
+
         let pending_protocol_updates = initial_statuses
             .into_iter()
             .flat_map(|(protocol_update, status)| match status {
                 InitialProtocolUpdateStatus::ExpectedToHaveBeenEnactedAtStateVersion(_) => None,
-                InitialProtocolUpdateStatus::Pending(state) => Some(PendingProtocolUpdate {
-                    protocol_update: protocol_update.clone(),
-                    state,
-                }),
+                InitialProtocolUpdateStatus::Pending(state) => {
+                    let name = protocol_update.next_protocol_version.clone();
+                    let pending_update = PendingProtocolUpdate {
+                        protocol_update: protocol_update.clone(),
+                        state,
+                    };
+                    Some((name, pending_update))
+                }
                 InitialProtocolUpdateStatus::ExpiredUnenacted => None,
             })
             .collect();
@@ -414,131 +613,120 @@ impl ProtocolState {
         }
     }
 
-    /// Computes a new protocol state (after executing a transaction) and
-    /// optionally returns a next protocol version if a protocol update has been enacted.
-    pub fn compute_next(
-        self: &ProtocolState,
-        local_receipt: &LocalTransactionReceipt,
+    /// Computes a new protocol state if a protocol update has been enacted.
+    ///
+    /// The correctness of protocol updating relies on the fact that any trigger below can only be triggered by:
+    /// * End of an epoch
+    /// * End of a commit batch
+    ///
+    /// And we check in [`StateTracker::update`] that end of an epoch can only occur at the end of a commit batch.
+    pub fn check_for_update_trigger_at_end_of_batch(
+        &mut self,
+        next_epoch_event: Option<&EpochChangeEvent>,
         post_execute_state_version: StateVersion,
-    ) -> (ProtocolState, Option<ProtocolVersionName>) {
-        let Some(post_execute_epoch) = local_receipt
-            .local_execution
-            .next_epoch
-            .as_ref()
-            .map(|next_epoch| next_epoch.epoch)
-        else {
-            // No processing needed (and enactment currently forbidden!)
-            // if this wasn't an epoch change
-            return (self.clone(), None);
-        };
+        batch_situation: BatchSituation,
+    ) -> Option<ProtocolVersionName> {
+        let mut enactable_protocol_updates = index_set_new();
+        let mut expired_protocol_updates = index_set_new();
 
-        let mut new_protocol_state = self.clone();
-
-        let mut pending_protocol_updates = vec![];
-        let mut expired_protocol_updates = vec![];
-        // Only a single protocol update can be enacted at a time.
-        // We collect the results into a list to verify this.
-        let mut enactable_protocol_updates = vec![];
-        for mut pending_protocol_update in new_protocol_state.pending_protocol_updates {
+        for (protocol_version_name, pending_protocol_update) in
+            self.pending_protocol_updates.iter_mut()
+        {
             match &pending_protocol_update.protocol_update.enactment_condition {
                 ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
                     lower_bound_inclusive,
                     upper_bound_exclusive,
                     ..
                 } => {
-                    // Note: this is not a pure boolean calculation,
-                    // it also updates the state.
-                    let has_sufficient_support = {
-                        if let PendingProtocolUpdateState::ForSignalledReadinessSupportCondition {
-                            ref mut thresholds_state,
-                        } = &mut pending_protocol_update.state
-                        {
-                            // If this was an epoch change, update the thresholds state
-                            if let Some(epoch_change_event) =
-                                &local_receipt.local_execution.next_epoch
-                            {
-                                update_thresholds_state_at_epoch_change(
-                                    &pending_protocol_update.protocol_update,
-                                    epoch_change_event,
-                                    thresholds_state,
-                                );
-                            }
-                            // Regardless of whether this was an epoch change or not,
-                            // check if any threshold currently passes.
-                            any_threshold_passes(thresholds_state)
-                        } else {
-                            panic!("Invalid protocol state")
-                        }
+                    let Some(epoch_change_event) = next_epoch_event else {
+                        continue;
+                    };
+                    let post_execute_epoch = epoch_change_event.epoch;
+
+                    let PendingProtocolUpdateState::ForSignalledReadinessSupportCondition {
+                        ref mut thresholds_state,
+                    } = &mut pending_protocol_update.state
+                    else {
+                        panic!("Invalid protocol state");
                     };
 
-                    let on_or_above_lower_bound = post_execute_epoch >= *lower_bound_inclusive;
+                    update_thresholds_state_at_epoch_change(
+                        &pending_protocol_update.protocol_update,
+                        epoch_change_event,
+                        thresholds_state,
+                    );
 
+                    let on_or_above_lower_bound = post_execute_epoch >= *lower_bound_inclusive;
                     let below_upper_bound = post_execute_epoch < *upper_bound_exclusive;
 
-                    if has_sufficient_support && on_or_above_lower_bound && below_upper_bound {
-                        enactable_protocol_updates.push(
-                            pending_protocol_update
-                                .protocol_update
-                                .next_protocol_version,
-                        );
-                    } else if below_upper_bound {
-                        pending_protocol_updates.push(pending_protocol_update);
-                    } else {
-                        expired_protocol_updates.push(pending_protocol_update);
+                    if on_or_above_lower_bound
+                        && below_upper_bound
+                        && any_threshold_passes(thresholds_state)
+                    {
+                        enactable_protocol_updates.insert(protocol_version_name.clone());
+                    } else if !below_upper_bound {
+                        expired_protocol_updates.insert(protocol_version_name.clone());
                     }
                 }
                 ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(
                     enactment_epoch,
                 ) => {
-                    if let Some(next_epoch) = &local_receipt.local_execution.next_epoch {
-                        match next_epoch.epoch.cmp(enactment_epoch) {
-                            Ordering::Less => {
-                                pending_protocol_updates.push(pending_protocol_update)
-                            }
-                            Ordering::Equal => enactable_protocol_updates.push(
-                                pending_protocol_update
-                                    .protocol_update
-                                    .next_protocol_version,
-                            ),
-                            Ordering::Greater => {
-                                expired_protocol_updates.push(pending_protocol_update)
-                            }
+                    let Some(new_epoch) = next_epoch_event.map(|e| e.epoch) else {
+                        continue;
+                    };
+                    match new_epoch.cmp(enactment_epoch) {
+                        Ordering::Less => {}
+                        Ordering::Equal => {
+                            enactable_protocol_updates.insert(protocol_version_name.clone());
                         }
-                    } else {
-                        // Not an epoch change
-                        pending_protocol_updates.push(pending_protocol_update);
+                        Ordering::Greater => {
+                            panic!("FATAL: Previous protocol update enactment missed. There is configuration to enact {protocol_version_name} at the start of epoch {enactment_epoch:?}, but the node is about to start epoch {new_epoch:?}, and the protocol update has not already been enacted. This is an inconsistency, so the node is halting.")
+                        }
                     }
                 }
+                ProtocolUpdateEnactmentCondition::EnactImmediatelyAfterEndOfProtocolUpdate {
+                    trigger_after,
+                } => match batch_situation {
+                    BatchSituation::ProtocolUpdate {
+                        ref update,
+                        is_final_batch,
+                    } if update == trigger_after && is_final_batch => {
+                        enactable_protocol_updates.insert(protocol_version_name.clone());
+                    }
+                    _ => {}
+                },
             }
         }
 
-        // This isn't really a right place for this log, but will do for now
         for expired_protocol_update in expired_protocol_updates {
+            // This isn't really a right place for this log, but will do for now
             info!(
                 "Protocol update {:?} expires unenacted at state version {:?}",
-                expired_protocol_update
-                    .protocol_update
-                    .next_protocol_version,
-                post_execute_state_version
+                expired_protocol_update, post_execute_state_version,
             );
+            self.pending_protocol_updates
+                .shift_remove(&expired_protocol_update);
         }
 
-        if enactable_protocol_updates.len() > 1 {
-            panic!(
-                "Invalid state: more than one protocol update is enactable at state version {:?}",
-                post_execute_state_version
-            )
-        }
-        let next_protocol_version = enactable_protocol_updates.into_iter().next();
+        match enactable_protocol_updates.len() {
+            0 => None,
+            1 => {
+                let enacted_protocol_version =
+                    enactable_protocol_updates.into_iter().next().unwrap();
+                self.pending_protocol_updates
+                    .shift_remove(&enacted_protocol_version);
+                self.enacted_protocol_updates
+                    .insert(post_execute_state_version, enacted_protocol_version.clone());
 
-        new_protocol_state.pending_protocol_updates = pending_protocol_updates;
-        if let Some(next_protocol_version) = next_protocol_version.as_ref() {
-            new_protocol_state
-                .enacted_protocol_updates
-                .insert(post_execute_state_version, next_protocol_version.clone());
+                Some(enacted_protocol_version.clone())
+            }
+            _ => {
+                panic!(
+                    "Invalid state: more than one protocol update is enactable at state version {:?}",
+                    post_execute_state_version
+                )
+            }
         }
-
-        (new_protocol_state, next_protocol_version)
     }
 }
 

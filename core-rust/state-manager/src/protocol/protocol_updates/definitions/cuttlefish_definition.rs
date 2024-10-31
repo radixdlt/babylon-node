@@ -3,16 +3,18 @@ use crate::prelude::*;
 pub struct CuttlefishProtocolUpdateDefinition;
 
 impl ProtocolUpdateDefinition for CuttlefishProtocolUpdateDefinition {
-    type Overrides = ();
+    type Overrides = CuttlefishSettings;
 
     fn create_batch_generator(
         &self,
-        network: &NetworkDefinition,
-        database: Arc<DbLock<ActualStateManagerDatabase>>,
-        _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
-        Box::new(engine_default_for_network::<CuttlefishSettings>(
-            network, database,
+        context: ProtocolUpdateContext,
+        overrides_hash: Option<Hash>,
+        overrides: Option<Self::Overrides>,
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
+        Box::new(create_default_generator_with_scenarios(
+            context,
+            overrides_hash,
+            overrides,
         ))
     }
 }

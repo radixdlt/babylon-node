@@ -67,6 +67,12 @@ use crate::prelude::*;
 #[derive(Debug, Sbor)]
 pub struct JavaError(pub String);
 
+impl From<String> for JavaError {
+    fn from(err: String) -> Self {
+        JavaError(err)
+    }
+}
+
 impl From<DecodeError> for JavaError {
     fn from(err: DecodeError) -> Self {
         JavaError(format!("SBOR decode failed in Rust: {err:?}"))

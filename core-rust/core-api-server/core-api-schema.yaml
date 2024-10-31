@@ -7902,15 +7902,54 @@ components:
       allOf:
         - $ref: "#/components/schemas/LedgerProofOrigin"
         - type: object
+          description: |
+            Represents a proof from the execution of the babylon genesis protocol update, which starts
+            the babylon-node ledger.
+            Behind-the-scenes, this is now the same as a `ProtocolUpdateLedgerProofOrigin`,
+            but is kept separate for backwards-compatibility.
+
+            NOTE: Some of these values may be placeholder values on nodes which haven't resynced since
+            Cuttlefish. In particular, the following values might be invalid on such nodes:
+
+            * `batch_group_idx` (placeholder of 0)
+            * `batch_group_name` (placeholder of "")
+            * `batch_idx` (whatever the non-grouped index was)
+            * `batch_name` (placeholder of "")
+            * `is_end_of_update` (placeholder of false)
           required:
+            - protocol_version_name
             - genesis_opaque_hash
+            - batch_group_idx
+            - batch_group_name
+            - batch_idx
+            - batch_name
+            - is_end_of_update
           properties:
+            protocol_version_name:
+              type: string
+            # Should be config_hash but can't change due to backwards-compatibility
             genesis_opaque_hash:
               type: string
+            # Should be batch_group_index but can't change due to backwards-compatibility
+            batch_group_idx:
+              type: integer
+              format: int64
+            batch_group_name:
+              type: string
+            # Should be batch_index but can't change due to backwards-compatibility
+            batch_idx:
+              type: integer
+              format: int64
+            batch_name:
+              type: string
+            is_end_of_update:
+              type: boolean
     ConsensusLedgerProofOrigin:
       allOf:
         - $ref: "#/components/schemas/LedgerProofOrigin"
         - type: object
+          description: |
+            Represents a proof from the execution of a consensus round.
           required:
             - opaque_hash
             - timestamped_signatures
@@ -7925,15 +7964,50 @@ components:
       allOf:
         - $ref: "#/components/schemas/LedgerProofOrigin"
         - type: object
+          description: |
+            Represents a proof from the execution of a non-genesis protocol update.
+            The execution of a protocol update is organised into batch groups, and
+            then these batch groups are organised into batches, with each batch committed
+            atomically.
+
+            NOTE: Some of these values may be placeholder values for protocol updates pre-Cuttlefish
+            on nodes which haven't resynced since Cuttlefish. In particular, the following values might be
+            invalid on such nodesL
+
+            * `config_hash` (placeholder of all zeros)
+            * `batch_group_idx` (placeholder of 0)
+            * `batch_group_name` (placeholder of "")
+            * `batch_idx` (whatever the non-grouped index was)
+            * `batch_name` (placeholder of "")
+            * `is_end_of_update` (placeholder of false)
           required:
             - protocol_version_name
+            - config_hash
+            - batch_group_idx
+            - batch_group_name
             - batch_idx
+            - batch_name
+            - is_end_of_update
           properties:
             protocol_version_name:
               type: string
+            # Should be config_hash but can't change due to backwards-compatibility
+            config_hash:
+              type: string
+            # Should be batch_group_index but can't change due to backwards-compatibility
+            batch_group_idx:
+              type: integer
+              format: int64
+            batch_group_name:
+              type: string
+            # Should be batch_index but can't change due to backwards-compatibility
             batch_idx:
               type: integer
               format: int64
+            batch_name:
+              type: string
+            is_end_of_update:
+              type: boolean
     LedgerProof:
       type: object
       required:

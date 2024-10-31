@@ -28,19 +28,40 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * ProtocolUpdateLedgerProofOriginAllOf
+ * Represents a proof from the execution of a non-genesis protocol update. The execution of a protocol update is organised into batch groups, and then these batch groups are organised into batches, with each batch committed atomically.  NOTE: Some of these values may be placeholder values for protocol updates pre-Cuttlefish on nodes which haven&#39;t resynced since Cuttlefish. In particular, the following values might be invalid on such nodesL  * &#x60;config_hash&#x60; (placeholder of all zeros) * &#x60;batch_group_idx&#x60; (placeholder of 0) * &#x60;batch_group_name&#x60; (placeholder of \&quot;\&quot;) * &#x60;batch_idx&#x60; (whatever the non-grouped index was) * &#x60;batch_name&#x60; (placeholder of \&quot;\&quot;) * &#x60;is_end_of_update&#x60; (placeholder of false) 
  */
+@ApiModel(description = "Represents a proof from the execution of a non-genesis protocol update. The execution of a protocol update is organised into batch groups, and then these batch groups are organised into batches, with each batch committed atomically.  NOTE: Some of these values may be placeholder values for protocol updates pre-Cuttlefish on nodes which haven't resynced since Cuttlefish. In particular, the following values might be invalid on such nodesL  * `config_hash` (placeholder of all zeros) * `batch_group_idx` (placeholder of 0) * `batch_group_name` (placeholder of \"\") * `batch_idx` (whatever the non-grouped index was) * `batch_name` (placeholder of \"\") * `is_end_of_update` (placeholder of false) ")
 @JsonPropertyOrder({
   ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_PROTOCOL_VERSION_NAME,
-  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_BATCH_IDX
+  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_CONFIG_HASH,
+  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_BATCH_GROUP_IDX,
+  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_BATCH_GROUP_NAME,
+  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_BATCH_IDX,
+  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_BATCH_NAME,
+  ProtocolUpdateLedgerProofOriginAllOf.JSON_PROPERTY_IS_END_OF_UPDATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ProtocolUpdateLedgerProofOriginAllOf {
   public static final String JSON_PROPERTY_PROTOCOL_VERSION_NAME = "protocol_version_name";
   private String protocolVersionName;
 
+  public static final String JSON_PROPERTY_CONFIG_HASH = "config_hash";
+  private String configHash;
+
+  public static final String JSON_PROPERTY_BATCH_GROUP_IDX = "batch_group_idx";
+  private Long batchGroupIdx;
+
+  public static final String JSON_PROPERTY_BATCH_GROUP_NAME = "batch_group_name";
+  private String batchGroupName;
+
   public static final String JSON_PROPERTY_BATCH_IDX = "batch_idx";
   private Long batchIdx;
+
+  public static final String JSON_PROPERTY_BATCH_NAME = "batch_name";
+  private String batchName;
+
+  public static final String JSON_PROPERTY_IS_END_OF_UPDATE = "is_end_of_update";
+  private Boolean isEndOfUpdate;
 
   public ProtocolUpdateLedgerProofOriginAllOf() { 
   }
@@ -71,6 +92,84 @@ public class ProtocolUpdateLedgerProofOriginAllOf {
   }
 
 
+  public ProtocolUpdateLedgerProofOriginAllOf configHash(String configHash) {
+    this.configHash = configHash;
+    return this;
+  }
+
+   /**
+   * Get configHash
+   * @return configHash
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CONFIG_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getConfigHash() {
+    return configHash;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CONFIG_HASH)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setConfigHash(String configHash) {
+    this.configHash = configHash;
+  }
+
+
+  public ProtocolUpdateLedgerProofOriginAllOf batchGroupIdx(Long batchGroupIdx) {
+    this.batchGroupIdx = batchGroupIdx;
+    return this;
+  }
+
+   /**
+   * Get batchGroupIdx
+   * @return batchGroupIdx
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BATCH_GROUP_IDX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getBatchGroupIdx() {
+    return batchGroupIdx;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BATCH_GROUP_IDX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBatchGroupIdx(Long batchGroupIdx) {
+    this.batchGroupIdx = batchGroupIdx;
+  }
+
+
+  public ProtocolUpdateLedgerProofOriginAllOf batchGroupName(String batchGroupName) {
+    this.batchGroupName = batchGroupName;
+    return this;
+  }
+
+   /**
+   * Get batchGroupName
+   * @return batchGroupName
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BATCH_GROUP_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBatchGroupName() {
+    return batchGroupName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BATCH_GROUP_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBatchGroupName(String batchGroupName) {
+    this.batchGroupName = batchGroupName;
+  }
+
+
   public ProtocolUpdateLedgerProofOriginAllOf batchIdx(Long batchIdx) {
     this.batchIdx = batchIdx;
     return this;
@@ -97,6 +196,58 @@ public class ProtocolUpdateLedgerProofOriginAllOf {
   }
 
 
+  public ProtocolUpdateLedgerProofOriginAllOf batchName(String batchName) {
+    this.batchName = batchName;
+    return this;
+  }
+
+   /**
+   * Get batchName
+   * @return batchName
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BATCH_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBatchName() {
+    return batchName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BATCH_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBatchName(String batchName) {
+    this.batchName = batchName;
+  }
+
+
+  public ProtocolUpdateLedgerProofOriginAllOf isEndOfUpdate(Boolean isEndOfUpdate) {
+    this.isEndOfUpdate = isEndOfUpdate;
+    return this;
+  }
+
+   /**
+   * Get isEndOfUpdate
+   * @return isEndOfUpdate
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_END_OF_UPDATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsEndOfUpdate() {
+    return isEndOfUpdate;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_END_OF_UPDATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsEndOfUpdate(Boolean isEndOfUpdate) {
+    this.isEndOfUpdate = isEndOfUpdate;
+  }
+
+
   /**
    * Return true if this ProtocolUpdateLedgerProofOrigin_allOf object is equal to o.
    */
@@ -110,12 +261,17 @@ public class ProtocolUpdateLedgerProofOriginAllOf {
     }
     ProtocolUpdateLedgerProofOriginAllOf protocolUpdateLedgerProofOriginAllOf = (ProtocolUpdateLedgerProofOriginAllOf) o;
     return Objects.equals(this.protocolVersionName, protocolUpdateLedgerProofOriginAllOf.protocolVersionName) &&
-        Objects.equals(this.batchIdx, protocolUpdateLedgerProofOriginAllOf.batchIdx);
+        Objects.equals(this.configHash, protocolUpdateLedgerProofOriginAllOf.configHash) &&
+        Objects.equals(this.batchGroupIdx, protocolUpdateLedgerProofOriginAllOf.batchGroupIdx) &&
+        Objects.equals(this.batchGroupName, protocolUpdateLedgerProofOriginAllOf.batchGroupName) &&
+        Objects.equals(this.batchIdx, protocolUpdateLedgerProofOriginAllOf.batchIdx) &&
+        Objects.equals(this.batchName, protocolUpdateLedgerProofOriginAllOf.batchName) &&
+        Objects.equals(this.isEndOfUpdate, protocolUpdateLedgerProofOriginAllOf.isEndOfUpdate);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(protocolVersionName, batchIdx);
+    return Objects.hash(protocolVersionName, configHash, batchGroupIdx, batchGroupName, batchIdx, batchName, isEndOfUpdate);
   }
 
   @Override
@@ -123,7 +279,12 @@ public class ProtocolUpdateLedgerProofOriginAllOf {
     StringBuilder sb = new StringBuilder();
     sb.append("class ProtocolUpdateLedgerProofOriginAllOf {\n");
     sb.append("    protocolVersionName: ").append(toIndentedString(protocolVersionName)).append("\n");
+    sb.append("    configHash: ").append(toIndentedString(configHash)).append("\n");
+    sb.append("    batchGroupIdx: ").append(toIndentedString(batchGroupIdx)).append("\n");
+    sb.append("    batchGroupName: ").append(toIndentedString(batchGroupName)).append("\n");
     sb.append("    batchIdx: ").append(toIndentedString(batchIdx)).append("\n");
+    sb.append("    batchName: ").append(toIndentedString(batchName)).append("\n");
+    sb.append("    isEndOfUpdate: ").append(toIndentedString(isEndOfUpdate)).append("\n");
     sb.append("}");
     return sb.toString();
   }

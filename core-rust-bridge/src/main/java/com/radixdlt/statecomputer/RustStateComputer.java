@@ -83,10 +83,6 @@ public class RustStateComputer {
   public RustStateComputer(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     Objects.requireNonNull(nodeRustEnvironment);
     LabelledTimer<MethodId> timer = metrics.stateManager().nativeCall();
-    this.executeGenesisFunc =
-        Natives.builder(nodeRustEnvironment, RustStateComputer::executeGenesis)
-            .measure(timer.label(new MethodId(RustStateComputer.class, "executeGenesis")))
-            .build(new TypeToken<>() {});
     this.prepareFunc =
         Natives.builder(nodeRustEnvironment, RustStateComputer::prepare)
             .measure(timer.label(new MethodId(RustStateComputer.class, "prepare")))
@@ -104,15 +100,6 @@ public class RustStateComputer {
             .measure(timer.label(new MethodId(RustStateComputer.class, "protocolState")))
             .build(new TypeToken<>() {});
   }
-
-  public LedgerProof executeGenesis(byte[] rawGenesisData) {
-    return executeGenesisFunc.call(rawGenesisData);
-  }
-
-  private final Natives.Call1<byte[], LedgerProof> executeGenesisFunc;
-
-  private static native byte[] executeGenesis(
-      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   public PrepareResult prepare(PrepareRequest prepareRequest) {
     return prepareFunc.call(prepareRequest);

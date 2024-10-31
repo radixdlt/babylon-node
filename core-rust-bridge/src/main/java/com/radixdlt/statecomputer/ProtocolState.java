@@ -78,7 +78,7 @@ import java.util.Map;
 
 public record ProtocolState(
     ImmutableMap<UInt64, String> enactedProtocolUpdates,
-    ImmutableList<PendingProtocolUpdate> pendingProtocolUpdates) {
+    ImmutableMap<String, PendingProtocolUpdate> pendingProtocolUpdates) {
 
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
@@ -109,7 +109,7 @@ public record ProtocolState(
   }
 
   public static ProtocolState testingEmpty() {
-    return new ProtocolState(ImmutableMap.of(), ImmutableList.of());
+    return new ProtocolState(ImmutableMap.of(), ImmutableMap.of());
   }
 
   public record PendingProtocolUpdate(

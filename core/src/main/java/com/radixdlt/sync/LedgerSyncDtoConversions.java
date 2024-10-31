@@ -95,9 +95,7 @@ public final class LedgerSyncDtoConversions {
     return switch (origin) {
       case LedgerProofOrigin.Consensus consensusOrigin -> Pair.of(
           consensusOrigin.opaque(), REv2ToConsensus.signatures(consensusOrigin.signatures()));
-      case LedgerProofOrigin.Genesis genesisOrigin -> Pair.of(
-          genesisOrigin.genesisOpaqueHash(), new TimestampedECDSASignatures());
-      case LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin -> Pair.of(
+      case LedgerProofOrigin.ProtocolUpdate ignored -> Pair.of(
           HashUtils.zero256(), new TimestampedECDSASignatures());
     };
   }
@@ -114,18 +112,14 @@ public final class LedgerSyncDtoConversions {
             ledgerProof.getOpaque(), REv2ToConsensus.signatures(ledgerProof.getSignatures())));
   }
 
+  /**
+   * Converts the given DTO to a ledger proof of Consensus origin (even if the signatures list is
+   * empty). The validity of the proof should be verified by the caller.
+   */
   public static LedgerProof syncStatusDtoToLedgerProof(LedgerProofSyncStatusDto ledgerProof) {
-    final var isGenesis =
-        ledgerProof.getSignatures().getSignatures().isEmpty() && ledgerProof.isEndOfEpoch();
-    if (isGenesis) {
-      return new LedgerProof(
-          REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
-          new LedgerProofOrigin.Genesis(ledgerProof.getOpaque()));
-    } else {
-      return new LedgerProof(
-          REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
-          new LedgerProofOrigin.Consensus(
-              ledgerProof.getOpaque(), REv2ToConsensus.signatures(ledgerProof.getSignatures())));
-    }
+    return new LedgerProof(
+        REv2ToConsensus.ledgerHeader(ledgerProof.getHeader()),
+        new LedgerProofOrigin.Consensus(
+            ledgerProof.getOpaque(), REv2ToConsensus.signatures(ledgerProof.getSignatures())));
   }
 }

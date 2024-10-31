@@ -120,6 +120,7 @@ impl Committer {
 
         let commit_ledger_header = &proof.ledger_header;
         let commit_state_version = commit_ledger_header.state_version;
+        let commit_proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms;
 
         // We advance the top-of-ledger, hence lock:
         let database = self.database.lock();
@@ -245,19 +246,14 @@ impl Committer {
             );
         }
 
-        self.protocol_manager.update_protocol_state_and_metrics(
-            series_executor.protocol_state(),
-            series_executor.epoch_change().as_ref(),
-        );
+        let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
+        let end_state = series_executor.finalize_series(BatchSituation::NonSystem);
+
+        self.protocol_manager
+            .update_protocol_state_and_metrics(&end_state);
 
         // Step 4.: Check final invariants, perform the DB commit
-        self.verify_post_commit_invariants(&series_executor, &proof);
-
-        // capture these before we lose the appropriate borrows:
-        let proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms;
-        let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
-        let final_transaction_root = series_executor.latest_ledger_hashes().transaction_root;
-        let epoch_change = series_executor.epoch_change();
+        self.verify_post_commit_invariants(&end_state, &proof);
 
         database.commit(commit_bundle_builder.build(proof, vertex_store));
 
@@ -265,7 +261,7 @@ impl Committer {
 
         self.execution_cache_manager
             .access_exclusively()
-            .progress_base(&final_transaction_root);
+            .progress_base(&end_state.ledger_hashes.transaction_root);
 
         self.mempool_manager.remove_committed(
             committed_user_transactions
@@ -273,7 +269,7 @@ impl Committer {
                 .map(|txn| &txn.transaction_intent_hash),
         );
 
-        if let Some(epoch_change) = epoch_change {
+        if let Some(epoch_change) = end_state.epoch_change {
             self.mempool_manager
                 .remove_txns_where_end_epoch_expired(epoch_change.epoch);
         }
@@ -286,7 +282,7 @@ impl Committer {
         self.ledger_metrics.update(
             commit_state_version,
             round_counters.clone(),
-            proposer_timestamp_ms,
+            commit_proposer_timestamp_ms,
             self_validator_id,
             transactions_metrics_data,
         );
@@ -307,8 +303,9 @@ impl Committer {
             transactions,
             proof,
             require_committed_successes,
+            batch_situation,
         } = request;
-        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
+        let commit_proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
 
         let database = self.database.lock();
         let mut series_executor = self
@@ -334,32 +331,29 @@ impl Committer {
             transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
             commit_bundle_builder.add_executed_transaction(
                 series_executor.latest_state_version(),
-                proposer_timestamp_ms,
+                commit_proposer_timestamp_ms,
                 raw,
                 hashes,
                 commit,
             );
         }
 
-        self.verify_post_commit_invariants(&series_executor, &proof);
+        let end_state = series_executor.finalize_series(batch_situation);
+        self.verify_post_commit_invariants(&end_state, &proof);
 
         self.execution_cache_manager
             .access_exclusively()
-            .progress_base(&series_executor.latest_ledger_hashes().transaction_root);
+            .progress_base(&end_state.ledger_hashes.transaction_root);
 
         database.commit(commit_bundle_builder.build(proof, None));
 
-        // Protocol updates aren't allowed during system transactions, so no need to handle an
-        // update here, just assign the latest protocol state.
-        self.protocol_manager.update_protocol_state_and_metrics(
-            series_executor.protocol_state(),
-            series_executor.epoch_change().as_ref(),
-        );
+        self.protocol_manager
+            .update_protocol_state_and_metrics(&end_state);
 
         self.ledger_metrics.update(
-            series_executor.latest_state_version(),
+            end_state.state_version,
             Vec::new(),
-            proposer_timestamp_ms,
+            commit_proposer_timestamp_ms,
             None,
             transactions_metrics_data,
         );
@@ -389,30 +383,23 @@ impl Committer {
         }
     }
 
-    fn verify_post_commit_invariants(
-        &self,
-        finished_series_executor: &TransactionSeriesExecutor<ActualStateManagerDatabase>,
-        proof: &LedgerProof,
-    ) {
+    fn verify_post_commit_invariants(&self, end_state: &StateTrackerEndState, proof: &LedgerProof) {
         let commit_state_version = proof.ledger_header.state_version;
-        if finished_series_executor.latest_state_version() != commit_state_version {
+        if end_state.state_version != commit_state_version {
             panic!(
                 "resultant state version differs from the proof ({:?} != {:?})",
-                finished_series_executor.latest_ledger_hashes(),
-                commit_state_version,
+                end_state.state_version, commit_state_version,
             );
         }
 
-        if finished_series_executor.latest_ledger_hashes() != &proof.ledger_header.hashes {
+        if end_state.ledger_hashes != proof.ledger_header.hashes {
             panic!(
                 "resultant ledger hashes at version {} differ from the proof ({:?} != {:?})",
-                commit_state_version,
-                finished_series_executor.latest_ledger_hashes(),
-                proof.ledger_header.hashes,
+                commit_state_version, end_state.ledger_hashes, proof.ledger_header.hashes,
             );
         }
 
-        let next_epoch = finished_series_executor.epoch_change().map(NextEpoch::from);
+        let next_epoch = end_state.epoch_change.clone().map(NextEpoch::from);
         if next_epoch != proof.ledger_header.next_epoch {
             panic!(
                 "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
@@ -422,7 +409,7 @@ impl Committer {
 
         self.verify_post_commit_protocol_version(
             commit_state_version,
-            &finished_series_executor.next_protocol_version(),
+            &end_state.next_protocol_version,
             &proof.ledger_header.next_protocol_version,
         );
     }

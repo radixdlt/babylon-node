@@ -501,6 +501,7 @@ components:
       enum:
         - EnactAtStartOfEpochIfValidatorsReady
         - EnactAtStartOfEpochUnconditionally
+        - EnactImmediatelyAfterEndOfProtocolUpdate
     ProtocolUpdateEnactmentCondition:
       type: object
       required:
@@ -514,6 +515,7 @@ components:
           # NOTE: These need to match ProtocolUpdateEnactmentConditionType
           EnactAtStartOfEpochIfValidatorsReady: '#/components/schemas/EnactAtStartOfEpochIfValidatorsReadyCondition'
           EnactAtStartOfEpochUnconditionally: '#/components/schemas/EnactAtStartOfEpochUnconditionallyCondition'
+          EnactImmediatelyAfterEndOfProtocolUpdate: '#/components/schemas/EnactImmediatelyAfterEndOfProtocolUpdate'
     EnactAtStartOfEpochIfValidatorsReadyCondition:
       allOf:
         - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
@@ -550,6 +552,15 @@ components:
             epoch:
               type: integer
               format: int64
+    EnactImmediatelyAfterEndOfProtocolUpdate:
+      allOf:
+        - $ref: "#/components/schemas/ProtocolUpdateEnactmentCondition"
+        - type: object
+          required:
+            - trigger_after
+          properties:
+            trigger_after:
+              type: string
     Error:
       type: object
       required:

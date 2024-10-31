@@ -41,7 +41,13 @@ import com.radixdlt.api.core.generated.client.JSON;
  * GenesisLedgerProofOrigin
  */
 @JsonPropertyOrder({
-  GenesisLedgerProofOrigin.JSON_PROPERTY_GENESIS_OPAQUE_HASH
+  GenesisLedgerProofOrigin.JSON_PROPERTY_PROTOCOL_VERSION_NAME,
+  GenesisLedgerProofOrigin.JSON_PROPERTY_GENESIS_OPAQUE_HASH,
+  GenesisLedgerProofOrigin.JSON_PROPERTY_BATCH_GROUP_IDX,
+  GenesisLedgerProofOrigin.JSON_PROPERTY_BATCH_GROUP_NAME,
+  GenesisLedgerProofOrigin.JSON_PROPERTY_BATCH_IDX,
+  GenesisLedgerProofOrigin.JSON_PROPERTY_BATCH_NAME,
+  GenesisLedgerProofOrigin.JSON_PROPERTY_IS_END_OF_UPDATE
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -56,11 +62,55 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class GenesisLedgerProofOrigin extends LedgerProofOrigin {
+  public static final String JSON_PROPERTY_PROTOCOL_VERSION_NAME = "protocol_version_name";
+  private String protocolVersionName;
+
   public static final String JSON_PROPERTY_GENESIS_OPAQUE_HASH = "genesis_opaque_hash";
   private String genesisOpaqueHash;
 
+  public static final String JSON_PROPERTY_BATCH_GROUP_IDX = "batch_group_idx";
+  private Long batchGroupIdx;
+
+  public static final String JSON_PROPERTY_BATCH_GROUP_NAME = "batch_group_name";
+  private String batchGroupName;
+
+  public static final String JSON_PROPERTY_BATCH_IDX = "batch_idx";
+  private Long batchIdx;
+
+  public static final String JSON_PROPERTY_BATCH_NAME = "batch_name";
+  private String batchName;
+
+  public static final String JSON_PROPERTY_IS_END_OF_UPDATE = "is_end_of_update";
+  private Boolean isEndOfUpdate;
+
   public GenesisLedgerProofOrigin() { 
   }
+
+  public GenesisLedgerProofOrigin protocolVersionName(String protocolVersionName) {
+    this.protocolVersionName = protocolVersionName;
+    return this;
+  }
+
+   /**
+   * Get protocolVersionName
+   * @return protocolVersionName
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getProtocolVersionName() {
+    return protocolVersionName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_PROTOCOL_VERSION_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setProtocolVersionName(String protocolVersionName) {
+    this.protocolVersionName = protocolVersionName;
+  }
+
 
   public GenesisLedgerProofOrigin genesisOpaqueHash(String genesisOpaqueHash) {
     this.genesisOpaqueHash = genesisOpaqueHash;
@@ -88,6 +138,136 @@ public class GenesisLedgerProofOrigin extends LedgerProofOrigin {
   }
 
 
+  public GenesisLedgerProofOrigin batchGroupIdx(Long batchGroupIdx) {
+    this.batchGroupIdx = batchGroupIdx;
+    return this;
+  }
+
+   /**
+   * Get batchGroupIdx
+   * @return batchGroupIdx
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BATCH_GROUP_IDX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getBatchGroupIdx() {
+    return batchGroupIdx;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BATCH_GROUP_IDX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBatchGroupIdx(Long batchGroupIdx) {
+    this.batchGroupIdx = batchGroupIdx;
+  }
+
+
+  public GenesisLedgerProofOrigin batchGroupName(String batchGroupName) {
+    this.batchGroupName = batchGroupName;
+    return this;
+  }
+
+   /**
+   * Get batchGroupName
+   * @return batchGroupName
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BATCH_GROUP_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBatchGroupName() {
+    return batchGroupName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BATCH_GROUP_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBatchGroupName(String batchGroupName) {
+    this.batchGroupName = batchGroupName;
+  }
+
+
+  public GenesisLedgerProofOrigin batchIdx(Long batchIdx) {
+    this.batchIdx = batchIdx;
+    return this;
+  }
+
+   /**
+   * Get batchIdx
+   * @return batchIdx
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BATCH_IDX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Long getBatchIdx() {
+    return batchIdx;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BATCH_IDX)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBatchIdx(Long batchIdx) {
+    this.batchIdx = batchIdx;
+  }
+
+
+  public GenesisLedgerProofOrigin batchName(String batchName) {
+    this.batchName = batchName;
+    return this;
+  }
+
+   /**
+   * Get batchName
+   * @return batchName
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_BATCH_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getBatchName() {
+    return batchName;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_BATCH_NAME)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setBatchName(String batchName) {
+    this.batchName = batchName;
+  }
+
+
+  public GenesisLedgerProofOrigin isEndOfUpdate(Boolean isEndOfUpdate) {
+    this.isEndOfUpdate = isEndOfUpdate;
+    return this;
+  }
+
+   /**
+   * Get isEndOfUpdate
+   * @return isEndOfUpdate
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_IS_END_OF_UPDATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public Boolean getIsEndOfUpdate() {
+    return isEndOfUpdate;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_IS_END_OF_UPDATE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setIsEndOfUpdate(Boolean isEndOfUpdate) {
+    this.isEndOfUpdate = isEndOfUpdate;
+  }
+
+
   /**
    * Return true if this GenesisLedgerProofOrigin object is equal to o.
    */
@@ -100,13 +280,19 @@ public class GenesisLedgerProofOrigin extends LedgerProofOrigin {
       return false;
     }
     GenesisLedgerProofOrigin genesisLedgerProofOrigin = (GenesisLedgerProofOrigin) o;
-    return Objects.equals(this.genesisOpaqueHash, genesisLedgerProofOrigin.genesisOpaqueHash) &&
+    return Objects.equals(this.protocolVersionName, genesisLedgerProofOrigin.protocolVersionName) &&
+        Objects.equals(this.genesisOpaqueHash, genesisLedgerProofOrigin.genesisOpaqueHash) &&
+        Objects.equals(this.batchGroupIdx, genesisLedgerProofOrigin.batchGroupIdx) &&
+        Objects.equals(this.batchGroupName, genesisLedgerProofOrigin.batchGroupName) &&
+        Objects.equals(this.batchIdx, genesisLedgerProofOrigin.batchIdx) &&
+        Objects.equals(this.batchName, genesisLedgerProofOrigin.batchName) &&
+        Objects.equals(this.isEndOfUpdate, genesisLedgerProofOrigin.isEndOfUpdate) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(genesisOpaqueHash, super.hashCode());
+    return Objects.hash(protocolVersionName, genesisOpaqueHash, batchGroupIdx, batchGroupName, batchIdx, batchName, isEndOfUpdate, super.hashCode());
   }
 
   @Override
@@ -114,7 +300,13 @@ public class GenesisLedgerProofOrigin extends LedgerProofOrigin {
     StringBuilder sb = new StringBuilder();
     sb.append("class GenesisLedgerProofOrigin {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    protocolVersionName: ").append(toIndentedString(protocolVersionName)).append("\n");
     sb.append("    genesisOpaqueHash: ").append(toIndentedString(genesisOpaqueHash)).append("\n");
+    sb.append("    batchGroupIdx: ").append(toIndentedString(batchGroupIdx)).append("\n");
+    sb.append("    batchGroupName: ").append(toIndentedString(batchGroupName)).append("\n");
+    sb.append("    batchIdx: ").append(toIndentedString(batchIdx)).append("\n");
+    sb.append("    batchName: ").append(toIndentedString(batchName)).append("\n");
+    sb.append("    isEndOfUpdate: ").append(toIndentedString(isEndOfUpdate)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -371,7 +371,7 @@ public final class EpochManager {
       // That's the `trimProtocolUpdate` call.
       LedgerProofSyncStatusDto proof =
           LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(
-              epochChange.proof().trimProtocolUpdate());
+              epochChange.proofBundle().trimProtocolUpdate());
       final var ledgerStatusUpdate = new LedgerStatusUpdate(proof);
       for (var validator : currentAndNextValidators) {
         if (!validator.getValidatorId().getKey().equals(selfValidatorInfo.key())) {
