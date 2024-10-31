@@ -529,7 +529,7 @@ impl<
 /// encoding is used for values.
 pub trait VersionedCf {
     type Key;
-    type Value;
+    type Value: Into<Self::VersionedValue> + Clone;
 
     /// Column family name (as known to the DB).
     ///
@@ -539,13 +539,21 @@ pub trait VersionedCf {
     /// Key codec type.
     type KeyCodec: Default;
     /// Versioned **value** type (a codec for it is known, i.e. SBOR-based).
-    type VersionedValue;
+    type VersionedValue: ScryptoEncode
+        + ScryptoDecode
+        + ScryptoDescribe
+        + CheckedBackwardsCompatibleSchema<ScryptoCustomSchema>
+        + Versioned<LatestVersion = Self::Value>;
 }
 
 impl<K, V, VV, KC, D> DefaultCf for D
 where
     V: Into<VV> + Clone,
-    VV: ScryptoEncode + ScryptoDecode + Versioned<LatestVersion = V>,
+    VV: ScryptoEncode
+        + ScryptoDecode
+        + ScryptoDescribe
+        + CheckedBackwardsCompatibleSchema<ScryptoCustomSchema>
+        + Versioned<LatestVersion = V>,
     KC: Default,
     D: VersionedCf<Key = K, Value = V, KeyCodec = KC, VersionedValue = VV>,
 {
@@ -692,11 +700,22 @@ impl<U: DbCodec<VT>, T: Into<VT> + Clone, VT: Versioned<LatestVersion = T>> DbCo
 }
 
 /// A [`DbCodec]` for SBOR types.
-pub struct SborDbCodec<T: ScryptoEncode + ScryptoDecode> {
+pub struct SborDbCodec<
+    T: ScryptoEncode
+        + ScryptoDecode
+        + ScryptoDescribe
+        + CheckedBackwardsCompatibleSchema<ScryptoCustomSchema>,
+> {
     type_parameters_phantom: PhantomData<T>,
 }
 
-impl<T: ScryptoEncode + ScryptoDecode> Default for SborDbCodec<T> {
+impl<
+        T: ScryptoEncode
+            + ScryptoDecode
+            + ScryptoDescribe
+            + CheckedBackwardsCompatibleSchema<ScryptoCustomSchema>,
+    > Default for SborDbCodec<T>
+{
     fn default() -> Self {
         Self {
             type_parameters_phantom: PhantomData,
@@ -704,13 +723,19 @@ impl<T: ScryptoEncode + ScryptoDecode> Default for SborDbCodec<T> {
     }
 }
 
-impl<T: ScryptoEncode + ScryptoDecode> DbCodec<T> for SborDbCodec<T> {
+impl<
+        T: ScryptoEncode
+            + ScryptoDecode
+            + ScryptoDescribe
+            + CheckedBackwardsCompatibleSchema<ScryptoCustomSchema>,
+    > DbCodec<T> for SborDbCodec<T>
+{
     fn encode(&self, value: &T) -> Vec<u8> {
         scrypto_encode(value).unwrap()
     }
 
     fn decode(&self, bytes: &[u8]) -> T {
-        scrypto_decode(bytes).unwrap()
+        scrypto_decode_with_nice_error(bytes).unwrap()
     }
 }
 

@@ -300,7 +300,7 @@ pub struct MetadataKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AttachedModuleBrowsingError {
     UnderlyingError(EngineStateBrowsingError),
-    SborDecode(DecodeError),
+    SborDecode(String),
     NotAnObject,
     AttachedModulesInvariantBroken(String),
 }
@@ -355,24 +355,23 @@ impl From<AttachedModuleBrowsingError> for ResponseError {
     }
 }
 
-fn decode_kv_collection_key<D: ScryptoDecode>(key: SborCollectionKey) -> D {
+fn decode_kv_collection_key<D: ScryptoDecode + ScryptoDescribe>(key: SborCollectionKey) -> D {
     let SborCollectionKey::KeyValueStore(sbor_data) = key else {
         panic!("expected the Key-Value collection key; got {:?}", key)
     };
-    let Ok(decoded) = scrypto_decode(sbor_data.as_bytes()) else {
+    scrypto_decode_with_nice_error(sbor_data.as_bytes()).unwrap_or_else(|err| {
         panic!(
             "expected the collection key to be a {}; got {:?}",
             type_name::<D>(),
-            sbor_data
+            err,
         )
-    };
-    decoded
+    })
 }
 
-fn decode_latest<V: Versioned + ScryptoDecode>(
+fn decode_latest<V: Versioned + ScryptoDecode + ScryptoDescribe>(
     entry_data: SborData,
 ) -> Result<V::LatestVersion, AttachedModuleBrowsingError> {
-    Ok(scrypto_decode::<V>(entry_data.as_bytes())
+    Ok(scrypto_decode_with_nice_error::<V>(entry_data.as_bytes())
         .map_err(AttachedModuleBrowsingError::SborDecode)?
         .fully_update_and_into_latest_version())
 }

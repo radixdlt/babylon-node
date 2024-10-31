@@ -184,7 +184,13 @@ pub mod vertex {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoSbor)]
-        pub VersionedVertexStoreBlob(VertexStoreBlobVersions) => VertexStoreBlob = VertexStoreBlobV1
+        pub VersionedVertexStoreBlob(VertexStoreBlobVersions) => VertexStoreBlob = VertexStoreBlobV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_vertex_store_blob.bin"
+            ))]
+        ]
     }
 
     #[derive(Debug, Clone, ScryptoSbor)]
@@ -231,7 +237,13 @@ pub mod substate {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
-        pub VersionedSubstateNodeAncestryRecord(SubstateNodeAncestryRecordVersions) => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
+        pub VersionedSubstateNodeAncestryRecord(SubstateNodeAncestryRecordVersions) => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_substate_node_ancestry_record.bin"
+            ))]
+        ]
     }
 
     /// Ancestry information of a RE Node.
@@ -498,7 +510,13 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoSbor)]
-        pub VersionedStaleTreeParts(StaleTreePartsVersions) => StaleTreeParts = StaleTreePartsV1
+        pub VersionedStaleTreeParts(StaleTreePartsVersions) => StaleTreeParts = StaleTreePartsV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_stale_tree_parts.bin"
+            ))]
+        ]
     }
 
     #[derive(Debug, Clone, ScryptoSbor)]
@@ -542,7 +560,13 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoSbor)]
-        pub VersionedTransactionAccuTreeSlice(TransactionAccuTreeSliceVersions) => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
+        pub VersionedTransactionAccuTreeSlice(TransactionAccuTreeSliceVersions) => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_transaction_accu_tree_slice.bin"
+            ))]
+        ]
     }
 
     #[derive(Debug, Clone, ScryptoSbor)]
@@ -550,7 +574,13 @@ pub mod commit {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoSbor)]
-        pub VersionedReceiptAccuTreeSlice(ReceiptAccuTreeSliceVersions) => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
+        pub VersionedReceiptAccuTreeSlice(ReceiptAccuTreeSliceVersions) => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_receipt_accu_tree_slice.bin"
+            ))]
+        ]
     }
 
     #[derive(Debug, Clone, ScryptoSbor)]
@@ -568,7 +598,13 @@ pub mod scenario {
 
     define_single_versioned! {
         #[derive(Debug, Clone, Sbor)]
-        pub VersionedExecutedScenario(ExecutedScenarioVersions) => ExecutedScenario = ExecutedScenarioV1
+        pub VersionedExecutedScenario(ExecutedScenarioVersions) => ExecutedScenario = ExecutedScenarioV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_executed_scenario.bin"
+            ))]
+        ]
     }
 
     #[derive(Debug, Clone, Sbor)]
@@ -700,7 +736,13 @@ pub mod indices {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoSbor)]
-        pub VersionedEntityBlueprintId(EntityBlueprintIdVersions) => EntityBlueprintId = EntityBlueprintIdV1
+        pub VersionedEntityBlueprintId(EntityBlueprintIdVersions) => EntityBlueprintId = EntityBlueprintIdV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_entity_blueprint_id.bin"
+            ))]
+        ]
     }
 
     /// An entity's ID and its blueprint reference.
@@ -734,7 +776,13 @@ pub mod indices {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoSbor)]
-        pub VersionedObjectBlueprintName(ObjectBlueprintNameVersions) => ObjectBlueprintName = ObjectBlueprintNameV1
+        pub VersionedObjectBlueprintName(ObjectBlueprintNameVersions) => ObjectBlueprintName = ObjectBlueprintNameV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_object_blueprint_name.bin"
+            ))]
+        ]
     }
 
     /// An Object's ID and its blueprint name.
@@ -851,7 +899,13 @@ pub mod gc {
 
     define_single_versioned! {
         #[derive(Debug, Clone, ScryptoSbor)]
-        pub VersionedLedgerProofsGcProgress(LedgerProofsGcProgressVersions) => LedgerProofsGcProgress = LedgerProofsGcProgressV1
+        pub VersionedLedgerProofsGcProgress(LedgerProofsGcProgressVersions) => LedgerProofsGcProgress = LedgerProofsGcProgressV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_proofs_gc_progress.bin"
+            ))]
+        ]
     }
 
     /// A state of the GC's progress.

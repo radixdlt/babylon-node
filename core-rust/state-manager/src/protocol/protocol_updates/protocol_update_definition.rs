@@ -11,7 +11,7 @@ use crate::prelude::*;
 /// represented as other methods on this trait.
 pub trait ProtocolUpdateDefinition {
     /// Additional (static) config which can be used to re-configure the updater.
-    type Overrides: ScryptoDecode;
+    type Overrides: ScryptoDecode + ScryptoDescribe;
 
     /// Can be overriden for more efficient validation
     fn config_hash(
@@ -63,7 +63,7 @@ pub trait ConfigurableProtocolUpdateDefinition {
     ) -> Box<dyn NodeProtocolUpdateGenerator>;
 
     /// Checks that the given raw overrides can be parsed.
-    fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError>;
+    fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), String>;
 }
 
 impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
@@ -97,7 +97,10 @@ impl<T: ProtocolUpdateDefinition> ConfigurableProtocolUpdateDefinition for T {
         self.create_batch_generator(context, overrides_hash, overrides)
     }
 
-    fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), DecodeError> {
-        scrypto_decode::<<Self as ProtocolUpdateDefinition>::Overrides>(raw_overrides).map(|_| ())
+    fn validate_raw_overrides(&self, raw_overrides: &[u8]) -> Result<(), String> {
+        scrypto_decode_with_nice_error::<<Self as ProtocolUpdateDefinition>::Overrides>(
+            raw_overrides,
+        )
+        .map(|_| ())
     }
 }
