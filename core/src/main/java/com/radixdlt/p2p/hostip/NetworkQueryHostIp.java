@@ -83,6 +83,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import okhttp3.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -168,6 +169,16 @@ final class NetworkQueryHostIp {
           maxResult = result.toOptional();
         }
       }
+    }
+    if (successCounts.isEmpty()) {
+      log.warn("No suitable address found");
+    }
+    if (successCounts.size() > 1) {
+      String votes =
+          successCounts.keySet().stream()
+              .map(key -> key + "=" + successCounts.get(key))
+              .collect(Collectors.joining(", ", "{", "}"));
+      log.warn("More than 1 IP address found: " + votes);
     }
     return new VotedResult(maxResult, queryResults.build());
   }
