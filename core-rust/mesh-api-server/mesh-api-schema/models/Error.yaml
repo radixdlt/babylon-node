@@ -1,0 +1,75 @@
+# Copyright 2020 Coinbase, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+description: |
+  Instead of utilizing HTTP status codes to describe node errors (which often
+  do not have a good analog), rich errors are returned using this object.
+
+  Both the code and message fields can be individually used to correctly
+  identify an error. Implementations MUST use unique values for both
+  fields.
+type: object
+required:
+  - code
+  - message
+  - retriable
+properties:
+  code:
+    description: |
+      Code is a network-specific error code. If desired, this code
+      can be equivalent to an HTTP status code.
+    type: integer
+    format: int32
+    minimum: 0
+    example: 12
+  message:
+    description: |
+      Message is a network-specific error message.
+
+      The message MUST NOT change for a given code. In particular, this
+      means that any contextual information should be included in
+      the details field.
+    type: string
+    example: "Invalid account format"
+  description:
+    description: |
+      Description allows the implementer to optionally provide additional information
+      about an error. In many cases, the content of this field will be a copy-and-paste
+      from existing developer documentation.
+
+      Description can ONLY be populated with generic information about a particular
+      type of error. It MUST NOT be populated with information about a particular
+      instantiation of an error (use `details` for this).
+
+      Whereas the content of Error.Message should stay stable across releases, the
+      content of Error.Description will likely change across releases (as implementers
+      improve error documentation). For this reason, the content in this field
+      is not part of any type assertion (unlike Error.Message).
+    type: string
+    example: "This error is returned when the requested AccountIdentifier is improperly formatted."
+  retriable:
+    description: |
+      An error is retriable if the same request may succeed if submitted
+      again.
+    type: boolean
+  details:
+    type: object
+    description: |
+      Often times it is useful to return context specific
+      to the request that caused the error (i.e. a sample of the
+      stack trace or impacted account) in addition to the
+      standard error message.
+    example:
+      address: "0x1dcc4de8dec75d7aab85b567b6"
+      error: "not base64"
