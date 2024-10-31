@@ -84,7 +84,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -171,14 +172,21 @@ final class NetworkQueryHostIp {
       }
     }
     if (successCounts.isEmpty()) {
-      log.warn("No suitable address found");
+      log.warn(
+          "Attempts to resolve this node's public IP address with external resolution services"
+              + " failed at every attempt. Perhaps this node cannot connect to the internet?");
     }
     if (successCounts.size() > 1) {
       String votes =
           successCounts.keySet().stream()
               .map(key -> key + "=" + successCounts.get(key))
               .collect(Collectors.joining(", ", "{", "}"));
-      log.warn("More than 1 IP address found: " + votes);
+      log.warn(
+          String.format(
+              "Attempts to resolve this node's public IP address with external resolution services"
+                  + " resulted in more than one distinct IP address. The node will continue by"
+                  + " using the most common: %s. The full list of resolved addresses is: %s",
+              maxResult.get(), votes));
     }
     return new VotedResult(maxResult, queryResults.build());
   }
