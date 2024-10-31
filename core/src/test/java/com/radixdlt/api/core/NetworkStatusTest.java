@@ -88,7 +88,9 @@ public class NetworkStatusTest extends DeterministicCoreApiTestBase {
       assertThat(response.getPostGenesisEpochRound().getEpoch()).isEqualTo(2);
       assertThat(response.getPostGenesisEpochRound().getRound()).isEqualTo(0);
 
-      // We also check that the default test configuration has enacted all protocol updates
+      // We also check that the default test configuration has enacted all protocol updates...
+      // This check also ensures that we keep our codebase in sync, as it ensures that
+      // `ProtocolConfig.VERSION_NAMES` is updated at the same time as `testnet_protocol_config`
       assertThat(response.getCurrentProtocolVersion())
           .isEqualTo(ProtocolConfig.LATEST_PROTOCOL_VERSION_NAME);
     }

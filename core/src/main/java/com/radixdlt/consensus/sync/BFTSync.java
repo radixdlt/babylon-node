@@ -665,7 +665,7 @@ public final class BFTSync implements BFTSyncer {
 
   // TODO: Verify headers match
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    this.latestProof = ledgerUpdate.committedProof();
+    this.latestProof = ledgerUpdate.committedProofBundle();
     final var header = REv2ToConsensus.ledgerHeader(latestProof.primaryProof().ledgerHeader());
     var listeners = this.ledgerSyncing.headMap(header, true).values();
     var listenersIterator = listeners.iterator();

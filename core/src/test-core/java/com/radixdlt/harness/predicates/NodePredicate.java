@@ -68,6 +68,8 @@ import com.google.inject.Injector;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.monitoring.InMemorySystemInfo;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.testutil.TestStateReader;
@@ -149,6 +151,44 @@ public class NodePredicate {
 
   public static Predicate<Injector> atOrOverStateVersion(long stateVersion) {
     return proofCommitted(p -> p.stateVersion() >= stateVersion);
+  }
+
+  public static Predicate<Injector> atExactlyProtocolVersion(String protocolVersion) {
+    return i ->
+        i.getInstance(InMemorySystemInfo.class)
+            .getState()
+            .protocolState()
+            .currentProtocolVersion()
+            .equals(protocolVersion);
+  }
+
+  public static Predicate<Injector> atOrOverProtocolVersion(String targetProtocolVersion) {
+    return i -> {
+      var currentProtocolVersion =
+          i.getInstance(InMemorySystemInfo.class)
+              .getState()
+              .protocolState()
+              .currentProtocolVersion();
+      var currentIndex = ProtocolConfig.VERSION_NAMES.indexOf(currentProtocolVersion);
+      if (currentIndex == -1) {
+        throw new RuntimeException(
+            String.format(
+                "The current protocol version \"%s\" does not exist in"
+                    + " `ProtocolConfig.VERSION_NAMES`, so you cannot use"
+                    + " `NodePredicate::atLeastProtocolVersion`",
+                targetProtocolVersion));
+      }
+      var targetIndex = ProtocolConfig.VERSION_NAMES.indexOf(targetProtocolVersion);
+      if (targetIndex == -1) {
+        throw new RuntimeException(
+            String.format(
+                "The target protocol version \"%s\" does not exist in"
+                    + " `ProtocolConfig.VERSION_NAMES`, so you cannot use"
+                    + " `NodePredicate::atLeastProtocolVersion`",
+                targetProtocolVersion));
+      }
+      return currentIndex >= targetIndex;
+    };
   }
 
   public static Predicate<Injector> proofCommitted(Predicate<LedgerProof> predicate) {

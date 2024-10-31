@@ -406,7 +406,7 @@ impl StateManager {
             .resume_protocol_update_if_any();
 
         let Some(resultant_version) = resultant_version else {
-            panic!("apply_protocol_update_and_any_following is only expected to be called if a pending protocol update is known");
+            panic!("apply_known_pending_protocol_updates is only expected to be called if a pending protocol update is known");
         };
 
         self.handle_completed_protocol_update(resultant_version)

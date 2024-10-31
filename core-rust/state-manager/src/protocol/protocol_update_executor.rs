@@ -61,10 +61,19 @@ impl NodeProtocolUpdateExecutor {
                     last_batch_index,
                 } => {
                     info!("[UPDATE: {protocol_version_name}] Resuming protocol update");
+
+                    // Note: Because we've resolved to UpdateInProgress, we know the last batch
+                    // wasn't the last in the update.
+                    // That said, it could still be the last in its (non-final) batch group!
+                    // In this case, the batch `(last_batch_group_index, next_batch_in_group)`
+                    // doesn't exist - but this is handled by the `start_at_batch >= total_batches`
+                    // check in `execute_protocol_update_actions`.
+                    let next_batch_in_group = last_batch_index.checked_add(1).unwrap();
+
                     self.execute_protocol_update_actions(
                         &protocol_version_name,
                         last_batch_group_index,
-                        last_batch_index.checked_add(1).unwrap(),
+                        next_batch_in_group,
                     );
                     latest_enacted = Some(protocol_version_name.clone());
                 }
@@ -121,13 +130,9 @@ impl NodeProtocolUpdateExecutor {
         for (batch_group_index, batch_group) in remaining_batch_groups {
             let batch_group_number = batch_group_index + 1;
             let batch_group_name = batch_group.batch_group_name();
-            let start_at_batch = if batch_group_index == from_batch_group_index
-                && from_batch_index > 0
-            {
-                info!("[UPDATE: {protocol_version}] Continuing {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
+            let start_at_batch = if batch_group_index == from_batch_group_index {
                 from_batch_index
             } else {
-                info!("[UPDATE: {protocol_version}] Commencing {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
                 0
             };
             let batches = {
@@ -135,6 +140,15 @@ impl NodeProtocolUpdateExecutor {
                 batch_group.generate_batches(self.database.lock().deref())
             };
             let total_batches = batches.len();
+            if start_at_batch >= total_batches {
+                // This can occur if we resume a non-final batch group which is already complete.
+                // In which case, let's continue so we advance to the next batch group.
+                continue;
+            } else if start_at_batch == 0 {
+                info!("[UPDATE: {protocol_version}] Commencing {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
+            } else {
+                info!("[UPDATE: {protocol_version}] Continuing {batch_group_name} (batch group {batch_group_number}/{total_batch_groups})");
+            }
             let remaining_batches = batches.into_iter().enumerate().skip(start_at_batch);
             for (batch_index, batch_generator) in remaining_batches {
                 let batch_number = batch_index + 1;

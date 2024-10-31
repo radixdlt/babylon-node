@@ -101,9 +101,9 @@ public record LedgerProof(LedgerHeader ledgerHeader, LedgerProofOrigin origin) {
             ProtocolConfig.GENESIS_PROTOCOL_VERSION_NAME,
             Option.some(HashUtils.zero256()),
             UInt64.ZERO,
-            "-",
+            "",
             UInt64.ZERO,
-            "-",
+            "",
             false));
   }
 

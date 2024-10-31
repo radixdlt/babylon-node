@@ -192,7 +192,7 @@ public final class EventLoggerModule extends AbstractModule {
         calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.epochChange()));
 
     ledgerUpdate.epochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
-    logProtocolUpdate(ledgerUpdate.committedProof());
+    logProtocolUpdate(ledgerUpdate.committedProofBundle());
 
     self.bftValidatorId()
         .ifPresent(
@@ -247,7 +247,8 @@ public final class EventLoggerModule extends AbstractModule {
     }
 
     final var header =
-        REv2ToConsensus.ledgerHeader(ledgerUpdate.committedProof().primaryProof().ledgerHeader());
+        REv2ToConsensus.ledgerHeader(
+            ledgerUpdate.committedProofBundle().primaryProof().ledgerHeader());
     final var ledgerHashes = header.getHashes();
     logger.log(
         logLevel,

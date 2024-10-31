@@ -64,7 +64,6 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
@@ -74,9 +73,6 @@ import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.protocol.ProtocolConfig;
-import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
-import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.Decimal;
 import java.util.List;
 import java.util.stream.LongStream;
@@ -87,42 +83,27 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
   public void test_network_scenarios() throws Exception {
     final var config =
         defaultConfig()
-            .withProtocolConfig(
-                new ProtocolConfig(
-                    ImmutableList.of(
-                        new ProtocolUpdateTrigger(
-                            ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME,
-                            ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)),
-                        new ProtocolUpdateTrigger(
-                            ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
-                            ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L)))))
             .withScenarioExecutionConfig(ScenariosExecutionConfig.ALL_FOR_NETWORK)
             .withGenesis(
                 GenesisBuilder.createTestGenesisWithNumValidators(
                     1,
                     Decimal.ONE,
-                    GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(100),
-                    // pick a custom subset/permutation (different than "all scenarios"):
+                    GenesisConsensusManagerConfig.Builder.testDefaults(),
+                    // Pick a custom subset/permutation of genesis scenarios (different from "all
+                    // scenarios")
                     ImmutableList.of("radiswap", "transfer_xrd", "royalties")));
     try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
-      // Query scenarios right after genesis
-      final var genesisScenarios =
-          getStatusApi()
-              .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
-              .getExecutedScenarios();
-      assertThat(genesisScenarios).hasSize(3); // there is 3 of them
+      // By the time we complete node start-up, all protocol updates and scenarios will have run.
 
-      // Wait for all protocol updates:
-      test.runUntilState(allAtOrOverEpoch(4L));
-
-      // query all scenarios
+      // Query all scenarios
       final var allScenarios =
           getStatusApi()
               .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
               .getExecutedScenarios();
-      assertThat(allScenarios).hasSize(6); // there is 3 genesis + 3 bottlenose
+      // There are 3 configured genesis scenarios + 3 bottlenose, plus more at Cuttlefish and beyond
+      assertThat(allScenarios).hasSizeGreaterThan(6);
 
       // assert some selected properties of the known scenarios
       assertScenario(
