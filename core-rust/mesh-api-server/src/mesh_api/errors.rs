@@ -7,8 +7,6 @@ use rand::distributions::Alphanumeric;
 use rand::Rng;
 use tower_http::catch_panic::ResponseForPanic;
 
-use super::models;
-
 #[derive(Debug, Clone)]
 pub(crate) struct InternalServerErrorResponseForPanic;
 
@@ -22,44 +20,37 @@ impl ResponseForPanic for InternalServerErrorResponseForPanic {
         // Please note that we deliberately do *not*:
         // - log the panic payload (since the default panic handler already does this);
         // - include the panic payload in the response (it may contain sensitive details).
-        ResponseError::new(StatusCode::INTERNAL_SERVER_ERROR, "Unexpected server error")
-            .with_internal_message("Panic caught during request-handling; see logged panic payload")
-            .into_response()
+        ResponseError::new(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Unexpected server error",
+            false,
+        )
+        .with_internal_message("Panic caught during request-handling; see logged panic payload")
+        .into_response()
     }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct ResponseError {
     status_code: StatusCode,
-    public_error_message: String,
-    public_details: Option<models::Error>,
+    error: models::Error,
     internal_message: Option<String>,
 }
 
 impl ResponseError {
-    pub fn new(status_code: StatusCode, public_error_message: impl Into<String>) -> Self {
+    pub fn new(status_code: StatusCode, error_message: impl Into<String>, retriable: bool) -> Self {
         Self {
-            status_code,
-            public_error_message: public_error_message.into(),
-            public_details: None,
+            // "500" should be returned in case of unexpected error
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+            error: models::Error::new(status_code.as_u16().into(), error_message.into(), retriable),
             internal_message: None,
-        }
-    }
-
-    pub fn with_public_details(self, public_details: models::Error) -> Self {
-        Self {
-            status_code: self.status_code,
-            public_error_message: self.public_error_message,
-            public_details: Some(public_details),
-            internal_message: self.internal_message,
         }
     }
 
     pub fn with_internal_message(self, internal_message: impl Into<String>) -> Self {
         Self {
             status_code: self.status_code,
-            public_error_message: self.public_error_message,
-            public_details: self.public_details,
+            error: self.error,
             internal_message: Some(internal_message.into()),
         }
     }
@@ -84,21 +75,28 @@ impl TraceId {
 pub struct ErrorResponseEvent {
     pub level: LogLevel,
     pub error: models::Error,
-    pub internal_message: String,
 }
 
 impl IntoResponse for ResponseError {
     fn into_response(self) -> Response {
-        // TODO what about trace id
         let trace_id = TraceId::unique();
-        // TODO remove unwrap
-        let returned_body = self.public_details.unwrap();
+        let mut returned_body = self.error;
+
+        let details = match self.internal_message {
+            Some(internal_message) => serde_json::json!({
+                "trace_id": trace_id.0,
+                "internal_message" : internal_message
+            }),
+            None => serde_json::json!({
+                "trace_id": trace_id.0,
+            }),
+        };
+
+        returned_body.details = Some(details);
+
         let error_response_event = ErrorResponseEvent {
             level: resolve_level(self.status_code),
             error: returned_body.clone(),
-            internal_message: self
-                .internal_message
-                .unwrap_or_else(|| "no internal details available".to_string()),
         };
         let mut framework_response = (self.status_code, Json(returned_body)).into_response();
         framework_response
@@ -124,11 +122,15 @@ fn resolve_level(status_code: StatusCode) -> LogLevel {
 pub async fn emit_error_response_event(uri: Uri, response: Response) -> Response {
     let event = response.extensions().get::<ErrorResponseEvent>();
     if let Some(event) = event {
-        let ErrorResponseEvent {
-            level,
-            error,
-            internal_message,
-        } = event;
+        let ErrorResponseEvent { level, error } = event;
+        let internal_message = format!(
+            "{}",
+            error
+                .details
+                .as_ref()
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| "no_details".to_string())
+        );
         match *level {
             LogLevel::TRACE => trace!(path = uri.path(), error = debug(error), internal_message),
             LogLevel::DEBUG => debug!(path = uri.path(), error = debug(error), internal_message),
@@ -150,33 +152,25 @@ impl From<StateHistoryError> for ResponseError {
             .into(),
             StateHistoryError::StateVersionInTooDistantPast {
                 first_available_version,
-            } => {
-                ResponseError::new(
-                    StatusCode::BAD_REQUEST,
-                    "Cannot request state version past the earliest available",
-                )
-                // TODO handle details
-                // .with_public_details(models::Error::StateVersionInTooDistantPastDetails {
-                //     // best-effort conversion - we should not error-out within error-handling:
-                //     earliest_available_state_version: first_available_version.number() as i64,
-                // })
-                .with_internal_message(
-                    "See the `state_hash_tree.state_version_history_length` Node configuration",
-                )
-            }
-            StateHistoryError::StateVersionInFuture { current_version } => {
-                ResponseError::new(
-                    StatusCode::BAD_REQUEST,
-                    "Cannot request state version ahead of the current top-of-ledger",
-                )
-                // TODO handle details
-                // .with_public_details(
-                //     models::ErrorDetails::StateVersionInFutureDetails {
-                //         // best-effort conversion - we should not error-out within error-handling:
-                //         current_state_version: current_version.number() as i64,
-                //     },
-                // )
-            }
+            } => ResponseError::new(
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Cannot request state version past the earliest available, which is {}",
+                    first_available_version.number()
+                ),
+                false,
+            )
+            .with_internal_message(
+                "See the `state_hash_tree.state_version_history_length` Node configuration",
+            ),
+            StateHistoryError::StateVersionInFuture { current_version } => ResponseError::new(
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Cannot request state version ahead of the current top-of-ledger, which is {}",
+                    current_version.number()
+                ),
+                false,
+            ),
         }
     }
 }
@@ -206,6 +200,7 @@ impl From<NodeFeatureDisabledError> for ResponseError {
                 "{} feature is not enabled on this Node",
                 error.public_feature_name
             ),
+            false,
         )
         .with_internal_message(format!(
             "Missing `{}` Node configuration flag",

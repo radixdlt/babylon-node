@@ -127,12 +127,15 @@ pub async fn create_server<F>(
 
 pub(crate) async fn handle_dummy_route(
     _state: State<MeshApiState>,
-    Json(_request): Json<models::NetworkIdentifier>,
+    Json(request): Json<models::NetworkIdentifier>,
 ) -> Result<Json<models::NetworkStatusResponse>, ResponseError> {
-    Err(
-        ResponseError::new(StatusCode::NOT_IMPLEMENTED, "Not implemented".to_string())
-            .with_internal_message(format!("{:?}", "message")),
+    info!("dummy_route request = {:?} ", request);
+    Err(ResponseError::new(
+        StatusCode::NOT_IMPLEMENTED,
+        "Not implemented".to_string(),
+        false,
     )
+    .with_internal_message(format!("{}", "message")))
 }
 
 #[tracing::instrument]
@@ -140,6 +143,7 @@ pub(crate) async fn handle_missing_mesh_path() -> Result<(), ResponseError> {
     Err(ResponseError::new(
         StatusCode::NOT_FOUND,
         "Try /engine-state",
+        false,
     ))
 }
 
@@ -148,6 +152,7 @@ async fn handle_not_found(metrics: State<Arc<MeshApiMetrics>>) -> Result<(), Res
     Err(ResponseError::new(
         StatusCode::NOT_FOUND,
         "Please see API docs for available endpoints",
+        false,
     ))
 }
 

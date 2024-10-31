@@ -26,6 +26,7 @@ impl From<MappingError> for ResponseError {
         ResponseError::new(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Could not render response".to_string(),
+            false,
         )
         .with_internal_message(format!("{:?}", mapping_error))
     }
@@ -61,6 +62,7 @@ impl ExtractionError {
         ResponseError::new(
             StatusCode::BAD_REQUEST,
             format!("Could not extract {field_name} from request"),
+            false,
         )
         .with_internal_message(format!("{:?}", self))
     }
