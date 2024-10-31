@@ -62,38 +62,117 @@
  * permissions under this License.
  */
 
-mod constants;
+use crate::mesh_api::{create_server, MeshApiServerConfig, MeshApiState};
+use crate::jni_prelude::*;
+use futures::channel::oneshot;
+use futures::channel::oneshot::Sender;
+use futures::FutureExt;
+use prometheus::*;
+use std::sync::{Arc, MutexGuard};
+use tokio::runtime::Runtime;
 
-/// A workaround for including the symbols defined in `state_manager`, `core_api_server` and
-/// `engine_state_api_server`.
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+use node_common::java::*;
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
+const POINTER_JNI_FIELD_NAME: &str = "rustMeshApiServerPointer";
 
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
-
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
-
-    // engine-state-api-server
-    engine_state_api_server::jni::export_extern_functions();
-
-    // mesh-api-server
-    mesh_api_server::jni::export_extern_functions();
+pub struct RunningServer {
+    pub shutdown_signal_sender: Sender<()>,
 }
+
+pub struct JNIMeshApiServer {
+    pub config: MeshApiServerConfig,
+    pub runtime: Arc<Runtime>,
+    pub state: MeshApiState,
+    pub running_server: Option<RunningServer>,
+    pub metric_registry: Arc<Registry>,
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_api_MeshApiServer_init(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    j_mesh_api_server: JObject,
+    j_config: jbyteArray,
+) {
+    jni_sbor_coded_call(&env, j_config, |config: MeshApiServerConfig| {
+        let jni_node_rust_env = JNINodeRustEnvironment::get(&env, j_rust_global_context);
+
+        let jni_mesh_api_server = JNIMeshApiServer {
+            runtime: jni_node_rust_env.runtime.clone(),
+            state: MeshApiState {
+                network: jni_node_rust_env.network.clone(),
+                state_manager: jni_node_rust_env.state_manager.clone(),
+            },
+            config,
+            running_server: None,
+            metric_registry: jni_node_rust_env.metric_registry.clone(),
+        };
+
+        env.set_rust_field(
+            j_mesh_api_server,
+            POINTER_JNI_FIELD_NAME,
+            jni_mesh_api_server,
+        )
+        .unwrap()
+    });
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_api_MeshApiServer_start(
+    env: JNIEnv,
+    _class: JClass,
+    j_mesh_api_server: JObject,
+) {
+    jni_call(&env, || {
+        let (shutdown_signal_sender, shutdown_signal_receiver) = oneshot::channel::<()>();
+
+        let mut jni_mesh_api_server: MutexGuard<JNIMeshApiServer> = env
+            .get_rust_field(j_mesh_api_server, POINTER_JNI_FIELD_NAME)
+            .unwrap();
+
+        let config = &jni_mesh_api_server.config;
+
+        let state = jni_mesh_api_server.state.clone();
+        let runtime = &jni_mesh_api_server.runtime;
+        let metric_registry = jni_mesh_api_server.metric_registry.clone();
+
+        let bind_addr = format!("{}:{}", config.bind_interface, config.port);
+        runtime.spawn(async move {
+            create_server(
+                &bind_addr,
+                shutdown_signal_receiver.map(|_| ()),
+                state,
+                &metric_registry,
+            )
+            .await;
+        });
+
+        jni_mesh_api_server.running_server = Some(RunningServer {
+            shutdown_signal_sender,
+        });
+    });
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_api_MeshApiServer_stop(
+    env: JNIEnv,
+    _class: JClass,
+    j_mesh_api_server: JObject,
+) {
+    jni_call(&env, || {
+        if let Ok(jni_mesh_api_server) = env
+            .take_rust_field::<JObject, &str, JNIMeshApiServer>(
+                j_mesh_api_server,
+                POINTER_JNI_FIELD_NAME,
+            )
+        {
+            if let Some(running_server) = jni_mesh_api_server.running_server {
+                running_server.shutdown_signal_sender.send(()).unwrap();
+            }
+            // No-op, drop the jni_mesh_api_server
+        }
+    });
+}
+
+pub fn export_extern_functions() {}

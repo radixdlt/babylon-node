@@ -61,39 +61,28 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
+mod conversions;
+mod errors;
+mod handlers;
+mod metrics;
+mod metrics_layer;
+mod paging;
+mod server;
 
-mod constants;
+#[allow(unused)]
+#[rustfmt::skip]
+#[allow(clippy::all)]
+mod generated;
 
-/// A workaround for including the symbols defined in `state_manager`, `core_api_server` and
-/// `engine_state_api_server`.
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+pub(crate) use conversions::*;
+pub(crate) use errors::*;
+pub(crate) use handlers::*;
+pub(crate) use paging::*;
+pub(crate) use server::{create_server, MeshApiServerConfig, MeshApiState};
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
-
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
-
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
-
-    // engine-state-api-server
-    engine_state_api_server::jni::export_extern_functions();
-
-    // mesh-api-server
-    mesh_api_server::jni::export_extern_functions();
+pub(crate) mod models {
+    pub(crate) use super::generated::models::*;
 }
+
+// Re-exports for handlers
+pub use hyper::StatusCode;

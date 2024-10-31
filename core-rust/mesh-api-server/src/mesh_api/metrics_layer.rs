@@ -62,38 +62,82 @@
  * permissions under this License.
  */
 
-mod constants;
+use std::{
+    sync::Arc,
+    task::{Context, Poll},
+    time::Instant,
+};
 
-/// A workaround for including the symbols defined in `state_manager`, `core_api_server` and
-/// `engine_state_api_server`.
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+use axum::{http::Request, response::Response};
+use futures_util::future::BoxFuture;
+use node_common::metrics::TakesMetricLabels;
+use tower::{Layer, Service};
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
+use super::metrics::MeshApiMetrics;
 
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
+#[derive(Debug, Clone)]
+pub struct MetricsLayer {
+    metrics: Arc<MeshApiMetrics>,
+}
 
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+impl MetricsLayer {
+    pub fn new(metrics: Arc<MeshApiMetrics>) -> Self {
+        Self { metrics }
+    }
+}
 
-    // engine-state-api-server
-    engine_state_api_server::jni::export_extern_functions();
+impl<S> Layer<S> for MetricsLayer {
+    type Service = MetricsService<S>;
 
-    // mesh-api-server
-    mesh_api_server::jni::export_extern_functions();
+    fn layer(&self, inner: S) -> Self::Service {
+        MetricsService {
+            inner,
+            metrics: self.metrics.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MetricsService<S> {
+    inner: S,
+    metrics: Arc<MeshApiMetrics>,
+}
+
+impl<S, ReqBody> Service<Request<ReqBody>> for MetricsService<S>
+where
+    S: Service<Request<ReqBody>, Response = Response> + Send + 'static,
+    S::Future: Send + 'static,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+    #[inline]
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, request: Request<ReqBody>) -> Self::Future {
+        let start = Instant::now();
+        let endpoint: String = request.uri().path().into();
+
+        let metrics = self.metrics.clone();
+        metrics.requests_accepted.with_label(endpoint.clone()).inc();
+
+        let future = self.inner.call(request);
+
+        Box::pin(async move {
+            let response: Response = future.await?;
+
+            let duration = start.elapsed().as_secs_f64();
+            let status = response.status().as_u16().to_string();
+
+            metrics
+                .handle_request
+                .with_two_labels(endpoint.clone(), status)
+                .observe(duration);
+
+            Ok(response)
+        })
+    }
 }

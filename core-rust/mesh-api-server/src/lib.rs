@@ -62,38 +62,53 @@
  * permissions under this License.
  */
 
-mod constants;
+extern crate serde;
+extern crate serde_json;
 
-/// A workaround for including the symbols defined in `state_manager`, `core_api_server` and
-/// `engine_state_api_server`.
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+pub mod jni;
+mod mesh_api;
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
+#[allow(unused_imports)]
+pub(crate) mod prelude {
+    pub(crate) use crate::engine_prelude::*;
+    pub(crate) use node_common::prelude::*;
+    pub(crate) use state_manager::prelude::*;
 
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
+    pub(crate) use crate::mesh_api::*;
+    pub(crate) use historical_state::*;
 
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+    // Axum imports
+    pub(crate) use axum::{
+        body::BoxBody,
+        http::Uri,
+        response::{IntoResponse, Response},
+        Json,
+    };
+}
 
-    // engine-state-api-server
-    engine_state_api_server::jni::export_extern_functions();
+pub(crate) mod jni_prelude {
+    pub(crate) use crate::prelude::*;
+    pub(crate) use state_manager::jni_prelude::*;
+}
 
-    // mesh-api-server
-    mesh_api_server::jni::export_extern_functions();
+pub(crate) mod engine_prelude {
+    pub use radix_blueprint_schema_init::*;
+
+    pub use radix_engine::object_modules::metadata::*;
+    pub use radix_engine::system::system_db_reader::*;
+    pub use radix_engine::system::system_type_checker::*;
+    pub use radix_engine::vm::*;
+
+    pub use radix_common::prelude::*;
+
+    pub use radix_engine_interface::prelude::*;
+
+    pub use radix_transactions::model::*;
+
+    pub use radix_transactions::errors::*;
+    pub use sbor::representations::*;
+
+    pub use radix_substate_store_impls::substate_database_overlay::*;
+    pub use radix_substate_store_interface::interface::*;
+    pub use radix_substate_store_queries::typed_substate_layout::*;
 }

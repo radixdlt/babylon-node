@@ -5,6 +5,7 @@ members = [
     "core-api-server",
     "engine-state-api-server",
     "state-manager",
+    "mesh-api-server"
 ]
 resolver = "2"
 
@@ -15,7 +16,7 @@ resolver = "2"
 # ================================================================
 #
 # To make builds reproducible, we must specify a fixed tag below, not a branch.
-# 
+#
 # Go to your checkout of `radixdlt-scrypto`, then run the following:
 #  $ git checkout <relevant-branch>
 #  $ git pull

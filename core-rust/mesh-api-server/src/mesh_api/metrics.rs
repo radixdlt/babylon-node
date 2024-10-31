@@ -62,38 +62,43 @@
  * permissions under this License.
  */
 
-mod constants;
+use node_common::metrics::*;
+use prometheus::*;
 
-/// A workaround for including the symbols defined in `state_manager`, `core_api_server` and
-/// `engine_state_api_server`.
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+#[derive(Debug, Clone)]
+pub struct MeshApiMetrics {
+    pub handle_request: HistogramVec,
+    pub requests_accepted: IntCounterVec,
+    pub requests_not_found: IntCounter,
+}
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
-
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
-
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
-
-    // engine-state-api-server
-    engine_state_api_server::jni::export_extern_functions();
-
-    // mesh-api-server
-    mesh_api_server::jni::export_extern_functions();
+impl MeshApiMetrics {
+    pub fn new(registry: &Registry) -> Self {
+        MeshApiMetrics {
+            handle_request: new_timer_vec(
+                opts(
+                    "mesh_api_handle_request",
+                    "Time spent by endpoint and status.",
+                ),
+                &["endpoint", "status"],
+                vec![
+                    0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0,
+                ],
+            )
+            .registered_at(registry),
+            requests_accepted: IntCounterVec::new(
+                opts(
+                    "mesh_api_requests_accepted",
+                    "Number of accepted requests by endpoint.",
+                ),
+                &["endpoint"],
+            )
+            .registered_at(registry),
+            requests_not_found: IntCounter::new(
+                "mesh_api_requests_not_found",
+                "Number of total requests that did not match any configured route.",
+            )
+            .registered_at(registry),
+        }
+    }
 }

@@ -62,38 +62,97 @@
  * permissions under this License.
  */
 
-mod constants;
+use crate::prelude::*;
+use std::future::Future;
+use std::sync::Arc;
 
-/// A workaround for including the symbols defined in `state_manager`, `core_api_server` and
-/// `engine_state_api_server`.
-/// in the output library file. See: https://github.com/rust-lang/rfcs/issues/2771
-/// I truly have no idea why this works, but it does.
-#[no_mangle]
-fn export_extern_functions() {
-    constants::export_extern_functions();
+use super::metrics::MeshApiMetrics;
+use super::metrics_layer::MetricsLayer;
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::middleware::map_response;
 
-    // node-common
-    node_common::jni::addressing::export_extern_functions();
-    node_common::jni::scrypto_constants::export_extern_functions();
+use axum::{
+    routing::{get, post},
+    Router,
+};
 
-    // state-manager
-    state_manager::jni::db_checkpoints::export_extern_functions();
-    state_manager::jni::mempool::export_extern_functions();
-    state_manager::jni::node_rust_environment::export_extern_functions();
-    state_manager::jni::protocol_update::export_extern_functions();
-    state_manager::jni::state_computer::export_extern_functions();
-    state_manager::jni::state_reader::export_extern_functions();
-    state_manager::jni::transaction_preparer::export_extern_functions();
-    state_manager::jni::transaction_store::export_extern_functions();
-    state_manager::jni::vertex_store_recovery::export_extern_functions();
-    state_manager::jni::test_state_reader::export_extern_functions();
+use prometheus::Registry;
+use state_manager::state_manager::StateManager;
+use tower_http::catch_panic::CatchPanicLayer;
 
-    // core-api-server
-    core_api_server::jni::export_extern_functions();
+use super::{handlers::*, ResponseError};
 
-    // engine-state-api-server
-    engine_state_api_server::jni::export_extern_functions();
+use crate::mesh_api::{emit_error_response_event, InternalServerErrorResponseForPanic};
 
-    // mesh-api-server
-    mesh_api_server::jni::export_extern_functions();
+#[derive(Clone)]
+pub struct MeshApiState {
+    pub network: NetworkDefinition,
+    pub state_manager: StateManager,
+}
+
+pub async fn create_server<F>(
+    bind_addr: &str,
+    shutdown_signal: F,
+    mesh_api_state: MeshApiState,
+    metric_registry: &Registry,
+) where
+    F: Future<Output = ()>,
+{
+    let router = Router::new()
+        .route("/dummy/route", post(handle_dummy_route))
+        .with_state(mesh_api_state);
+
+    let metrics = Arc::new(MeshApiMetrics::new(metric_registry));
+
+    let prefixed_router = Router::new()
+        .nest("/engine-state", router)
+        .route("/", get(handle_missing_mesh_path))
+        .layer(CatchPanicLayer::custom(InternalServerErrorResponseForPanic))
+        // Note: it is important to run the metrics middleware only on router matched paths to avoid out of memory crash
+        // of node or full storage for prometheus server.
+        .route_layer(MetricsLayer::new(metrics.clone()))
+        .layer(map_response(emit_error_response_event))
+        .fallback(handle_not_found)
+        .with_state(metrics);
+
+    let bind_addr = bind_addr.parse().expect("Failed to parse bind address");
+
+    axum::Server::bind(&bind_addr)
+        .serve(prefixed_router.into_make_service())
+        .with_graceful_shutdown(shutdown_signal)
+        .await
+        .unwrap();
+}
+
+pub(crate) async fn handle_dummy_route(
+    _state: State<MeshApiState>,
+    Json(_request): Json<models::NetworkIdentifier>,
+) -> Result<Json<models::NetworkStatusResponse>, ResponseError> {
+    Err(
+        ResponseError::new(StatusCode::NOT_IMPLEMENTED, "Not implemented".to_string())
+            .with_internal_message(format!("{:?}", "message")),
+    )
+}
+
+#[tracing::instrument]
+pub(crate) async fn handle_missing_mesh_path() -> Result<(), ResponseError> {
+    Err(ResponseError::new(
+        StatusCode::NOT_FOUND,
+        "Try /engine-state",
+    ))
+}
+
+async fn handle_not_found(metrics: State<Arc<MeshApiMetrics>>) -> Result<(), ResponseError> {
+    metrics.requests_not_found.inc();
+    Err(ResponseError::new(
+        StatusCode::NOT_FOUND,
+        "Please see API docs for available endpoints",
+    ))
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct MeshApiServerConfig {
+    pub bind_interface: String,
+    pub port: u32,
 }

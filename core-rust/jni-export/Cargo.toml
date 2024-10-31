@@ -8,6 +8,7 @@ node-common = { path = "../node-common" }
 state-manager = { path = "../state-manager" }
 core-api-server = { path = "../core-api-server" }
 engine-state-api-server = { path = "../engine-state-api-server" }
+mesh-api-server = { path = "../mesh-api-server" }
 
 sbor = { workspace = true }
 radix-transactions = { workspace = true }

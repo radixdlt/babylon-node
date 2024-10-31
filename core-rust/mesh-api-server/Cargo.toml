@@ -1,0 +1,44 @@
+[package]
+name = "mesh-api-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+node-common = { path = "../node-common" }
+state-manager = { path = "../state-manager" }
+
+sbor = { workspace = true }
+radix-transactions = { workspace = true }
+radix-common = { workspace = true }
+radix-engine-interface = { workspace = true }
+radix-engine = { workspace = true }
+radix-substate-store-impls = { workspace = true }
+radix-substate-store-interface = { workspace = true }
+radix-substate-store-queries = { workspace = true }
+radix-blueprint-schema-init = { workspace = true }
+radix-rust = { workspace = true }
+
+# Non-Radix Engine Dependencies:
+jni = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+prometheus = { workspace = true }
+blake2 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_with = { workspace = true }
+itertools = { workspace = true }
+rand = { workspace = true }
+chrono = { workspace = true }
+hex = { workspace = true }
+futures = { workspace = true }
+futures-util = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+hyper = { workspace = true }
+paste = { workspace = true }
+
+convert_case = { version = "=0.6.0" }
+regex = { version = "=1.9.3"}
+lazy_static = { version = "=1.4.0" }
