@@ -1,6 +1,10 @@
 use super::{HasKey, Page, ResponseError};
 use crate::engine_prelude::*;
 
+mod network_status;
+
+pub(crate) use network_status::*;
+
 use crate::mesh_api::{
     extract_from_sbor_hex_string, extract_max_page_size, to_api_sbor_hex_string, ExtractionError,
     MaxItemCountPolicy, NextKeyPager,

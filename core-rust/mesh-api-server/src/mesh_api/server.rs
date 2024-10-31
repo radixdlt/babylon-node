@@ -100,13 +100,13 @@ pub async fn create_server<F>(
     F: Future<Output = ()>,
 {
     let router = Router::new()
-        .route("/dummy/route", post(handle_dummy_route))
+        .route("/network/status", post(handle_network_status))
         .with_state(mesh_api_state);
 
     let metrics = Arc::new(MeshApiMetrics::new(metric_registry));
 
     let prefixed_router = Router::new()
-        .nest("/engine-state", router)
+        .nest("/mesh", router)
         .route("/", get(handle_missing_mesh_path))
         .layer(CatchPanicLayer::custom(InternalServerErrorResponseForPanic))
         // Note: it is important to run the metrics middleware only on router matched paths to avoid out of memory crash
@@ -125,24 +125,11 @@ pub async fn create_server<F>(
         .unwrap();
 }
 
-pub(crate) async fn handle_dummy_route(
-    _state: State<MeshApiState>,
-    Json(request): Json<models::NetworkIdentifier>,
-) -> Result<Json<models::NetworkStatusResponse>, ResponseError> {
-    info!("dummy_route request = {:?} ", request);
-    Err(ResponseError::new(
-        StatusCode::NOT_IMPLEMENTED,
-        "Not implemented".to_string(),
-        false,
-    )
-    .with_internal_message(format!("{}", "message")))
-}
-
 #[tracing::instrument]
 pub(crate) async fn handle_missing_mesh_path() -> Result<(), ResponseError> {
     Err(ResponseError::new(
         StatusCode::NOT_FOUND,
-        "Try /engine-state",
+        "Try /mesh",
         false,
     ))
 }

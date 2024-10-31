@@ -10,6 +10,23 @@ const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const DEFAULT_MAX_PAGE_SIZE: usize = 100; // Must match the OpenAPI's `MaxPageSize.maximum`
 
 #[tracing::instrument(skip_all)]
+pub fn to_api_epoch(mapping_context: &MappingContext, epoch: Epoch) -> Result<i64, MappingError> {
+    if epoch.number() > MAX_API_EPOCH {
+        if mapping_context.uncommitted_data {
+            // If we're mapping uncommitted data, then it's possible that the epoch is purposefully invalid.
+            // So saturate to MAX_API_EPOCH in this case.
+            return Ok(MAX_API_EPOCH
+                .try_into()
+                .expect("Max epoch too large somehow"));
+        }
+        return Err(MappingError::IntegerError {
+            message: "Epoch larger than max api epoch".to_owned(),
+        });
+    }
+    Ok(epoch.number().try_into().expect("Epoch too large somehow"))
+}
+
+#[tracing::instrument(skip_all)]
 pub fn to_api_round(round: Round) -> Result<i64, MappingError> {
     if round.number() > MAX_API_ROUND {
         return Err(MappingError::IntegerError {

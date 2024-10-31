@@ -208,3 +208,24 @@ impl From<NodeFeatureDisabledError> for ResponseError {
         ))
     }
 }
+
+pub(crate) fn assert_matching_network(
+    request_network: &str,
+    network_definition: &NetworkDefinition,
+) -> Result<(), ResponseError> {
+    if request_network != network_definition.logical_name {
+        return Err(client_error(
+            format!(
+                "Invalid network - the network is actually: {}",
+                network_definition.logical_name
+            ),
+            false,
+        ));
+    }
+    Ok(())
+}
+
+// TODO - Add logging, metrics and tracing for all of these errors - require the error is passed in here
+pub(crate) fn client_error(message: impl Into<String>, retriable: bool) -> ResponseError {
+    ResponseError::new(StatusCode::BAD_REQUEST, message, retriable)
+}

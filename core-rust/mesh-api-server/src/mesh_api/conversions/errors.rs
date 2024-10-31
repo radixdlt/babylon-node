@@ -16,9 +16,13 @@ pub enum MappingError {
     InvalidEntityAddress {
         encode_error: AddressBech32EncodeError,
     },
+    MismatchedSubstateId {
+        message: String,
+    },
     IntegerError {
         message: String,
     },
+    ProofNotFound,
 }
 
 impl From<MappingError> for ResponseError {
