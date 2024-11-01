@@ -35,11 +35,7 @@ pub(crate) async fn handle_transaction_submit(
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::TransactionSubmitResponse::new(true)),
         Err(MempoolAddError::Rejected(rejection)) => {
-            if rejection.is_rejected_because_intent_already_committed() {
-                let already_committed_error = rejection
-                    .reason
-                    .already_committed_error()
-                    .expect("Already committed rejections should have an already_committed_error");
+            if let Some(already_committed_error) = rejection.transaction_intent_already_committed_error() {
                 Err(detailed_error(
                     StatusCode::BAD_REQUEST,
                     "The transaction intent has already been committed",

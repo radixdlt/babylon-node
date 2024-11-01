@@ -13,7 +13,7 @@ pub type ExecutionRejectionReason = RejectionReason;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MempoolRejectionReason {
-    AlreadyCommitted(AlreadyCommittedError),
+    TransactionIntentAlreadyCommitted(AlreadyCommittedError),
     FromExecution(Box<ExecutionRejectionReason>),
     ValidationError(TransactionValidationError),
 }
@@ -40,35 +40,19 @@ impl MempoolRejectionReason {
         self.permanence().is_permanent_for_intent()
     }
 
-    pub fn is_rejected_because_intent_already_committed(&self) -> bool {
+    pub fn transaction_intent_already_committed_error(&self) -> Option<&AlreadyCommittedError> {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(_) => true,
-            MempoolRejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
-                ExecutionRejectionReason::BootloadingError(_) => false,
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
-                ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
-                ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
-                ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
-                ExecutionRejectionReason::TransactionProposerTimestampNotYetValid { .. } => false,
-                ExecutionRejectionReason::TransactionProposerTimestampNoLongerValid { .. } => false,
-                ExecutionRejectionReason::IntentHashPreviouslyCommitted(_) => true,
-                ExecutionRejectionReason::IntentHashPreviouslyCancelled(_) => true,
-                ExecutionRejectionReason::SubintentsNotYetSupported => false,
-            },
-            MempoolRejectionReason::ValidationError(_) => false,
-        }
-    }
-
-    pub fn already_committed_error(&self) -> Option<&AlreadyCommittedError> {
-        match self {
-            MempoolRejectionReason::AlreadyCommitted(error) => Some(error),
-            _ => None,
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(already_committed_error) => {
+                Some(already_committed_error)
+            }
+            MempoolRejectionReason::FromExecution(_) => None,
+            MempoolRejectionReason::ValidationError(_) => None,
         }
     }
 
     pub fn permanence(&self) -> RejectionPermanence {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(_) => {
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(_) => {
                 // This is permanent for the intent - because even other, non-committed transactions
                 // of the same intent will fail with `ExecutionRejectionReason::IntentHashPreviouslyCommitted`
                 RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
@@ -197,7 +181,7 @@ pub enum RetrySettings {
 impl fmt::Display for MempoolRejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(error) => {
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(error) => {
                 write!(f, "Already committed: {error:?}")
             }
             MempoolRejectionReason::FromExecution(rejection_error) => {
@@ -619,7 +603,7 @@ impl PendingTransactionResultCache {
                     // We even overwrite the record for transaction which got committed here
                     // because this is a cache for pending transactions, and it can't be re-committed
                     record.track_attempt(TransactionAttempt {
-                        rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                        rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                             AlreadyCommittedError {
                                 notarized_transaction_hash: *cached_payload_hash,
                                 committed_state_version: committed_transaction.state_version,
@@ -654,7 +638,7 @@ impl PendingTransactionResultCache {
                 *intent_hash,
                 None,
                 TransactionAttempt {
-                    rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                    rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                         AlreadyCommittedError {
                             notarized_transaction_hash: *notarized_transaction_hash,
                             committed_state_version: committed_intent_record.state_version,

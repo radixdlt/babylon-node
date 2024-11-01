@@ -134,15 +134,15 @@ impl MempoolAddRejection {
         }
     }
 
-    pub fn is_rejected_because_intent_already_committed(&self) -> bool {
+    pub fn transaction_intent_already_committed_error(&self) -> Option<&AlreadyCommittedError> {
         match &self.against_state {
             AtState::Specific(specific) => match specific {
                 AtSpecificState::Committed { .. } => {
-                    self.reason.is_rejected_because_intent_already_committed()
+                    self.reason.transaction_intent_already_committed_error()
                 }
-                AtSpecificState::PendingPreparingVertices { .. } => false,
+                AtSpecificState::PendingPreparingVertices { .. } => None,
             },
-            AtState::Static => false,
+            AtState::Static => None,
         }
     }
 }

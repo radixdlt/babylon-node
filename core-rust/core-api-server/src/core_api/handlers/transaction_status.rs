@@ -211,11 +211,14 @@ fn map_rejected_payloads_due_to_known_commit(
                 // commit, and we may see a "not-yet-updated" entry - luckily, in such case, we can
                 // precisely tell the transaction's status ourselves:
                 .unwrap_or_else(|| {
-                    MempoolRejectionReason::AlreadyCommitted(AlreadyCommittedError {
-                        notarized_transaction_hash,
-                        committed_state_version,
-                        committed_notarized_transaction_hash: *committed_notarized_transaction_hash,
-                    })
+                    MempoolRejectionReason::TransactionIntentAlreadyCommitted(
+                        AlreadyCommittedError {
+                            notarized_transaction_hash,
+                            committed_state_version,
+                            committed_notarized_transaction_hash:
+                                *committed_notarized_transaction_hash,
+                        },
+                    )
                     .to_string()
                 });
             Ok(models::TransactionPayloadDetails {

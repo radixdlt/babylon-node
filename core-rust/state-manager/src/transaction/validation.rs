@@ -76,7 +76,7 @@ impl CommittabilityValidator {
                 .expect("transaction of a state version obtained from an index");
 
             return TransactionAttempt {
-                rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                     AlreadyCommittedError {
                         notarized_transaction_hash: user_hashes.notarized_transaction_hash,
                         committed_state_version: state_version,
@@ -107,6 +107,7 @@ impl CommittabilityValidator {
                         IntentHash::Transaction(_)
                     )
                 ) {
+                    // Note - this panic protects against the invariant that already_committed_error()
                     panic!(
                         "[INVARIANT VIOLATION] When checking for rejection against a database snapshot, a transaction intent {:?} was not found in the Node's stores, but was reported as committed by the Engine",
                         user_hashes.transaction_intent_hash
