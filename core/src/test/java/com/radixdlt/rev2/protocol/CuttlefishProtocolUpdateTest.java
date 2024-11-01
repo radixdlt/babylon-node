@@ -147,7 +147,9 @@ public final class CuttlefishProtocolUpdateTest {
           TransactionIntentStatus.NOTSEEN, coreApiHelper.getStatus(transactionA).getIntentStatus());
 
       // Arrange: Run the protocol update:
-      test.runUntilState(allAtOrOverEpoch(ENACTMENT_EPOCH));
+      test.runUntilState(
+          allAtExactlyProtocolVersion(ProtocolConfig.CUTTLEFISH_PROTOCOL_VERSION_NAME));
+
       assertEquals(
           ProtocolConfig.CUTTLEFISH_PROTOCOL_VERSION_NAME,
           stateComputer.protocolState().currentProtocolVersion());

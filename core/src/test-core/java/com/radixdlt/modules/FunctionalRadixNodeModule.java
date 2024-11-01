@@ -302,6 +302,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   @Override
   public void configure() {
     install(new DispatcherModule());
+    install(new SystemInfoModule());
 
     switch (this.nodeStorageConfig) {
       case NodeStorageConfig.None none -> {}

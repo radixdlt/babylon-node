@@ -163,6 +163,7 @@ public class HealthHandlerTest extends SystemApiTestBase {
                         Set.of() /* unused in this test */,
                         EPOCH_TARGET_DURATION_MS,
                         EPOCH_EFFECTIVE_START_MS));
+            when(systemInfo.ledgerUpdateEventProcessor()).thenReturn(ignored -> {});
             bind(InMemorySystemInfo.class).toInstance(systemInfo);
           }
         });

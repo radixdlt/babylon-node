@@ -120,38 +120,40 @@ public record ProtocolConfig(
   }
 
   public static ProtocolConfig launchAt(String upToProtocolVersionName) {
-    String newVersion = null;
+    String previousVersion = null;
     List<ProtocolUpdateTrigger> protocolUpdateTriggers = new ArrayList<>();
     for (String version : VERSION_NAMES) {
-      var lastVersion = newVersion;
-      newVersion = version;
-      if (lastVersion != null) {
+      if (previousVersion != null) {
         protocolUpdateTriggers.add(
-            new ProtocolUpdateTrigger(newVersion, immediatelyAfter(lastVersion)));
+            new ProtocolUpdateTrigger(version, immediatelyAfter(previousVersion)));
+        if (version.equals(upToProtocolVersionName)) {
+          break;
+        }
       }
-      if (newVersion.equals(upToProtocolVersionName)) {
-        break;
-      }
+      previousVersion = version;
     }
     return new ProtocolConfig(ImmutableList.copyOf(protocolUpdateTriggers));
   }
 
+  /**
+   * Runs all previous updates straight after genesis, and then enacts `upToProtocolVersionName` at
+   * the given epoch.
+   */
   public static ProtocolConfig enactAtEpoch(String upToProtocolVersionName, long epoch) {
-    String newVersion = null;
+    String previousVersion = null;
     List<ProtocolUpdateTrigger> protocolUpdateTriggers = new ArrayList<>();
     for (String version : VERSION_NAMES) {
-      var lastVersion = newVersion;
-      newVersion = version;
-      if (lastVersion != null) {
-        if (newVersion.equals(upToProtocolVersionName)) {
+      if (previousVersion != null) {
+        if (version.equals(upToProtocolVersionName)) {
           protocolUpdateTriggers.add(
-              new ProtocolUpdateTrigger(newVersion, unconditionallyAtEpoch(epoch)));
+              new ProtocolUpdateTrigger(version, unconditionallyAtEpoch(epoch)));
           break;
         } else {
           protocolUpdateTriggers.add(
-              new ProtocolUpdateTrigger(newVersion, immediatelyAfter(lastVersion)));
+              new ProtocolUpdateTrigger(version, immediatelyAfter(previousVersion)));
         }
       }
+      previousVersion = version;
     }
     return new ProtocolConfig(ImmutableList.copyOf(protocolUpdateTriggers));
   }
