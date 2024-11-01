@@ -302,7 +302,6 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
   @Override
   public void configure() {
     install(new DispatcherModule());
-    install(new SystemInfoModule());
 
     switch (this.nodeStorageConfig) {
       case NodeStorageConfig.None none -> {}
@@ -407,6 +406,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 RawGenesisDataWithHash.fromGenesisData(rev2Config.genesis());
             install(new REv2LedgerRecoveryModule());
             install(new REv2ConsensusRecoveryModule());
+            install(new SystemInfoModule());
 
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {
