@@ -144,8 +144,7 @@ impl ProtocolConfig {
     }
 }
 
-// Note - at present we don't validate this on SBOR decode, but we do validate it when
-// it's first used for
+// Note - at present we don't validate this on SBOR decode, but we do validate it when it's used.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, PartialOrd, Ord, Sbor)]
 #[sbor(transparent)]
 pub struct ProtocolVersionName(String);

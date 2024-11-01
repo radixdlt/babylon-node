@@ -83,7 +83,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import okhttp3.*;
+import java.util.stream.Collectors;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -107,7 +109,6 @@ final class NetworkQueryHostIp {
           makeurl("https://ipv4.icanhazip.com/"),
           makeurl("https://myexternalip.com/raw"),
           makeurl("https://ipecho.net/plain"),
-          makeurl("https://ifconfig.me"),
           makeurl("https://www.trackip.net/ip"),
           makeurl("https://ifconfig.co/ip"));
 
@@ -148,33 +149,46 @@ final class NetworkQueryHostIp {
   }
 
   VotedResult get() {
-    return publicIp((count() + 1) / 2); // Round up
-  }
-
-  VotedResult publicIp(int threshold) {
     // Make sure we don't DoS the first one on the list
     Collections.shuffle(this.hosts);
     log.debug("Using hosts {}", this.hosts);
     final Map<HostIp, AtomicInteger> successCounts = Maps.newHashMap();
     final ImmutableMap.Builder<URL, Result<HostIp, IOException>> queryResults =
         ImmutableMap.builder();
+    int maxCount = 0;
+    Optional<HostIp> maxResult = Optional.empty();
     for (URL url : this.hosts) {
       final Result<HostIp, IOException> result = query(url);
       queryResults.put(url, result);
-      final Optional<HostIp> success = result.toOptional();
-      if (success.isPresent()) {
+      if (result.isSuccess()) {
         int newCount =
             successCounts
-                .computeIfAbsent(success.get(), k -> new AtomicInteger())
+                .computeIfAbsent(result.unwrap(), k -> new AtomicInteger())
                 .incrementAndGet();
-        if (newCount >= threshold) {
-          log.debug("Found address {}", success.get());
-          return new VotedResult(success, queryResults.build());
+        if (newCount > maxCount) {
+          maxCount = newCount;
+          maxResult = result.toOptional();
         }
       }
     }
-    log.debug("No suitable address found");
-    return new VotedResult(Optional.empty(), queryResults.build());
+    if (successCounts.isEmpty()) {
+      log.warn(
+          "Attempts to resolve this node's public IP address with external resolution services"
+              + " failed at every attempt. Perhaps this node cannot connect to the internet?");
+    }
+    if (successCounts.size() > 1) {
+      String votes =
+          successCounts.keySet().stream()
+              .map(key -> key + "=" + successCounts.get(key))
+              .collect(Collectors.joining(", ", "{", "}"));
+      log.warn(
+          String.format(
+              "Attempts to resolve this node's public IP address with external resolution services"
+                  + " resulted in more than one distinct IP address. The node will continue by"
+                  + " using the most common: %s. The full list of resolved addresses is: %s",
+              maxResult.get(), votes));
+    }
+    return new VotedResult(maxResult, queryResults.build());
   }
 
   Result<HostIp, IOException> query(URL url) {

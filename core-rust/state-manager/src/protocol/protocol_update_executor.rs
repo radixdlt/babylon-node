@@ -186,7 +186,7 @@ impl NodeProtocolUpdateExecutor {
                 }
             }
         }
-        info!("Protocol update to {protocol_version:?} is complete");
+        info!("[UPDATE: {protocol_version}] The protocol update has completed successfully");
     }
 
     fn resolve_batch_ledger_state_identifiers(
