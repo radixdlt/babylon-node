@@ -433,7 +433,7 @@ impl Preparator {
                                 index,
                                 error_message,
                                 ledger_hash,
-                                user_hashes,
+                                user_hashes.clone(),
                             ));
                             pending_transaction_results.push(PendingTransactionResult {
                                 transaction_intent_hash: user_hashes.transaction_intent_hash,
@@ -451,7 +451,9 @@ impl Preparator {
             };
 
             let prepared_details = prepared_details.retrieve_captured();
-            let user_hashes = prepared_details.hashes.as_user().unwrap();
+            let user_hashes = prepared_details.hashes.as_user().unwrap().clone();
+            let transaction_intent_hash = user_hashes.transaction_intent_hash;
+            let notarized_transaction_hash = user_hashes.notarized_transaction_hash;
             let ledger_transaction_hash = prepared_details.hashes.ledger_transaction_hash;
             let invalid_at_epoch = prepared_details.end_epoch_exclusive;
 
@@ -485,8 +487,8 @@ impl Preparator {
                                 user_hashes,
                             ));
                             pending_transaction_results.push(PendingTransactionResult {
-                                transaction_intent_hash: user_hashes.transaction_intent_hash,
-                                notarized_transaction_hash: user_hashes.notarized_transaction_hash,
+                                transaction_intent_hash,
+                                notarized_transaction_hash,
                                 invalid_at_epoch,
                                 rejection_reason: None,
                             });

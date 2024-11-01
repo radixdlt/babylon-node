@@ -206,14 +206,14 @@ pub fn to_api_transaction_validator_configuration_substate(
                 max_epoch_range,
                 max_instructions,
                 message_validation,
-                allow_notary_to_duplicate_signer,
+                v1_transactions_allow_notary_to_duplicate_signer,
                 preparation_settings,
                 manifest_validation,
                 v2_transactions_allowed,
                 min_tip_basis_points,
                 max_tip_basis_points,
                 max_subintent_depth,
-                max_total_signer_signatures,
+                max_total_signature_validations,
                 max_total_references,
             } = config;
 

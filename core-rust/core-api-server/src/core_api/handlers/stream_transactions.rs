@@ -343,7 +343,7 @@ pub fn to_api_ledger_transaction(
                 notarized_transaction: Box::new(to_api_notarized_transaction_v1(
                     context,
                     tx,
-                    &user_hashes,
+                    user_hashes,
                 )?),
             }
         }
@@ -360,7 +360,7 @@ pub fn to_api_ledger_transaction(
                 notarized_transaction: Box::new(to_api_notarized_transaction_v2(
                     context,
                     tx,
-                    &user_hashes,
+                    user_hashes,
                 )?),
             }
         }
@@ -874,6 +874,7 @@ pub fn to_api_notarized_transaction_v2(
             context,
             signed_transaction_intent,
             &user_hashes.transaction_intent_hash,
+            user_hashes.non_root_subintent_hashes.as_slice(),
             &user_hashes.signed_transaction_intent_hash,
         )?),
         notary_signature: Some(to_api_signature(&notary_signature.0)),
@@ -884,6 +885,7 @@ pub fn to_api_signed_transaction_intent_v2(
     context: &MappingContext,
     signed: &SignedTransactionIntentV2,
     transaction_intent_hash: &TransactionIntentHash,
+    non_root_subintent_hashes: &[SubintentHash],
     signed_transaction_intent_hash: &SignedTransactionIntentHash,
 ) -> Result<models::SignedTransactionIntentV2, MappingError> {
     let SignedTransactionIntentV2 {
@@ -898,6 +900,7 @@ pub fn to_api_signed_transaction_intent_v2(
             context,
             transaction_intent,
             transaction_intent_hash,
+            non_root_subintent_hashes,
         )?),
         transaction_intent_signatures: Box::new(to_api_intent_signatures_v2(
             transaction_intent_signatures.signatures.as_slice(),
@@ -925,6 +928,7 @@ pub fn to_api_transaction_intent_v2(
     context: &MappingContext,
     transaction_intent: &TransactionIntentV2,
     transaction_intent_hash: &TransactionIntentHash,
+    non_root_subintent_hashes: &[SubintentHash],
 ) -> Result<models::TransactionIntentV2, MappingError> {
     let TransactionIntentV2 {
         transaction_header,
@@ -939,9 +943,9 @@ pub fn to_api_transaction_intent_v2(
         non_root_subintents: non_root_subintents
             .0
             .iter()
-            // TODO:CUTTLEFISH - fix the subintent hashes
-            .map(|subintent| {
-                to_api_subintent_v2(context, subintent, &SubintentHash(Hash([0; Hash::LENGTH])))
+            .zip(non_root_subintent_hashes.iter())
+            .map(|(subintent, subintent_hash)| {
+                to_api_subintent_v2(context, subintent, subintent_hash)
             })
             .collect::<Result<_, _>>()?,
     })

@@ -51,8 +51,8 @@ impl MempoolRejectionReason {
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
                 ExecutionRejectionReason::TransactionProposerTimestampNotYetValid { .. } => false,
                 ExecutionRejectionReason::TransactionProposerTimestampNoLongerValid { .. } => false,
-                ExecutionRejectionReason::IntentHashPreviouslyCommitted => true,
-                ExecutionRejectionReason::IntentHashPreviouslyCancelled => true,
+                ExecutionRejectionReason::IntentHashPreviouslyCommitted(_) => true,
+                ExecutionRejectionReason::IntentHashPreviouslyCancelled(_) => true,
                 ExecutionRejectionReason::SubintentsNotYetSupported => false,
             },
             MempoolRejectionReason::ValidationError(_) => false,
@@ -71,7 +71,7 @@ impl MempoolRejectionReason {
             MempoolRejectionReason::AlreadyCommitted(_) => {
                 // This is permanent for the intent - because even other, non-committed transactions
                 // of the same intent will fail with `ExecutionRejectionReason::IntentHashPreviouslyCommitted`
-                RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
             }
             MempoolRejectionReason::FromExecution(rejection_error) => match **rejection_error {
                 ExecutionRejectionReason::BootloadingError(_) => {
@@ -89,7 +89,7 @@ impl MempoolRejectionReason {
                     }
                 }
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
                 ExecutionRejectionReason::TransactionProposerTimestampNotYetValid {
                     valid_from_inclusive,
@@ -100,13 +100,13 @@ impl MempoolRejectionReason {
                     },
                 },
                 ExecutionRejectionReason::TransactionProposerTimestampNoLongerValid { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                ExecutionRejectionReason::IntentHashPreviouslyCommitted => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                ExecutionRejectionReason::IntentHashPreviouslyCommitted(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                ExecutionRejectionReason::IntentHashPreviouslyCancelled => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                ExecutionRejectionReason::IntentHashPreviouslyCancelled(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
                 ExecutionRejectionReason::SubintentsNotYetSupported => {
                     RejectionPermanence::wait_for_protocol_update()
@@ -126,47 +126,18 @@ impl MempoolRejectionReason {
                     RejectionPermanence::PermanentForPayload
                 }
                 // The signature validity is a property of the payload, not the intent
-                TransactionValidationError::SignatureValidationError(_) => {
+                TransactionValidationError::SignatureValidationError { .. } => {
                     RejectionPermanence::PermanentForPayload
-                }
-                // This is permanent for the intent - because all intents share the same header
-                TransactionValidationError::HeaderValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // This is permanent for the intent - because all intents share the same manifest
-                TransactionValidationError::InvalidMessage(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
                 TransactionValidationError::TransactionVersionNotPermitted(_) => {
                     RejectionPermanence::wait_for_protocol_update()
                 }
-                // The manifest validity is a property of the intent
-                TransactionValidationError::ManifestBasicValidatorError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // The manifest validity is a property of the intent
-                TransactionValidationError::ManifestValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
                 // The subintent structure is a property of the intent
-                TransactionValidationError::SubintentError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                TransactionValidationError::SubintentStructureError { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                // Total signature count is a property of the payload, not intent
-                TransactionValidationError::TooManySignatures { .. } => {
-                    RejectionPermanence::PermanentForPayload
-                }
-                // Intent signature count is a property of the payload, not intent
-                TransactionValidationError::TooManySignaturesForIntent { .. } => {
-                    RejectionPermanence::PermanentForPayload
-                }
-                // Total reference count is a property of the intent
-                TransactionValidationError::TooManyReferences { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // Reference count per intent is a property of the intent
-                TransactionValidationError::TooManyReferencesForIntent { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                TransactionValidationError::IntentValidationError { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
             },
         }
@@ -176,7 +147,7 @@ impl MempoolRejectionReason {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RejectionPermanence {
     PermanentForPayload,
-    PermanentForAnyPayloadWithThisIntent,
+    PermanentForAnyPayloadWithThisTransactionIntent,
     Temporary { retry: RetrySettings },
 }
 
@@ -202,7 +173,7 @@ impl RejectionPermanence {
     pub fn is_permanent_for_payload(&self) -> bool {
         match self {
             RejectionPermanence::PermanentForPayload => true,
-            RejectionPermanence::PermanentForAnyPayloadWithThisIntent => true,
+            RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => true,
             RejectionPermanence::Temporary { .. } => false,
         }
     }
@@ -210,7 +181,7 @@ impl RejectionPermanence {
     pub fn is_permanent_for_intent(&self) -> bool {
         match self {
             RejectionPermanence::PermanentForPayload => false,
-            RejectionPermanence::PermanentForAnyPayloadWithThisIntent => true,
+            RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => true,
             RejectionPermanence::Temporary { .. } => false,
         }
     }
@@ -535,7 +506,7 @@ impl PendingTransactionRecord {
                             .unwrap_or(RetryFrom::Never)
                     }
                     RejectionPermanence::PermanentForPayload
-                    | RejectionPermanence::PermanentForAnyPayloadWithThisIntent => {
+                    | RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => {
                         // If RejectionPermanence was Permanent, this has already been handled
                         return;
                     }
