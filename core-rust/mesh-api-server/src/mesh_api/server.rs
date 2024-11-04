@@ -128,20 +128,13 @@ pub async fn create_server<F>(
 
 #[tracing::instrument]
 pub(crate) async fn handle_missing_mesh_path() -> Result<(), ResponseError> {
-    Err(ResponseError::new(
-        StatusCode::NOT_FOUND,
-        "Try /mesh",
-        false,
-    ))
+    Err(ResponseError::from(ApiError::EndpointNotFound).with_details("Try /mesh"))
 }
 
 async fn handle_not_found(metrics: State<Arc<MeshApiMetrics>>) -> Result<(), ResponseError> {
     metrics.requests_not_found.inc();
-    Err(ResponseError::new(
-        StatusCode::NOT_FOUND,
-        "Please see API docs for available endpoints",
-        false,
-    ))
+    Err(ResponseError::from(ApiError::EndpointNotFound)
+        .with_details("Please see API docs for available endpoints"))
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]

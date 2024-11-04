@@ -27,12 +27,8 @@ pub enum MappingError {
 
 impl From<MappingError> for ResponseError {
     fn from(mapping_error: MappingError) -> Self {
-        ResponseError::new(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Could not render response".to_string(),
-            false,
-        )
-        .with_internal_message(format!("{:?}", mapping_error))
+        ResponseError::from(ApiError::ResponseRenderingError)
+            .with_details(format!("{:?}", mapping_error))
     }
 }
 
@@ -63,12 +59,8 @@ pub enum ExtractionError {
 
 impl ExtractionError {
     pub(crate) fn into_response_error(self, field_name: &str) -> ResponseError {
-        ResponseError::new(
-            StatusCode::BAD_REQUEST,
-            format!("Could not extract {field_name} from request"),
-            false,
-        )
-        .with_internal_message(format!("{:?}", self))
+        ResponseError::from(ApiError::InvalidRequest)
+            .with_details(format!("Could not extract {field_name} from request"))
     }
 }
 

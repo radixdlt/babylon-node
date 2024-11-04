@@ -134,4 +134,3 @@ struct NextKeyAndFilterHash<K> {
     next_key: K,
     filter_hash: Hash,
 }
-
