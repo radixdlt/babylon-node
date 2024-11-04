@@ -58,3 +58,15 @@ pub(crate) fn read_optional_substate<D: ScryptoDecode>(
 ) -> Option<D> {
     database.get_substate::<D>(node_id, partition_number, substate_key)
 }
+
+/// We assume that Block is a single transaction.
+/// Block index => State version
+/// Block hash  => TransactionTreeHash
+pub fn to_block_identifier(
+    ledger_header: &LedgerStateSummary,
+) -> Result<models::BlockIdentifier, MappingError> {
+    Ok(models::BlockIdentifier {
+        index: to_api_state_version(ledger_header.state_version)?,
+        hash: to_api_transaction_tree_hash(&ledger_header.hashes.transaction_root),
+    })
+}
