@@ -31,7 +31,7 @@ pub(crate) async fn handle_network_options(
                 "LockFee".to_string(),
             ],
             errors: list_available_api_errors(),
-            historical_balance_lookup: true,
+            historical_balance_lookup: false,
             timestamp_start_index: bundles_iter.find_map(|p| {
                 if p.identifiers.proposer_timestamp_ms != 0 {
                     Some(to_api_state_version(p.state_version).unwrap())
