@@ -103,6 +103,7 @@ pub async fn create_server<F>(
         .route("/network/status", post(handle_network_status))
         .route("/network/list", post(handle_network_list))
         .route("/network/options", post(handle_network_options))
+        .route("/account/balance", post(handle_account_balance))
         .with_state(mesh_api_state);
 
     let metrics = Arc::new(MeshApiMetrics::new(metric_registry));

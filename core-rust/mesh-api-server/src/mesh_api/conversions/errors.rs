@@ -23,6 +23,9 @@ pub enum MappingError {
         message: String,
     },
     ProofNotFound,
+    InvalidResource {
+        message: String,
+    },
 }
 
 impl From<MappingError> for ResponseError {
@@ -55,6 +58,9 @@ pub enum ExtractionError {
         message: String,
     },
     DifferentFilterAcrossPages,
+    InvalidBlockIdentifier {
+        message: String,
+    },
 }
 
 impl ExtractionError {

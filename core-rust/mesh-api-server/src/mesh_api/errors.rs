@@ -23,6 +23,10 @@ pub(crate) enum ApiError {
     InvalidRequest,
     #[strum(serialize = "Could not render response")]
     ResponseRenderingError,
+    #[strum(serialize = "Account not found")]
+    AccountNotFound,
+    #[strum(serialize = "Invalid resource")]
+    InvalidResource,
 }
 
 impl From<ApiError> for ResponseError {
@@ -241,6 +245,21 @@ pub(crate) fn assert_matching_network(
                 "Invalid network - the network is actually: {}",
                 network_definition.logical_name
             ),
+            false,
+        ));
+    }
+    Ok(())
+}
+
+pub(crate) fn assert_account(
+    account_identifier: &models::AccountIdentifier,
+) -> Result<(), ResponseError> {
+    if let Some(_) = account_identifier.sub_account {
+        return Err(client_error("Sub accounts not supported.", false));
+    }
+    if !account_identifier.address.starts_with("account_") {
+        return Err(client_error(
+            "Only addresses starting account_ work with this endpoint.",
             false,
         ));
     }

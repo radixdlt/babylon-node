@@ -1,10 +1,12 @@
 use super::{HasKey, Page, ResponseError};
 use crate::engine_prelude::*;
 
+mod account_balance;
 mod network_list;
 mod network_options;
 mod network_status;
 
+pub(crate) use account_balance::*;
 pub(crate) use network_list::*;
 pub(crate) use network_options::*;
 pub(crate) use network_status::*;

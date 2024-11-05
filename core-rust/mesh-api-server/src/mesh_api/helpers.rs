@@ -48,6 +48,14 @@ pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
         },
     )
 }
+#[tracing::instrument(skip_all)]
+pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
+    database: &StateManagerDatabase<impl ReadableRocks>,
+    node_id: &NodeId,
+    substate_key: &SubstateKey,
+) -> Option<FieldSubstate<D>> {
+    read_optional_substate::<FieldSubstate<D>>(database, node_id, MAIN_BASE_PARTITION, substate_key)
+}
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_substate<D: ScryptoDecode>(
@@ -62,11 +70,57 @@ pub(crate) fn read_optional_substate<D: ScryptoDecode>(
 /// We assume that Block is a single transaction.
 /// Block index => State version
 /// Block hash  => TransactionTreeHash
-pub fn to_block_identifier(
+pub(crate) fn to_block_identifier(
     ledger_header: &LedgerStateSummary,
 ) -> Result<models::BlockIdentifier, MappingError> {
     Ok(models::BlockIdentifier {
         index: to_api_state_version(ledger_header.state_version)?,
         hash: to_api_transaction_tree_hash(&ledger_header.hashes.transaction_root),
+    })
+}
+
+pub(crate) fn partial_block_identifier_to_state_version(
+    block_identifier: &models::PartialBlockIdentifier,
+) -> Result<StateVersion, ExtractionError> {
+    if let Some(index) = block_identifier.index {
+        Ok(StateVersion::of(index as u64))
+    } else if let Some(_hash) = &block_identifier.hash {
+        Err(ExtractionError::InvalidBlockIdentifier {
+            message: "Hash not supported".to_string(),
+        })
+    } else {
+        Err(ExtractionError::InvalidBlockIdentifier {
+            message: "Missing index".to_string(),
+        })
+    }
+}
+
+pub(crate) fn resource_address_to_currency(
+    database: &StateManagerDatabase<impl ReadableRocks>,
+    symbol: &str,
+    resource_address: ResourceAddress,
+) -> Result<models::Currency, MappingError> {
+    let resource_node_id = resource_address.as_node_id();
+    if resource_node_id.entity_type() != Some(EntityType::GlobalFungibleResourceManager) {
+        return Err(MappingError::InvalidResource {
+            message: format!("currency {} is not fungible type", symbol),
+        });
+    }
+
+    let divisibility: FungibleResourceManagerDivisibilityFieldSubstate =
+        read_optional_main_field_substate(
+            database,
+            resource_node_id,
+            &FungibleResourceManagerField::Divisibility.into(),
+        )
+        .ok_or_else(|| MappingError::InvalidResource {
+            message: format!("currency {} not found", symbol),
+        })?;
+    let divisibility = *divisibility.payload().as_unique_version() as i32;
+
+    Ok(models::Currency {
+        symbol: symbol.to_string(),
+        decimals: divisibility,
+        metadata: None,
     })
 }
