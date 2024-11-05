@@ -69,30 +69,34 @@ pub(crate) fn read_optional_substate<D: ScryptoDecode>(
 
 /// We assume that Block is a single transaction.
 /// Block index => State version
-/// Block hash  => TransactionTreeHash
+/// Block hash  => State version printed to string and prefixed with zeros
 pub(crate) fn to_block_identifier(
     ledger_header: &LedgerStateSummary,
 ) -> Result<models::BlockIdentifier, MappingError> {
+    let index = to_api_state_version(ledger_header.state_version)?;
     Ok(models::BlockIdentifier {
-        index: to_api_state_version(ledger_header.state_version)?,
-        hash: to_api_transaction_tree_hash(&ledger_header.hashes.transaction_root),
+        index,
+        hash: format!("{:0>32}", index),
     })
 }
 
 pub(crate) fn partial_block_identifier_to_state_version(
     block_identifier: &models::PartialBlockIdentifier,
 ) -> Result<StateVersion, ExtractionError> {
-    if let Some(index) = block_identifier.index {
-        Ok(StateVersion::of(index as u64))
-    } else if let Some(_hash) = &block_identifier.hash {
-        Err(ExtractionError::InvalidBlockIdentifier {
-            message: "Hash not supported".to_string(),
-        })
+    let index = if let Some(index) = block_identifier.index {
+        index
+    } else if let Some(hash) = &block_identifier.hash {
+        hash.parse::<i64>()
+            .map_err(|_| ExtractionError::InvalidBlockIdentifier {
+                message: "Hash parsing error".to_string(),
+            })?
     } else {
-        Err(ExtractionError::InvalidBlockIdentifier {
-            message: "Missing index".to_string(),
-        })
-    }
+        return Err(ExtractionError::InvalidBlockIdentifier {
+            message: "Missing index or hash".to_string(),
+        });
+    };
+
+    Ok(StateVersion::of(index as u64))
 }
 
 pub(crate) fn resource_address_to_currency(
