@@ -13,6 +13,8 @@ use tower_http::catch_panic::ResponseForPanic;
 pub(crate) enum ApiError {
     #[strum(serialize = "Endpoint not found")]
     EndpointNotFound = 1,
+    #[strum(serialize = "Endpoint not supported")]
+    EndpointNotSupported,
     #[strum(serialize = "Unexpected server error")]
     UnexpectedServerError,
     #[strum(serialize = "Invalid network")]

@@ -69,7 +69,6 @@ use std::sync::Arc;
 use super::metrics::MeshApiMetrics;
 use super::metrics_layer::MetricsLayer;
 use axum::extract::State;
-use axum::http::StatusCode;
 use axum::middleware::map_response;
 
 use axum::{
@@ -104,6 +103,24 @@ pub async fn create_server<F>(
         .route("/network/list", post(handle_network_list))
         .route("/network/options", post(handle_network_options))
         .route("/account/balance", post(handle_account_balance))
+        // account/coins - not needed as we're not UTXO
+        .route("/block", post(handle_endpoint_todo))
+        .route("/block/transaction", post(handle_endpoint_todo))
+        .route("/call", post(handle_endpoint_not_supported))
+        .route("/construction/derive", post(handle_endpoint_todo))
+        .route("/construction/preprocess", post(handle_endpoint_todo))
+        .route("/construction/metadata", post(handle_endpoint_todo))
+        .route("/construction/payloads", post(handle_endpoint_todo))
+        .route("/construction/combine", post(handle_endpoint_todo))
+        .route("/construction/hash", post(handle_endpoint_todo))
+        .route("/construction/parse", post(handle_endpoint_todo))
+        .route("/construction/submit", post(handle_endpoint_todo))
+        // Below Indexer APIs - Not Required
+        .route("/search/transaction", post(handle_endpoint_not_supported))
+        .route("/events/blocks", post(handle_endpoint_not_supported))
+        // TODO mempool?
+        .route("/mempool", post(handle_endpoint_not_supported))
+        .route("/mempool/transaction", post(handle_endpoint_not_supported))
         .with_state(mesh_api_state);
 
     let metrics = Arc::new(MeshApiMetrics::new(metric_registry));
@@ -126,6 +143,21 @@ pub async fn create_server<F>(
         .with_graceful_shutdown(shutdown_signal)
         .await
         .unwrap();
+}
+
+async fn handle_endpoint_not_supported(
+    _state: State<MeshApiState>,
+    Json(_request): Json<models::MetadataRequest>,
+) -> Result<Json<()>, ResponseError> {
+    Err(ResponseError::from(ApiError::EndpointNotSupported))
+}
+
+// TODO remove it when no longer needed
+async fn handle_endpoint_todo(
+    _state: State<MeshApiState>,
+    Json(_request): Json<models::MetadataRequest>,
+) -> Result<Json<()>, ResponseError> {
+    todo!()
 }
 
 #[tracing::instrument]
