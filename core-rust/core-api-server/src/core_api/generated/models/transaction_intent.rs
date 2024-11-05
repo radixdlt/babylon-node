@@ -13,10 +13,10 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TransactionIntent {
-    /// The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
+    /// The hex-encoded transaction intent hash for a user transaction, also known as the transaction id. This hash identifies the core \"intent\" of the transaction. Each transaction intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
     #[serde(rename = "hash")]
     pub hash: String,
-    /// The Bech32m-encoded human readable `IntentHash`.
+    /// The Bech32m-encoded human readable `TransactionIntentHash`.
     #[serde(rename = "hash_bech32m")]
     pub hash_bech32m: String,
     #[serde(rename = "header")]

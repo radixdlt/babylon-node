@@ -29,6 +29,15 @@ pub enum ParsedTransaction {
         #[serde(rename = "validation_error", skip_serializing_if = "Option::is_none")]
         validation_error: Option<Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfValidationError>>,
     },
+    #[serde(rename="NotarizedTransactionV2")]
+    ParsedNotarizedTransactionV2 {
+        #[serde(rename = "notarized_transaction", skip_serializing_if = "Option::is_none")]
+        notarized_transaction: Option<Box<crate::core_api::generated::models::NotarizedTransactionV2>>,
+        #[serde(rename = "identifiers")]
+        identifiers: Box<crate::core_api::generated::models::ParsedNotarizedTransactionIdentifiers>,
+        #[serde(rename = "validation_error", skip_serializing_if = "Option::is_none")]
+        validation_error: Option<Box<crate::core_api::generated::models::ParsedNotarizedTransactionAllOfValidationError>>,
+    },
     #[serde(rename="SignedTransactionIntent")]
     ParsedSignedTransactionIntent {
         #[serde(rename = "signed_intent", skip_serializing_if = "Option::is_none")]

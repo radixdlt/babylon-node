@@ -59,11 +59,11 @@ public class ParsedSignedTransactionIntentIdentifiers {
   }
 
    /**
-   * The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \&quot;intent\&quot; of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
+   * The hex-encoded transaction intent hash for a user transaction, also known as the transaction id. This hash identifies the core \&quot;intent\&quot; of the transaction. Each transaction intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. 
    * @return intentHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded intent hash for a user transaction, also known as the transaction id. This hash identifies the core content \"intent\" of the transaction. Each intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. ")
+  @ApiModelProperty(required = true, value = "The hex-encoded transaction intent hash for a user transaction, also known as the transaction id. This hash identifies the core \"intent\" of the transaction. Each transaction intent can only be committed once. This hash gets signed by any signatories on the transaction, to create the signed intent. ")
   @JsonProperty(JSON_PROPERTY_INTENT_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -85,11 +85,11 @@ public class ParsedSignedTransactionIntentIdentifiers {
   }
 
    /**
-   * The Bech32m-encoded human readable &#x60;IntentHash&#x60;.
+   * The Bech32m-encoded human readable &#x60;TransactionIntentHash&#x60;.
    * @return intentHashBech32m
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `IntentHash`.")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `TransactionIntentHash`.")
   @JsonProperty(JSON_PROPERTY_INTENT_HASH_BECH32M)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -111,11 +111,11 @@ public class ParsedSignedTransactionIntentIdentifiers {
   }
 
    /**
-   * The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. 
+   * The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable &#x60;NotarizedTransaction&#x60;. 
    * @return signedIntentHash
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. ")
+  @ApiModelProperty(required = true, value = "The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable `NotarizedTransaction`. ")
   @JsonProperty(JSON_PROPERTY_SIGNED_INTENT_HASH)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -137,11 +137,11 @@ public class ParsedSignedTransactionIntentIdentifiers {
   }
 
    /**
-   * The Bech32m-encoded human readable &#x60;SignedIntentHash&#x60;.
+   * The Bech32m-encoded human readable &#x60;SignedTransactionIntentHash&#x60;.
    * @return signedIntentHashBech32m
   **/
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `SignedIntentHash`.")
+  @ApiModelProperty(required = true, value = "The Bech32m-encoded human readable `SignedTransactionIntentHash`.")
   @JsonProperty(JSON_PROPERTY_SIGNED_INTENT_HASH_BECH32M)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 

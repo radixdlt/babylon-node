@@ -68,7 +68,7 @@ pub enum Substate {
         #[serde(rename = "is_locked")]
         is_locked: bool,
         #[serde(rename = "value")]
-        value: serde_json::Value,
+        value: Box<crate::core_api::generated::models::BootLoaderModuleFieldKernelBootValue>,
     },
     #[serde(rename="BootLoaderModuleFieldSystemBoot")]
     BootLoaderModuleFieldSystemBootSubstate {
@@ -76,6 +76,11 @@ pub enum Substate {
         is_locked: bool,
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::BootLoaderModuleFieldSystemBootValue>,
+    },
+    #[serde(rename="BootLoaderModuleFieldTransactionValidationConfiguration")]
+    BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
     },
     #[serde(rename="BootLoaderModuleFieldVmBoot")]
     BootLoaderModuleFieldVmBootSubstate {
@@ -331,6 +336,15 @@ pub enum Substate {
         is_locked: bool,
         #[serde(rename = "value")]
         value: Box<crate::core_api::generated::models::PackageFieldRoyaltyAccumulatorValue>,
+    },
+    #[serde(rename="ProtocolUpdateStatusModuleFieldSummary")]
+    ProtocolUpdateStatusModuleFieldSummarySubstate {
+        #[serde(rename = "is_locked")]
+        is_locked: bool,
+        #[serde(rename = "protocol_version")]
+        protocol_version: String,
+        #[serde(rename = "update_status")]
+        update_status: Box<crate::core_api::generated::models::ProtocolUpdateStatus>,
     },
     #[serde(rename="RoleAssignmentModuleFieldOwnerRole")]
     RoleAssignmentModuleFieldOwnerRoleSubstate {

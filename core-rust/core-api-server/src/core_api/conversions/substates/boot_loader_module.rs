@@ -1,8 +1,7 @@
 use super::super::*;
 
 use crate::core_api::models;
-
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
 pub fn to_api_system_boot_substate(
     context: &MappingContext,
@@ -10,16 +9,29 @@ pub fn to_api_system_boot_substate(
     substate: &SystemBoot,
 ) -> Result<models::Substate, MappingError> {
     let value = match substate {
-        SystemBoot::V1(system_parameters) => models::BootLoaderModuleFieldSystemBootValue::new(
-            to_api_system_parameters(context, system_parameters)?,
-        ),
-        SystemBoot::V2(..) => todo!(),
+        SystemBoot::V1(system_parameters) => models::BootLoaderModuleFieldSystemBootValue {
+            system_version: None,
+            system_parameters: Box::new(to_api_system_parameters(context, system_parameters)?),
+        },
+        SystemBoot::V2(system_version, system_parameters) => {
+            models::BootLoaderModuleFieldSystemBootValue {
+                system_version: Some(to_api_system_version(system_version)),
+                system_parameters: Box::new(to_api_system_parameters(context, system_parameters)?),
+            }
+        }
     };
 
     Ok(models::Substate::BootLoaderModuleFieldSystemBootSubstate {
         is_locked: false,
         value: Box::new(value),
     })
+}
+
+fn to_api_system_version(system_version: &SystemVersion) -> models::SystemVersion {
+    match system_version {
+        SystemVersion::V1 => models::SystemVersion::V1,
+        SystemVersion::V2 => models::SystemVersion::V2,
+    }
 }
 
 pub fn to_api_vm_boot_substate(
@@ -46,13 +58,22 @@ pub fn to_api_kernel_boot_substate(
 ) -> Result<models::Substate, MappingError> {
     let value = match substate {
         // Note: this is how OpenAPI generator represents an empty object type, even when named:
-        KernelBoot::V1 => serde_json::Value::Object(serde_json::Map::default()),
-        KernelBoot::V2 { .. } => todo!(),
+        KernelBoot::V1 => models::BootLoaderModuleFieldKernelBootValue {
+            always_visible_nodes_version: None,
+        },
+        KernelBoot::V2 {
+            global_nodes_version,
+        } => models::BootLoaderModuleFieldKernelBootValue {
+            always_visible_nodes_version: Some(match global_nodes_version {
+                AlwaysVisibleGlobalNodesVersion::V1 => models::AlwaysVisibleGlobalNodesVersion::V1,
+                AlwaysVisibleGlobalNodesVersion::V2 => models::AlwaysVisibleGlobalNodesVersion::V2,
+            }),
+        },
     };
 
     Ok(models::Substate::BootLoaderModuleFieldKernelBootSubstate {
         is_locked: false,
-        value,
+        value: Box::new(value),
     })
 }
 
@@ -168,4 +189,41 @@ fn to_api_limit_parameters(
         max_number_of_logs: to_api_usize_as_string(*max_number_of_logs),
         max_number_of_events: to_api_usize_as_string(*max_number_of_events),
     })
+}
+
+pub fn to_api_transaction_validator_configuration_substate(
+    _context: &MappingContext,
+    substate: &TransactionValidationConfigurationSubstate,
+) -> Result<models::Substate, MappingError> {
+    #[allow(unused)] // TODO:CUTTLEFISH
+    match substate.as_versions() {
+        TransactionValidationConfigurationVersions::V1(config) => {
+            let TransactionValidationConfigV1 {
+                max_signer_signatures_per_intent,
+                max_references_per_intent,
+                min_tip_percentage,
+                max_tip_percentage,
+                max_epoch_range,
+                max_instructions,
+                message_validation,
+                v1_transactions_allow_notary_to_duplicate_signer,
+                preparation_settings,
+                manifest_validation,
+                v2_transactions_allowed,
+                min_tip_basis_points,
+                max_tip_basis_points,
+                max_subintent_depth,
+                max_total_signature_validations,
+                max_total_references,
+            } = config;
+
+            // TODO: Add this to the substate.
+        }
+    };
+
+    Ok(
+        models::Substate::BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
+            is_locked: false,
+        },
+    )
 }

@@ -20,15 +20,15 @@ import { exists, mapValues } from '../runtime';
  */
 export interface ParsedTransactionIntentIdentifiers {
     /**
-     * The hex-encoded intent hash for a user transaction, also known as the transaction id.
-     * This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
+     * The hex-encoded transaction intent hash for a user transaction, also known as the transaction id.
+     * This hash identifies the core "intent" of the transaction. Each transaction intent can only be committed once.
      * This hash gets signed by any signatories on the transaction, to create the signed intent.
      * @type {string}
      * @memberof ParsedTransactionIntentIdentifiers
      */
     intent_hash: string;
     /**
-     * The Bech32m-encoded human readable `IntentHash`.
+     * The Bech32m-encoded human readable `TransactionIntentHash`.
      * @type {string}
      * @memberof ParsedTransactionIntentIdentifiers
      */

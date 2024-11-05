@@ -35,11 +35,7 @@ pub(crate) async fn handle_transaction_submit(
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::TransactionSubmitResponse::new(true)),
         Err(MempoolAddError::Rejected(rejection)) => {
-            if rejection.is_rejected_because_intent_already_committed() {
-                let already_committed_error = rejection
-                    .reason
-                    .already_committed_error()
-                    .expect("Already committed rejections should have an already_committed_error");
+            if let Some(already_committed_error) = rejection.transaction_intent_already_committed_error() {
                 Err(detailed_error(
                     StatusCode::BAD_REQUEST,
                     "The transaction intent has already been committed",
@@ -60,13 +56,13 @@ pub(crate) async fn handle_transaction_submit(
                         retry_from_timestamp: match rejection.retry_from {
                             RetryFrom::Never => None,
                             RetryFrom::FromTime(time) => Some(Box::new(
-                                to_api_clamped_instant_from_epoch_milli(to_unix_timestamp_ms(time)?)?,
+                                to_api_clamped_instant_from_epoch_milli(to_unix_timestamp_ms(time)?),
                             )),
                             RetryFrom::FromEpoch(_) => None,
                             RetryFrom::Whenever => {
                                 Some(Box::new(to_api_clamped_instant_from_epoch_milli(
                                     to_unix_timestamp_ms(std::time::SystemTime::now())?,
-                                )?))
+                                )))
                             }
                         },
                         retry_from_epoch: match rejection.retry_from {

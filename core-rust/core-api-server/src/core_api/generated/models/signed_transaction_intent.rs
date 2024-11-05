@@ -13,10 +13,10 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SignedTransactionIntent {
-    /// The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable NotarizedTransaction. 
+    /// The hex-encoded signed intent hash for a user transaction. This hash identifies the transaction intent, plus additional signatures. This hash is signed by the notary, to create the submittable `NotarizedTransaction`. 
     #[serde(rename = "hash")]
     pub hash: String,
-    /// The Bech32m-encoded human readable `SignedIntentHash`.
+    /// The Bech32m-encoded human readable `SignedTransactionIntentHash`.
     #[serde(rename = "hash_bech32m")]
     pub hash_bech32m: String,
     #[serde(rename = "intent")]

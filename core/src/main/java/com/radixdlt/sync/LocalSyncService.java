@@ -590,7 +590,7 @@ public final class LocalSyncService {
   }
 
   private SyncState updateCurrentHeaderIfNeeded(SyncState currentState, LedgerUpdate ledgerUpdate) {
-    final var committedProof = ledgerUpdate.committedProof().primaryProof();
+    final var committedProof = ledgerUpdate.committedProofBundle().primaryProof();
     if (committedProof.stateVersion() > currentState.getLatestProof().stateVersion()) {
       final var newState = currentState.withLatestProof(committedProof);
       updateCurrentAndTargetMetrics(newState);

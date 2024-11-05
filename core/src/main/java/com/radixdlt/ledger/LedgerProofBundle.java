@@ -123,7 +123,7 @@ public record LedgerProofBundle(
    * we're in the next epoch post-commit, then the returned round is 0.
    */
   public Round resultantRound() {
-    final var maybeEpochChangeHeader = trimProtocolUpdate().ledgerHeader();
+    final var maybeEpochChangeHeader = latestRoundOrEpochChangeProof().ledgerHeader();
 
     return maybeEpochChangeHeader.nextEpoch().isPresent()
         ? Round.epochInitial()
@@ -144,20 +144,16 @@ public record LedgerProofBundle(
   }
 
   /**
-   * If the primary proof of this bundle is of ProtocolUpdate origin, then it will be trimmed and
-   * the closest non-protocol update proof will be returned.
+   * Typically this will be a consensus proof (because consensus proofs are the ones which initial
+   * one or more protocol updates). The only exception is right after genesis, when this will be the
+   * epoch change in genesis wrap-up.
    */
-  public LedgerProof trimProtocolUpdate() {
+  public LedgerProof latestRoundOrEpochChangeProof() {
     return switch (primaryProof.origin()) {
-        // Just return the proof if it originates from consensus or genesis
-      case LedgerProofOrigin.Consensus consensus -> primaryProof;
-      case LedgerProofOrigin.ProtocolUpdate ignored -> {
-        if (latestProofWhichInitiatedOneOrMoreProtocolUpdates().isPresent()) {
-          yield latestProofWhichInitiatedOneOrMoreProtocolUpdates().unwrap();
-        } else {
-          yield latestProofWhichInitiatedAnEpochChange();
-        }
-      }
+      case LedgerProofOrigin.Consensus ignored -> primaryProof;
+      case LedgerProofOrigin.ProtocolUpdate
+      ignored -> latestProofWhichInitiatedOneOrMoreProtocolUpdates.or(
+          latestProofWhichInitiatedAnEpochChange);
     };
   }
 }

@@ -4,7 +4,7 @@ use crate::protocol::*;
 use ProtocolUpdateEnactmentCondition::*;
 
 pub fn mainnet_protocol_config() -> ProtocolConfig {
-    // See config_printer.rs
+    // See config_printer.rs > print_calculated_protocol_config_code()
     ProtocolConfig::new_with_triggers(hashmap! {
         ProtocolVersionName::anemone() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================

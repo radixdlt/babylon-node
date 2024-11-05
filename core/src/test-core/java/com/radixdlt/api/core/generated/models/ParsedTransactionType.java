@@ -31,6 +31,8 @@ public enum ParsedTransactionType {
   
   NOTARIZEDTRANSACTION("NotarizedTransaction"),
   
+  NOTARIZEDTRANSACTIONV2("NotarizedTransactionV2"),
+  
   SIGNEDTRANSACTIONINTENT("SignedTransactionIntent"),
   
   TRANSACTIONINTENT("TransactionIntent"),

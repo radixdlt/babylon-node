@@ -44,12 +44,17 @@ def copy_file(source, dest):
     shutil.copyfile(source, dest)
 
 def run(command, cwd = '.', should_log = False):
-    if (should_log): logging.debug('Running cmd: %s' % command)
+    if (should_log):
+        logging.info('Running cmd: %s' % command)
     response = subprocess.run(' '.join(command), cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stderr = response.stderr.decode('utf-8')
-    if response.returncode != 0: raise Exception(stderr)
     stdout = response.stdout.decode('utf-8')
-    if (should_log): logging.debug('Response: %s', stdout)
+    if response.returncode != 0:
+        stderr = response.stderr.decode('utf-8')
+        logging.info('Output preceeding error:\n\n%s', stdout)
+        logging.info('Error:\n\n%s', stderr)
+        raise Exception("Error running command - see logs above", command)
+    elif should_log:
+        logging.info('Output:\n\n%s', stdout)
     return stdout
 
 def generate_rust_models(schema_file, tmp_client_folder, out_location, rust_package):
@@ -151,6 +156,7 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location, rust_pack
         fix_for_enum_not_implementing_default(file_path, "StreamProofsErrorDetails")
         fix_for_enum_not_implementing_default(file_path, "StreamProofsFilter")
         fix_for_enum_not_implementing_default(file_path, "LedgerStateSelector")
+        fix_for_enum_not_implementing_default(file_path, "ProtocolUpdateStatus")
 
     logging.info("Successfully fixed up rust models.")
 

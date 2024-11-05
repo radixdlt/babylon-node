@@ -163,6 +163,7 @@ public class HealthHandlerTest extends SystemApiTestBase {
                         Set.of() /* unused in this test */,
                         EPOCH_TARGET_DURATION_MS,
                         EPOCH_EFFECTIVE_START_MS));
+            when(systemInfo.ledgerUpdateEventProcessor()).thenReturn(ignored -> {});
             bind(InMemorySystemInfo.class).toInstance(systemInfo);
           }
         });
@@ -191,6 +192,9 @@ public class HealthHandlerTest extends SystemApiTestBase {
     // Assert first pending enactment
     assertEquals(
         "custom-pending-3", response.getPendingProtocolUpdates().get(0).getProtocolVersion());
+    assertEquals(
+        "5bfdcc71f883edd0custom-pending-3",
+        response.getPendingProtocolUpdates().get(0).getReadinessSignalName());
     assertEquals(
         EXPECTED_PROJECTED_ENACTMENT_EPOCH,
         requireNonNull(
@@ -225,6 +229,7 @@ public class HealthHandlerTest extends SystemApiTestBase {
     assertEquals(
         PendingProtocolUpdate.ReadinessSignalStatusEnum.NO_SIGNAL_REQUIRED,
         response.getPendingProtocolUpdates().get(1).getReadinessSignalStatus());
+    assertNull(response.getPendingProtocolUpdates().get(1).getReadinessSignalName());
     // It could be argued for us to copy the custom-pending-3 values, but for now let's just
     // use "null" because:
     // (A) it's not ~technically~ at the start of this epoch

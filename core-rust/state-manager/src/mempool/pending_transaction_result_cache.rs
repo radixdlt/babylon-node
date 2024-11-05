@@ -13,7 +13,7 @@ pub type ExecutionRejectionReason = RejectionReason;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MempoolRejectionReason {
-    AlreadyCommitted(AlreadyCommittedError),
+    TransactionIntentAlreadyCommitted(AlreadyCommittedError),
     FromExecution(Box<ExecutionRejectionReason>),
     ValidationError(TransactionValidationError),
 }
@@ -40,38 +40,22 @@ impl MempoolRejectionReason {
         self.permanence().is_permanent_for_intent()
     }
 
-    pub fn is_rejected_because_intent_already_committed(&self) -> bool {
+    pub fn transaction_intent_already_committed_error(&self) -> Option<&AlreadyCommittedError> {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(_) => true,
-            MempoolRejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
-                ExecutionRejectionReason::BootloadingError(_) => false,
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
-                ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
-                ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
-                ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
-                ExecutionRejectionReason::TransactionProposerTimestampNotYetValid { .. } => false,
-                ExecutionRejectionReason::TransactionProposerTimestampNoLongerValid { .. } => false,
-                ExecutionRejectionReason::IntentHashPreviouslyCommitted => true,
-                ExecutionRejectionReason::IntentHashPreviouslyCancelled => true,
-                ExecutionRejectionReason::SubintentsNotYetSupported => false,
-            },
-            MempoolRejectionReason::ValidationError(_) => false,
-        }
-    }
-
-    pub fn already_committed_error(&self) -> Option<&AlreadyCommittedError> {
-        match self {
-            MempoolRejectionReason::AlreadyCommitted(error) => Some(error),
-            _ => None,
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(already_committed_error) => {
+                Some(already_committed_error)
+            }
+            MempoolRejectionReason::FromExecution(_) => None,
+            MempoolRejectionReason::ValidationError(_) => None,
         }
     }
 
     pub fn permanence(&self) -> RejectionPermanence {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(_) => {
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(_) => {
                 // This is permanent for the intent - because even other, non-committed transactions
                 // of the same intent will fail with `ExecutionRejectionReason::IntentHashPreviouslyCommitted`
-                RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
             }
             MempoolRejectionReason::FromExecution(rejection_error) => match **rejection_error {
                 ExecutionRejectionReason::BootloadingError(_) => {
@@ -89,7 +73,7 @@ impl MempoolRejectionReason {
                     }
                 }
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
                 ExecutionRejectionReason::TransactionProposerTimestampNotYetValid {
                     valid_from_inclusive,
@@ -100,13 +84,13 @@ impl MempoolRejectionReason {
                     },
                 },
                 ExecutionRejectionReason::TransactionProposerTimestampNoLongerValid { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                ExecutionRejectionReason::IntentHashPreviouslyCommitted => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                ExecutionRejectionReason::IntentHashPreviouslyCommitted(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                ExecutionRejectionReason::IntentHashPreviouslyCancelled => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                ExecutionRejectionReason::IntentHashPreviouslyCancelled(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
                 ExecutionRejectionReason::SubintentsNotYetSupported => {
                     RejectionPermanence::wait_for_protocol_update()
@@ -126,47 +110,18 @@ impl MempoolRejectionReason {
                     RejectionPermanence::PermanentForPayload
                 }
                 // The signature validity is a property of the payload, not the intent
-                TransactionValidationError::SignatureValidationError(_) => {
+                TransactionValidationError::SignatureValidationError { .. } => {
                     RejectionPermanence::PermanentForPayload
-                }
-                // This is permanent for the intent - because all intents share the same header
-                TransactionValidationError::HeaderValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // This is permanent for the intent - because all intents share the same manifest
-                TransactionValidationError::InvalidMessage(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
                 }
                 TransactionValidationError::TransactionVersionNotPermitted(_) => {
                     RejectionPermanence::wait_for_protocol_update()
                 }
-                // The manifest validity is a property of the intent
-                TransactionValidationError::ManifestBasicValidatorError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // The manifest validity is a property of the intent
-                TransactionValidationError::ManifestValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
                 // The subintent structure is a property of the intent
-                TransactionValidationError::SubintentError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                TransactionValidationError::SubintentStructureError { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                // Total signature count is a property of the payload, not intent
-                TransactionValidationError::TooManySignatures { .. } => {
-                    RejectionPermanence::PermanentForPayload
-                }
-                // Intent signature count is a property of the payload, not intent
-                TransactionValidationError::TooManySignaturesForIntent { .. } => {
-                    RejectionPermanence::PermanentForPayload
-                }
-                // Total reference count is a property of the intent
-                TransactionValidationError::TooManyReferences { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // Reference count per intent is a property of the intent
-                TransactionValidationError::TooManyReferencesForIntent { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                TransactionValidationError::IntentValidationError { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
             },
         }
@@ -176,7 +131,7 @@ impl MempoolRejectionReason {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RejectionPermanence {
     PermanentForPayload,
-    PermanentForAnyPayloadWithThisIntent,
+    PermanentForAnyPayloadWithThisTransactionIntent,
     Temporary { retry: RetrySettings },
 }
 
@@ -202,7 +157,7 @@ impl RejectionPermanence {
     pub fn is_permanent_for_payload(&self) -> bool {
         match self {
             RejectionPermanence::PermanentForPayload => true,
-            RejectionPermanence::PermanentForAnyPayloadWithThisIntent => true,
+            RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => true,
             RejectionPermanence::Temporary { .. } => false,
         }
     }
@@ -210,7 +165,7 @@ impl RejectionPermanence {
     pub fn is_permanent_for_intent(&self) -> bool {
         match self {
             RejectionPermanence::PermanentForPayload => false,
-            RejectionPermanence::PermanentForAnyPayloadWithThisIntent => true,
+            RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => true,
             RejectionPermanence::Temporary { .. } => false,
         }
     }
@@ -226,7 +181,7 @@ pub enum RetrySettings {
 impl fmt::Display for MempoolRejectionReason {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(error) => {
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(error) => {
                 write!(f, "Already committed: {error:?}")
             }
             MempoolRejectionReason::FromExecution(rejection_error) => {
@@ -535,7 +490,7 @@ impl PendingTransactionRecord {
                             .unwrap_or(RetryFrom::Never)
                     }
                     RejectionPermanence::PermanentForPayload
-                    | RejectionPermanence::PermanentForAnyPayloadWithThisIntent => {
+                    | RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => {
                         // If RejectionPermanence was Permanent, this has already been handled
                         return;
                     }
@@ -648,7 +603,7 @@ impl PendingTransactionResultCache {
                     // We even overwrite the record for transaction which got committed here
                     // because this is a cache for pending transactions, and it can't be re-committed
                     record.track_attempt(TransactionAttempt {
-                        rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                        rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                             AlreadyCommittedError {
                                 notarized_transaction_hash: *cached_payload_hash,
                                 committed_state_version: committed_transaction.state_version,
@@ -683,7 +638,7 @@ impl PendingTransactionResultCache {
                 *intent_hash,
                 None,
                 TransactionAttempt {
-                    rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                    rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                         AlreadyCommittedError {
                             notarized_transaction_hash: *notarized_transaction_hash,
                             committed_state_version: committed_intent_record.state_version,

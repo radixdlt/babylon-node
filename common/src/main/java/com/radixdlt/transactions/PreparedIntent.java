@@ -68,10 +68,10 @@ import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
-public record PreparedIntent(byte[] intentBytes, IntentHash intentHash) {
+public record PreparedIntent(byte[] intentBytes, TransactionIntentHash transactionIntentHash) {
   public PreparedIntent {
     Objects.requireNonNull(intentBytes);
-    Objects.requireNonNull(intentHash);
+    Objects.requireNonNull(transactionIntentHash);
   }
 
   public static void registerCodec(CodecMap codecMap) {
@@ -82,7 +82,7 @@ public record PreparedIntent(byte[] intentBytes, IntentHash intentHash) {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(intentHash);
+    return Objects.hashCode(transactionIntentHash);
   }
 
   @Override
@@ -91,11 +91,11 @@ public record PreparedIntent(byte[] intentBytes, IntentHash intentHash) {
       return false;
     }
 
-    return Objects.equals(this.intentHash, other.intentHash);
+    return Objects.equals(this.transactionIntentHash, other.transactionIntentHash);
   }
 
   public String hexIntentHash() {
-    return this.intentHash.hex();
+    return this.transactionIntentHash.hex();
   }
 
   @Override

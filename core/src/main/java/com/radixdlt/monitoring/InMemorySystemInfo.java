@@ -112,7 +112,7 @@ public final class InMemorySystemInfo {
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
     return update -> {
-      final var committedProof = update.committedProof();
+      final var committedProof = update.committedProofBundle();
       final var maybeNextEpoch = committedProof.primaryProof().ledgerHeader().nextEpoch();
       this.state =
           new InMemorySystemInfoState(

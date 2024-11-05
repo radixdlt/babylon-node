@@ -13,6 +13,8 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct BootLoaderModuleFieldSystemBootValue {
+    #[serde(rename = "system_version", skip_serializing_if = "Option::is_none")]
+    pub system_version: Option<crate::core_api::generated::models::SystemVersion>,
     #[serde(rename = "system_parameters")]
     pub system_parameters: Box<crate::core_api::generated::models::SystemParameters>,
 }
@@ -20,6 +22,7 @@ pub struct BootLoaderModuleFieldSystemBootValue {
 impl BootLoaderModuleFieldSystemBootValue {
     pub fn new(system_parameters: crate::core_api::generated::models::SystemParameters) -> BootLoaderModuleFieldSystemBootValue {
         BootLoaderModuleFieldSystemBootValue {
+            system_version: None,
             system_parameters: Box::new(system_parameters),
         }
     }

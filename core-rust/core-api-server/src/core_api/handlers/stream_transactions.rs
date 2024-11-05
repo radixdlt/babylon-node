@@ -340,14 +340,30 @@ pub fn to_api_ledger_transaction(
                     })?;
             models::LedgerTransaction::UserLedgerTransaction {
                 payload_hex,
-                notarized_transaction: Box::new(to_api_notarized_transaction(
+                notarized_transaction: Box::new(to_api_notarized_transaction_v1(
                     context,
                     tx,
-                    &user_hashes,
+                    user_hashes,
                 )?),
             }
         }
-        LedgerTransaction::UserV2(..) => todo!(),
+        LedgerTransaction::UserV2(tx) => {
+            let user_hashes =
+                hashes
+                    .as_user()
+                    .ok_or_else(|| MappingError::MismatchedTransactionIdentifiers {
+                        message: "Transaction hashes for notarized transaction were not user"
+                            .to_string(),
+                    })?;
+            models::LedgerTransaction::UserLedgerTransactionV2 {
+                payload_hex,
+                notarized_transaction: Box::new(to_api_notarized_transaction_v2(
+                    context,
+                    tx,
+                    user_hashes,
+                )?),
+            }
+        }
         LedgerTransaction::RoundUpdateV1(tx) => {
             models::LedgerTransaction::RoundUpdateLedgerTransaction {
                 payload_hex,
@@ -380,7 +396,7 @@ pub fn to_api_ledger_transaction(
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_notarized_transaction(
+pub fn to_api_notarized_transaction_v1(
     context: &MappingContext,
     notarized: &NotarizedTransactionV1,
     user_hashes: &UserTransactionHashes,
@@ -460,7 +476,7 @@ pub fn to_api_intent_v1(
         header,
         blobs,
         message,
-        ..
+        instructions: _,
     } = intent;
 
     let header = Box::new(models::TransactionHeader {
@@ -551,6 +567,23 @@ fn to_api_encrypted_message(
     })
 }
 
+fn to_api_encrypted_message_v2(
+    context: &MappingContext,
+    encrypted: &EncryptedMessageV2,
+) -> Result<models::TransactionMessage, MappingError> {
+    let EncryptedMessageV2 {
+        encrypted,
+        decryptors_by_curve,
+    } = encrypted;
+    Ok(models::TransactionMessage::EncryptedTransactionMessage {
+        encrypted_hex: to_hex(&encrypted.0),
+        curve_decryptor_sets: decryptors_by_curve
+            .values()
+            .map(|decryptor_set| to_api_decryptor_set_v2(context, decryptor_set))
+            .collect::<Result<_, _>>()?,
+    })
+}
+
 fn to_api_decryptor_set(
     context: &MappingContext,
     decryptor_set: &DecryptorsByCurve,
@@ -576,10 +609,46 @@ fn to_api_decryptor_set(
     })
 }
 
+fn to_api_decryptor_set_v2(
+    context: &MappingContext,
+    decryptor_set: &DecryptorsByCurveV2,
+) -> Result<models::EncryptedMessageCurveDecryptorSet, MappingError> {
+    let (dh_ephemeral_public_key, decryptors) = match decryptor_set {
+        DecryptorsByCurveV2::Ed25519 {
+            dh_ephemeral_public_key,
+            decryptors,
+        } => (PublicKey::Ed25519(*dh_ephemeral_public_key), decryptors),
+        DecryptorsByCurveV2::Secp256k1 {
+            dh_ephemeral_public_key,
+            decryptors,
+        } => (PublicKey::Secp256k1(*dh_ephemeral_public_key), decryptors),
+    };
+    Ok(models::EncryptedMessageCurveDecryptorSet {
+        dh_ephemeral_public_key: Some(to_api_public_key(&dh_ephemeral_public_key)),
+        decryptors: decryptors
+            .iter()
+            .map(|(public_key_fingerprint, aes_wrapped_key)| {
+                to_api_decryptor_v2(context, public_key_fingerprint, aes_wrapped_key)
+            })
+            .collect::<Result<_, _>>()?,
+    })
+}
+
 fn to_api_decryptor(
     _context: &MappingContext,
     public_key_fingerprint: &PublicKeyFingerprint,
     aes_wrapped_key: &AesWrapped128BitKey,
+) -> Result<models::EncryptedMessageDecryptor, MappingError> {
+    Ok(models::EncryptedMessageDecryptor {
+        public_key_fingerprint_hex: to_hex(public_key_fingerprint.0),
+        aes_wrapped_key_hex: to_hex(aes_wrapped_key.0),
+    })
+}
+
+fn to_api_decryptor_v2(
+    _context: &MappingContext,
+    public_key_fingerprint: &PublicKeyFingerprint,
+    aes_wrapped_key: &AesWrapped256BitKey,
 ) -> Result<models::EncryptedMessageDecryptor, MappingError> {
     Ok(models::EncryptedMessageDecryptor {
         public_key_fingerprint_hex: to_hex(public_key_fingerprint.0),
@@ -600,7 +669,7 @@ pub fn to_api_round_update_transaction(
     Ok(models::RoundUpdateTransaction {
         proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(
             *proposer_timestamp_ms,
-        )?),
+        )),
         epoch: to_api_epoch(context, *epoch)?,
         round_in_epoch: to_api_round(*round)?,
         leader_proposal_history: Box::new(models::LeaderProposalHistory {
@@ -771,4 +840,233 @@ fn to_api_direct_substate_id(
         substate_key,
         &typed_substate_key,
     )
+}
+
+pub fn to_api_notarized_transaction_v2(
+    context: &MappingContext,
+    notarized: &NotarizedTransactionV2,
+    user_hashes: &UserTransactionHashes,
+) -> Result<models::NotarizedTransactionV2, MappingError> {
+    let payload_hex = if context.transaction_options.include_raw_notarized {
+        Some(to_hex(
+            notarized
+                .to_raw()
+                .map_err(|err| MappingError::SborEncodeError {
+                    encode_error: err,
+                    message: "Error encoding user payload sbor".to_string(),
+                })?
+                .as_slice(),
+        ))
+    } else {
+        None
+    };
+
+    let NotarizedTransactionV2 {
+        signed_transaction_intent,
+        notary_signature,
+    } = notarized;
+
+    Ok(models::NotarizedTransactionV2 {
+        hash: to_api_notarized_transaction_hash(&user_hashes.notarized_transaction_hash),
+        hash_bech32m: to_api_hash_bech32m(context, &user_hashes.notarized_transaction_hash)?,
+        payload_hex,
+        signed_transaction_intent: Box::new(to_api_signed_transaction_intent_v2(
+            context,
+            signed_transaction_intent,
+            &user_hashes.transaction_intent_hash,
+            user_hashes.non_root_subintent_hashes.as_slice(),
+            &user_hashes.signed_transaction_intent_hash,
+        )?),
+        notary_signature: Some(to_api_signature(&notary_signature.0)),
+    })
+}
+
+pub fn to_api_signed_transaction_intent_v2(
+    context: &MappingContext,
+    signed: &SignedTransactionIntentV2,
+    transaction_intent_hash: &TransactionIntentHash,
+    non_root_subintent_hashes: &[SubintentHash],
+    signed_transaction_intent_hash: &SignedTransactionIntentHash,
+) -> Result<models::SignedTransactionIntentV2, MappingError> {
+    let SignedTransactionIntentV2 {
+        transaction_intent,
+        transaction_intent_signatures,
+        non_root_subintent_signatures,
+    } = signed;
+    Ok(models::SignedTransactionIntentV2 {
+        hash: to_api_signed_transaction_intent_hash(signed_transaction_intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, signed_transaction_intent_hash)?,
+        transaction_intent: Box::new(to_api_transaction_intent_v2(
+            context,
+            transaction_intent,
+            transaction_intent_hash,
+            non_root_subintent_hashes,
+        )?),
+        transaction_intent_signatures: Box::new(to_api_intent_signatures_v2(
+            transaction_intent_signatures.signatures.as_slice(),
+        )),
+        non_root_subintent_signatures: non_root_subintent_signatures
+            .by_subintent
+            .iter()
+            .map(|sigs| to_api_intent_signatures_v2(&sigs.signatures))
+            .collect(),
+    })
+}
+
+pub fn to_api_intent_signatures_v2(
+    intent_signatures: &[IntentSignatureV1],
+) -> models::IntentSignatures {
+    models::IntentSignatures {
+        signatures: intent_signatures
+            .iter()
+            .map(|s| to_api_signature_with_public_key(&s.0))
+            .collect(),
+    }
+}
+
+pub fn to_api_transaction_intent_v2(
+    context: &MappingContext,
+    transaction_intent: &TransactionIntentV2,
+    transaction_intent_hash: &TransactionIntentHash,
+    non_root_subintent_hashes: &[SubintentHash],
+) -> Result<models::TransactionIntentV2, MappingError> {
+    let TransactionIntentV2 {
+        transaction_header,
+        root_intent_core,
+        non_root_subintents,
+    } = transaction_intent;
+    Ok(models::TransactionIntentV2 {
+        hash: to_api_transaction_intent_hash(transaction_intent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, transaction_intent_hash)?,
+        transaction_header: Box::new(to_api_transaction_header_v2(transaction_header)?),
+        root_intent_core: Box::new(to_api_intent_core_v2(context, root_intent_core)?),
+        non_root_subintents: non_root_subintents
+            .0
+            .iter()
+            .zip(non_root_subintent_hashes.iter())
+            .map(|(subintent, subintent_hash)| {
+                to_api_subintent_v2(context, subintent, subintent_hash)
+            })
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+pub fn to_api_transaction_header_v2(
+    transaction_header: &TransactionHeaderV2,
+) -> Result<models::TransactionHeaderV2, MappingError> {
+    let TransactionHeaderV2 {
+        notary_public_key,
+        notary_is_signatory,
+        tip_basis_points,
+    } = transaction_header;
+    Ok(models::TransactionHeaderV2 {
+        notary_public_key: Some(to_api_public_key(notary_public_key)),
+        notary_is_signatory: *notary_is_signatory,
+        tip_basis_points: to_api_u32_as_i64(*tip_basis_points),
+    })
+}
+
+pub fn to_api_subintent_v2(
+    context: &MappingContext,
+    subintent: &SubintentV2,
+    subintent_hash: &SubintentHash,
+) -> Result<models::SubintentV2, MappingError> {
+    let SubintentV2 { intent_core } = subintent;
+    Ok(models::SubintentV2 {
+        hash: to_api_subintent_hash(subintent_hash),
+        hash_bech32m: to_api_hash_bech32m(context, subintent_hash)?,
+        intent_core: Box::new(to_api_intent_core_v2(context, intent_core)?),
+    })
+}
+
+pub fn to_api_intent_core_v2(
+    context: &MappingContext,
+    intent_core: &IntentCoreV2,
+) -> Result<models::IntentCoreV2, MappingError> {
+    let instructions = if context.transaction_options.include_manifest {
+        let readable_manifest = TransactionManifestV2::from_intent_core(intent_core);
+        Some(
+            manifest::decompile(&readable_manifest, &context.network_definition).map_err(
+                |err| MappingError::InvalidManifest {
+                    message: format!("Failed to decompile a transaction manifest: {err:?}"),
+                },
+            )?,
+        )
+    } else {
+        None
+    };
+
+    let IntentCoreV2 {
+        header,
+        blobs,
+        message,
+        children,
+        instructions: _,
+    } = intent_core;
+
+    let intent_header = {
+        let IntentHeaderV2 {
+            network_id,
+            start_epoch_inclusive,
+            end_epoch_exclusive,
+            min_proposer_timestamp_inclusive,
+            max_proposer_timestamp_exclusive,
+            intent_discriminator,
+        } = header;
+
+        models::IntentHeaderV2 {
+            network_id: (*network_id).into(),
+            start_epoch_inclusive: to_api_epoch(context, *start_epoch_inclusive)?,
+            end_epoch_exclusive: to_api_epoch(context, *end_epoch_exclusive)?,
+            min_proposer_timestamp_inclusive: min_proposer_timestamp_inclusive
+                .as_ref()
+                .map(|instant| Box::new(to_api_scrypto_instant(instant))),
+            max_proposer_timestamp_exclusive: max_proposer_timestamp_exclusive
+                .as_ref()
+                .map(|instant| Box::new(to_api_scrypto_instant(instant))),
+            intent_discriminator: to_api_u64_as_string(*intent_discriminator),
+        }
+    };
+
+    let children_specifiers = {
+        let ChildSubintentSpecifiersV2 { children } = children;
+        children
+            .iter()
+            .map(|child_specifier| to_api_hash_bech32m(context, &child_specifier.hash))
+            .collect::<Result<_, _>>()?
+    };
+
+    let blobs_hex = if context.transaction_options.include_blobs {
+        Some(
+            blobs
+                .blobs
+                .iter()
+                .map(|blob| (to_hex(hash(&blob.0)), to_hex(&blob.0)))
+                .collect(),
+        )
+    } else {
+        None
+    };
+
+    let message = if context.transaction_options.include_message {
+        match message {
+            MessageV2::None => None,
+            MessageV2::Plaintext(plaintext) => {
+                Some(Box::new(to_api_plaintext_message(context, plaintext)?))
+            }
+            MessageV2::Encrypted(encrypted) => {
+                Some(Box::new(to_api_encrypted_message_v2(context, encrypted)?))
+            }
+        }
+    } else {
+        None
+    };
+
+    Ok(models::IntentCoreV2 {
+        intent_header: Box::new(intent_header),
+        children_specifiers,
+        instructions,
+        blobs_hex,
+        message,
+    })
 }

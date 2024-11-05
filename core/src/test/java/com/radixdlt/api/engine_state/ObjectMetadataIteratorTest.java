@@ -92,7 +92,8 @@ public final class ObjectMetadataIteratorTest extends DeterministicEngineStateAp
               .map(MetadataEntryKey::getKey)
               .toList();
 
-      assertThat(metadataKeys).containsExactly("name", "description", "icon_url", "tags");
+      assertThat(metadataKeys)
+          .containsExactly("info_url", "name", "description", "icon_url", "tags");
     }
   }
 

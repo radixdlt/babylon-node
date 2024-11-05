@@ -17,6 +17,8 @@ pub enum LedgerTransactionType {
     Genesis,
     #[serde(rename = "User")]
     User,
+    #[serde(rename = "UserV2")]
+    UserV2,
     #[serde(rename = "RoundUpdate")]
     RoundUpdate,
     #[serde(rename = "Flash")]
@@ -29,6 +31,7 @@ impl ToString for LedgerTransactionType {
         match self {
             Self::Genesis => String::from("Genesis"),
             Self::User => String::from("User"),
+            Self::UserV2 => String::from("UserV2"),
             Self::RoundUpdate => String::from("RoundUpdate"),
             Self::Flash => String::from("Flash"),
         }

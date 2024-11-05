@@ -4,7 +4,8 @@ use models::transaction_parse_request::{ParseMode, ResponseMode, ValidationMode}
 use models::transaction_parse_response::TransactionParseResponse;
 
 use super::{
-    to_api_intent_v1, to_api_ledger_transaction, to_api_notarized_transaction, to_api_signed_intent,
+    to_api_intent_v1, to_api_ledger_transaction, to_api_notarized_transaction_v1,
+    to_api_notarized_transaction_v2, to_api_signed_intent,
 };
 
 pub struct ParseContext<'a> {
@@ -100,17 +101,17 @@ fn attempt_parsing_as_any_payload_type_and_map_for_api(
     Err(client_error("The payload isn't a valid notarized transaction, signed transaction intent, unsigned transaction intent or ledger transaction payload."))
 }
 
-struct ParsedNotarizedTransactionV1 {
-    model: NotarizedTransactionV1,
+struct ParsedNotarizedTransaction {
+    model: UserTransaction,
     hashes: UserTransactionHashes,
-    prepared: PreparedNotarizedTransactionV1,
+    prepared: PreparedUserTransaction,
     validation: Option<Result<(), MempoolRejectionReason>>,
 }
 
 fn attempt_parsing_as_notarized_transaction(
     context: &ParseContext,
     bytes: &[u8],
-) -> Option<ParsedNotarizedTransactionV1> {
+) -> Option<ParsedNotarizedTransaction> {
     let raw = RawNotarizedTransaction::from_slice(bytes);
     let prepared = raw
         .prepare(context.transaction_validator.preparation_settings())
@@ -118,15 +119,10 @@ fn attempt_parsing_as_notarized_transaction(
 
     let hashes = prepared.hashes();
 
-    let prepared = match prepared {
-        PreparedUserTransaction::V1(prepared) => prepared,
-        PreparedUserTransaction::V2(_) => todo!(),
-    };
-
-    let model = NotarizedTransactionV1::from_raw(&raw).ok()?;
+    let model = UserTransaction::from_raw(&raw).ok()?;
 
     Some(match context.validation_mode {
-        ValidationMode::None => ParsedNotarizedTransactionV1 {
+        ValidationMode::None => ParsedNotarizedTransaction {
             model,
             hashes,
             prepared,
@@ -140,7 +136,7 @@ fn attempt_parsing_as_notarized_transaction(
                     .map(|_| ())
                     .map_err(MempoolRejectionReason::ValidationError),
             );
-            ParsedNotarizedTransactionV1 {
+            ParsedNotarizedTransaction {
                 model,
                 hashes,
                 prepared,
@@ -168,7 +164,7 @@ fn attempt_parsing_as_notarized_transaction(
                         }
                     })
             });
-            ParsedNotarizedTransactionV1 {
+            ParsedNotarizedTransaction {
                 model,
                 hashes,
                 prepared,
@@ -180,17 +176,8 @@ fn attempt_parsing_as_notarized_transaction(
 
 fn to_api_parsed_notarized_transaction(
     context: &ParseContext,
-    parsed: ParsedNotarizedTransactionV1,
+    parsed: ParsedNotarizedTransaction,
 ) -> Result<models::ParsedTransaction, ResponseError<()>> {
-    let model = match context.response_mode {
-        ResponseMode::Basic => None,
-        ResponseMode::Full => Some(Box::new(to_api_notarized_transaction(
-            &context.mapping_context,
-            &parsed.model,
-            &parsed.hashes,
-        )?)),
-    };
-
     let validation_error = parsed
         .validation
         .and_then(|result| result.err())
@@ -201,36 +188,86 @@ fn to_api_parsed_notarized_transaction(
             })
         });
 
-    let ledger_hash =
-        PreparedLedgerTransactionInner::User(PreparedUserTransaction::V1(parsed.prepared))
-            .get_ledger_hash();
+    match (parsed.model, parsed.prepared) {
+        (UserTransaction::V1(model), PreparedUserTransaction::V1(prepared)) => {
+            let model = match context.response_mode {
+                ResponseMode::Basic => None,
+                ResponseMode::Full => Some(Box::new(to_api_notarized_transaction_v1(
+                    &context.mapping_context,
+                    &model,
+                    &parsed.hashes,
+                )?)),
+            };
 
-    Ok(models::ParsedTransaction::ParsedNotarizedTransaction {
-        notarized_transaction: model,
-        identifiers: Box::new(models::ParsedNotarizedTransactionIdentifiers {
-            intent_hash: to_api_transaction_intent_hash(&parsed.hashes.transaction_intent_hash),
-            intent_hash_bech32m: to_api_hash_bech32m(
-                &context.mapping_context,
-                &parsed.hashes.transaction_intent_hash,
-            )?,
-            signed_intent_hash: to_api_signed_transaction_intent_hash(
-                &parsed.hashes.signed_transaction_intent_hash,
-            ),
-            signed_intent_hash_bech32m: to_api_hash_bech32m(
-                &context.mapping_context,
-                &parsed.hashes.signed_transaction_intent_hash,
-            )?,
-            payload_hash: to_api_notarized_transaction_hash(
-                &parsed.hashes.notarized_transaction_hash,
-            ),
-            payload_hash_bech32m: to_api_hash_bech32m(
-                &context.mapping_context,
-                &parsed.hashes.notarized_transaction_hash,
-            )?,
-            ledger_hash: to_api_ledger_hash(&ledger_hash),
-            ledger_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, &ledger_hash)?,
-        }),
-        validation_error,
+            let ledger_hash =
+                PreparedLedgerTransactionInner::User(PreparedUserTransaction::V1(prepared))
+                    .get_ledger_hash();
+
+            Ok(models::ParsedTransaction::ParsedNotarizedTransaction {
+                notarized_transaction: model,
+                identifiers: Box::new(to_api_parsed_notarized_transaction_identifiers(
+                    context,
+                    &parsed.hashes,
+                    ledger_hash,
+                )?),
+                validation_error,
+            })
+        }
+        (UserTransaction::V2(model), PreparedUserTransaction::V2(prepared)) => {
+            let model = match context.response_mode {
+                ResponseMode::Basic => None,
+                ResponseMode::Full => Some(Box::new(to_api_notarized_transaction_v2(
+                    &context.mapping_context,
+                    &model,
+                    &parsed.hashes,
+                )?)),
+            };
+
+            let ledger_hash =
+                PreparedLedgerTransactionInner::User(PreparedUserTransaction::V2(prepared))
+                    .get_ledger_hash();
+
+            Ok(models::ParsedTransaction::ParsedNotarizedTransactionV2 {
+                notarized_transaction: model,
+                identifiers: Box::new(to_api_parsed_notarized_transaction_identifiers(
+                    context,
+                    &parsed.hashes,
+                    ledger_hash,
+                )?),
+                validation_error,
+            })
+        }
+        (UserTransaction::V1(_), _) | (UserTransaction::V2(_), _) => {
+            panic!("Unexpected combination")
+        }
+    }
+}
+
+fn to_api_parsed_notarized_transaction_identifiers(
+    context: &ParseContext,
+    hashes: &UserTransactionHashes,
+    ledger_hash: LedgerTransactionHash,
+) -> Result<models::ParsedNotarizedTransactionIdentifiers, MappingError> {
+    Ok(models::ParsedNotarizedTransactionIdentifiers {
+        intent_hash: to_api_transaction_intent_hash(&hashes.transaction_intent_hash),
+        intent_hash_bech32m: to_api_hash_bech32m(
+            &context.mapping_context,
+            &hashes.transaction_intent_hash,
+        )?,
+        signed_intent_hash: to_api_signed_transaction_intent_hash(
+            &hashes.signed_transaction_intent_hash,
+        ),
+        signed_intent_hash_bech32m: to_api_hash_bech32m(
+            &context.mapping_context,
+            &hashes.signed_transaction_intent_hash,
+        )?,
+        payload_hash: to_api_notarized_transaction_hash(&hashes.notarized_transaction_hash),
+        payload_hash_bech32m: to_api_hash_bech32m(
+            &context.mapping_context,
+            &hashes.notarized_transaction_hash,
+        )?,
+        ledger_hash: to_api_ledger_hash(&ledger_hash),
+        ledger_hash_bech32m: to_api_hash_bech32m(&context.mapping_context, &ledger_hash)?,
     })
 }
 

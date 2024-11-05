@@ -26,6 +26,8 @@ pub enum EntityModule {
     Schema,
     #[serde(rename = "BootLoader")]
     BootLoader,
+    #[serde(rename = "ProtocolUpdateStatus")]
+    ProtocolUpdateStatus,
 
 }
 
@@ -39,6 +41,7 @@ impl ToString for EntityModule {
             Self::Main => String::from("Main"),
             Self::Schema => String::from("Schema"),
             Self::BootLoader => String::from("BootLoader"),
+            Self::ProtocolUpdateStatus => String::from("ProtocolUpdateStatus"),
         }
     }
 }

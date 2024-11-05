@@ -1,21 +1,54 @@
 use crate::prelude::*;
 
-define_single_versioned! {
+define_versioned! {
     #[derive(Debug, Clone, Sbor)]
-    pub VersionedCommittedTransactionIdentifiers(CommittedTransactionIdentifiersVersions) => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1,
+    pub VersionedCommittedTransactionIdentifiers(CommittedTransactionIdentifiersVersions) {
+        previous_versions: [
+            1 => CommittedTransactionIdentifiersV1: { updates_to: 2 },
+        ],
+        latest_version: {
+            2 => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV2,
+        },
+    },
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_committed_transaction_identifiers.bin"
-        ))]
+        #[sbor_assert(
+            backwards_compatible(
+                bottlenose = "FILE:CF_SCHEMA_versioned_committed_transaction_identifiers_bottlenose.bin",
+                cuttlefish = "FILE:CF_SCHEMA_versioned_committed_transaction_identifiers_cuttlefish.bin"
+            ),
+            settings(allow_name_changes),
+        )]
     ]
 }
 
 #[derive(Debug, Clone, Sbor)]
 pub struct CommittedTransactionIdentifiersV1 {
-    pub transaction_hashes: LedgerTransactionHashes,
+    pub transaction_hashes: LedgerTransactionHashesV1,
     pub resultant_ledger_hashes: LedgerHashes,
     pub proposer_timestamp_ms: i64,
+}
+
+#[derive(Debug, Clone, Sbor)]
+pub struct CommittedTransactionIdentifiersV2 {
+    pub transaction_hashes: LedgerTransactionHashesV2,
+    pub resultant_ledger_hashes: LedgerHashes,
+    pub proposer_timestamp_ms: i64,
+}
+
+impl From<CommittedTransactionIdentifiersV1> for CommittedTransactionIdentifiersV2 {
+    fn from(value: CommittedTransactionIdentifiersV1) -> Self {
+        let CommittedTransactionIdentifiersV1 {
+            transaction_hashes,
+            resultant_ledger_hashes,
+            proposer_timestamp_ms,
+        } = value;
+        CommittedTransactionIdentifiersV2 {
+            transaction_hashes: transaction_hashes.into(),
+            resultant_ledger_hashes,
+            proposer_timestamp_ms,
+        }
+    }
 }
 
 /// A "flat" representation of an entire Partition's change, suitable for merkle hash computation.

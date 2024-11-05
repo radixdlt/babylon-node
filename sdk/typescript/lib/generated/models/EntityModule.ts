@@ -24,7 +24,8 @@ export const EntityModule = {
     Royalty: 'Royalty',
     Main: 'Main',
     Schema: 'Schema',
-    BootLoader: 'BootLoader'
+    BootLoader: 'BootLoader',
+    ProtocolUpdateStatus: 'ProtocolUpdateStatus'
 } as const;
 export type EntityModule = typeof EntityModule[keyof typeof EntityModule];
 

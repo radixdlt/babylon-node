@@ -172,9 +172,9 @@ public final class RemoteSyncService {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    if (ledgerUpdate.committedProof().resultantStateVersion()
+    if (ledgerUpdate.committedProofBundle().resultantStateVersion()
         > this.latestProof.resultantStateVersion()) {
-      this.latestProof = ledgerUpdate.committedProof();
+      this.latestProof = ledgerUpdate.committedProofBundle();
       this.sendStatusUpdateToSomePeers(
           LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(latestProof.primaryProof()));
     }

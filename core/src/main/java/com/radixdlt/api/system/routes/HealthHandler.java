@@ -232,6 +232,8 @@ public final class HealthHandler extends SystemJsonHandler<HealthResponse> {
                 .protocolVersion(
                     pendingProtocolUpdate.protocolUpdateTrigger().nextProtocolVersion())
                 .state(apiState)
+                .readinessSignalName(
+                    pendingProtocolUpdate.protocolUpdateTrigger().readinessSignalName())
                 .readinessSignalStatus(readinessSignalStatus);
 
         projectedFulfillmentEpochByThreshold.values().stream()

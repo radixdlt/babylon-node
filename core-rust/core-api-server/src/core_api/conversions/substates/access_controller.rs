@@ -73,7 +73,6 @@ pub fn to_api_access_controller_substate(
                         )?),
                         allow_timed_recovery_after: timed_recovery_allowed_after
                             .map(to_api_scrypto_instant)
-                            .transpose()?
                             .map(Box::new),
                     }))
                 }

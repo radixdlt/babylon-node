@@ -343,7 +343,7 @@ public final class EpochManager {
   }
 
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    this.latestProof = ledgerUpdate.committedProof();
+    this.latestProof = ledgerUpdate.committedProofBundle();
 
     ledgerUpdate
         .epochChange()
@@ -368,10 +368,10 @@ public final class EpochManager {
       // Note that if this epoch change came with a protocol update
       // then we don't broadcast the latest (i.e. post-protocol update) proof,
       // but the epoch proof that triggered the protocol update.
-      // That's the `trimProtocolUpdate` call.
+      // That's the `latestRoundOrEpochChangeProof` call.
       LedgerProofSyncStatusDto proof =
           LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(
-              epochChange.proofBundle().trimProtocolUpdate());
+              epochChange.proofBundle().latestRoundOrEpochChangeProof());
       final var ledgerStatusUpdate = new LedgerStatusUpdate(proof);
       for (var validator : currentAndNextValidators) {
         if (!validator.getValidatorId().getKey().equals(selfValidatorInfo.key())) {

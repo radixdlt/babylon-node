@@ -70,12 +70,12 @@ import java.util.Objects;
 
 public record PreparedNotarizedTransaction(
     RawNotarizedTransaction raw,
-    IntentHash intentHash,
+    TransactionIntentHash transactionIntentHash,
     SignedIntentHash signedIntentHash,
     NotarizedTransactionHash notarizedTransactionHash) {
   public PreparedNotarizedTransaction {
     Objects.requireNonNull(raw);
-    Objects.requireNonNull(intentHash);
+    Objects.requireNonNull(transactionIntentHash);
     Objects.requireNonNull(signedIntentHash);
     Objects.requireNonNull(notarizedTransactionHash);
   }
@@ -108,7 +108,7 @@ public record PreparedNotarizedTransaction(
   }
 
   public String hexIntentHash() {
-    return this.intentHash.hex();
+    return this.transactionIntentHash.hex();
   }
 
   public String hexNotarizedTransactionHash() {

@@ -148,8 +148,12 @@ pub fn to_api_substate_system_structure(
                     SystemFieldKind::VmBoot => models::SystemFieldKind::VmBoot,
                     SystemFieldKind::SystemBoot => models::SystemFieldKind::SystemBoot,
                     SystemFieldKind::KernelBoot => models::SystemFieldKind::KernelBoot,
-                    SystemFieldKind::TransactionValidationConfiguration => todo!(),
-                    SystemFieldKind::ProtocolUpdateStatusSummary => todo!(),
+                    SystemFieldKind::TransactionValidationConfiguration => {
+                        models::SystemFieldKind::TransactionValidationConfiguration
+                    }
+                    SystemFieldKind::ProtocolUpdateStatusSummary => {
+                        models::SystemFieldKind::ProtocolUpdateStatusSummary
+                    }
                 },
             }
         }

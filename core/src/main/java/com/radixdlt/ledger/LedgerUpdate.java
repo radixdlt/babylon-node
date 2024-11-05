@@ -74,7 +74,7 @@ import java.util.List;
 
 public record LedgerUpdate(
     CommitSummary commitSummary,
-    LedgerProofBundle committedProof,
+    LedgerProofBundle committedProofBundle,
     Option<EpochChange> epochChange,
     ProtocolState resultantProtocolState,
     // Only used in tests

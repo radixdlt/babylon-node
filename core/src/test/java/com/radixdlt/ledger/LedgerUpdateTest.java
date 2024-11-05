@@ -84,13 +84,7 @@ public class LedgerUpdateTest {
             LedgerProofOrigin.class,
             new LedgerProofOrigin.Consensus(HashUtils.random256(), ImmutableList.of()),
             new LedgerProofOrigin.ProtocolUpdate(
-                "asd",
-                Option.some(HashUtils.random256()),
-                UInt64.ZERO,
-                "-",
-                UInt64.ZERO,
-                "-",
-                false))
+                "asd", Option.some(HashUtils.random256()), UInt64.ZERO, "", UInt64.ZERO, "", false))
         .withPrefabValues(
             ProtocolState.PendingProtocolUpdateState.class,
             new ProtocolState.PendingProtocolUpdateState.ForSignalledReadinessSupportCondition(

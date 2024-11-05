@@ -574,13 +574,14 @@ impl From<LedgerProofOriginV1> for LedgerProofOriginV2 {
             },
             LedgerProofOriginV1::ProtocolUpdate {
                 protocol_version_name,
-                batch_index,
+                batch_index: _,
             } => LedgerProofOriginV2::ProtocolUpdate {
                 protocol_version_name,
                 config_hash: None,
                 batch_group_index: 0,
                 batch_group_name: "".to_string(),
-                batch_index: batch_index as usize,
+                // To avoid confusion, we discard the old batch index which was from a different/flattened batching structure
+                batch_index: 0,
                 batch_name: "".to_string(),
                 is_end_of_update: false,
             },

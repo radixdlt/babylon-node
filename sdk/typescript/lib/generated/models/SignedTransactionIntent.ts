@@ -35,13 +35,13 @@ export interface SignedTransactionIntent {
     /**
      * The hex-encoded signed intent hash for a user transaction.
      * This hash identifies the transaction intent, plus additional signatures.
-     * This hash is signed by the notary, to create the submittable NotarizedTransaction.
+     * This hash is signed by the notary, to create the submittable `NotarizedTransaction`.
      * @type {string}
      * @memberof SignedTransactionIntent
      */
     hash: string;
     /**
-     * The Bech32m-encoded human readable `SignedIntentHash`.
+     * The Bech32m-encoded human readable `SignedTransactionIntentHash`.
      * @type {string}
      * @memberof SignedTransactionIntent
      */

@@ -406,6 +406,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 RawGenesisDataWithHash.fromGenesisData(rev2Config.genesis());
             install(new REv2LedgerRecoveryModule());
             install(new REv2ConsensusRecoveryModule());
+            install(new SystemInfoModule());
 
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {

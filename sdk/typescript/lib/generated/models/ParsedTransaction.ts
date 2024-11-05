@@ -27,6 +27,13 @@ import {
     ParsedNotarizedTransactionToJSON,
 } from './ParsedNotarizedTransaction';
 import {
+    ParsedNotarizedTransactionV2,
+    instanceOfParsedNotarizedTransactionV2,
+    ParsedNotarizedTransactionV2FromJSON,
+    ParsedNotarizedTransactionV2FromJSONTyped,
+    ParsedNotarizedTransactionV2ToJSON,
+} from './ParsedNotarizedTransactionV2';
+import {
     ParsedSignedTransactionIntent,
     instanceOfParsedSignedTransactionIntent,
     ParsedSignedTransactionIntentFromJSON,
@@ -46,7 +53,7 @@ import {
  * 
  * @export
  */
-export type ParsedTransaction = { type: 'LedgerTransaction' } & ParsedLedgerTransaction | { type: 'NotarizedTransaction' } & ParsedNotarizedTransaction | { type: 'SignedTransactionIntent' } & ParsedSignedTransactionIntent | { type: 'TransactionIntent' } & ParsedTransactionIntent;
+export type ParsedTransaction = { type: 'LedgerTransaction' } & ParsedLedgerTransaction | { type: 'NotarizedTransaction' } & ParsedNotarizedTransaction | { type: 'NotarizedTransactionV2' } & ParsedNotarizedTransactionV2 | { type: 'SignedTransactionIntent' } & ParsedSignedTransactionIntent | { type: 'TransactionIntent' } & ParsedTransactionIntent;
 
 export function ParsedTransactionFromJSON(json: any): ParsedTransaction {
     return ParsedTransactionFromJSONTyped(json, false);
@@ -61,6 +68,8 @@ export function ParsedTransactionFromJSONTyped(json: any, ignoreDiscriminator: b
             return {...ParsedLedgerTransactionFromJSONTyped(json, true), type: 'LedgerTransaction'};
         case 'NotarizedTransaction':
             return {...ParsedNotarizedTransactionFromJSONTyped(json, true), type: 'NotarizedTransaction'};
+        case 'NotarizedTransactionV2':
+            return {...ParsedNotarizedTransactionV2FromJSONTyped(json, true), type: 'NotarizedTransactionV2'};
         case 'SignedTransactionIntent':
             return {...ParsedSignedTransactionIntentFromJSONTyped(json, true), type: 'SignedTransactionIntent'};
         case 'TransactionIntent':
@@ -82,6 +91,8 @@ export function ParsedTransactionToJSON(value?: ParsedTransaction | null): any {
             return ParsedLedgerTransactionToJSON(value);
         case 'NotarizedTransaction':
             return ParsedNotarizedTransactionToJSON(value);
+        case 'NotarizedTransactionV2':
+            return ParsedNotarizedTransactionV2ToJSON(value);
         case 'SignedTransactionIntent':
             return ParsedSignedTransactionIntentToJSON(value);
         case 'TransactionIntent':

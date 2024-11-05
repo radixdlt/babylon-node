@@ -193,7 +193,10 @@ public class TransactionBuilder {
     var intentSignatures =
         this.signatories.stream()
             .map(
-                ecKeyPair -> ecKeyPair.sign(intent.intentHash().inner()).toSignatureWithPublicKey())
+                ecKeyPair ->
+                    ecKeyPair
+                        .sign(intent.transactionIntentHash().inner())
+                        .toSignatureWithPublicKey())
             .toList();
     var signedIntent =
         TransactionPreparer.prepareSignedIntent(intent.intentBytes(), intentSignatures);

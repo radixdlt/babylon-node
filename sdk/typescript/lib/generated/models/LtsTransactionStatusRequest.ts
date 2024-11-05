@@ -26,8 +26,8 @@ export interface LtsTransactionStatusRequest {
      */
     network: string;
     /**
-     * The intent hash for a user transaction, also known as the transaction id.
-     * This hash identifies the core content "intent" of the transaction. Each intent can only be committed once.
+     * The transaction intent hash for a user transaction, also known as the transaction id.
+     * This hash identifies the core "intent" of the transaction. Each transaction intent can only be committed once.
      * This hash gets signed by any signatories on the transaction, to create the signed intent.
      * Either hex or Bech32m-encoded strings are supported.
      * @type {string}
