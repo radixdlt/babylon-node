@@ -99,9 +99,7 @@ public final class MeshApiServer {
   }
 
   private static native void init(
-      NodeRustEnvironment nodeRustEnvironment,
-      MeshApiServer meshApiServer,
-      byte[] config);
+      NodeRustEnvironment nodeRustEnvironment, MeshApiServer meshApiServer, byte[] config);
 
   private static native void start(MeshApiServer meshApiServer);
 
