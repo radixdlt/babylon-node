@@ -431,7 +431,9 @@ public final class RadixNodeModule extends AbstractModule {
     final var meshApiBindAddress =
         properties.get("api.mesh.bind_address", DEFAULT_MESH_API_BIND_ADDRESS);
     final var meshApiPort = properties.get("api.mesh.port", DEFAULT_MESH_API_PORT);
-    install(new MeshApiServerModule(meshApiBindAddress, meshApiPort, ApplicationVersion.INSTANCE.display()));
+    install(
+        new MeshApiServerModule(
+            meshApiBindAddress, meshApiPort, ApplicationVersion.INSTANCE.display()));
 
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);
