@@ -2,9 +2,9 @@ use crate::prelude::*;
 
 pub(crate) async fn handle_network_status(
     state: State<MeshApiState>,
-    Json(request): Json<models::NetworkIdentifier>,
+    Json(request): Json<models::NetworkRequest>,
 ) -> Result<Json<models::NetworkStatusResponse>, ResponseError> {
-    assert_matching_network(&request.network, &state.network)?;
+    assert_matching_network(&request.network_identifier.network, &state.network)?;
 
     let database = state.state_manager.database.snapshot();
 
