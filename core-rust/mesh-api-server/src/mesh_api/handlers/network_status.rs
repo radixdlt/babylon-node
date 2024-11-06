@@ -39,9 +39,10 @@ pub(crate) async fn handle_network_status(
         current_block_timestamp: timestamp_substate.epoch_milli,
         oldest_block_identifier: Some(genesis_block_identifier.clone()),
         genesis_block_identifier,
-        // TODO:MESH crate::mesh_api::generated::models::SyncStatus
+        // sync_status not required.
+        // Comparing the timestamp of the most recent blocks with current time is fine.
         sync_status: None,
-        // TODO:MESH crate::mesh_api::generated::models::Peer
-        peers: None,
+        // This info is in the Java System API. Hard to get it. Setting empty vector for now.
+        peers: Some(vec![]),
     }))
 }
