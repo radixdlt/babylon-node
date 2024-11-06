@@ -19,8 +19,6 @@ pub(crate) enum ApiError {
     UnexpectedServerError,
     #[strum(serialize = "Invalid network")]
     InvalidNetwork,
-    #[strum(serialize = "Feature not enabled")]
-    FeatureNotEnabled,
     #[strum(serialize = "Invalid request")]
     InvalidRequest,
     #[strum(serialize = "Could not render response")]
@@ -185,56 +183,6 @@ pub async fn emit_error_response_event(uri: Uri, response: Response) -> Response
         }
     }
     response
-}
-
-impl From<StateHistoryError> for ResponseError {
-    fn from(error: StateHistoryError) -> Self {
-        match error {
-            StateHistoryError::StateHistoryDisabled => NodeFeatureDisabledError::new(
-                "State history",
-                "db.historical_substate_values.enable",
-            )
-            .into(),
-            StateHistoryError::StateVersionInTooDistantPast {
-                first_available_version,
-            } => ResponseError::from(ApiError::InvalidRequest).with_details(format!(
-                "Cannot request state version past the earliest available, which is {}",
-                first_available_version.number()
-            )),
-            StateHistoryError::StateVersionInFuture { current_version } => {
-                ResponseError::from(ApiError::InvalidRequest).with_details(format!(
-                    "Cannot request state version ahead of the current top-of-ledger, which is {}",
-                    current_version.number()
-                ))
-            }
-        }
-    }
-}
-
-/// An error occurring when a Node feature required to handle the request is not configured.
-/// To be translated into [`StatusCode::CONFLICT`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NodeFeatureDisabledError {
-    public_feature_name: String,
-    property_name: String,
-}
-
-impl NodeFeatureDisabledError {
-    pub fn new(public_feature_name: impl Into<String>, property_name: impl Into<String>) -> Self {
-        Self {
-            public_feature_name: public_feature_name.into(),
-            property_name: property_name.into(),
-        }
-    }
-}
-
-impl From<NodeFeatureDisabledError> for ResponseError {
-    fn from(error: NodeFeatureDisabledError) -> Self {
-        ResponseError::from(ApiError::FeatureNotEnabled).with_details(format!(
-            "Missing `{}` Node configuration flag",
-            error.property_name
-        ))
-    }
 }
 
 pub(crate) fn assert_matching_network(
