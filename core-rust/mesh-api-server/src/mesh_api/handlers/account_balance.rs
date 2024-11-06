@@ -34,7 +34,9 @@ pub(crate) async fn handle_account_balance(
     if type_info.is_none() {
         if component_address.as_node_id().is_global_preallocated() {
             return Ok(Json(models::AccountBalanceResponse {
-                block_identifier: Box::new(ledger_header_to_block_identifier(&header.into())?),
+                block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
+                    &header.into(),
+                )?),
                 balances: vec![],
                 metadata: None,
             }));
@@ -96,6 +98,8 @@ pub(crate) async fn handle_account_balance(
         )
         .into_iter()
         .map(|(fungible_resource_address, amount)| {
+            // TODO:MESH refactor as per comment:
+            // https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830893809
             let symbol = to_api_resource_address(&mapping_context, &fungible_resource_address)?;
             let currency =
                 resource_address_to_currency(database.deref(), &symbol, fungible_resource_address)?;
@@ -110,7 +114,9 @@ pub(crate) async fn handle_account_balance(
     // See https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field
     // definitions
     Ok(Json(models::AccountBalanceResponse {
-        block_identifier: Box::new(ledger_header_to_block_identifier(&header.into())?),
+        block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
+            &header.into(),
+        )?),
         balances,
         metadata: None,
     }))

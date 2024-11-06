@@ -20,7 +20,7 @@ pub(crate) async fn handle_network_status(
     let genesis_block_identifier = database
         .get_post_genesis_epoch_proof()
         .map(|proof| -> Result<_, MappingError> {
-            Ok(Box::new(ledger_header_to_block_identifier(
+            Ok(Box::new(to_mesh_api_block_identifier_from_ledger_header(
                 &proof.ledger_header.into(),
             )?))
         })
@@ -29,7 +29,7 @@ pub(crate) async fn handle_network_status(
     let oldest_block_identifier = database
         .get_first_proof()
         .map(|proof| -> Result<_, MappingError> {
-            Ok(Box::new(ledger_header_to_block_identifier(
+            Ok(Box::new(to_mesh_api_block_identifier_from_ledger_header(
                 &proof.ledger_header.into(),
             )?))
         })
@@ -41,7 +41,7 @@ pub(crate) async fn handle_network_status(
         current_block_identifier: database
             .get_latest_proof()
             .map(|proof| -> Result<_, MappingError> {
-                Ok(Box::new(ledger_header_to_block_identifier(
+                Ok(Box::new(to_mesh_api_block_identifier_from_ledger_header(
                     &proof.ledger_header.into(),
                 )?))
             })

@@ -8,6 +8,9 @@ pub(crate) async fn handle_network_options(
 
     let database = state.state_manager.database.snapshot();
 
+    // TODO:MESH Should be StateVersion::pre_genesis() here, but below error is observed:
+    //   thread 'tokio-runtime-worker' panicked at state-manager/src/store/rocks_db.rs:780:17:
+    //   DB inconsistency! transaction version (1) doesn't match expected state version (0)
     let mut bundles_iter = database.get_committed_transaction_bundle_iter(StateVersion::of(1));
 
     // See https://docs.cdp.coinbase.com/mesh/docs/models#networkoptionsresponse for field
@@ -25,6 +28,8 @@ pub(crate) async fn handle_network_options(
                 models::OperationStatus::new("SuccessStatus".to_string(), true),
                 models::OperationStatus::new("FailureStatus".to_string(), false),
             ],
+            // TODO::MESH Add enum with operation types
+            // see comment https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830848173
             operation_types: vec![
                 "Withdraw".to_string(),
                 "Deposit".to_string(),
@@ -36,7 +41,7 @@ pub(crate) async fn handle_network_options(
             historical_balance_lookup: false,
             timestamp_start_index: bundles_iter.find_map(|p| {
                 if p.identifiers.proposer_timestamp_ms != 0 {
-                    Some(to_api_state_version(p.state_version).unwrap())
+                    Some(to_mesh_api_block_index_from_state_version(p.state_version).unwrap())
                 } else {
                     None
                 }

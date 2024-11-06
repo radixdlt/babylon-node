@@ -37,7 +37,9 @@ pub fn to_api_round(round: Round) -> Result<i64, MappingError> {
 }
 
 #[tracing::instrument(skip_all)]
-pub fn to_api_state_version(state_version: StateVersion) -> Result<i64, MappingError> {
+pub fn to_mesh_api_block_index_from_state_version(
+    state_version: StateVersion,
+) -> Result<i64, MappingError> {
     let state_version_number = state_version.number();
     if state_version_number > MAX_API_STATE_VERSION {
         return Err(MappingError::IntegerError {
