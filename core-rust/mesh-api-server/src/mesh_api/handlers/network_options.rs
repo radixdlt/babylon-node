@@ -18,8 +18,7 @@ pub(crate) async fn handle_network_options(
     Ok(Json(models::NetworkOptionsResponse {
         version: Box::new(models::Version {
             rosetta_version: SCHEMA_VERSION.to_string(),
-            // TODO:MESH get node version
-            node_version: "unknown".to_string(),
+            node_version: state.node_display_version.clone(),
             middleware_version: None,
             metadata: None,
         }),

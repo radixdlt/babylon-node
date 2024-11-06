@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
-use crate::mesh_api::{create_server, MeshApiServerConfig, MeshApiState};
 use crate::jni_prelude::*;
+use crate::mesh_api::{create_server, MeshApiServerConfig, MeshApiState};
 use futures::channel::oneshot;
 use futures::channel::oneshot::Sender;
 use futures::FutureExt;
@@ -103,6 +103,7 @@ extern "system" fn Java_com_radixdlt_api_MeshApiServer_init(
             state: MeshApiState {
                 network: jni_node_rust_env.network.clone(),
                 state_manager: jni_node_rust_env.state_manager.clone(),
+                node_display_version: config.node_display_version.clone(),
             },
             config,
             running_server: None,
@@ -161,12 +162,10 @@ extern "system" fn Java_com_radixdlt_api_MeshApiServer_stop(
     j_mesh_api_server: JObject,
 ) {
     jni_call(&env, || {
-        if let Ok(jni_mesh_api_server) = env
-            .take_rust_field::<JObject, &str, JNIMeshApiServer>(
-                j_mesh_api_server,
-                POINTER_JNI_FIELD_NAME,
-            )
-        {
+        if let Ok(jni_mesh_api_server) = env.take_rust_field::<JObject, &str, JNIMeshApiServer>(
+            j_mesh_api_server,
+            POINTER_JNI_FIELD_NAME,
+        ) {
             if let Some(running_server) = jni_mesh_api_server.running_server {
                 running_server.shutdown_signal_sender.send(()).unwrap();
             }

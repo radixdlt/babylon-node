@@ -88,6 +88,7 @@ use crate::mesh_api::{emit_error_response_event, InternalServerErrorResponseForP
 pub struct MeshApiState {
     pub network: NetworkDefinition,
     pub state_manager: StateManager,
+    pub node_display_version: String,
 }
 
 pub async fn create_server<F>(
@@ -175,4 +176,5 @@ async fn handle_not_found(metrics: State<Arc<MeshApiMetrics>>) -> Result<(), Res
 pub struct MeshApiServerConfig {
     pub bind_interface: String,
     pub port: u32,
+    pub node_display_version: String,
 }

@@ -77,8 +77,8 @@ public final class MeshApiServerModule extends AbstractModule {
 
   private final MeshApiServerConfig config;
 
-  public MeshApiServerModule(String apiBindAddress, int apiPort) {
-    this.config = new MeshApiServerConfig(apiBindAddress, UInt32.fromNonNegativeInt(apiPort));
+  public MeshApiServerModule(String apiBindAddress, int apiPort, String nodeDisplayVersion) {
+    this.config = new MeshApiServerConfig(apiBindAddress, UInt32.fromNonNegativeInt(apiPort), nodeDisplayVersion);
   }
 
   @Provides
