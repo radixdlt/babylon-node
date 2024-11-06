@@ -109,7 +109,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // Execute it once, to initialize the account and learn its XRD vault address:
       var firstCommit =
-          getApiHelper().submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
+          getCoreApiHelper().submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
       var initialVaultBalance =
           this.getStateApi()
               .stateAccountPost(
@@ -133,7 +133,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // Execute precisely the deposit that was just previewed:
       var secondCommit =
-          getApiHelper().submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
+          getCoreApiHelper().submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
       assertThat(secondCommit.stateVersion()).isGreaterThan(firstCommit.stateVersion()); // (sanity)
 
       // Sanity check - a preview now should give "3x from Faucet" amount:
@@ -160,7 +160,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // Arrange a ledger state where at least one state version does not have ledger proof:
       test.runUntilState(NodesPredicate.allAtExactlyStateVersion(stateVersionRange.first()));
-      getApiHelper().submitAndWaitForSuccess(test, Manifest.valid(), List.of());
+      getCoreApiHelper().submitAndWaitForSuccess(test, Manifest.valid(), List.of());
       test.runUntilState(NodesPredicate.allAtExactlyStateVersion(stateVersionRange.last()));
 
       // Locate one example of a state version which has and one which has no ledger proof:

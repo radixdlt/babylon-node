@@ -69,9 +69,10 @@ import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.utils.UInt64;
+import java.util.List;
 
 public record PrepareTransactionIntentV2Request(
-    NetworkDefinition network, TransactionHeader header, UInt64 subintentCount) {
+    NetworkDefinition network, TransactionHeader header, List<UInt64> subintentCount) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         PrepareTransactionIntentV2Request.class,

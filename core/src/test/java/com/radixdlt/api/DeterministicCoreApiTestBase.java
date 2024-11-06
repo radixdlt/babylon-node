@@ -68,16 +68,9 @@ import static com.radixdlt.environment.deterministic.network.MessageSelector.fir
 import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.reflect.ClassPath;
-import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.core.generated.api.*;
-import com.radixdlt.api.core.generated.client.ApiClient;
-import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.environment.CoreApiServerFlags;
-import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -85,11 +78,10 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sync.SyncRelayConfig;
-import com.radixdlt.utils.FreePortFinder;
-import java.net.http.HttpClient;
 import java.util.List;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
@@ -102,16 +94,10 @@ public abstract class DeterministicCoreApiTestBase {
   public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
   public static String networkLogicalName = networkDefinition.logical_name();
 
-  private final int coreApiPort;
-  private final ApiClient apiClient;
-
-  static {
-    ensureOpenApiModelsAreReady();
-  }
+  private final CoreApiHelper coreApiHelper;
 
   protected DeterministicCoreApiTestBase() {
-    this.coreApiPort = FreePortFinder.findFreeLocalPort();
-    this.apiClient = buildApiClient();
+    this.coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
   }
 
   protected StateComputerConfig.REv2StateComputerConfig defaultConfig() {
@@ -130,18 +116,7 @@ public abstract class DeterministicCoreApiTestBase {
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
             .messageSelector(firstSelector())
             .addMonitors()
-            .addModule(
-                new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)))
-            .addModule(
-                new AbstractModule() {
-                  @ProvidesIntoSet
-                  private StartProcessorOnRunner startCoreApi(CoreApiServer coreApiServer) {
-                    // This is a slightly hacky way to run something on node start-up in a
-                    // Deterministic test.
-                    // Stop is called by the AutoClosable binding in CoreApiServerModule
-                    return new StartProcessorOnRunner("N/A", coreApiServer::start);
-                  }
-                })
+            .addModule(coreApiHelper.module())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     NodeStorageConfig.tempFolder(folder),
@@ -159,76 +134,44 @@ public abstract class DeterministicCoreApiTestBase {
     return test;
   }
 
-  private static void ensureOpenApiModelsAreReady() {
-    /* The generated Open API models are rubbish and requires that static initializers run on models before
-     * deserialization to work correctly... But that doesn't happen in eg models under the response model in
-     * assertErrorResponseOfType.
-     * As a workaround for now, let's go through all the types and explicitly ensure their static initializers run
-     * by using the Class.forName method.
-     */
-    try {
-      ClassPath.from(ClassLoader.getSystemClassLoader()).getAllClasses().stream()
-          .filter(clazz -> clazz.getPackageName().equals("com.radixdlt.api.core.generated.models"))
-          .forEach(
-              clazz -> {
-                try {
-                  Class.forName(clazz.getName());
-                } catch (Exception ex) {
-                  throw new RuntimeException(ex);
-                }
-              });
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
-  protected ApiClient buildApiClient() {
-    final var apiClient = new ApiClient();
-    apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
-    apiClient.setHttpClientBuilder(
-        HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
-    return apiClient;
-  }
-
   public <Response> Response assertErrorResponseOfType(
       ThrowableAssert.ThrowingCallable apiCall, Class<Response> responseClass)
       throws JsonProcessingException {
-    var apiException = catchThrowableOfType(apiCall, ApiException.class);
-    return apiClient.getObjectMapper().readValue(apiException.getResponseBody(), responseClass);
+    return coreApiHelper.assertErrorResponseOfType(apiCall, responseClass);
   }
 
   public MempoolApi getMempoolApi() {
-    return new MempoolApi(apiClient);
+    return coreApiHelper.mempoolApi();
   }
 
   protected StatusApi getStatusApi() {
-    return new StatusApi(apiClient);
+    return coreApiHelper.statusApi();
   }
 
   protected TransactionApi getTransactionApi() {
-    return new TransactionApi(apiClient);
+    return coreApiHelper.transactionApi();
   }
 
   protected StreamApi getStreamApi() {
-    return new StreamApi(apiClient);
+    return coreApiHelper.streamApi();
   }
 
   protected StateApi getStateApi() {
-    return new StateApi(apiClient);
+    return coreApiHelper.stateApi();
   }
 
   protected LtsApi getLtsApi() {
-    return new LtsApi(apiClient);
+    return coreApiHelper.ltsApi();
   }
 
-  protected CoreApiHelper getApiHelper() {
-    return new CoreApiHelper(networkDefinition, coreApiPort);
+  protected CoreApiHelper getCoreApiHelper() {
+    return coreApiHelper;
   }
 
   public ResourceAddress createFreeMintBurnNonFungibleResource(DeterministicTest test)
       throws Exception {
     var committedNewResourceTxn =
-        getApiHelper()
+        getCoreApiHelper()
             .submitAndWaitForSuccess(test, Manifest.createAllowAllNonFungibleResource(), List.of());
 
     final var receipt =

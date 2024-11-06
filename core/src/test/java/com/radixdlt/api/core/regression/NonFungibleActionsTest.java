@@ -87,14 +87,14 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
       // These particular manifests caused a panic in the engine at Ash / Birch
 
       // First - we create some data in the resource to ensure the data index is created
-      getApiHelper()
+      getCoreApiHelper()
           .submitAndWaitForSuccess(
               test,
               Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
                   resourceAddress, accountAddress, List.of(1), List.of()),
               List.of(accountKeyPair));
       // A mint+burn of a non-pristine resource currently panics
-      getApiHelper()
+      getCoreApiHelper()
           .submitAndWaitForSuccess(
               test,
               Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -114,7 +114,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
       var resourceAddress = createFreeMintBurnNonFungibleResource(test);
 
       // Mint and burn id 1 inside a single transaction
-      getApiHelper()
+      getCoreApiHelper()
           .submitAndWaitForSuccess(
               test,
               Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -123,7 +123,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
 
       // We can NOT mint the id "1" again
       var result =
-          getApiHelper()
+          getCoreApiHelper()
               .submitAndWaitForCommittedFailure(
                   test,
                   Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -144,7 +144,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
       var resourceAddress = createFreeMintBurnNonFungibleResource(test);
 
       // Mint id 1
-      getApiHelper()
+      getCoreApiHelper()
           .submitAndWaitForSuccess(
               test,
               Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -152,7 +152,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
               List.of(accountKeyPair));
 
       // Burn id 1
-      getApiHelper()
+      getCoreApiHelper()
           .submitAndWaitForSuccess(
               test,
               Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -161,7 +161,7 @@ public class NonFungibleActionsTest extends DeterministicCoreApiTestBase {
 
       // We can NOT mint the id "1" again
       var result =
-          getApiHelper()
+          getCoreApiHelper()
               .submitAndWaitForCommittedFailure(
                   test,
                   Manifest.mintNonFungiblesThenWithdrawAndBurnSome(

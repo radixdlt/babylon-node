@@ -121,7 +121,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareInte
 struct PrepareTransactionIntentV2Request {
     network_definition: NetworkDefinition,
     header: TransactionHeaderJava,
-    subintent_count: usize,
+    subintent_discriminators: Vec<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -144,7 +144,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareTran
             let PrepareTransactionIntentV2Request {
                 network_definition,
                 header,
-                subintent_count,
+                subintent_discriminators,
             } = request;
 
             let mut subintent_hashes = vec![];
@@ -165,7 +165,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareTran
                     intent_discriminator: header.nonce as u64,
                 });
 
-            for i in 0..subintent_count {
+            for subintent_discriminator in subintent_discriminators {
                 let mut subintent_builder: PartialTransactionV2Builder = PartialTransactionV2Builder::new()
                     .intent_header(IntentHeaderV2 {
                         network_id: network_definition.id,
@@ -173,16 +173,17 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareTran
                         end_epoch_exclusive: Epoch::of(header.end_epoch_exclusive),
                         min_proposer_timestamp_inclusive: None,
                         max_proposer_timestamp_exclusive: None,
-                        intent_discriminator: (header.nonce as u64) * 1000 + (i as u64),
+                        intent_discriminator: subintent_discriminator,
                     })
                     .manifest_builder(|builder| {
                         builder
                             .yield_to_parent(())
                     });
+                let child_name = format!("child-{subintent_discriminator}");
                 subintent_hashes.push(subintent_builder.subintent_hash());
-                subintent_names.push(format!("child-{i}"));
+                subintent_names.push(child_name.clone());
                 transaction_builder = transaction_builder.add_signed_child(
-                    format!("child-{i}"),
+                    child_name,
                     subintent_builder.build(),
                 );
             }
@@ -330,7 +331,7 @@ impl From<CurveDecryptorSetJava> for DecryptorsByCurve {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
 struct PrepareSignedIntentRequest {
     intent_bytes: RawTransactionIntent,
-    signatures: Vec<SignatureWithPublicKeyV1>,
+    transaction_signatures: Vec<SignatureWithPublicKeyV1>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
@@ -354,7 +355,7 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSign
                 intent: IntentV1::from_raw(&request.intent_bytes)?,
                 intent_signatures: IntentSignaturesV1 {
                     signatures: request
-                        .signatures
+                        .transaction_signatures
                         .into_iter()
                         .map(IntentSignatureV1)
                         .collect(),
@@ -372,6 +373,13 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSign
     )
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+struct PrepareSignedTransactionIntentV2Request {
+    intent_bytes: RawTransactionIntent,
+    transaction_signatures: Vec<SignatureWithPublicKeyV1>,
+    subintent_signatures: Vec<Vec<SignatureWithPublicKeyV1>>,
+}
+
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSignedTransactionIntentV2(
     env: JNIEnv,
@@ -381,18 +389,22 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareSign
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |request: PrepareSignedIntentRequest| -> Result<PrepareSignedIntentResponse, StringError> {
+        |request: PrepareSignedTransactionIntentV2Request| -> Result<PrepareSignedIntentResponse, StringError> {
             let signed_intent = SignedTransactionIntentV2 {
                 transaction_intent: TransactionIntentV2::from_raw(&request.intent_bytes)?,
                 transaction_intent_signatures: IntentSignaturesV2 {
                     signatures: request
-                        .signatures
+                        .transaction_signatures
                         .into_iter()
                         .map(IntentSignatureV1)
                         .collect(),
                 },
                 non_root_subintent_signatures: NonRootSubintentSignaturesV2 {
-                    by_subintent: vec![],
+                    by_subintent: request.subintent_signatures.into_iter().map(|signatures| {
+                        IntentSignaturesV2 {
+                            signatures: signatures.into_iter().map(IntentSignatureV1).collect(),
+                        }
+                    }).collect(),
                 },
             };
 

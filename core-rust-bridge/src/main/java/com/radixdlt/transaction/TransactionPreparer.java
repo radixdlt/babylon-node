@@ -103,11 +103,11 @@ public final class TransactionPreparer {
           Natives.builder(TransactionPreparer::prepareIntent).build(new TypeToken<>() {});
 
   public static PreparedTransactionIntentV2 prepareTransactionIntentV2(
-      NetworkDefinition network, TransactionHeader header, long subintentCount) {
+      NetworkDefinition network, TransactionHeader header, List<Integer> subintentDiscriminators) {
+    var rustSubintentDiscriminators =
+        subintentDiscriminators.stream().map(UInt64::fromNonNegativeLong).toList();
     return prepareTransactionIntentV2Func
-        .call(
-            new PrepareTransactionIntentV2Request(
-                network, header, UInt64.fromNonNegativeLong(subintentCount)))
+        .call(new PrepareTransactionIntentV2Request(network, header, rustSubintentDiscriminators))
         .unwrap(TransactionPreparationException::new);
   }
 
@@ -131,15 +131,18 @@ public final class TransactionPreparer {
           Natives.builder(TransactionPreparer::prepareSignedIntent).build(new TypeToken<>() {});
 
   public static PreparedSignedIntent prepareSignedIntentV2(
-      byte[] transactionIntent, List<SignatureWithPublicKey> signatures) {
+      byte[] transactionIntent,
+      List<SignatureWithPublicKey> signatures,
+      List<List<SignatureWithPublicKey>> subintentSignatures) {
 
     return prepareSignedTransactionIntentV2Func
-        .call(tuple(transactionIntent, signatures))
+        .call(tuple(transactionIntent, signatures, subintentSignatures))
         .unwrap(TransactionPreparationException::new);
   }
 
   private static final Natives.Call1<
-          Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, Result<PreparedSignedIntent, String>>
+          Tuple.Tuple3<byte[], List<SignatureWithPublicKey>, List<List<SignatureWithPublicKey>>>,
+          Result<PreparedSignedIntent, String>>
       prepareSignedTransactionIntentV2Func =
           Natives.builder(TransactionPreparer::prepareSignedTransactionIntentV2)
               .build(new TypeToken<>() {});

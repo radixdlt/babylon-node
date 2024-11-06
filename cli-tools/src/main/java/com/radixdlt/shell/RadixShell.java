@@ -203,7 +203,7 @@ public final class RadixShell {
       if (properties.get("network.genesis_data", "").isEmpty()) {
         final var encodedGenesisData =
             NodeSborCodecs.encode(
-                GenesisData.testingWithSingleValidator(),
+                GenesisData.withSingleValidatorForRadixShell(),
                 NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
         final var compressedGenesisData = Compress.compress(encodedGenesisData);
         final var genesisDataBase64 = Base64.getEncoder().encodeToString(compressedGenesisData);

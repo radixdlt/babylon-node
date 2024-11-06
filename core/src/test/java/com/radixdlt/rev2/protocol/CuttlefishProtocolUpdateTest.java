@@ -69,9 +69,9 @@ import static com.radixdlt.harness.predicates.NodesPredicate.*;
 import static org.junit.Assert.*;
 
 import com.google.inject.Module;
+import com.radixdlt.api.CoreApiHelper;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -103,14 +103,13 @@ public final class CuttlefishProtocolUpdateTest {
         DeterministicTest.builder()
             .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
             .messageSelector(firstSelector())
-            .messageMutator(MessageMutator.dropTimeouts())
             .addModules(extraModules)
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     FunctionalRadixNodeModule.NodeStorageConfig.tempFolder(folder),
                     true,
                     FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
-                    FunctionalRadixNodeModule.ConsensusConfig.of(1000),
+                    FunctionalRadixNodeModule.ConsensusConfig.testDefault(),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                         StateComputerConfig.rev2()
                             .withGenesis(genesis)
@@ -121,7 +120,7 @@ public final class CuttlefishProtocolUpdateTest {
 
   @Test
   public void transaction_v2_behaviour_across_cuttlefish() throws ApiException {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(CUTTLEFISH_AT_EPOCH, coreApiHelper.module())) {
       final var stateComputer = test.getInstance(0, RustStateComputer.class);
       test.runUntilState(allAtOrOverEpoch(ENACTMENT_EPOCH - 1));
@@ -187,7 +186,7 @@ public final class CuttlefishProtocolUpdateTest {
 
   @Test
   public void protocol_update_process_updates_status_summary() throws ApiException {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var ignored = createTest(IMMEDIATELY_CUTTLEFISH, coreApiHelper.module())) {
       var latestStateVersion =
           coreApiHelper.getNetworkStatus().getCurrentStateIdentifier().getStateVersion();
