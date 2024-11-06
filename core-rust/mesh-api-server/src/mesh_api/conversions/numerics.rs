@@ -65,16 +65,6 @@ pub fn extract_state_version(state_version_number: i64) -> Result<StateVersion, 
     ))
 }
 
-// pub fn to_api_blueprint_version(
-//     _context: &MappingContext,
-//     version: &BlueprintVersion,
-// ) -> Result<String, MappingError> {
-//     Ok(format!(
-//         "{}.{}.{}",
-//         version.major, version.minor, version.patch
-//     ))
-// }
-
 pub fn extract_blueprint_version(string: &str) -> Result<BlueprintVersion, ExtractionError> {
     let semver_parts = Regex::new(r"^(\d+)\.(\d+)\.(\d+)$")
         .ok()

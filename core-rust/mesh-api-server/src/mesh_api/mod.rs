@@ -67,7 +67,6 @@ mod handlers;
 mod helpers;
 mod metrics;
 mod metrics_layer;
-mod paging;
 mod server;
 
 #[allow(unused)]
@@ -77,9 +76,7 @@ mod generated;
 
 pub(crate) use conversions::*;
 pub(crate) use errors::*;
-pub(crate) use handlers::*;
 pub(crate) use helpers::*;
-pub(crate) use paging::*;
 pub(crate) use server::{create_server, MeshApiServerConfig, MeshApiState};
 
 pub(crate) mod models {

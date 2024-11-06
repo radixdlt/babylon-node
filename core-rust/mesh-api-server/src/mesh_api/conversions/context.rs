@@ -15,9 +15,6 @@ impl MappingContext {
             address_encoder: AddressBech32Encoder::new(network_definition),
             transaction_hash_encoder: TransactionHashBech32Encoder::new(network_definition),
             uncommitted_data: false,
-            // sbor_options: Default::default(),
-            // transaction_options: Default::default(),
-            // substate_options: Default::default(),
         }
     }
 

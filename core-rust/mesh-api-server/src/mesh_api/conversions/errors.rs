@@ -65,6 +65,8 @@ pub enum ExtractionError {
 
 impl ExtractionError {
     pub(crate) fn into_response_error(self, field_name: &str) -> ResponseError {
+        // TODO make sure ExtractionError map to more adequate ApiError
+        // variant than ApiError::InvalidRequest
         ResponseError::from(ApiError::InvalidRequest)
             .with_details(format!("Could not extract {field_name} from request"))
     }
@@ -81,15 +83,3 @@ impl From<ParseNonFungibleLocalIdError> for ExtractionError {
         ExtractionError::InvalidNonFungibleId(err)
     }
 }
-
-// pub fn to_api_requested_item_type(item_kind: ItemKind) -> models::RequestedItemType {
-//     match item_kind {
-//         ItemKind::Blueprint => models::RequestedItemType::Blueprint,
-//         ItemKind::Schema => models::RequestedItemType::Schema,
-//         ItemKind::Entity => models::RequestedItemType::Entity,
-//         ItemKind::Module => models::RequestedItemType::Module,
-//         ItemKind::Field => models::RequestedItemType::Field,
-//         ItemKind::Collection => models::RequestedItemType::Collection,
-//         ItemKind::EntryKey => models::RequestedItemType::EntryKey,
-//     }
-// }

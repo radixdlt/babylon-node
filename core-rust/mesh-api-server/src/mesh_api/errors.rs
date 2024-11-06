@@ -242,13 +242,12 @@ pub(crate) fn assert_matching_network(
     network_definition: &NetworkDefinition,
 ) -> Result<(), ResponseError> {
     if request_network != network_definition.logical_name {
-        return Err(client_error(
-            format!(
+        return Err(
+            ResponseError::from(ApiError::InvalidNetwork).with_details(format!(
                 "Invalid network - the network is actually: {}",
                 network_definition.logical_name
-            ),
-            false,
-        ));
+            )),
+        );
     }
     Ok(())
 }
