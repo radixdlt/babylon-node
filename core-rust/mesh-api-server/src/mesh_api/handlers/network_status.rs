@@ -20,7 +20,9 @@ pub(crate) async fn handle_network_status(
     let genesis_block_identifier = database
         .get_first_proof()
         .map(|proof| -> Result<_, MappingError> {
-            Ok(Box::new(to_block_identifier(&proof.ledger_header.into())?))
+            Ok(Box::new(ledger_header_to_block_identifier(
+                &proof.ledger_header.into(),
+            )?))
         })
         .unwrap_or_else(|| Err(MappingError::ProofNotFound))?;
 
@@ -28,7 +30,9 @@ pub(crate) async fn handle_network_status(
         current_block_identifier: database
             .get_latest_proof()
             .map(|proof| -> Result<_, MappingError> {
-                Ok(Box::new(to_block_identifier(&proof.ledger_header.into())?))
+                Ok(Box::new(ledger_header_to_block_identifier(
+                    &proof.ledger_header.into(),
+                )?))
             })
             .unwrap_or_else(|| Err(MappingError::ProofNotFound))?,
 

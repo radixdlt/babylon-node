@@ -34,7 +34,7 @@ pub(crate) async fn handle_account_balance(
     if type_info.is_none() {
         if component_address.as_node_id().is_global_preallocated() {
             return Ok(Json(models::AccountBalanceResponse {
-                block_identifier: Box::new(to_block_identifier(&header.into())?),
+                block_identifier: Box::new(ledger_header_to_block_identifier(&header.into())?),
                 balances: vec![],
                 metadata: None,
             }));
@@ -103,9 +103,8 @@ pub(crate) async fn handle_account_balance(
         .collect::<Result<Vec<_>, MappingError>>()?;
 
     Ok(Json(models::AccountBalanceResponse {
-        block_identifier: Box::new(to_block_identifier(&header.into())?),
+        block_identifier: Box::new(ledger_header_to_block_identifier(&header.into())?),
         balances,
         metadata: None,
     }))
 }
-

@@ -70,33 +70,39 @@ pub(crate) fn read_optional_substate<D: ScryptoDecode>(
 /// We assume that Block is a single transaction.
 /// Block index => State version
 /// Block hash  => State version printed to string and prefixed with zeros
-pub(crate) fn to_block_identifier(
-    ledger_header: &LedgerStateSummary,
+pub(crate) fn state_version_to_block_identifier(
+    state_version: StateVersion,
 ) -> Result<models::BlockIdentifier, MappingError> {
-    let index = to_api_state_version(ledger_header.state_version)?;
+    let index = to_api_state_version(state_version)?;
     Ok(models::BlockIdentifier {
         index,
         hash: format!("{:0>32}", index),
     })
 }
+pub(crate) fn ledger_header_to_block_identifier(
+    ledger_header: &LedgerStateSummary,
+) -> Result<models::BlockIdentifier, MappingError> {
+    state_version_to_block_identifier(ledger_header.state_version)
+}
 
 pub(crate) fn partial_block_identifier_to_state_version(
     block_identifier: &models::PartialBlockIdentifier,
-) -> Result<StateVersion, ExtractionError> {
-    let index = if let Some(index) = block_identifier.index {
-        index
+) -> Result<Option<StateVersion>, ExtractionError> {
+    let state_version = if let Some(index) = block_identifier.index {
+        Some(index)
     } else if let Some(hash) = &block_identifier.hash {
-        hash.parse::<i64>()
-            .map_err(|_| ExtractionError::InvalidBlockIdentifier {
-                message: "Hash parsing error".to_string(),
-            })?
+        Some(
+            hash.parse::<i64>()
+                .map_err(|_| ExtractionError::InvalidBlockIdentifier {
+                    message: "Hash parsing error".to_string(),
+                })?,
+        )
     } else {
-        return Err(ExtractionError::InvalidBlockIdentifier {
-            message: "Missing index or hash".to_string(),
-        });
-    };
+        None
+    }
+    .map(|index| StateVersion::of(index as u64));
 
-    Ok(StateVersion::of(index as u64))
+    Ok(state_version)
 }
 
 pub(crate) fn resource_address_to_currency(
