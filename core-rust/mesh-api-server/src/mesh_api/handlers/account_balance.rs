@@ -54,18 +54,14 @@ pub(crate) async fn handle_account_balance(
     let mut resources_set: HashSet<ResourceAddress> = hashset![];
     if let Some(currencies) = request.currencies {
         for currency in currencies.into_iter() {
-            let address = extract_resource_address(&extraction_context, &currency.symbol)
-                .map_err(|err| err.into_response_error("resource_address"))?;
+            let resource_address = extract_resource_address_from_mesh_api_currency(
+                &extraction_context,
+                database.deref(),
+                &currency,
+            )
+            .map_err(|err| err.into_response_error("resource_address"))?;
 
-            let currency_from_address =
-                resource_address_to_currency(database.deref(), &currency.symbol, address)?;
-
-            if currency_from_address.decimals != currency.decimals {
-                return Err(ResponseError::from(ApiError::InvalidResource)
-                    .with_details(format!("currency {} decimals don't match", currency.symbol)));
-            }
-
-            resources_set.insert(address);
+            resources_set.insert(resource_address);
         }
     };
 
@@ -98,11 +94,11 @@ pub(crate) async fn handle_account_balance(
         )
         .into_iter()
         .map(|(fungible_resource_address, amount)| {
-            // TODO:MESH refactor as per comment:
-            // https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830893809
-            let symbol = to_api_resource_address(&mapping_context, &fungible_resource_address)?;
-            let currency =
-                resource_address_to_currency(database.deref(), &symbol, fungible_resource_address)?;
+            let currency = to_mesh_api_currency_from_resource_address(
+                &mapping_context,
+                database.deref(),
+                &fungible_resource_address,
+            )?;
             Ok(models::Amount {
                 value: to_api_decimal(&amount),
                 currency: Box::new(currency),

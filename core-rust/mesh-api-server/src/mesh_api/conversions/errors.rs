@@ -61,6 +61,9 @@ pub enum ExtractionError {
     InvalidBlockIdentifier {
         message: String,
     },
+    InvalidCurrency {
+        message: String,
+    },
 }
 
 impl ExtractionError {

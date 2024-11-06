@@ -79,6 +79,7 @@ pub(crate) fn to_mesh_api_block_identifier_from_state_version(
         hash: format!("{:0>32}", index),
     })
 }
+
 pub(crate) fn to_mesh_api_block_identifier_from_ledger_header(
     ledger_header: &LedgerStateSummary,
 ) -> Result<models::BlockIdentifier, MappingError> {
@@ -103,34 +104,4 @@ pub(crate) fn extract_state_version_from_mesh_api_partial_block_identifier(
     .map(|index| StateVersion::of(index as u64));
 
     Ok(state_version)
-}
-
-pub(crate) fn resource_address_to_currency(
-    database: &StateManagerDatabase<impl ReadableRocks>,
-    symbol: &str,
-    resource_address: ResourceAddress,
-) -> Result<models::Currency, MappingError> {
-    let resource_node_id = resource_address.as_node_id();
-    if resource_node_id.entity_type() != Some(EntityType::GlobalFungibleResourceManager) {
-        return Err(MappingError::InvalidResource {
-            message: format!("currency {} is not fungible type", symbol),
-        });
-    }
-
-    let divisibility: FungibleResourceManagerDivisibilityFieldSubstate =
-        read_optional_main_field_substate(
-            database,
-            resource_node_id,
-            &FungibleResourceManagerField::Divisibility.into(),
-        )
-        .ok_or_else(|| MappingError::InvalidResource {
-            message: format!("currency {} not found", symbol),
-        })?;
-    let divisibility = *divisibility.payload().as_unique_version() as i32;
-
-    Ok(models::Currency {
-        symbol: symbol.to_string(),
-        decimals: divisibility,
-        metadata: None,
-    })
 }
