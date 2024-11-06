@@ -18,6 +18,15 @@ pub(crate) async fn handle_network_status(
         .fully_update_and_into_latest_version();
 
     let genesis_block_identifier = database
+        .get_post_genesis_epoch_proof()
+        .map(|proof| -> Result<_, MappingError> {
+            Ok(Box::new(ledger_header_to_block_identifier(
+                &proof.ledger_header.into(),
+            )?))
+        })
+        .unwrap_or_else(|| Err(MappingError::ProofNotFound))?;
+
+    let oldest_block_identifier = database
         .get_first_proof()
         .map(|proof| -> Result<_, MappingError> {
             Ok(Box::new(ledger_header_to_block_identifier(
@@ -39,7 +48,7 @@ pub(crate) async fn handle_network_status(
             .unwrap_or_else(|| Err(MappingError::ProofNotFound))?,
 
         current_block_timestamp: timestamp_substate.epoch_milli,
-        oldest_block_identifier: Some(genesis_block_identifier.clone()),
+        oldest_block_identifier: Some(oldest_block_identifier),
         genesis_block_identifier,
         // sync_status not required.
         // Comparing the timestamp of the most recent blocks with current time is fine.
