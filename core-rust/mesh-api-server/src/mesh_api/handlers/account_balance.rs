@@ -12,7 +12,8 @@ pub(crate) async fn handle_account_balance(
     let extraction_context = ExtractionContext::new(&state.network);
 
     let component_address =
-        extract_component_address(&extraction_context, &request.account_identifier.address)
+        extract_account(&extraction_context, &request.account_identifier.address)
+            // TODO:MESH Return something more precise than InvalidRequest
             .map_err(|err| err.into_response_error("account_identifier.address"))?;
 
     let database = state.state_manager.database.snapshot();
@@ -32,17 +33,13 @@ pub(crate) async fn handle_account_balance(
     );
 
     if type_info.is_none() {
-        if component_address.as_node_id().is_global_preallocated() {
-            return Ok(Json(models::AccountBalanceResponse {
-                block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
-                    &header.into(),
-                )?),
-                balances: vec![],
-                metadata: None,
-            }));
-        } else {
-            return Err(ResponseError::from(ApiError::AccountNotFound));
-        }
+        return Ok(Json(models::AccountBalanceResponse {
+            block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
+                &header.into(),
+            )?),
+            balances: vec![],
+            metadata: None,
+        }));
     }
 
     // TODO:MESH - For performance, we should not use this unless the user provides

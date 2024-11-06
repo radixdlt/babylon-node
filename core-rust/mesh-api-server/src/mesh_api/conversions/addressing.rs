@@ -47,6 +47,21 @@ pub fn extract_component_address(
         .ok_or(ExtractionError::InvalidAddress)
 }
 
+pub fn extract_account(
+    extraction_context: &ExtractionContext,
+    account_address: &str,
+) -> Result<ComponentAddress, ExtractionError> {
+    let component_address = extract_component_address(extraction_context, account_address)?;
+
+    if component_address.as_node_id().is_global_account() {
+        Ok(component_address)
+    } else {
+        Err(ExtractionError::InvalidAccount {
+            message: format!("address {} is not an account", account_address),
+        })
+    }
+}
+
 pub fn to_mesh_api_currency_from_resource_address(
     mapping_context: &MappingContext,
     database: &StateManagerDatabase<impl ReadableRocks>,

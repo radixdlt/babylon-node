@@ -58,6 +58,9 @@ pub enum ExtractionError {
         message: String,
     },
     DifferentFilterAcrossPages,
+    InvalidAccount {
+        message: String,
+    },
     InvalidBlockIdentifier {
         message: String,
     },
