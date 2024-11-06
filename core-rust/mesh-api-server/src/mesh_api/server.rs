@@ -106,7 +106,9 @@ pub async fn create_server<F>(
         // account/coins - not needed as we're not UTXO
         .route("/block", post(handle_endpoint_todo))
         .route("/block/transaction", post(handle_endpoint_todo))
-        .route("/call", post(handle_endpoint_not_supported))
+        // TODO:MESH mempool
+        .route("/mempool", post(handle_endpoint_todo))
+        .route("/mempool/transaction", post(handle_endpoint_todo))
         .route("/construction/derive", post(handle_endpoint_todo))
         .route("/construction/preprocess", post(handle_endpoint_todo))
         .route("/construction/metadata", post(handle_endpoint_todo))
@@ -115,12 +117,10 @@ pub async fn create_server<F>(
         .route("/construction/hash", post(handle_endpoint_todo))
         .route("/construction/parse", post(handle_endpoint_todo))
         .route("/construction/submit", post(handle_endpoint_todo))
-        // Below Indexer APIs - Not Required
+        // Below endpoints are optional
+        .route("/call", post(handle_endpoint_not_supported))
         .route("/search/transaction", post(handle_endpoint_not_supported))
         .route("/events/blocks", post(handle_endpoint_not_supported))
-        // TODO mempool?
-        .route("/mempool", post(handle_endpoint_not_supported))
-        .route("/mempool/transaction", post(handle_endpoint_not_supported))
         .with_state(mesh_api_state);
 
     let metrics = Arc::new(MeshApiMetrics::new(metric_registry));
@@ -152,7 +152,7 @@ async fn handle_endpoint_not_supported(
     Err(ResponseError::from(ApiError::EndpointNotSupported))
 }
 
-// TODO remove it when no longer needed
+// TODO:MESH remove it when no longer needed
 async fn handle_endpoint_todo(
     _state: State<MeshApiState>,
     Json(_request): Json<models::MetadataRequest>,

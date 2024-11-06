@@ -13,7 +13,7 @@ pub(crate) async fn handle_network_options(
     Ok(Json(models::NetworkOptionsResponse {
         version: Box::new(models::Version {
             rosetta_version: SCHEMA_VERSION.to_string(),
-            // TODO get node version
+            // TODO:MESH get node version
             node_version: "unknown".to_string(),
             middleware_version: None,
             metadata: None,
@@ -41,7 +41,7 @@ pub(crate) async fn handle_network_options(
             }),
             // This is for native RPC calls. Not needed for now.
             call_methods: vec![],
-            // TODO
+            // TODO:MESH
             balance_exemptions: vec![],
             mempool_coins: false,
             block_hash_case: None,

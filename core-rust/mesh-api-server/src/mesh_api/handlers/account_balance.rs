@@ -4,7 +4,7 @@ pub(crate) async fn handle_account_balance(
     state: State<MeshApiState>,
     Json(request): Json<models::AccountBalanceRequest>,
 ) -> Result<Json<models::AccountBalanceResponse>, ResponseError> {
-    // TODO assert sub_network
+    // TODO:MESH assert sub_network
     assert_matching_network(&request.network_identifier.network, &state.network)?;
     assert_account(&request.account_identifier)?;
 

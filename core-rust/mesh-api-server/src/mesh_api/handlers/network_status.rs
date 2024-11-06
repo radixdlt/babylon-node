@@ -39,9 +39,9 @@ pub(crate) async fn handle_network_status(
         current_block_timestamp: timestamp_substate.epoch_milli,
         oldest_block_identifier: Some(genesis_block_identifier.clone()),
         genesis_block_identifier,
-        // TODO crate::mesh_api::generated::models::SyncStatus
+        // TODO:MESH crate::mesh_api::generated::models::SyncStatus
         sync_status: None,
-        // TODO crate::mesh_api::generated::models::Peer
+        // TODO:MESH crate::mesh_api::generated::models::Peer
         peers: None,
     }))
 }
