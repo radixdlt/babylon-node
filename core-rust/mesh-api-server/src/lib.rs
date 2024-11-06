@@ -93,13 +93,8 @@ pub(crate) mod jni_prelude {
 }
 
 pub(crate) mod engine_prelude {
-    pub use radix_blueprint_schema_init::*;
 
-    pub use radix_engine::object_modules::metadata::*;
-    pub use radix_engine::system::system_db_reader::*;
     pub use radix_engine::system::system_substates::*;
-    pub use radix_engine::system::system_type_checker::*;
-    pub use radix_engine::vm::*;
 
     pub use radix_common::prelude::*;
 
@@ -108,9 +103,7 @@ pub(crate) mod engine_prelude {
     pub use radix_transactions::model::*;
 
     pub use radix_transactions::errors::*;
-    pub use sbor::representations::*;
 
-    pub use radix_substate_store_impls::substate_database_overlay::*;
     pub use radix_substate_store_interface::interface::*;
     pub use radix_substate_store_queries::typed_substate_layout::*;
 }

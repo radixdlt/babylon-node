@@ -18,7 +18,7 @@ pub(crate) async fn handle_account_balance(
 
     let database = state.state_manager.database.snapshot();
 
-    let header = if let Some(_) = request.block_identifier {
+    let header = if request.block_identifier.is_some() {
         return Err(ResponseError::from(ApiError::InvalidRequest)
             .with_details("Historical balance not supported"));
     } else {

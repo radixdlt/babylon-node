@@ -166,14 +166,12 @@ pub async fn emit_error_response_event(uri: Uri, response: Response) -> Response
     let event = response.extensions().get::<ErrorResponseEvent>();
     if let Some(event) = event {
         let ErrorResponseEvent { level, error } = event;
-        let internal_message = format!(
-            "{}",
-            error
-                .details
-                .as_ref()
-                .map(|d| d.to_string())
-                .unwrap_or_else(|| "no_details".to_string())
-        );
+        let internal_message = error
+            .details
+            .as_ref()
+            .map(|d| d.to_string())
+            .unwrap_or_else(|| "no_details".to_string())
+            .to_string();
         match *level {
             LogLevel::TRACE => trace!(path = uri.path(), error = debug(error), internal_message),
             LogLevel::DEBUG => debug!(path = uri.path(), error = debug(error), internal_message),
