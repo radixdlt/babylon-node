@@ -17,7 +17,7 @@ pub struct Signature {
     #[serde(rename = "signing_payload")]
     pub signing_payload: Box<crate::mesh_api::generated::models::SigningPayload>,
     #[serde(rename = "public_key")]
-    pub public_key: Option<crate::mesh_api::generated::models::PublicKey>, // Using Option permits Default trait; Will always be Some in normal use
+    pub public_key: Box<crate::mesh_api::generated::models::PublicKey>,
     #[serde(rename = "signature_type")]
     pub signature_type: crate::mesh_api::generated::models::SignatureType,
     #[serde(rename = "hex_bytes")]
@@ -29,7 +29,7 @@ impl Signature {
     pub fn new(signing_payload: crate::mesh_api::generated::models::SigningPayload, public_key: crate::mesh_api::generated::models::PublicKey, signature_type: crate::mesh_api::generated::models::SignatureType, hex_bytes: String) -> Signature {
         Signature {
             signing_payload: Box::new(signing_payload),
-            public_key: Option::Some(public_key),
+            public_key: Box::new(public_key),
             signature_type,
             hex_bytes,
         }

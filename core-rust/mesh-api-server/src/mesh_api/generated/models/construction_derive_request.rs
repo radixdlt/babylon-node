@@ -17,7 +17,7 @@ pub struct ConstructionDeriveRequest {
     #[serde(rename = "network_identifier")]
     pub network_identifier: Box<crate::mesh_api::generated::models::NetworkIdentifier>,
     #[serde(rename = "public_key")]
-    pub public_key: Option<crate::mesh_api::generated::models::PublicKey>, // Using Option permits Default trait; Will always be Some in normal use
+    pub public_key: Box<crate::mesh_api::generated::models::PublicKey>,
     #[serde(rename = "metadata", skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
 }
@@ -27,7 +27,7 @@ impl ConstructionDeriveRequest {
     pub fn new(network_identifier: crate::mesh_api::generated::models::NetworkIdentifier, public_key: crate::mesh_api::generated::models::PublicKey) -> ConstructionDeriveRequest {
         ConstructionDeriveRequest {
             network_identifier: Box::new(network_identifier),
-            public_key: Option::Some(public_key),
+            public_key: Box::new(public_key),
             metadata: None,
         }
     }

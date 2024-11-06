@@ -91,21 +91,6 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location, rust_pack
     logging.info("Version is: " + version)
     create_file(os.path.join(out_location, 'mod.rs'), "pub mod models;\npub const SCHEMA_VERSION: &str = \"" + version + "\";\n")
 
-    def fix_broken_discriminator_tag(file_path, tag_name):
-        # Fix bug that discriminator tags are incorrectly stripped and lower cased
-        broken_tag_name = re.sub(r'[^A-Za-z0-9]+', "", tag_name.lower())
-        replace_in_file(file_path, 'tag = "' + broken_tag_name +'"', 'tag = "' + tag_name + '"')
-
-    def fix_for_enum_not_implementing_default(file_path, type_name):
-        # Fix bug that enums don't implement Default... So replace their Boxes with Options
-        regex_pattern = 'pub ([^: ]+): Box<crate::' + rust_package + '::models::' + type_name + '>'
-        field_names = find_in_file_multiline(file_path, re.compile(regex_pattern))
-        if len(field_names) == 0:
-            return
-        replace_in_file(file_path, 'Box<crate::' + rust_package + '::models::' + type_name + '>,', 'Option<crate::' + rust_package + '::models::' + type_name + '>, // Using Option permits Default trait; Will always be Some in normal use')
-        for field_name in field_names:
-            replace_in_file(file_path, field_name + ': Box::new(' + field_name + ')', field_name + ': Option::Some(' + field_name + ')')
-
     file_names = [file_name for file_name in os.listdir(out_models) if os.path.isfile(os.path.join(out_models, file_name))]
     for file_name in file_names:
         file_path = os.path.join(out_models, file_name)
@@ -113,28 +98,6 @@ def generate_rust_models(schema_file, tmp_client_folder, out_location, rust_pack
         replace_in_file(file_path, 'crate::', 'crate::' + rust_package + '::')
         replace_in_file(file_path, ', Serialize, Deserialize', ', serde::Serialize, serde::Deserialize')
         replace_in_file(file_path, '::std::collections::HashMap', '::utils::rust::prelude::IndexMap')
-        # Fix bugs in the OAS generation:
-        fix_broken_discriminator_tag(file_path, "key_type")
-        fix_broken_discriminator_tag(file_path, "error_type")
-        fix_broken_discriminator_tag(file_path, "type")
-        fix_broken_discriminator_tag(file_path, "system_type")
-        fix_for_enum_not_implementing_default(file_path, "AccessRule")
-        fix_for_enum_not_implementing_default(file_path, "AccessRuleNode")
-        fix_for_enum_not_implementing_default(file_path, "ProofRule")
-        fix_for_enum_not_implementing_default(file_path, "PublicKey")
-        fix_for_enum_not_implementing_default(file_path, "ErrorResponse")
-        fix_for_enum_not_implementing_default(file_path, "Requirement")
-        fix_for_enum_not_implementing_default(file_path, "EntityInfo")
-        fix_for_enum_not_implementing_default(file_path, "ResolvedTypeReference")
-        fix_for_enum_not_implementing_default(file_path, "BlueprintFieldCondition")
-        fix_for_enum_not_implementing_default(file_path, "BlueprintResolvedTypeReference")
-        fix_for_enum_not_implementing_default(file_path, "CollectionEntryKey")
-        fix_for_enum_not_implementing_default(file_path, "BlueprintFunctionAuthorization")
-        fix_for_enum_not_implementing_default(file_path, "BlueprintMethodAuthorization")
-        fix_for_enum_not_implementing_default(file_path, "BlueprintRolesDefinition")
-        fix_for_enum_not_implementing_default(file_path, "MetadataValue")
-        fix_for_enum_not_implementing_default(file_path, "Assignment")
-        fix_for_enum_not_implementing_default(file_path, "LedgerStateSelector")
 
     logging.info("Successfully fixed up rust models.")
 
