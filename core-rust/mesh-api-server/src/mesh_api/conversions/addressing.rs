@@ -1,5 +1,12 @@
 use crate::prelude::*;
 
+pub fn to_api_global_address(
+    context: &MappingContext,
+    global_address: &GlobalAddress,
+) -> Result<String, MappingError> {
+    to_api_entity_address(context, global_address.as_node_id())
+}
+
 pub fn to_api_component_address(
     context: &MappingContext,
     component_address: &ComponentAddress,
@@ -45,6 +52,33 @@ pub fn extract_component_address(
 ) -> Result<ComponentAddress, ExtractionError> {
     ComponentAddress::try_from_bech32(&extraction_context.address_decoder, component_address)
         .ok_or(ExtractionError::InvalidAddress)
+}
+
+pub fn to_mesh_api_acount_from_address(
+    mapping_context: &MappingContext,
+    address: impl AsRef<NodeId>,
+) -> Result<models::AccountIdentifier, MappingError> {
+    let node_id: &NodeId = address.as_ref();
+    let address = to_api_entity_address(mapping_context, node_id)?;
+
+    println!(
+        "to_mesh_api_acount_from_address node_id = {:?} {}",
+        node_id.is_global_account(),
+        address
+    );
+    if !node_id.is_global_account() {
+        return Err(MappingError::InvalidAccount {
+            message: format!("address {} is not an account", address),
+        });
+    }
+
+    // See https://docs.cdp.coinbase.com/mesh/docs/models#accountidentifier for field
+    // definitions
+    Ok(models::AccountIdentifier {
+        address,
+        sub_account: None,
+        metadata: None,
+    })
 }
 
 pub fn extract_account(

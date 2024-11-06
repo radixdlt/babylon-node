@@ -4,14 +4,8 @@ use crate::mesh_api::*;
 /// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
 pub enum MappingError {
-    SubstateValue {
-        bytes: Vec<u8>,
-        message: String,
-    },
-    EntityTypeError,
-    SborEncodeError {
-        encode_error: EncodeError,
-        message: String,
+    InvalidTransactionHash {
+        encode_error: TransactionHashBech32EncodeError,
     },
     InvalidEntityAddress {
         encode_error: AddressBech32EncodeError,
@@ -24,6 +18,9 @@ pub enum MappingError {
     },
     ProofNotFound,
     InvalidResource {
+        message: String,
+    },
+    InvalidAccount {
         message: String,
     },
 }

@@ -21,18 +21,12 @@ pub(crate) async fn handle_network_options(
         }),
         allow: Box::new(models::Allow {
             operation_statuses: vec![
-                models::OperationStatus::new("SuccessStatus".to_string(), true),
-                models::OperationStatus::new("FailureStatus".to_string(), false),
+                models::OperationStatus::new("Success".to_string(), true),
+                models::OperationStatus::new("Failure".to_string(), false),
             ],
             // TODO::MESH Add enum with operation types
             // see comment https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830848173
-            operation_types: vec![
-                "Withdraw".to_string(),
-                "Deposit".to_string(),
-                "Mint".to_string(),
-                "Burn".to_string(),
-                "LockFee".to_string(),
-            ],
+            operation_types: OperationTypes::iter().map(|o| o.to_string()).collect(),
             errors: list_available_api_errors(),
             historical_balance_lookup: false,
             timestamp_start_index: proof_iter.find_map(|p| {

@@ -66,3 +66,13 @@ pub(crate) fn read_optional_substate<D: ScryptoDecode>(
 ) -> Option<D> {
     database.get_substate::<D>(node_id, partition_number, substate_key)
 }
+
+#[derive(Debug, Clone, EnumIter, Display, FromRepr)]
+#[repr(i64)]
+pub(crate) enum OperationTypes {
+    Withdraw,
+    Deposit,
+    // LockFee,
+    // Mint,
+    // Burn,
+}

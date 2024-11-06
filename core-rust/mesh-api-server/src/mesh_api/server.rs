@@ -105,7 +105,7 @@ pub async fn create_server<F>(
         .route("/network/options", post(handle_network_options))
         .route("/account/balance", post(handle_account_balance))
         // account/coins - not needed as we're not UTXO
-        .route("/block", post(handle_endpoint_todo))
+        .route("/block", post(handle_block))
         .route("/block/transaction", post(handle_endpoint_todo))
         // TODO:MESH mempool
         .route("/mempool", post(handle_endpoint_todo))
