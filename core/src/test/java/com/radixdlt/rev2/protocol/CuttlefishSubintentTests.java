@@ -123,8 +123,10 @@ public class CuttlefishSubintentTests {
       // hash
       // var statusB = coreApiHelper.ltsTransactionStatus(otherTransaction);
       // assertEquals(statusB.getIntentStatus(), LtsTransactionIntentStatus.PERMANENTREJECTION);
-      var rejectionB = coreApiHelper.submitExpectingRejection(otherTransaction);
-      assertEquals(rejectionB.getIsIntentRejectionPermanent(), false);
+      // var rejectionB = coreApiHelper.submitExpectingRejection(otherTransaction);
+      // assertEquals(rejectionB.getIsIntentRejectionPermanent(), true);
+      var rejectionB = coreApiHelper.forceRecalculateSubmitExpectingRejection(otherTransaction);
+      assertEquals(rejectionB.getIsIntentRejectionPermanent(), true);
     }
   }
 }

@@ -224,6 +224,21 @@ public class CoreApiHelper {
     assertThat(submitResponse.getDuplicate()).isFalse();
   }
 
+  public TransactionSubmitRejectedErrorDetails forceRecalculateSubmitExpectingRejection(
+      PreparedNotarizedTransaction transaction) {
+    var response =
+        assertErrorResponseOfType(
+            () ->
+                transactionApi()
+                    .transactionSubmitPost(
+                        new TransactionSubmitRequest()
+                            .network(network.getLogicalName())
+                            .forceRecalculate(true)
+                            .notarizedTransactionHex(transaction.hexPayloadBytes())),
+            TransactionSubmitErrorResponse.class);
+    return (TransactionSubmitRejectedErrorDetails) response.getDetails();
+  }
+
   public TransactionSubmitRejectedErrorDetails submitExpectingRejection(
       PreparedNotarizedTransaction transaction) {
     var response =
