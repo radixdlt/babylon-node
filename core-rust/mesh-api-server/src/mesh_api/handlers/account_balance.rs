@@ -43,7 +43,12 @@ pub(crate) async fn handle_account_balance(
         }
     }
 
+    // TODO:MESH - For performance, we should not use this unless the user provides
+    // no request.currencies - as it can be a lot slower on large accounts
     let component_dump = dump_component_state(database.deref(), component_address);
+    // TODO:MESH - refactor as per comments:
+    // https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830887100
+    // https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830892623
     let mut resources_set: HashSet<ResourceAddress> = hashset![];
     if let Some(currencies) = request.currencies {
         for currency in currencies.into_iter() {
@@ -102,6 +107,8 @@ pub(crate) async fn handle_account_balance(
         })
         .collect::<Result<Vec<_>, MappingError>>()?;
 
+    // See https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field
+    // definitions
     Ok(Json(models::AccountBalanceResponse {
         block_identifier: Box::new(ledger_header_to_block_identifier(&header.into())?),
         balances,

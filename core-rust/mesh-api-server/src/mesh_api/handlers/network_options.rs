@@ -10,6 +10,8 @@ pub(crate) async fn handle_network_options(
 
     let mut bundles_iter = database.get_committed_transaction_bundle_iter(StateVersion::of(1));
 
+    // See https://docs.cdp.coinbase.com/mesh/docs/models#networkoptionsresponse for field
+    // definitions
     Ok(Json(models::NetworkOptionsResponse {
         version: Box::new(models::Version {
             rosetta_version: SCHEMA_VERSION.to_string(),

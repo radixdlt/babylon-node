@@ -26,6 +26,8 @@ pub(crate) async fn handle_network_status(
         })
         .unwrap_or_else(|| Err(MappingError::ProofNotFound))?;
 
+    // See https://docs.cdp.coinbase.com/mesh/docs/models#networkstatusresponse for field
+    // definitions
     Ok(Json(models::NetworkStatusResponse {
         current_block_identifier: database
             .get_latest_proof()
