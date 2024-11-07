@@ -27,11 +27,9 @@ pub(crate) async fn handle_network_options(
             // TODO::MESH Add enum with operation types
             // see comment https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830848173
             operation_types: vec![
+                "LockFee".to_string(),
                 "Withdraw".to_string(),
                 "Deposit".to_string(),
-                "Mint".to_string(),
-                "Burn".to_string(),
-                "LockFee".to_string(),
             ],
             errors: list_available_api_errors(),
             historical_balance_lookup: false,

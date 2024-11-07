@@ -1,7 +1,7 @@
 use crate::prelude::*;
-use std::any::Any;
-
 use hyper::StatusCode;
+use std::any::Any;
+use std::borrow::Borrow;
 
 use rand::distributions::Alphanumeric;
 use rand::Rng;
@@ -202,18 +202,98 @@ pub(crate) fn assert_matching_network(
 }
 
 pub(crate) fn assert_account(
+    network: &NetworkDefinition,
     account_identifier: &models::AccountIdentifier,
-) -> Result<(), ResponseError> {
+) -> Result<ComponentAddress, ResponseError> {
     if let Some(_) = account_identifier.sub_account {
         return Err(client_error("Sub accounts not supported.", false));
     }
-    if !account_identifier.address.starts_with("account_") {
-        return Err(client_error(
-            "Only addresses starting account_ work with this endpoint.",
+
+    let address = ComponentAddress::try_from_bech32(
+        &AddressBech32Decoder::new(network),
+        &account_identifier.address,
+    )
+    .filter(|x| {
+        x.as_node_id()
+            .entity_type()
+            .is_some_and(|t| t.is_global_account())
+    })
+    .ok_or(client_error(
+        format!("Invalid account: {}", account_identifier.address),
+        false,
+    ))?;
+
+    Ok(address)
+}
+
+pub(crate) fn assert_account_from_option(
+    network: &NetworkDefinition,
+    account_identifier: Option<Box<crate::mesh_api::generated::models::AccountIdentifier>>,
+) -> Result<ComponentAddress, ResponseError> {
+    assert_account(
+        network,
+        account_identifier
+            .ok_or(client_error("Missing account", false))?
+            .borrow(),
+    )
+}
+
+pub(crate) fn assert_amount(
+    amount: &models::Amount,
+) -> Result<(ResourceAddress, Decimal), ResponseError> {
+    // TODO: create a trusted list of assets
+    let address = match amount.currency.symbol.as_str() {
+        "XRD" => XRD,
+        _ => {
+            return Err(client_error(
+                format!("Invalid currency: {:?}", amount.currency),
+                false,
+            ))
+        }
+    };
+    // TODO:MESH example implementation seems to use integer to represent quantity.
+    let quantity = Decimal::from_str(&amount.value)
+        .map_err(|_| client_error(format!("Invalid quantity: {:?}", amount.value), false))?;
+    Ok((address, quantity))
+}
+
+pub(crate) fn assert_amount_from_option(
+    amount: Option<Box<crate::mesh_api::generated::models::Amount>>,
+) -> Result<(ResourceAddress, Decimal), ResponseError> {
+    assert_amount(
+        amount
+            .ok_or(client_error("Missing amount", false))?
+            .borrow(),
+    )
+}
+
+pub(crate) fn assert_public_key(
+    public_key: &crate::mesh_api::generated::models::PublicKey,
+) -> Result<PublicKey, ResponseError> {
+    match public_key.curve_type {
+        models::CurveType::Secp256k1 => Ok(PublicKey::Secp256k1(
+            from_hex(&public_key.hex_bytes)
+                .ok()
+                .and_then(|bytes| Secp256k1PublicKey::try_from(bytes.as_slice()).ok())
+                .ok_or(client_error(
+                    format!("Invalid Secp256k1 public key: {}", public_key.hex_bytes),
+                    false,
+                ))?,
+        )),
+        models::CurveType::Edwards25519 => Ok(PublicKey::Ed25519(
+            from_hex(&public_key.hex_bytes)
+                .ok()
+                .and_then(|bytes| Ed25519PublicKey::try_from(bytes.as_slice()).ok())
+                .ok_or(client_error(
+                    format!("Invalid Ed25519 public key: {}", public_key.hex_bytes),
+                    false,
+                ))?,
+        )),
+        _ => Err(client_error(
+            format!("Invalid curve type: {:?}", &public_key.curve_type),
             false,
-        ));
+        )),
     }
-    Ok(())
 }
 
 // TODO:MESH - Add logging, metrics and tracing for all of these errors - require the error is passed in here

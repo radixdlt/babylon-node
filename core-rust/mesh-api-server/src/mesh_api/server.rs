@@ -119,7 +119,7 @@ pub async fn create_server<F>(
         .route("/construction/derive", post(handle_construction_derive))
         .route("/construction/preprocess", post(handle_construction_preprocess))
         .route("/construction/metadata", post(handle_construction_metadata))
-        .route("/construction/payloads", post(handle_endpoint_todo))
+        .route("/construction/payloads", post(handle_construction_payloads))
         .route("/construction/combine", post(handle_endpoint_todo))
         .route("/construction/hash", post(handle_endpoint_todo))
         .route("/construction/parse", post(handle_endpoint_todo))
