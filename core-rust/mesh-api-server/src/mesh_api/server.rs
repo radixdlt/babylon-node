@@ -91,6 +91,12 @@ pub struct MeshApiState {
     pub node_display_version: String,
 }
 
+impl MeshApiState {
+    pub fn address_encoder(&self) -> AddressBech32Encoder {
+        AddressBech32Encoder::new(&self.network)
+    }
+}
+
 pub async fn create_server<F>(
     bind_addr: &str,
     shutdown_signal: F,
@@ -110,7 +116,7 @@ pub async fn create_server<F>(
         // TODO:MESH mempool
         .route("/mempool", post(handle_endpoint_todo))
         .route("/mempool/transaction", post(handle_endpoint_todo))
-        .route("/construction/derive", post(handle_endpoint_todo))
+        .route("/construction/derive", post(handle_construction_derive))
         .route("/construction/preprocess", post(handle_endpoint_todo))
         .route("/construction/metadata", post(handle_endpoint_todo))
         .route("/construction/payloads", post(handle_endpoint_todo))
