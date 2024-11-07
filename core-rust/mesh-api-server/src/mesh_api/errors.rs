@@ -184,16 +184,19 @@ pub async fn emit_error_response_event(uri: Uri, response: Response) -> Response
 }
 
 pub(crate) fn assert_matching_network(
-    request_network: &str,
+    network_identifier: &models::NetworkIdentifier,
     network_definition: &NetworkDefinition,
 ) -> Result<(), ResponseError> {
-    if request_network != network_definition.logical_name {
+    if network_identifier.network != network_definition.logical_name {
         return Err(
             ResponseError::from(ApiError::InvalidNetwork).with_details(format!(
                 "Invalid network - the network is actually: {}",
                 network_definition.logical_name
             )),
         );
+    } else if network_identifier.sub_network_identifier.is_some() {
+        return Err(ResponseError::from(ApiError::InvalidNetwork)
+            .with_details(format!("Invalid network - subnetworks not supported",)));
     }
     Ok(())
 }

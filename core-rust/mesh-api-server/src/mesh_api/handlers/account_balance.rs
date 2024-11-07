@@ -4,8 +4,7 @@ pub(crate) async fn handle_account_balance(
     state: State<MeshApiState>,
     Json(request): Json<models::AccountBalanceRequest>,
 ) -> Result<Json<models::AccountBalanceResponse>, ResponseError> {
-    // TODO:MESH assert sub_network
-    assert_matching_network(&request.network_identifier.network, &state.network)?;
+    assert_matching_network(&request.network_identifier, &state.network)?;
     assert_account(&request.account_identifier)?;
 
     let mapping_context = MappingContext::new(&state.network);
