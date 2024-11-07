@@ -42,6 +42,9 @@ api.core.flags.enable_unbounded_endpoints=${RADIXDLT_CORE_API_FLAGS_ENABLE_UNBOU
 api.engine_state.port=$RADIXDLT_ENGINE_STATE_API_PORT
 api.engine_state.bind_address=$RADIXDLT_ENGINE_STATE_API_BIND_ADDRESS
 
+api.mesh.port=$RADIXDLT_MESH_API_PORT
+api.mesh.bind_address=$RADIXDLT_MESH_API_BIND_ADDRESS
+
 api.system.port=$RADIXDLT_SYSTEM_API_PORT
 api.system.bind_address=$RADIXDLT_SYSTEM_API_BIND_ADDRESS
 api.system.enable_db_checkpoint=${RADIXDLT_SYSTEM_API_ENABLE_DB_CHECKPOINT}
