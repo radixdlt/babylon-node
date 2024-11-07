@@ -8,10 +8,7 @@ pub(crate) async fn handle_network_options(
 
     let database = state.state_manager.database.snapshot();
 
-    // TODO:MESH Should be StateVersion::pre_genesis() here, but below error is observed:
-    //   thread 'tokio-runtime-worker' panicked at state-manager/src/store/rocks_db.rs:780:17:
-    //   DB inconsistency! transaction version (1) doesn't match expected state version (0)
-    let mut bundles_iter = database.get_committed_transaction_bundle_iter(StateVersion::of(1));
+    let mut proof_iter = database.get_proof_iter(StateVersion::pre_genesis());
 
     // See https://docs.cdp.coinbase.com/mesh/docs/models#networkoptionsresponse for field
     // definitions
@@ -38,9 +35,12 @@ pub(crate) async fn handle_network_options(
             ],
             errors: list_available_api_errors(),
             historical_balance_lookup: false,
-            timestamp_start_index: bundles_iter.find_map(|p| {
-                if p.identifiers.proposer_timestamp_ms != 0 {
-                    Some(to_mesh_api_block_index_from_state_version(p.state_version).unwrap())
+            timestamp_start_index: proof_iter.find_map(|p| {
+                if p.ledger_header.proposer_timestamp_ms != 0 {
+                    Some(
+                        to_mesh_api_block_index_from_state_version(p.ledger_header.state_version)
+                            .unwrap(),
+                    )
                 } else {
                     None
                 }
