@@ -57,15 +57,6 @@ pub(crate) async fn handle_block(
                     .global_balance_summary
                     .global_balance_changes
                 {
-                    let api_address =
-                        to_api_entity_address(&mapping_context, address.as_node_id())?;
-                    println!(
-                        "address {} {} {} balance_changes = {:#?}",
-                        api_address,
-                        address.is_account(),
-                        address.as_node_id().is_global_account(),
-                        balance_changes
-                    );
                     if address.is_account() {
                         for (resource_address, balance_change) in balance_changes {
                             if let BalanceChange::Fungible(amount) = balance_change {
@@ -113,49 +104,4 @@ pub(crate) async fn handle_block(
         block: Some(Box::new(block)),
         other_transactions: None,
     }))
-}
-
-fn to_mesh_api_amount(
-    amount: Decimal,
-    currency: models::Currency,
-) -> Result<models::Amount, MappingError> {
-    let value = amount
-        / Decimal::TEN
-            .checked_powi((Decimal::SCALE as i32 - currency.decimals) as i64)
-            .ok_or_else(|| MappingError::IntegerError {
-                message: "Integer overflow".to_string(),
-            })?;
-
-    Ok(models::Amount::new(value.attos().to_string(), currency))
-}
-
-fn to_mesh_api_operation(
-    mapping_context: &MappingContext,
-    database: &StateManagerDatabase<impl ReadableRocks>,
-    index: i64,
-    account_address: &GlobalAddress,
-    resource_address: &ResourceAddress,
-    amount: Decimal,
-) -> Result<models::Operation, MappingError> {
-    // TODO:MESH what about fee locking, burning, minting?
-    let op_type = if amount.is_positive() {
-        OperationTypes::Deposit
-    } else {
-        OperationTypes::Withdraw
-    };
-
-    let currency =
-        to_mesh_api_currency_from_resource_address(mapping_context, database, resource_address)?;
-
-    let account = to_mesh_api_acount_from_address(mapping_context, account_address)?;
-    Ok(models::Operation {
-        operation_identifier: Box::new(models::OperationIdentifier::new(index)),
-        related_operations: None,
-        _type: op_type.to_string(),
-        status: Some("Success".to_string()),
-        account: Some(Box::new(account)),
-        amount: Some(Box::new(to_mesh_api_amount(amount, currency)?)),
-        coin_change: None,
-        metadata: None,
-    })
 }

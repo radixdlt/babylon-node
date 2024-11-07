@@ -155,3 +155,17 @@ pub fn extract_u8_from_api_i32(input: i32) -> Result<u8, ExtractionError> {
     }
     Ok(input.try_into().expect("Number invalid somehow"))
 }
+
+pub fn to_mesh_api_amount(
+    amount: Decimal,
+    currency: models::Currency,
+) -> Result<models::Amount, MappingError> {
+    let value = amount
+        / Decimal::TEN
+            .checked_powi((Decimal::SCALE as i32 - currency.decimals) as i64)
+            .ok_or_else(|| MappingError::IntegerError {
+                message: "Integer overflow".to_string(),
+            })?;
+
+    Ok(models::Amount::new(value.attos().to_string(), currency))
+}
