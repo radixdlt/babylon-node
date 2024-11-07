@@ -5,6 +5,7 @@ members = [
     "core-api-server",
     "engine-state-api-server",
     "state-manager",
+    "mesh-api-server"
 ]
 resolver = "2"
 
@@ -15,7 +16,7 @@ resolver = "2"
 # ================================================================
 #
 # To make builds reproducible, we must specify a fixed tag below, not a branch.
-# 
+#
 # Go to your checkout of `radixdlt-scrypto`, then run the following:
 #  $ git checkout <relevant-branch>
 #  $ git pull
@@ -59,6 +60,11 @@ tower = { version = "=0.4.13" }
 tower-http = { version = "=0.4.3", features = ["catch-panic"]}
 hyper = { version = "=0.14.27", features = ["server", "http1"] }
 paste = { version = "=1.0.14", default-features = false }
+strum = { version = "=0.24.1", features = ["derive"] }
+strum_macros = { version = "=0.24.3" }
+convert_case = { version = "=0.6.0" }
+regex = { version = "=1.9.3"}
+lazy_static = { version = "=1.4.0" }
 
 [profile.dev]
 opt-level = 3

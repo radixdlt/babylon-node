@@ -1154,6 +1154,7 @@ dependencies = [
  "core-api-server",
  "engine-state-api-server",
  "jni",
+ "mesh-api-server",
  "node-common",
  "radix-common",
  "radix-engine",
@@ -1325,6 +1326,48 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a634b1c61a95585bd15607c6ab0c4e5b226e695ff2800ba0cdccddf208c406c"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "mesh-api-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "blake2",
+ "chrono",
+ "convert_case",
+ "futures",
+ "futures-util",
+ "hex",
+ "hyper",
+ "itertools",
+ "jni",
+ "lazy_static",
+ "node-common",
+ "paste",
+ "prometheus",
+ "radix-blueprint-schema-init",
+ "radix-common",
+ "radix-engine",
+ "radix-engine-interface",
+ "radix-rust",
+ "radix-substate-store-impls",
+ "radix-substate-store-interface",
+ "radix-substate-store-queries",
+ "radix-transactions",
+ "rand",
+ "regex",
+ "sbor",
+ "serde",
+ "serde_json",
+ "serde_with 2.3.0",
+ "state-manager",
+ "strum",
+ "strum_macros",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
 ]
 
 [[package]]
