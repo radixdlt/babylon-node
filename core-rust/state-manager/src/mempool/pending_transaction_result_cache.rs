@@ -21,7 +21,6 @@ pub enum MempoolRejectionReason {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AlreadyCommittedError {
-    pub notarized_transaction_hash: NotarizedTransactionHash,
     pub committed_state_version: StateVersion,
     pub committed_notarized_transaction_hash: NotarizedTransactionHash,
 }
@@ -641,91 +640,86 @@ impl PendingTransactionResultCache {
         new_record
     }
 
-    pub fn track_committed_transactions(
+    pub fn handle_nullified_transaction_intent(
         &mut self,
         current_timestamp: SystemTime,
-        committed_transactions: Vec<CommittedUserTransactionIdentifiers>,
+        committed_transaction: &CommittedUserTransactionIdentifiers,
+        nullified_transaction_intent: TransactionIntentHash,
     ) {
-        for committed_transaction in committed_transactions {
-            let notarized_transaction_hash = committed_transaction.notarized_transaction_hash;
-            let transaction_intent_hash = committed_transaction.transaction_intent_hash;
-
-            // Note - we keep the relevant statuses of all known payloads for the intent in the cache
-            // so that we can still serve status responses for them - we just ensure we mark them as rejected
-            for nullification in committed_transaction.nullifications {
-                let Nullification::Intent { intent_hash, .. } = nullification;
-                let nullified_records = match &intent_hash {
-                    IntentHash::Transaction(_) => {
-                        self.recently_committed_intents.push(
-                            transaction_intent_hash,
-                            CommittedIntentRecord {
-                                state_version: committed_transaction.state_version,
-                                notarized_transaction_hash,
-                                timestamp: current_timestamp,
-                            },
-                        );
-                        self.intent_lookup.get(&transaction_intent_hash)
-                    }
-                    IntentHash::Subintent(subintent_hash) => {
-                        self.recently_finalized_subintents.push(
-                            *subintent_hash,
-                            CommittedSubintentRecord {
-                                state_version: committed_transaction.state_version,
-                                transaction_intent_hash,
-                                notarized_transaction_hash,
-                                timestamp: current_timestamp,
-                            },
-                        );
-                        self.subintent_lookup.get(subintent_hash)
-                    }
+        self.recently_committed_intents.push(
+            nullified_transaction_intent,
+            CommittedIntentRecord {
+                state_version: committed_transaction.state_version,
+                notarized_transaction_hash: committed_transaction.notarized_transaction_hash,
+                timestamp: current_timestamp,
+            },
+        );
+        let nullified_records = self.intent_lookup.get(&nullified_transaction_intent);
+        if let Some(nullified_records) = nullified_records {
+            for rejected_transaction_hash in nullified_records {
+                let attempt = TransactionAttempt {
+                    rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
+                        AlreadyCommittedError {
+                            committed_state_version: committed_transaction.state_version,
+                            committed_notarized_transaction_hash: committed_transaction
+                                .notarized_transaction_hash,
+                        },
+                    )),
+                    against_state: AtState::Specific(AtSpecificState::Committed {
+                        state_version: committed_transaction.state_version,
+                    }),
+                    timestamp: current_timestamp,
                 };
-                if let Some(nullified_hashes) = nullified_records {
-                    for cached_payload_hash in nullified_hashes {
-                        let (record, _, _) = self
-                            .pending_transaction_records
-                            .peek_mut(cached_payload_hash)
-                            .expect(
-                                "intent or subintent lookup out of sync with rejected payloads",
-                            );
+                self.pending_transaction_records
+                    .peek_mut(rejected_transaction_hash)
+                    .expect("intent lookup out of sync with rejected payloads")
+                    .0
+                    .track_attempt(attempt);
+            }
+        }
+    }
 
-                        let reason = match intent_hash {
-                            IntentHash::Transaction(_) => {
-                                MempoolRejectionReason::TransactionIntentAlreadyCommitted(
-                                    AlreadyCommittedError {
-                                        notarized_transaction_hash: *cached_payload_hash,
-                                        committed_state_version: committed_transaction
-                                            .state_version,
-                                        committed_notarized_transaction_hash:
-                                            notarized_transaction_hash,
-                                    },
-                                )
-                            }
-                            IntentHash::Subintent(subintent_hash) => {
-                                MempoolRejectionReason::SubintentAlreadyFinalized(
-                                    SubintentAlreadyFinalizedError {
-                                        subintent_hash,
-                                        committed_transaction_intent_hash: committed_transaction
-                                            .transaction_intent_hash,
-                                        committed_state_version: committed_transaction
-                                            .state_version,
-                                        committed_notarized_transaction_hash:
-                                            notarized_transaction_hash,
-                                    },
-                                )
-                            }
-                        };
-
-                        // We even overwrite the record for transaction which got committed here
-                        // because this is a cache for pending transactions, and it can't be re-committed
-                        record.track_attempt(TransactionAttempt {
-                            rejection: Some(reason),
-                            against_state: AtState::Specific(AtSpecificState::Committed {
-                                state_version: committed_transaction.state_version,
-                            }),
-                            timestamp: current_timestamp,
-                        })
-                    }
-                }
+    pub fn handle_nullified_subintent(
+        &mut self,
+        current_timestamp: SystemTime,
+        committed_transaction: &CommittedUserTransactionIdentifiers,
+        nullified_subintent: SubintentHash,
+    ) {
+        self.recently_finalized_subintents.push(
+            nullified_subintent,
+            CommittedSubintentRecord {
+                state_version: committed_transaction.state_version,
+                transaction_intent_hash: committed_transaction.transaction_intent_hash,
+                notarized_transaction_hash: committed_transaction.notarized_transaction_hash,
+                timestamp: current_timestamp,
+            },
+        );
+        let nullified_records = self.subintent_lookup.get(&nullified_subintent);
+        if let Some(nullified_records) = nullified_records {
+            for rejected_transaction_hash in nullified_records {
+                // We even overwrite the record for transaction which got committed here
+                // because this is a cache for pending transactions, and it can't be re-committed
+                let attempt = TransactionAttempt {
+                    rejection: Some(MempoolRejectionReason::SubintentAlreadyFinalized(
+                        SubintentAlreadyFinalizedError {
+                            subintent_hash: nullified_subintent,
+                            committed_transaction_intent_hash: committed_transaction
+                                .transaction_intent_hash,
+                            committed_state_version: committed_transaction.state_version,
+                            committed_notarized_transaction_hash: committed_transaction
+                                .notarized_transaction_hash,
+                        },
+                    )),
+                    against_state: AtState::Specific(AtSpecificState::Committed {
+                        state_version: committed_transaction.state_version,
+                    }),
+                    timestamp: current_timestamp,
+                };
+                self.pending_transaction_records
+                    .peek_mut(rejected_transaction_hash)
+                    .expect("subintent lookup out of sync with rejected payloads")
+                    .0
+                    .track_attempt(attempt);
             }
         }
     }
@@ -751,7 +745,6 @@ impl PendingTransactionResultCache {
                 TransactionAttempt {
                     rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                         AlreadyCommittedError {
-                            notarized_transaction_hash: user_hashes.notarized_transaction_hash,
                             committed_state_version: committed_intent_record.state_version,
                             committed_notarized_transaction_hash: committed_intent_record
                                 .notarized_transaction_hash,
@@ -1071,17 +1064,14 @@ mod tests {
         let intent_hash_1 = intent_hash(1);
         let intent_hash_2 = intent_hash(2);
 
-        cache.track_committed_transactions(
+        cache.handle_nullified_transaction_intent(
             now,
-            vec![CommittedUserTransactionIdentifiers {
+            &CommittedUserTransactionIdentifiers {
                 state_version: StateVersion::of(1),
                 transaction_intent_hash: intent_hash_1,
                 notarized_transaction_hash: payload_hash_1,
-                nullifications: vec![Nullification::Intent {
-                    intent_hash: IntentHash::Transaction(intent_hash_1),
-                    expiry_epoch: Epoch::of(15),
-                }],
-            }],
+            },
+            intent_hash_1,
         );
         let record =
             cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_1));

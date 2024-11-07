@@ -39,13 +39,14 @@ pub(crate) async fn handle_lts_transaction_submit(
             },
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::LtsTransactionSubmitResponse::new(true)),
-        Err(MempoolAddError::Rejected(rejection)) => {
+        Err(MempoolAddError::Rejected(rejection, notarized_transaction_hash)) => {
             if let Some(already_committed_error) = rejection.transaction_intent_already_committed_error() {
+                let is_same_transaction = Some(already_committed_error.committed_notarized_transaction_hash) == notarized_transaction_hash;
                 Err(detailed_error(
                     StatusCode::BAD_REQUEST,
                     "The transaction intent has already been committed",
                     LtsTransactionSubmitErrorDetails::LtsTransactionSubmitIntentAlreadyCommitted {
-                        committed_as: Box::new(to_api_committed_intent_metadata(&mapping_context, already_committed_error)?)
+                        committed_as: Box::new(to_api_committed_intent_metadata(&mapping_context, already_committed_error, is_same_transaction)?)
                     }
                 ))
             } else {

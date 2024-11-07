@@ -78,7 +78,6 @@ impl CommittabilityValidator {
             return TransactionAttempt {
                 rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                     AlreadyCommittedError {
-                        notarized_transaction_hash: user_hashes.notarized_transaction_hash,
                         committed_state_version: state_version,
                         committed_notarized_transaction_hash: committed_transaction_identifiers
                             .transaction_hashes

@@ -211,7 +211,6 @@ fn map_rejected_payloads_due_to_known_commit(
                 .unwrap_or_else(|| {
                     MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                         AlreadyCommittedError {
-                            notarized_transaction_hash,
                             committed_state_version,
                             committed_notarized_transaction_hash:
                                 *committed_notarized_transaction_hash,

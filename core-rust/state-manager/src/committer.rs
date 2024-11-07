@@ -226,12 +226,13 @@ impl Committer {
                 .expect("cannot execute transaction to be committed");
 
             if let Some(user_hashes) = hashes.as_user() {
-                committed_user_transactions.push(CommittedUserTransactionIdentifiers {
+                let identifiers = CommittedUserTransactionIdentifiers {
                     state_version: series_executor.latest_state_version(),
                     transaction_intent_hash: user_hashes.transaction_intent_hash,
                     notarized_transaction_hash: user_hashes.notarized_transaction_hash,
-                    nullifications: commit.local_receipt.local_execution.nullifications.clone(),
-                });
+                };
+                let nullifications = commit.local_receipt.local_execution.nullifications.clone();
+                committed_user_transactions.push((identifiers, nullifications));
             }
             transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
 
@@ -470,5 +471,4 @@ pub struct CommittedUserTransactionIdentifiers {
     pub state_version: StateVersion,
     pub transaction_intent_hash: TransactionIntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
-    pub nullifications: Vec<Nullification>,
 }

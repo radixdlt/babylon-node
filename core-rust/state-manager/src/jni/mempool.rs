@@ -211,7 +211,7 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
                 tip_basis_points,
             },
             MempoolAddError::Duplicate(hash) => MempoolAddErrorJava::Duplicate(hash),
-            MempoolAddError::Rejected(rejection) => {
+            MempoolAddError::Rejected(rejection, _) => {
                 MempoolAddErrorJava::Rejected(rejection.reason.to_string())
             }
         }

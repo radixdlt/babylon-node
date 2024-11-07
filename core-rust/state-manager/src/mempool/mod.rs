@@ -89,7 +89,7 @@ pub enum MempoolAddError {
         tip_basis_points: u32,
     },
     Duplicate(NotarizedTransactionHash),
-    Rejected(MempoolAddRejection),
+    Rejected(MempoolAddRejection, Option<NotarizedTransactionHash>),
 }
 
 #[derive(Debug, Clone)]
@@ -143,7 +143,7 @@ impl Display for MempoolAddError {
                 }
             },
             MempoolAddError::Duplicate(_) => write!(f, "Duplicate Entry"),
-            MempoolAddError::Rejected(rejection) => write!(f, "{}", rejection.reason),
+            MempoolAddError::Rejected(rejection, _) => write!(f, "{}", rejection.reason),
         }
     }
 }

@@ -34,13 +34,18 @@ pub(crate) async fn handle_transaction_submit(
             },
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::TransactionSubmitResponse::new(true)),
-        Err(MempoolAddError::Rejected(rejection)) => {
+        Err(MempoolAddError::Rejected(rejection, notarized_transaction_hash)) => {
             if let Some(already_committed_error) = rejection.transaction_intent_already_committed_error() {
+                let is_same_transaction = Some(already_committed_error.committed_notarized_transaction_hash) == notarized_transaction_hash;
                 Err(detailed_error(
                     StatusCode::BAD_REQUEST,
                     "The transaction intent has already been committed",
                     TransactionSubmitErrorDetails::TransactionSubmitIntentAlreadyCommitted {
-                        committed_as: Box::new(to_api_committed_intent_metadata(&mapping_context, already_committed_error)?)
+                        committed_as: Box::new(to_api_committed_intent_metadata(
+                            &mapping_context,
+                            already_committed_error,
+                            is_same_transaction,
+                        )?)
                     }
                 ))
             } else {
@@ -90,6 +95,7 @@ pub(crate) async fn handle_transaction_submit(
 pub fn to_api_committed_intent_metadata(
     context: &MappingContext,
     error: &AlreadyCommittedError,
+    is_same_transaction: bool,
 ) -> Result<models::CommittedIntentMetadata, MappingError> {
     Ok(models::CommittedIntentMetadata {
         state_version: to_api_state_version(error.committed_state_version)?,
@@ -100,7 +106,6 @@ pub fn to_api_committed_intent_metadata(
             context,
             &error.committed_notarized_transaction_hash,
         )?,
-        is_same_transaction: error.committed_notarized_transaction_hash
-            == error.notarized_transaction_hash,
+        is_same_transaction,
     })
 }
