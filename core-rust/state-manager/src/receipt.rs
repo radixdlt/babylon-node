@@ -271,6 +271,10 @@ pub struct LocalTransactionReceipt {
     pub local_execution: LocalTransactionExecution,
 }
 
+pub struct TransientReceipt {
+    pub nullifications: Vec<Nullification>,
+}
+
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoSbor)]
     pub VersionedLedgerTransactionReceipt(LedgerTransactionReceiptVersions) => LedgerTransactionReceipt = LedgerTransactionReceiptV1,
@@ -353,6 +357,8 @@ impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
             substates_system_structure: value.substates_system_structure,
             events_system_structure: value.events_system_structure,
             next_epoch: value.next_epoch,
+            // May miss pre-cuttlefish intent nullifications. This is detailed in the Rustdoc below.
+            nullifications: Vec::new(),
         }
     }
 }
@@ -371,6 +377,9 @@ pub struct LocalTransactionExecutionV2 {
     pub substates_system_structure: BySubstate<SubstateSystemStructure>,
     pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
     pub next_epoch: Option<EpochChangeEvent>,
+    /// Pre-cuttlefish, this may be missing Intent nullifications.
+    /// But this is guaranteed to include all subintent nullifications.
+    pub nullifications: Vec<Nullification>,
 }
 
 impl LedgerTransactionReceipt {
@@ -433,6 +442,7 @@ impl LocalTransactionReceipt {
                 ),
                 events_system_structure: system_structure.event_system_structures,
                 next_epoch,
+                nullifications: commit_result.performed_nullifications,
             },
         }
     }

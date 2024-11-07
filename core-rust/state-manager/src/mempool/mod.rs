@@ -115,35 +115,16 @@ impl MempoolAddRejection {
     }
 
     pub fn is_permanent_for_payload(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_payload(),
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => self.reason.is_permanent_for_payload(),
-        }
+        self.reason.is_permanent_for_payload(&self.against_state)
     }
 
     pub fn is_permanent_for_intent(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_intent(),
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => self.reason.is_permanent_for_payload(),
-        }
+        self.reason.is_permanent_for_intent(&self.against_state)
     }
 
     pub fn transaction_intent_already_committed_error(&self) -> Option<&AlreadyCommittedError> {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => {
-                    self.reason.transaction_intent_already_committed_error()
-                }
-                AtSpecificState::PendingPreparingVertices { .. } => None,
-            },
-            AtState::Static => None,
-        }
+        self.reason
+            .transaction_intent_already_committed_error(&self.against_state)
     }
 }
 

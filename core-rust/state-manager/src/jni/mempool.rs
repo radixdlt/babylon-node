@@ -123,9 +123,9 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> i32 {
-        let mempool = JNINodeRustEnvironment::get_mempool(&env, j_node_rust_env);
-        let read_mempool = mempool.read();
-        read_mempool.get_count().try_into().unwrap()
+        let mempool_count =
+            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env).get_mempool_count();
+        mempool_count.try_into().unwrap()
     })
 }
 

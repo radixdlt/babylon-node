@@ -153,6 +153,7 @@ impl MetricLabel for MempoolAddResult {
             Some(MempoolAddError::PriorityThresholdNotMet { .. }) => "PriorityThresholdNotMet",
             Some(MempoolAddError::Rejected(rejection)) => match &rejection.reason {
                 MempoolRejectionReason::TransactionIntentAlreadyCommitted(_) => "AlreadyCommitted",
+                MempoolRejectionReason::SubintentAlreadyFinalized(_) => "SubintentAlreadyFinalized",
                 MempoolRejectionReason::FromExecution(_) => "ExecutionError",
                 MempoolRejectionReason::ValidationError(_) => "ValidationError",
             },

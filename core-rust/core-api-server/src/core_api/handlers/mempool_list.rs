@@ -9,10 +9,12 @@ pub(crate) async fn handle_mempool_list(
     assert_unbounded_endpoints_flag_enabled(&state)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let mempool = state.state_manager.mempool.read();
     Ok(Json(models::MempoolListResponse {
-        contents: mempool
-            .all_hashes_iter()
+        contents: state
+            .state_manager
+            .mempool_manager
+            .get_mempool_all_hashes()
+            .iter()
             .map(|(intent_hash, payload_hash)| {
                 Ok(models::MempoolTransactionHashes {
                     intent_hash: to_api_transaction_intent_hash(intent_hash),

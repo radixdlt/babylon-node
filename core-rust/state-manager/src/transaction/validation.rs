@@ -134,24 +134,34 @@ impl CommittabilityValidator {
     }
 }
 
-/// A caching wrapper for a `CommittabilityValidator`.
+/// A caching wrapper for a [`CommittabilityValidator`].
 pub struct CachedCommittabilityValidator {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     committability_validator: Arc<RwLock<CommittabilityValidator>>,
-    pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+    pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
 }
 
 impl CachedCommittabilityValidator {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         committability_validator: Arc<RwLock<CommittabilityValidator>>,
-        pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+        pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
     ) -> Self {
         Self {
             database,
             committability_validator,
             pending_transaction_result_cache,
         }
+    }
+
+    /// From a system perspective, the [`CachedCommittabilityValidator`] is a subsystem
+    /// of the [`MempoolManager`], which enforces ordering of `RwLock` access to ensure
+    /// we are free of deadlocks.
+    ///
+    /// Therefore we are safe to expose direct access to the cache to the [`MempoolManager`]
+    /// so that it can enforce atomicity and correct lock order where important.
+    pub fn get_cache(&self) -> &RwLock<PendingTransactionResultCache> {
+        &self.pending_transaction_result_cache
     }
 
     pub fn prepare_from_raw(
@@ -163,127 +173,6 @@ impl CachedCommittabilityValidator {
             .prepare_from_raw(transaction)
     }
 
-    fn read_record(&self, prepared: &PreparedUserTransaction) -> Option<PendingTransactionRecord> {
-        // Even though we only want to read the cache here, the LRU structs require a write lock
-        self.pending_transaction_result_cache
-            .write()
-            .get_pending_transaction_record(
-                &prepared.transaction_intent_hash(),
-                &prepared.notarized_transaction_hash(),
-            )
-    }
-
-    fn write_attempt(
-        &self,
-        metadata: TransactionMetadata,
-        attempt: TransactionAttempt,
-    ) -> PendingTransactionRecord {
-        self.pending_transaction_result_cache
-            .write()
-            .track_transaction_result(
-                metadata.intent_hash,
-                metadata.notarized_transaction_hash,
-                Some(metadata.end_epoch_exclusive),
-                attempt,
-            )
-    }
-}
-
-struct TransactionMetadata {
-    intent_hash: TransactionIntentHash,
-    notarized_transaction_hash: NotarizedTransactionHash,
-    end_epoch_exclusive: Epoch,
-}
-
-impl TransactionMetadata {
-    pub fn read_from_user_executable(
-        executable: &ExecutableTransaction,
-        user_hashes: &UserTransactionHashes,
-    ) -> Self {
-        Self {
-            intent_hash: user_hashes.transaction_intent_hash,
-            notarized_transaction_hash: user_hashes.notarized_transaction_hash,
-            end_epoch_exclusive: executable
-                .overall_epoch_range()
-                .expect("User executable transactions should have an epoch range")
-                .end_epoch_exclusive,
-        }
-    }
-
-    pub fn read_from_prepared(prepared: &PreparedUserTransaction) -> Self {
-        Self {
-            intent_hash: prepared.transaction_intent_hash(),
-            notarized_transaction_hash: prepared.notarized_transaction_hash(),
-            end_epoch_exclusive: match prepared {
-                #[allow(deprecated)]
-                PreparedUserTransaction::V1(prepared) => {
-                    prepared
-                        .signed_intent
-                        .intent
-                        .header
-                        .inner
-                        .end_epoch_exclusive
-                }
-                PreparedUserTransaction::V2(prepared) => {
-                    let transaction_intent = &prepared.signed_intent.transaction_intent;
-
-                    let root_intent_expiry_epoch = transaction_intent
-                        .root_intent_core
-                        .header
-                        .inner
-                        .end_epoch_exclusive;
-                    let non_root_intent_expiry_epochs = transaction_intent
-                        .non_root_subintents
-                        .subintents
-                        .iter()
-                        .map(|subintent| subintent.intent_core.header.inner.end_epoch_exclusive);
-
-                    // Unwrapping as we know it's non-empty
-                    std::iter::once(root_intent_expiry_epoch)
-                        .chain(non_root_intent_expiry_epochs)
-                        .min()
-                        .unwrap()
-                }
-            },
-        }
-    }
-}
-
-enum ShouldRecalculate {
-    Yes,
-    No(PendingTransactionRecord),
-}
-
-pub enum CheckMetadata {
-    Cached,
-    Fresh(StaticValidation),
-}
-
-impl CheckMetadata {
-    pub fn was_cached(&self) -> bool {
-        match self {
-            Self::Cached => true,
-            Self::Fresh(_) => false,
-        }
-    }
-}
-
-pub enum StaticValidation {
-    Valid {
-        executable: ExecutableTransaction,
-        user_hashes: UserTransactionHashes,
-    },
-    Invalid,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum ForceRecalculation {
-    Yes,
-    IfCachedAsValid,
-    No,
-}
-
-impl CachedCommittabilityValidator {
     /// Reads the transaction rejection status from the cache, else calculates it fresh, using
     /// `CommittabilityValidator`.
     ///
@@ -391,4 +280,116 @@ impl CachedCommittabilityValidator {
         }
         ShouldRecalculate::Yes
     }
+
+    fn read_record(&self, prepared: &PreparedUserTransaction) -> Option<PendingTransactionRecord> {
+        // Even though we only want to read the cache here, the LRU structs require a write lock
+        self.pending_transaction_result_cache
+            .write()
+            .get_pending_transaction_record(prepared.hashes())
+    }
+
+    fn write_attempt(
+        &self,
+        metadata: TransactionMetadata,
+        attempt: TransactionAttempt,
+    ) -> PendingTransactionRecord {
+        self.pending_transaction_result_cache
+            .write()
+            .track_transaction_result(
+                metadata.user_hashes,
+                Some(metadata.end_epoch_exclusive),
+                attempt,
+            )
+    }
+}
+
+struct TransactionMetadata {
+    user_hashes: UserTransactionHashes,
+    end_epoch_exclusive: Epoch,
+}
+
+impl TransactionMetadata {
+    pub fn read_from_user_executable(
+        executable: &ExecutableTransaction,
+        user_hashes: &UserTransactionHashes,
+    ) -> Self {
+        Self {
+            user_hashes: user_hashes.clone(),
+            end_epoch_exclusive: executable
+                .overall_epoch_range()
+                .expect("User executable transactions should have an epoch range")
+                .end_epoch_exclusive,
+        }
+    }
+
+    pub fn read_from_prepared(prepared: &PreparedUserTransaction) -> Self {
+        Self {
+            user_hashes: prepared.hashes(),
+            end_epoch_exclusive: match prepared {
+                #[allow(deprecated)]
+                PreparedUserTransaction::V1(prepared) => {
+                    prepared
+                        .signed_intent
+                        .intent
+                        .header
+                        .inner
+                        .end_epoch_exclusive
+                }
+                PreparedUserTransaction::V2(prepared) => {
+                    let transaction_intent = &prepared.signed_intent.transaction_intent;
+
+                    let root_intent_expiry_epoch = transaction_intent
+                        .root_intent_core
+                        .header
+                        .inner
+                        .end_epoch_exclusive;
+                    let non_root_intent_expiry_epochs = transaction_intent
+                        .non_root_subintents
+                        .subintents
+                        .iter()
+                        .map(|subintent| subintent.intent_core.header.inner.end_epoch_exclusive);
+
+                    // Unwrapping as we know it's non-empty
+                    std::iter::once(root_intent_expiry_epoch)
+                        .chain(non_root_intent_expiry_epochs)
+                        .min()
+                        .unwrap()
+                }
+            },
+        }
+    }
+}
+
+enum ShouldRecalculate {
+    Yes,
+    No(PendingTransactionRecord),
+}
+
+pub enum CheckMetadata {
+    Cached,
+    Fresh(StaticValidation),
+}
+
+impl CheckMetadata {
+    pub fn was_cached(&self) -> bool {
+        match self {
+            Self::Cached => true,
+            Self::Fresh(_) => false,
+        }
+    }
+}
+
+pub enum StaticValidation {
+    Valid {
+        executable: ExecutableTransaction,
+        user_hashes: UserTransactionHashes,
+    },
+    Invalid,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum ForceRecalculation {
+    Yes,
+    IfCachedAsValid,
+    No,
 }

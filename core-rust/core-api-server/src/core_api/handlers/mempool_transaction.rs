@@ -22,13 +22,16 @@ pub(crate) async fn handle_mempool_transaction(
 
     let mut current_total_size = response.get_json_size();
 
-    let mempool = state.state_manager.mempool.read();
     for payload_hash_str in request.payload_hashes.into_iter() {
         let payload_hash =
             extract_notarized_transaction_hash(&extraction_context, payload_hash_str)
                 .map_err(|err| err.into_response_error("payload_hashes"))?;
 
-        let (hex, error) = match mempool.get_payload(&payload_hash) {
+        let (hex, error) = match state
+            .state_manager
+            .mempool_manager
+            .get_mempool_payload(&payload_hash)
+        {
             Some(mempool_transaction) => {
                 (Some(hex::encode(mempool_transaction.raw.as_slice())), None)
             }

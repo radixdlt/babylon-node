@@ -238,13 +238,6 @@ impl JNINodeRustEnvironment {
         Self::get(env, j_node_rust_env).safety_store_store.clone()
     }
 
-    pub fn get_mempool(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<RwLock<PriorityMempool>> {
-        Self::get(env, j_node_rust_env)
-            .state_manager
-            .mempool
-            .clone()
-    }
-
     pub fn get_mempool_manager(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<MempoolManager> {
         Self::get(env, j_node_rust_env)
             .state_manager

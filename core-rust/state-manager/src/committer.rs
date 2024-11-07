@@ -72,7 +72,6 @@ pub struct Committer {
     transaction_executor_factory: Arc<TransactionExecutorFactory>,
     mempool_manager: Arc<MempoolManager>,
     execution_cache_manager: Arc<ExecutionCacheManager>,
-    pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     protocol_manager: Arc<ProtocolManager>,
     ledger_metrics: Arc<LedgerMetrics>,
 }
@@ -85,7 +84,6 @@ impl Committer {
         ledger_transaction_validator: Arc<RwLock<TransactionValidator>>,
         mempool_manager: Arc<MempoolManager>,
         execution_cache_manager: Arc<ExecutionCacheManager>,
-        pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         protocol_manager: Arc<ProtocolManager>,
         ledger_metrics: Arc<LedgerMetrics>,
     ) -> Self {
@@ -95,7 +93,6 @@ impl Committer {
             transaction_executor_factory,
             mempool_manager,
             execution_cache_manager,
-            pending_transaction_result_cache,
             protocol_manager,
             ledger_metrics,
         }
@@ -233,6 +230,7 @@ impl Committer {
                     state_version: series_executor.latest_state_version(),
                     transaction_intent_hash: user_hashes.transaction_intent_hash,
                     notarized_transaction_hash: user_hashes.notarized_transaction_hash,
+                    nullifications: commit.local_receipt.local_execution.nullifications.clone(),
                 });
             }
             transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
@@ -263,21 +261,13 @@ impl Committer {
             .access_exclusively()
             .progress_base(&end_state.ledger_hashes.transaction_root);
 
-        self.mempool_manager.remove_committed(
-            committed_user_transactions
-                .iter()
-                .map(|txn| &txn.transaction_intent_hash),
-        );
-
-        if let Some(epoch_change) = end_state.epoch_change {
-            self.mempool_manager
-                .remove_txns_where_end_epoch_expired(epoch_change.epoch);
-        }
-
         let num_user_transactions = committed_user_transactions.len() as u32;
-        self.pending_transaction_result_cache
-            .write()
-            .track_committed_transactions(SystemTime::now(), committed_user_transactions);
+
+        self.mempool_manager.handle_committed_transactions(
+            SystemTime::now(),
+            end_state.epoch_change,
+            committed_user_transactions,
+        );
 
         self.ledger_metrics.update(
             commit_state_version,
@@ -480,4 +470,5 @@ pub struct CommittedUserTransactionIdentifiers {
     pub state_version: StateVersion,
     pub transaction_intent_hash: TransactionIntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
+    pub nullifications: Vec<Nullification>,
 }
