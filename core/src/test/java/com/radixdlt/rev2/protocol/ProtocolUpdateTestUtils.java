@@ -70,29 +70,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.Streams;
-import com.google.inject.AbstractModule;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.CoreApiServer;
-import com.radixdlt.api.CoreApiServerModule;
-import com.radixdlt.api.core.generated.api.StatusApi;
-import com.radixdlt.api.core.generated.api.StreamApi;
-import com.radixdlt.api.core.generated.api.TransactionApi;
-import com.radixdlt.api.core.generated.client.ApiClient;
-import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.mempool.MempoolAdd;
-import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.Manifest;
 import com.radixdlt.rev2.TransactionBuilder;
@@ -100,8 +86,6 @@ import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.commit.NextEpoch;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.transactions.PreparedNotarizedTransaction;
-import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import java.util.Map;
@@ -252,96 +236,5 @@ public final class ProtocolUpdateTestUtils {
                   .toList();
           assertEquals(fromFlash.getDeletedSubstates(), deletedFromReceipt);
         });
-  }
-
-  public static class CoreApiHelper {
-
-    private final int coreApiPort;
-    private final Network network;
-    private final Addressing addressing;
-
-    public CoreApiHelper(Network network) {
-      this.coreApiPort = FreePortFinder.findFreeLocalPort();
-      this.addressing = Addressing.ofNetwork(network);
-      this.network = network;
-    }
-
-    public Module module() {
-      return new AbstractModule() {
-        @Override
-        protected void configure() {
-          install(new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)));
-        }
-
-        @ProvidesIntoSet
-        private StartProcessorOnRunner startCoreApi(CoreApiServer coreApiServer) {
-          // This is a slightly hacky way to run something on node start-up in a Deterministic test.
-          // Stop is called by the AutoClosable binding in CoreApiServerModule
-          return new StartProcessorOnRunner("coreApi", coreApiServer::start);
-        }
-      };
-    }
-
-    public ApiClient client() {
-      final var apiClient = new ApiClient();
-      apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
-      return apiClient;
-    }
-
-    public TransactionApi transactionApi() {
-      return new TransactionApi(client());
-    }
-
-    public StreamApi streamApi() {
-      return new StreamApi(client());
-    }
-
-    public StatusApi statusApi() {
-      return new StatusApi(client());
-    }
-
-    public TransactionSubmitResponse submit(PreparedNotarizedTransaction transaction)
-        throws ApiException {
-      return transactionApi()
-          .transactionSubmitPost(
-              new TransactionSubmitRequest()
-                  .network(network.getLogicalName())
-                  .notarizedTransactionHex(transaction.hexPayloadBytes()));
-    }
-
-    public TransactionSubmitResponse forceRecalculateSubmit(
-        PreparedNotarizedTransaction transaction) throws ApiException {
-      return transactionApi()
-          .transactionSubmitPost(
-              new TransactionSubmitRequest()
-                  .network(network.getLogicalName())
-                  .forceRecalculate(true)
-                  .notarizedTransactionHex(transaction.hexPayloadBytes()));
-    }
-
-    public TransactionStatusResponse getStatus(PreparedNotarizedTransaction transaction)
-        throws ApiException {
-      return transactionApi()
-          .transactionStatusPost(
-              new TransactionStatusRequest()
-                  .network(network.getLogicalName())
-                  .intentHash(addressing.encode(transaction.transactionIntentHash())));
-    }
-
-    public NetworkStatusResponse getNetworkStatus() throws ApiException {
-      return statusApi()
-          .statusNetworkStatusPost(new NetworkStatusRequest().network(network.getLogicalName()));
-    }
-
-    public CommittedTransaction getTransactionFromStream(long stateVersion) throws ApiException {
-      return streamApi()
-          .streamTransactionsPost(
-              new StreamTransactionsRequest()
-                  .network(network.getLogicalName())
-                  .fromStateVersion(stateVersion)
-                  .limit(1))
-          .getTransactions()
-          .get(0);
-    }
   }
 }

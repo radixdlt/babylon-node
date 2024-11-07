@@ -90,8 +90,9 @@ public class TransactionV2Builder {
   private int nonce;
   private ECKeyPair notary;
   private boolean notaryIsSignatory;
-  private long subintentCount;
+  private List<Integer> subintentDiscriminators;
   private List<ECKeyPair> signatories;
+  private List<List<ECKeyPair>> subintentSignatories;
 
   public TransactionV2Builder(NetworkDefinition networkDefinition) {
     this.networkDefinition = networkDefinition;
@@ -100,8 +101,9 @@ public class TransactionV2Builder {
     this.nonce = NONCE.getAndIncrement();
     this.notary = DEFAULT_NOTARY;
     this.notaryIsSignatory = false;
-    this.subintentCount = 0;
+    this.subintentDiscriminators = List.of();
     this.signatories = List.of();
+    this.subintentSignatories = List.of();
   }
 
   public static TransactionV2Builder forTests() {
@@ -141,8 +143,10 @@ public class TransactionV2Builder {
     return this;
   }
 
-  public TransactionV2Builder subintentCount(long subintentCount) {
-    this.subintentCount = subintentCount;
+  public TransactionV2Builder subintentDiscriminators(List<Integer> subintentDiscriminators) {
+    this.subintentDiscriminators = subintentDiscriminators;
+    this.subintentSignatories =
+        subintentDiscriminators.stream().map(ignored -> List.<ECKeyPair>of()).toList();
     return this;
   }
 
@@ -156,7 +160,18 @@ public class TransactionV2Builder {
     return this;
   }
 
+  /** Must be called after subintentDiscriminators */
+  public TransactionV2Builder subintentSignatories(List<List<ECKeyPair>> subintentSignatories) {
+    this.subintentSignatories = subintentSignatories;
+    return this;
+  }
+
   public PreparedNotarizedTransaction prepare() {
+    if (subintentSignatories.size() != subintentDiscriminators.size()) {
+      throw new RuntimeException(
+          "subintentSignatories must have the same length as subintentDiscriminators");
+    }
+    var subintentCount = subintentSignatories.size();
     var header =
         TransactionHeader.defaults(
             this.networkDefinition,
@@ -166,7 +181,8 @@ public class TransactionV2Builder {
             this.notary.getPublicKey().toPublicKey(),
             this.notaryIsSignatory);
     var intent =
-        TransactionPreparer.prepareTransactionIntentV2(networkDefinition, header, subintentCount);
+        TransactionPreparer.prepareTransactionIntentV2(
+            networkDefinition, header, subintentDiscriminators);
     var intentSignatures =
         this.signatories.stream()
             .map(
@@ -175,9 +191,24 @@ public class TransactionV2Builder {
                         .sign(intent.transactionIntentHash().inner())
                         .toSignatureWithPublicKey())
             .toList();
+    var subintentSignatures =
+        IntStream.range(0, subintentDiscriminators.size())
+            .mapToObj(
+                i -> {
+                  var subintentHash = intent.subintentHashes().get(i);
+                  var signatories = subintentSignatories.get(i);
+                  var signatures =
+                      signatories.stream()
+                          .map(
+                              ecKeyPair ->
+                                  ecKeyPair.sign(subintentHash.inner()).toSignatureWithPublicKey())
+                          .toList();
+                  return signatures;
+                })
+            .toList();
     var signedIntent =
         TransactionPreparer.prepareSignedIntentV2(
-            intent.transactionIntentBytes(), intentSignatures);
+            intent.transactionIntentBytes(), intentSignatures, subintentSignatures);
     var notarySignature = this.notary.sign(signedIntent.signedIntentHash().inner()).toSignature();
     return TransactionPreparer.prepareNotarizedTransactionV2(
         signedIntent.signedIntentBytes(), notarySignature);
