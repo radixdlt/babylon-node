@@ -1,6 +1,5 @@
-use models::AccountIdentifier;
-
 use crate::prelude::*;
+use models::AccountIdentifier;
 
 pub(crate) async fn handle_construction_derive(
     state: State<MeshApiState>,
