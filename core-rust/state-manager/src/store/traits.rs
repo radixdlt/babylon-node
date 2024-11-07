@@ -188,7 +188,7 @@ pub mod vertex {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_vertex_store_blob.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_vertex_store_blob_cuttlefish.bin"
             ))]
         ]
     }
@@ -241,7 +241,7 @@ pub mod substate {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_substate_node_ancestry_record.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_substate_node_ancestry_record_cuttlefish.bin"
             ))]
         ]
     }
@@ -514,7 +514,7 @@ pub mod commit {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_stale_tree_parts.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_stale_tree_parts_cuttlefish.bin"
             ))]
         ]
     }
@@ -564,7 +564,7 @@ pub mod commit {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_transaction_accu_tree_slice.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_transaction_accu_tree_slice_cuttlefish.bin"
             ))]
         ]
     }
@@ -578,7 +578,7 @@ pub mod commit {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_receipt_accu_tree_slice.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_receipt_accu_tree_slice_cuttlefish.bin"
             ))]
         ]
     }
@@ -602,7 +602,7 @@ pub mod scenario {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_executed_scenario.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_executed_scenario_cuttlefish.bin"
             ))]
         ]
     }
@@ -740,7 +740,7 @@ pub mod indices {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_entity_blueprint_id.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_entity_blueprint_id_cuttlefish.bin"
             ))]
         ]
     }
@@ -780,7 +780,7 @@ pub mod indices {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_object_blueprint_name.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_object_blueprint_name_cuttlefish.bin"
             ))]
         ]
     }
@@ -903,7 +903,7 @@ pub mod gc {
         outer_attributes: [
             #[derive(ScryptoSborAssertion)]
             #[sbor_assert(backwards_compatible(
-                cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_proofs_gc_progress.bin"
+                cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_proofs_gc_progress_cuttlefish.bin"
             ))]
         ]
     }

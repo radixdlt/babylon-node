@@ -281,7 +281,7 @@ define_single_versioned! {
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_transaction_receipt.bin"
+            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_transaction_receipt_cuttlefish.bin"
         ))]
     ]
 }
@@ -320,9 +320,12 @@ define_versioned! {
     },
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_local_transaction_execution.bin"
-        ))]
+        #[sbor_assert(
+            backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_local_transaction_execution_cuttlefish.bin"
+            ),
+            settings(allow_name_changes)
+        )]
     ]
 }
 

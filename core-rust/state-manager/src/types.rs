@@ -467,7 +467,7 @@ define_versioned!(
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_proof.bin"
+            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_proof_cuttlefish.bin"
         ))]
     ]
 );

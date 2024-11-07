@@ -109,7 +109,7 @@ define_single_versioned! {
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_address_book_entry.bin"
+            cuttlefish = "FILE:CF_SCHEMA_versioned_address_book_entry_cuttlefish.bin"
         ))]
     ]
 }
@@ -123,7 +123,7 @@ define_single_versioned! {
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_high_priority_peers.bin"
+            cuttlefish = "FILE:CF_SCHEMA_versioned_high_priority_peers_cuttlefish.bin"
         ))]
     ]
 }
