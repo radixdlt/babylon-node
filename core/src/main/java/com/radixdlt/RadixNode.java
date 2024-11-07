@@ -155,9 +155,11 @@ public final class RadixNode {
     final var engineStateApiServer = injector.getInstance(EngineStateApiServer.class);
     engineStateApiServer.start();
 
-    // Start the Mesh API server
-    final var meshApiServer = injector.getInstance(MeshApiServer.class);
-    meshApiServer.start();
+    // Start the Mesh API server if it's module has been installed
+    if (injector.getExistingBinding(Key.get(MeshApiServer.class)) != null) {
+      final var meshApiServer = injector.getInstance(MeshApiServer.class);
+      meshApiServer.start();
+    }
 
     return radixNode;
   }
