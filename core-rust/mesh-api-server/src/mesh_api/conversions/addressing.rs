@@ -49,15 +49,21 @@ pub fn extract_component_address(
 
 pub fn extract_account(
     extraction_context: &ExtractionContext,
-    account_address: &str,
+    account_identifier: &models::AccountIdentifier,
 ) -> Result<ComponentAddress, ExtractionError> {
-    let component_address = extract_component_address(extraction_context, account_address)?;
+    if account_identifier.sub_account.is_some() {
+        return Err(ExtractionError::InvalidAccount {
+            message: format!("Sub accounts not supported"),
+        });
+    }
+    let component_address =
+        extract_component_address(extraction_context, &account_identifier.address)?;
 
     if component_address.as_node_id().is_global_account() {
         Ok(component_address)
     } else {
         Err(ExtractionError::InvalidAccount {
-            message: format!("address {} is not an account", account_address),
+            message: format!("address {} is not an account", account_identifier.address),
         })
     }
 }

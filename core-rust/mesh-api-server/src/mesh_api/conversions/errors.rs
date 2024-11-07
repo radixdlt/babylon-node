@@ -73,8 +73,10 @@ impl ExtractionError {
     pub(crate) fn into_response_error(self, field_name: &str) -> ResponseError {
         // TODO make sure ExtractionError map to more adequate ApiError
         // variant than ApiError::InvalidRequest
-        ResponseError::from(ApiError::InvalidRequest)
-            .with_details(format!("Could not extract {field_name} from request"))
+        ResponseError::from(ApiError::InvalidRequest).with_details(format!(
+            "Could not extract {field_name} from request, {:?}",
+            self
+        ))
     }
 }
 

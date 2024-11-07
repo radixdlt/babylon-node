@@ -5,15 +5,13 @@ pub(crate) async fn handle_account_balance(
     Json(request): Json<models::AccountBalanceRequest>,
 ) -> Result<Json<models::AccountBalanceResponse>, ResponseError> {
     assert_matching_network(&request.network_identifier, &state.network)?;
-    assert_account(&request.account_identifier)?;
 
     let mapping_context = MappingContext::new(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
 
-    let component_address =
-        extract_account(&extraction_context, &request.account_identifier.address)
-            // TODO:MESH Return something more precise than InvalidRequest
-            .map_err(|err| err.into_response_error("account_identifier.address"))?;
+    let component_address = extract_account(&extraction_context, &request.account_identifier)
+        // TODO:MESH Return something more precise than InvalidRequest
+        .map_err(|err| err.into_response_error("account_identifier"))?;
 
     let database = state.state_manager.database.snapshot();
 
