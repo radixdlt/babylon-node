@@ -162,6 +162,11 @@ pub async fn create_server<F>(
             post(handle_transaction_preview).layer(DefaultBodyLimit::max(LARGE_REQUEST_MAX_BYTES)),
         )
         .route(
+            "/transaction/preview-v2",
+            post(handle_transaction_preview_v2)
+                .layer(DefaultBodyLimit::max(LARGE_REQUEST_MAX_BYTES)),
+        )
+        .route(
             "/transaction/call-preview",
             post(handle_transaction_callpreview),
         )

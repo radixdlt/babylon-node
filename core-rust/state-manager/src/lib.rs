@@ -95,6 +95,7 @@ pub mod prelude {
     pub use crate::protocol::*;
     pub use crate::query::*;
     pub use crate::receipt::*;
+    pub use crate::state_manager::*;
     pub use crate::store::*;
     pub use crate::transaction::*;
     pub use crate::types::*;
@@ -106,7 +107,6 @@ pub mod prelude {
     pub(crate) use crate::limits::*;
     pub(crate) use crate::metrics::*;
     pub(crate) use crate::staging::*;
-    pub(crate) use crate::state_manager::*;
     pub(crate) use crate::system_commits::*;
     pub(crate) use crate::system_executor::*;
 }

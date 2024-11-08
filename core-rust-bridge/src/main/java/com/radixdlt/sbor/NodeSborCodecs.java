@@ -138,10 +138,12 @@ public final class NodeSborCodecs {
     ProtocolUpdateResult.registerCodec(codecMap);
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);
+    RawPreviewTransaction.registerCodec(codecMap);
     PreparedIntent.registerCodec(codecMap);
     PreparedTransactionIntentV2.registerCodec(codecMap);
     PreparedSignedIntent.registerCodec(codecMap);
     PreparedNotarizedTransaction.registerCodec(codecMap);
+    PreparedPreviewTransaction.registerCodec(codecMap);
     TransactionIntentHash.registerCodec(codecMap);
     SubintentHash.registerCodec(codecMap);
     SignedIntentHash.registerCodec(codecMap);

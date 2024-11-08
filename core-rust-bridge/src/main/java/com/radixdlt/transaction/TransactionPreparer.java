@@ -173,6 +173,19 @@ public final class TransactionPreparer {
           Natives.builder(TransactionPreparer::prepareNotarizedTransactionV2)
               .build(new TypeToken<>() {});
 
+  public static PreparedPreviewTransaction prepareUnsignedPreviewTransactionV2(
+      PreparedTransactionIntentV2 transactionIntent) {
+    return prepareUnsignedPreviewTransactionV2Func
+        .call(tuple(transactionIntent.transactionIntentBytes()))
+        .unwrap(TransactionPreparationException::new);
+  }
+
+  private static final Natives.Call1<
+          Tuple.Tuple1<byte[]>, Result<PreparedPreviewTransaction, String>>
+      prepareUnsignedPreviewTransactionV2Func =
+          Natives.builder(TransactionPreparer::prepareUnsignedPreviewTransactionV2)
+              .build(new TypeToken<>() {});
+
   public static RawLedgerTransaction rawNotarizedTransactionToRawLedgerTransaction(
       RawNotarizedTransaction notarized) {
     return userTransactionToLedger.call(notarized).unwrap(TransactionPreparationException::new);
@@ -193,6 +206,8 @@ public final class TransactionPreparer {
   private static native byte[] prepareNotarizedTransaction(byte[] requestPayload);
 
   private static native byte[] prepareNotarizedTransactionV2(byte[] requestPayload);
+
+  private static native byte[] prepareUnsignedPreviewTransactionV2(byte[] requestPayload);
 
   private static native byte[] userTransactionToLedger(byte[] requestPayload);
 }

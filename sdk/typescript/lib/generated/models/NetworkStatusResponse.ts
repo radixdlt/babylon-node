@@ -61,7 +61,7 @@ export interface NetworkStatusResponse {
      * @type {CommittedStateIdentifier}
      * @memberof NetworkStatusResponse
      */
-    current_state_identifier?: CommittedStateIdentifier;
+    current_state_identifier: CommittedStateIdentifier;
     /**
      * 
      * @type {EpochRound}
@@ -82,6 +82,7 @@ export interface NetworkStatusResponse {
 export function instanceOfNetworkStatusResponse(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "pre_genesis_state_identifier" in value;
+    isInstance = isInstance && "current_state_identifier" in value;
     isInstance = isInstance && "current_protocol_version" in value;
 
     return isInstance;
@@ -101,7 +102,7 @@ export function NetworkStatusResponseFromJSONTyped(json: any, ignoreDiscriminato
         'genesis_epoch_round': !exists(json, 'genesis_epoch_round') ? undefined : EpochRoundFromJSON(json['genesis_epoch_round']),
         'post_genesis_state_identifier': !exists(json, 'post_genesis_state_identifier') ? undefined : CommittedStateIdentifierFromJSON(json['post_genesis_state_identifier']),
         'post_genesis_epoch_round': !exists(json, 'post_genesis_epoch_round') ? undefined : EpochRoundFromJSON(json['post_genesis_epoch_round']),
-        'current_state_identifier': !exists(json, 'current_state_identifier') ? undefined : CommittedStateIdentifierFromJSON(json['current_state_identifier']),
+        'current_state_identifier': CommittedStateIdentifierFromJSON(json['current_state_identifier']),
         'current_epoch_round': !exists(json, 'current_epoch_round') ? undefined : EpochRoundFromJSON(json['current_epoch_round']),
         'current_protocol_version': json['current_protocol_version'],
     };

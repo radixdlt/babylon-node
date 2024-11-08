@@ -24,36 +24,36 @@ pub struct TransactionPreviewRequest {
     /// An array of hex-encoded blob data, if referenced by the manifest.
     #[serde(rename = "blobs_hex", skip_serializing_if = "Option::is_none")]
     pub blobs_hex: Option<Vec<String>>,
-    /// An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid. If omitted, the current epoch will be used (taking into account the `at_ledger_state`, if specified). 
+    /// An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid. If not provided, the current epoch will be used (taking into account the `at_ledger_state`, if specified). 
     #[serde(rename = "start_epoch_inclusive", skip_serializing_if = "Option::is_none")]
     pub start_epoch_inclusive: Option<i64>,
-    /// An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid. If omitted, a maximum epoch (relative to the `start_epoch_inclusive`) will be used. 
+    /// An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid. If not provided, a maximum epoch (relative to the `start_epoch_inclusive`) will be used. 
     #[serde(rename = "end_epoch_exclusive", skip_serializing_if = "Option::is_none")]
     pub end_epoch_exclusive: Option<i64>,
     #[serde(rename = "notary_public_key", skip_serializing_if = "Option::is_none")]
     pub notary_public_key: Option<Box<crate::core_api::generated::models::PublicKey>>,
-    /// Whether the notary should count as a signatory (defaults to `false`).
+    /// Whether the notary should be used as a signer (optional). If not provided, this defaults to false. 
     #[serde(rename = "notary_is_signatory", skip_serializing_if = "Option::is_none")]
     pub notary_is_signatory: Option<bool>,
-    /// An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to a 1% fee. 
-    #[serde(rename = "tip_percentage")]
-    pub tip_percentage: i32,
-    /// An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 
-    #[serde(rename = "nonce")]
-    pub nonce: i64,
-    /// A list of public keys to be used as transaction signers
-    #[serde(rename = "signer_public_keys")]
-    pub signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>,
+    /// An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to a 1% fee. If not provided, this defaults to 0. 
+    #[serde(rename = "tip_percentage", skip_serializing_if = "Option::is_none")]
+    pub tip_percentage: Option<i32>,
+    /// An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). If not provided, this defaults to 0. 
+    #[serde(rename = "nonce", skip_serializing_if = "Option::is_none")]
+    pub nonce: Option<i64>,
+    /// A list of public keys to be used as transaction signers. If not provided, this defaults to an empty array. 
+    #[serde(rename = "signer_public_keys", skip_serializing_if = "Option::is_none")]
+    pub signer_public_keys: Option<Vec<crate::core_api::generated::models::PublicKey>>,
     #[serde(rename = "message", skip_serializing_if = "Option::is_none")]
     pub message: Option<Box<crate::core_api::generated::models::TransactionMessage>>,
     #[serde(rename = "options", skip_serializing_if = "Option::is_none")]
     pub options: Option<Box<crate::core_api::generated::models::TransactionPreviewResponseOptions>>,
-    #[serde(rename = "flags")]
-    pub flags: Box<crate::core_api::generated::models::TransactionPreviewRequestFlags>,
+    #[serde(rename = "flags", skip_serializing_if = "Option::is_none")]
+    pub flags: Option<Box<crate::core_api::generated::models::PreviewFlags>>,
 }
 
 impl TransactionPreviewRequest {
-    pub fn new(network: String, manifest: String, tip_percentage: i32, nonce: i64, signer_public_keys: Vec<crate::core_api::generated::models::PublicKey>, flags: crate::core_api::generated::models::TransactionPreviewRequestFlags) -> TransactionPreviewRequest {
+    pub fn new(network: String, manifest: String) -> TransactionPreviewRequest {
         TransactionPreviewRequest {
             network,
             at_ledger_state: None,
@@ -63,12 +63,12 @@ impl TransactionPreviewRequest {
             end_epoch_exclusive: None,
             notary_public_key: None,
             notary_is_signatory: None,
-            tip_percentage,
-            nonce,
-            signer_public_keys,
+            tip_percentage: None,
+            nonce: None,
+            signer_public_keys: None,
             message: None,
             options: None,
-            flags: Box::new(flags),
+            flags: None,
         }
     }
 }

@@ -37,6 +37,27 @@ impl TransactionPreviewer {
 }
 
 impl TransactionPreviewer {
+    pub fn preview_executable(
+        &self,
+        preview_executable: ExecutableTransaction,
+        disable_auth: bool,
+        requested_state_version: Option<StateVersion>,
+    ) -> Result<ProcessedPreviewResult, PreviewerError> {
+        // Note: we need to access a snapshot even if running against historical version, since we
+        // do not want JMT GC to interfere.
+        let database = self
+            .database
+            .snapshot()
+            .scoped_at(requested_state_version)?;
+
+        Ok(self.process_transaction(
+            &database,
+            disable_auth,
+            database.at_ledger_state(),
+            preview_executable,
+        ))
+    }
+
     /// Executes the transaction compiled from the given request in a preview mode.
     pub fn preview(
         &self,
@@ -61,36 +82,8 @@ impl TransactionPreviewer {
             .map_err(PreviewError::TransactionValidationError)?;
         let disable_auth = validated.flags.disable_auth;
         let executable = validated.create_executable();
-        let transaction_logic = self
-            .execution_configurator
-            .wrap_preview_transaction(&executable, disable_auth);
 
-        let receipt = transaction_logic.execute_on(&database);
-        let (state_changes, global_balance_summary) = match &receipt.result {
-            TransactionResult::Commit(commit) => {
-                let state_changes = ProcessedCommitResult::compute_ledger_state_changes(
-                    &database,
-                    &commit.state_updates,
-                );
-                let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
-                    &database,
-                    &state_changes,
-                    &commit.state_update_summary.vault_balance_changes,
-                );
-                (state_changes, global_balance_update.global_balance_summary)
-            }
-            _ => (
-                LedgerStateChanges::default(),
-                GlobalBalanceSummary::default(),
-            ),
-        };
-
-        Ok(ProcessedPreviewResult {
-            base_ledger_state,
-            receipt,
-            state_changes,
-            global_balance_summary,
-        })
+        Ok(self.process_transaction(&database, disable_auth, base_ledger_state, executable))
     }
 
     fn create_intent(
@@ -144,6 +137,46 @@ impl TransactionPreviewer {
             },
             signer_public_keys,
             flags,
+        }
+    }
+
+    fn process_transaction(
+        &self,
+        database: &(impl SubstateDatabase + SubstateNodeAncestryStore),
+        disable_auth: bool,
+        base_ledger_state: LedgerStateSummary,
+        executable: ExecutableTransaction,
+    ) -> ProcessedPreviewResult {
+        let transaction_logic = self
+            .execution_configurator
+            .wrap_preview_transaction(&executable, disable_auth);
+
+        let receipt = transaction_logic.execute_on(database);
+
+        let (state_changes, global_balance_summary) = match &receipt.result {
+            TransactionResult::Commit(commit) => {
+                let state_changes = ProcessedCommitResult::compute_ledger_state_changes(
+                    database,
+                    &commit.state_updates,
+                );
+                let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
+                    database,
+                    &state_changes,
+                    &commit.state_update_summary.vault_balance_changes,
+                );
+                (state_changes, global_balance_update.global_balance_summary)
+            }
+            _ => (
+                LedgerStateChanges::default(),
+                GlobalBalanceSummary::default(),
+            ),
+        };
+
+        ProcessedPreviewResult {
+            base_ledger_state,
+            receipt,
+            state_changes,
+            global_balance_summary,
         }
     }
 }

@@ -180,10 +180,10 @@ public class NetworkStatusResponse {
    * Get currentStateIdentifier
    * @return currentStateIdentifier
   **/
-  @javax.annotation.Nullable
-  @ApiModelProperty(value = "")
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
   @JsonProperty(JSON_PROPERTY_CURRENT_STATE_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
   public CommittedStateIdentifier getCurrentStateIdentifier() {
     return currentStateIdentifier;
@@ -191,7 +191,7 @@ public class NetworkStatusResponse {
 
 
   @JsonProperty(JSON_PROPERTY_CURRENT_STATE_IDENTIFIER)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCurrentStateIdentifier(CommittedStateIdentifier currentStateIdentifier) {
     this.currentStateIdentifier = currentStateIdentifier;
   }

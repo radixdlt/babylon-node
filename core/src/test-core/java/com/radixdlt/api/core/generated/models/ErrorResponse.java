@@ -30,6 +30,7 @@ import com.radixdlt.api.core.generated.models.ErrorResponseType;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.StreamProofsErrorResponse;
 import com.radixdlt.api.core.generated.models.StreamTransactionsErrorResponse;
+import com.radixdlt.api.core.generated.models.TransactionPreviewV2ErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -61,6 +62,8 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = StreamProofsErrorResponse.class, name = "StreamProofsErrorResponse"),
   @JsonSubTypes.Type(value = StreamTransactionsErrorResponse.class, name = "StreamTransactions"),
   @JsonSubTypes.Type(value = StreamTransactionsErrorResponse.class, name = "StreamTransactionsErrorResponse"),
+  @JsonSubTypes.Type(value = TransactionPreviewV2ErrorResponse.class, name = "TransactionPreviewV2"),
+  @JsonSubTypes.Type(value = TransactionPreviewV2ErrorResponse.class, name = "TransactionPreviewV2ErrorResponse"),
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmitErrorResponse"),
 })
@@ -242,6 +245,8 @@ static {
   mappings.put("StreamProofsErrorResponse", StreamProofsErrorResponse.class);
   mappings.put("StreamTransactions", StreamTransactionsErrorResponse.class);
   mappings.put("StreamTransactionsErrorResponse", StreamTransactionsErrorResponse.class);
+  mappings.put("TransactionPreviewV2", TransactionPreviewV2ErrorResponse.class);
+  mappings.put("TransactionPreviewV2ErrorResponse", TransactionPreviewV2ErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);
   mappings.put("TransactionSubmitErrorResponse", TransactionSubmitErrorResponse.class);
   mappings.put("ErrorResponse", ErrorResponse.class);

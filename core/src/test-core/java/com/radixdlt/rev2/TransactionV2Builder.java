@@ -67,6 +67,8 @@ package com.radixdlt.rev2;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.transaction.TransactionPreparer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
+import com.radixdlt.transactions.PreparedPreviewTransaction;
+import com.radixdlt.transactions.PreparedTransactionIntentV2;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -166,12 +168,11 @@ public class TransactionV2Builder {
     return this;
   }
 
-  public PreparedNotarizedTransaction prepare() {
+  PreparedTransactionIntentV2 prepareIntent() {
     if (subintentSignatories.size() != subintentDiscriminators.size()) {
       throw new RuntimeException(
           "subintentSignatories must have the same length as subintentDiscriminators");
     }
-    var subintentCount = subintentSignatories.size();
     var header =
         TransactionHeader.defaults(
             this.networkDefinition,
@@ -180,9 +181,12 @@ public class TransactionV2Builder {
             this.nonce,
             this.notary.getPublicKey().toPublicKey(),
             this.notaryIsSignatory);
-    var intent =
-        TransactionPreparer.prepareTransactionIntentV2(
-            networkDefinition, header, subintentDiscriminators);
+    return TransactionPreparer.prepareTransactionIntentV2(
+        networkDefinition, header, subintentDiscriminators);
+  }
+
+  public PreparedNotarizedTransaction prepare() {
+    var intent = prepareIntent();
     var intentSignatures =
         this.signatories.stream()
             .map(
@@ -212,6 +216,11 @@ public class TransactionV2Builder {
     var notarySignature = this.notary.sign(signedIntent.signedIntentHash().inner()).toSignature();
     return TransactionPreparer.prepareNotarizedTransactionV2(
         signedIntent.signedIntentBytes(), notarySignature);
+  }
+
+  public PreparedPreviewTransaction prepareUnsignedPreviewTransaction() {
+    var intent = prepareIntent();
+    return TransactionPreparer.prepareUnsignedPreviewTransactionV2(intent);
   }
 
   public static List<ECKeyPair> createNumericSignatories(int num) {

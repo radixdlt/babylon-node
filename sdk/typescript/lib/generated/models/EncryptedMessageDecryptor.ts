@@ -26,8 +26,11 @@ export interface EncryptedMessageDecryptor {
      */
     public_key_fingerprint_hex: string;
     /**
-     * The hex-encoded wrapped key bytes from applying RFC 3394 (256-bit) AES-KeyWrap to the 128-bit message ephemeral public key, with the secret KEK provided by static Diffie-Helman between the decryptor public key, and the `dh_ephemeral_public_key` for that curve type.
-     * The bytes are serialized (according to RFC 3394) as the concatenation `IV (first 8 bytes) || Cipher (wrapped 128-bit key, encoded as two 64-bit blocks)`.
+     * The hex-encoded wrapped key bytes from applying RFC 3394 (256-bit) AES-KeyWrap to the message ephemeral public key, with the secret KEK provided by static Diffie-Helman between the decryptor public key, and the `dh_ephemeral_public_key` for that curve type.
+     * The bytes are serialized (according to RFC 3394) as the concatenation `IV (first 8 bytes) || Cipher`.
+     * 
+     * The message ephemeral public key is 128-bit in V1 transactions, but 256-bit in V2 transactions.
+     * The Cipher is the wrapped ephemeral public key, and is encoded as two 64-bit blocks in V1, and four 64-bit blocks in V2.
      * @type {string}
      * @memberof EncryptedMessageDecryptor
      */

@@ -90,6 +90,7 @@ impl<E: ErrorDetails> From<MappingError> for ResponseError<E> {
 #[allow(clippy::enum_variant_names)]
 #[allow(unused)] // Debug is ignored for dead code analysis, but is used in the error messages
 pub enum ExtractionError {
+    MissingField,
     InvalidInteger {
         message: String,
     },

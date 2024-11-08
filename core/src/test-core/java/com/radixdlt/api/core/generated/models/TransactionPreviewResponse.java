@@ -153,11 +153,11 @@ public class TransactionPreviewResponse {
   }
 
    /**
-   * An optional field which is only provided if the &#x60;request_radix_engine_toolkit_receipt&#x60; flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information  that is already available in the receipt provided in the &#x60;receipt&#x60; field of this  response.  A typical client of this API is not expected to use this receipt. The primary clients  this receipt is intended for is the Radix wallet or any client that needs to perform  execution summaries on their transactions. 
+   * An optional field which is only provided if the &#x60;radix_engine_toolkit_receipt&#x60; flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information  that is already available in the receipt provided in the &#x60;receipt&#x60; field of this  response.  A typical client of this API is not expected to use this receipt. The primary clients  this receipt is intended for is the Radix wallet or any client that needs to perform  execution summaries on their transactions. 
    * @return radixEngineToolkitReceipt
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "An optional field which is only provided if the `request_radix_engine_toolkit_receipt` flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information  that is already available in the receipt provided in the `receipt` field of this  response.  A typical client of this API is not expected to use this receipt. The primary clients  this receipt is intended for is the Radix wallet or any client that needs to perform  execution summaries on their transactions. ")
+  @ApiModelProperty(value = "An optional field which is only provided if the `radix_engine_toolkit_receipt` flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information  that is already available in the receipt provided in the `receipt` field of this  response.  A typical client of this API is not expected to use this receipt. The primary clients  this receipt is intended for is the Radix wallet or any client that needs to perform  execution summaries on their transactions. ")
   @JsonProperty(JSON_PROPERTY_RADIX_ENGINE_TOOLKIT_RECEIPT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 

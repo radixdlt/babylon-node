@@ -758,9 +758,12 @@ paths:
                 $ref: "#/components/schemas/BasicErrorResponse"
   "/transaction/preview":
     post:
-      summary: Transaction Preview
+      summary: Transaction Preview V1
       description: |
         Preview a transaction against the latest network state, and returns the preview receipt.
+        If the node has enabled it, you may be able to also preview against recent network state.
+
+        For V2 transactions (and beyond) the `/preview-v2` endpoint should be used instead.
       tags:
         - Transaction
       requestBody:
@@ -788,6 +791,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicErrorResponse"
+  "/transaction/preview-v2":
+    post:
+      summary: Transaction Preview V2
+      description: |
+        Previews a transaction against the latest network state, and returns the preview receipt.
+        If the node has enabled it, you may be able to also preview against recent network state.
+
+        This endpoint supports V2 transactions (and beyond). If you still need to preview V1
+        transactions, you should use the `/preview` endpoint instead.
+      tags:
+        - Transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionPreviewV2Request"
+      responses:
+        '200':
+          description: Transaction preview response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionPreviewV2Response"
+        '400':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionPreviewV2ErrorResponse"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionPreviewV2ErrorResponse"
 ##################
 # Stream Sub-API #
 ##################
@@ -1288,6 +1327,7 @@ components:
         - Basic
         - TransactionSubmit
         - LtsTransactionSubmit
+        - TransactionPreviewV2
         - StreamTransactions
         - StreamProofs
     ErrorResponse:
@@ -1299,6 +1339,7 @@ components:
           Basic: "#/components/schemas/BasicErrorResponse"
           TransactionSubmit: "#/components/schemas/TransactionSubmitErrorResponse"
           LtsTransactionSubmit: "#/components/schemas/LtsTransactionSubmitErrorResponse"
+          TransactionPreviewV2: "#/components/schemas/TransactionPreviewV2ErrorResponse"
           StreamTransactions: "#/components/schemas/StreamTransactionsErrorResponse"
           StreamProofs: "#/components/schemas/StreamProofsErrorResponse"
       required:
@@ -6903,6 +6944,7 @@ components:
       required:
         - pre_genesis_state_identifier
         - current_protocol_version
+        - current_state_identifier
       properties:
         pre_genesis_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
@@ -6927,8 +6969,7 @@ components:
         current_state_identifier:
           $ref: "#/components/schemas/CommittedStateIdentifier"
           description: |
-            The current state identifier at the top of the node's copy of the ledger (ie as of the latest committed transaction).
-            It is not present until genesis has been run.
+            The current state identifier at the top of the node's copy of the ledger (i.e. as of the latest committed transaction).
         current_epoch_round:
           $ref: "#/components/schemas/EpochRound"
           description: |
@@ -7703,11 +7744,6 @@ components:
       required:
         - network
         - manifest
-        - cost_unit_limit
-        - tip_percentage
-        - nonce
-        - signer_public_keys
-        - flags
       properties:
         network:
           $ref: "#/components/schemas/NetworkIdentifier"
@@ -7728,7 +7764,8 @@ components:
           maximum: 10000000000
           description: |
             An integer between `0` and `10^10`, marking the epoch at which the transaction starts
-            being valid. If omitted, the current epoch will be used (taking into account the
+            being valid.
+            If not provided, the current epoch will be used (taking into account the
             `at_ledger_state`, if specified).
         end_epoch_exclusive:
           type: integer
@@ -7737,14 +7774,18 @@ components:
           maximum: 10000000000
           description: |
             An integer between `0` and `10^10`, marking the epoch at which the transaction is no
-            longer valid. If omitted, a maximum epoch (relative to the `start_epoch_inclusive`) will
-            be used.
+            longer valid.
+            If not provided, a maximum epoch (relative to the `start_epoch_inclusive`) will be used.
         notary_public_key:
           $ref: "#/components/schemas/PublicKey"
-          description: The notary public key to use (optional).
+          description: |
+            The notary public key to use.
+            If not provided, this defaults to a fixed public key.
         notary_is_signatory:
           type: boolean
-          description: Whether the notary should count as a signatory (defaults to `false`).
+          description: |
+            Whether the notary should be used as a signer (optional).
+            If not provided, this defaults to false.
         tip_percentage:
           type: integer
           format: int32
@@ -7753,6 +7794,7 @@ components:
           description: |
             An integer between `0` and `65535`, giving the validator tip as a percentage amount.
             A value of `1` corresponds to a 1% fee.
+            If not provided, this defaults to 0.
         nonce:
           type: integer
           format: int64
@@ -7761,61 +7803,21 @@ components:
           description: |
             An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created
             (to enable submitting an otherwise identical/duplicate intent).
+            If not provided, this defaults to 0.
         signer_public_keys:
           type: array
           items:
             $ref: "#/components/schemas/PublicKey"
-          description: A list of public keys to be used as transaction signers
+          description: |
+            A list of public keys to be used as transaction signers.
+            If not provided, this defaults to an empty array.
         message:
           description: An optional transaction message. Only affects the costing.
           $ref: "#/components/schemas/TransactionMessage"
         options:
-          description: A set of flags to configure the response of the transaction preview.
           $ref: "#/components/schemas/TransactionPreviewResponseOptions"
         flags:
-          type: object
-          required:
-            - use_free_credit
-            - assume_all_signature_proofs
-            - skip_epoch_check
-          properties:
-            use_free_credit:
-              description: |
-                Whether to use a virtual, preview-only pool of XRD to pay for all execution fees.
-              type: boolean
-            assume_all_signature_proofs:
-              description: |
-                Whether the virtual signature proofs should be automatically placed in the auth zone.
-              type: boolean
-            skip_epoch_check:
-              description: |
-                Whether to skip the epoch range check (i.e. ignoring the `start_epoch_inclusive` and
-                `end_epoch_exclusive` parameters, if specified).
-                
-                Note: effectively, without an epoch range, the Radix Engine cannot perform the
-                *intent hash duplicate* detection, which means that this check will be skipped as well.
-              type: boolean
-            # This was added later so isn't required; for backwards compatibility
-            disable_auth_checks:
-              description: |
-                Whether to skip the auth checks during execution.
-                
-                This could be used to e.g.:
-                * Preview protocol update style transactions.
-                * Mint resources for previewing trades with resources you don't own. If doing this, be warned:
-                  * Only resources which were potentially mintable/burnable at creation time
-                    will be mintable/burnable, due to feature flags on the resource.
-                  * Please see the below warning about unexpected results if using this approach.
-                
-                Warning: this mode of operation is quite a departure from normal operation:
-                * Calculated fees will likely be lower than a standard execution.
-                * This mode can subtly break invariants some dApp code might rely on, or result in unexpected
-                  behaviour, so the resulting execution result might not be valid for your needs. For example,
-                  if I used this flag to mint pool units to preview a redemption (or some dApp interaction which
-                  behind the scenes redeemed them), they'd redeem for less than they're currently worth,
-                  because the blueprint code relies on the total supply of the pool units to calculate their
-                  redemption worth, and you've just inflated the total supply through the mint operation.
-              type: boolean
+          $ref: "#/components/schemas/PreviewFlags"
     TransactionPreviewResponseOptions:
       type: object
       description: A set of flags to configure the response of the transaction preview.
@@ -7854,7 +7856,7 @@ components:
         radix_engine_toolkit_receipt:
           type: object
           description: |
-            An optional field which is only provided if the `request_radix_engine_toolkit_receipt`
+            An optional field which is only provided if the `radix_engine_toolkit_receipt`
             flag is set to true when requesting a transaction preview from the API.
 
             This receipt is primarily intended for use with the toolkit and may contain information 
@@ -7880,7 +7882,223 @@ components:
                 type: string
               message:
                 type: string
-############################
+    PreviewFlags:
+      type: object
+      properties:
+        use_free_credit:
+          description: |
+            If enabled, a large simulated pool of XRD is marked as locked.
+
+            This mode can be used to estimate fees. To get a reliable estimate, we recommend that your
+            transaction is as close as possible to the real transaction. For example:
+            - You should still use a lock fee command, but you can set it to lock a fee of 0.
+            - You should include the public keys that will sign the transaction, so the cost of
+              signature verification and payload size can be accounted for.
+          type: boolean
+        assume_all_signature_proofs:
+          description: |
+            If enabled, each manifest processor's auth zone will be given a simulated proof of
+            every signature, which can be used to pass signature access rules.
+            
+            This can be used to preview transactions even if the required signatures are not
+            known ahead of time.
+
+            See the documentation on
+            [advanced access rules](https://docs.radixdlt.com/docs/advanced-accessrules#signature-requirements)
+            for more information.
+          type: boolean
+        skip_epoch_check:
+          description: |
+            If enabled, the various runtime epoch-related verifications are skipped:
+            - The `start_epoch_inclusive` and `end_epoch_exclusive` parameters, if specified, are ignored.
+            - The duplicate intent checks (which rely on the expiry epoch) are also ignored.
+            
+            However, if the start and end epoch are provided, they must still be statically valid.
+            We recommend using a value of `start_epoch_inclusive = 1` and `end_epoch_exclusive = 2` in this
+            case.
+          type: boolean
+        disable_auth_checks:
+          description: |
+            If enabled, all authorization checks are skipped during execution.
+            
+            This could be used to e.g.:
+            * Preview protocol update style transactions.
+            * Mint resources for previewing trades with resources you don't own.
+              If doing this, be warned: only resources which were potentially mintable/burnable
+              at creation time will be mintable/burnable, due to feature flags on the resource.
+            
+            Warning: this mode of operation is quite a departure from normal operation:
+            * Calculated fees will likely be lower than a standard execution.
+            * This mode can subtly break invariants some dApp code might rely on, or result in unexpected
+              behaviour, so the execution result might not be valid for your needs. For example,
+              if this flag was used to mint pool units to preview a redemption (or some dApp interaction which
+              behind the scenes redeemed them), they'd redeem for less than they're currently worth,
+              because the blueprint code relies on the total supply of the pool units to calculate their
+              redemption worth, and you've just inflated the total supply through the mint operation.
+          type: boolean
+####################################
+# REQUEST: /transaction/preview-v2 #
+####################################
+    TransactionPreviewV2Request:
+      type: object
+      required:
+        - network
+        - preview_transaction
+      properties:
+        network:
+          $ref: "#/components/schemas/NetworkIdentifier"
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSelector"
+        preview_transaction:
+          $ref: "#/components/schemas/PreviewTransaction"
+        flags:
+          $ref: "#/components/schemas/PreviewFlags"
+        options:
+          $ref: "#/components/schemas/TransactionPreviewV2ResponseOptions"
+    TransactionPreviewV2ResponseOptions:
+      type: object
+      description: A set of flags to configure the response of the transaction preview.
+      properties:
+        core_api_receipt:
+          type: boolean
+          description: | 
+            This flag controls whether the preview response will include a Core API receipt or not.
+            If not provided, this defaults to `false` and no core api receipt is provided in
+            the response.
+        radix_engine_toolkit_receipt:
+          type: boolean
+          description: | 
+            This flag controls whether the preview response will include a Radix Engine Toolkit serializable
+            receipt or not. If not provided, this defaults to `false` and no toolkit receipt is provided in
+            the response.
+        logs:
+          type: boolean
+          description: | 
+            This flag controls whether the preview response will include execution logs.
+            If not provided, this defaults to `false` and no logs will be provided in the response.
+    PreviewTransactionType:
+      type: string
+      enum:
+        - Compiled
+    PreviewTransaction:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/PreviewTransactionType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match PreviewTransactionType
+          Compiled: '#/components/schemas/CompiledPreviewTransaction'
+    CompiledPreviewTransaction:
+      allOf:
+        - $ref: "#/components/schemas/PreviewTransaction"
+        - type: object
+          required:
+            - preview_transaction_hex
+          properties:
+            preview_transaction_hex:
+              description: |
+                A hex-encoded, compiled `RawPreviewTransaction`.
+
+                As of Cuttlefish, only `PreviewTransactionV2` is supported.
+
+                A `PreviewTransactionV2` can be created with a v2 transaction builder:
+                * If using Rust, it can be created with a `TransactionV2Builder` using `build_preview_transaction()`
+                  and then converted to hex with `preview_transaction.to_raw().unwrap().to_hex()`
+                * If using the toolkit, you can create this using the v2 transaction builder.
+
+                Some subtleties:
+                * Partial transactions can't be previewed. Instead, they must be wrapped inside a
+                  transaction wrapper, so that the engine knows how to yield to them appropriately.
+                * Currently the builder assumes that the signed partial transactions have real signatures.
+                  This isn't strictly required, and we may create a builder in future which allows providing
+                  public keys when building partial transactions for use in preview.
+                * If you don't have signatures to hand, you can simply not sign the partial transactions,
+                  and then use the `assume_all_signature_proofs` preview flag, although be advised that
+                  this may result in the fee estimate being slightly lower during preview.
+                * We may create more ergonomic builders for PreviewTransactions which allow use of
+                  public keys to denote the signers of subintents. Let us know if this is important
+                  for your use case.
+              type: string
+    TransactionPreviewV2Response:
+      type: object
+      required:
+        - at_ledger_state
+      properties:
+        at_ledger_state:
+          $ref: "#/components/schemas/LedgerStateSummary"
+          description: A summarized state of the ledger on top of which the preview was performed.
+        receipt:
+          description: |
+            This is provided unless the `core_api_receipt` flag is set to false in the `options`
+            property of the request.
+          $ref: "#/components/schemas/TransactionReceipt"
+        radix_engine_toolkit_receipt:
+          type: object
+          description: |
+            An optional field which is only provided if the `radix_engine_toolkit_receipt`
+            flag is set to true in the `options` property of the request.
+
+            This receipt is primarily intended for use with the toolkit and may contain information 
+            that is already available in the receipt provided in the `receipt` field of this 
+            response.
+
+            A typical client of this API is not expected to use this receipt. The primary clients 
+            this receipt is intended for is the Radix wallet or any client that needs to perform 
+            execution summaries on their transactions.
+        logs:
+          type: array
+          description: |
+            An optional field which is only provided if the `logs` flag is set to true in the
+            `options` property of the request.
+
+            If present, it gives the emitted logs from the transaction execution.
+          items:
+            type: object
+            required:
+              - level
+              - message
+            properties:
+              level:
+                type: string
+              message:
+                type: string
+    TransactionPreviewV2ErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/ErrorResponse"
+        - type: object
+          properties:
+            details:
+              $ref: "#/components/schemas/TransactionPreviewV2ErrorDetails"
+    TransactionPreviewV2ErrorDetailsType:
+      type: string
+      enum:
+        - Invalid
+    TransactionPreviewV2ErrorDetails:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/TransactionPreviewV2ErrorDetailsType"
+      discriminator:
+        propertyName: type
+        mapping:
+          # NOTE: These need to match TransactionPreviewV2ErrorDetailsType
+          Invalid: "#/components/schemas/InvalidTransactionPreviewV2ErrorDetails"
+    InvalidTransactionPreviewV2ErrorDetails:
+      allOf:
+        - $ref: "#/components/schemas/TransactionPreviewV2ErrorDetails"
+        - type: object
+          required:
+            - validation_error
+          properties:
+            validation_error:
+              type: string
+###########################
 # REQUEST: /stream/proofs #
 ###########################
     StreamProofsRequest:

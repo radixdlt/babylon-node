@@ -301,7 +301,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .tipPercentage(1)
               .nonce(10L)
               .flags(
-                  new TransactionPreviewRequestFlags()
+                  new PreviewFlags()
                       .useFreeCredit(true)
                       .assumeAllSignatureProofs(true)
                       .skipEpochCheck(true))
@@ -360,7 +360,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .tipPercentage(1)
               .nonce(10L)
               .flags(
-                  new TransactionPreviewRequestFlags()
+                  new PreviewFlags()
                       .useFreeCredit(true)
                       .assumeAllSignatureProofs(true)
                       .skipEpochCheck(true))
@@ -391,7 +391,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .tipPercentage(1)
               .nonce(10L)
               .flags(
-                  new TransactionPreviewRequestFlags()
+                  new PreviewFlags()
                       .useFreeCredit(true)
                       .assumeAllSignatureProofs(true)
                       .skipEpochCheck(true))
@@ -427,7 +427,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
                                     .type(LedgerStateSelectorType.BYSTATEVERSION))
                         .orElse(null))
                 .flags(
-                    new TransactionPreviewRequestFlags()
+                    new PreviewFlags()
                         .useFreeCredit(false)
                         .skipEpochCheck(false)
                         .assumeAllSignatureProofs(true))

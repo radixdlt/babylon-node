@@ -24,6 +24,9 @@ import com.radixdlt.api.core.generated.models.TransactionParseRequest;
 import com.radixdlt.api.core.generated.models.TransactionParseResponse;
 import com.radixdlt.api.core.generated.models.TransactionPreviewRequest;
 import com.radixdlt.api.core.generated.models.TransactionPreviewResponse;
+import com.radixdlt.api.core.generated.models.TransactionPreviewV2ErrorResponse;
+import com.radixdlt.api.core.generated.models.TransactionPreviewV2Request;
+import com.radixdlt.api.core.generated.models.TransactionPreviewV2Response;
 import com.radixdlt.api.core.generated.models.TransactionReceiptRequest;
 import com.radixdlt.api.core.generated.models.TransactionReceiptResponse;
 import com.radixdlt.api.core.generated.models.TransactionStatusRequest;
@@ -244,8 +247,8 @@ public class TransactionApi {
     return localVarRequestBuilder;
   }
   /**
-   * Transaction Preview
-   * Preview a transaction against the latest network state, and returns the preview receipt. 
+   * Transaction Preview V1
+   * Preview a transaction against the latest network state, and returns the preview receipt. If the node has enabled it, you may be able to also preview against recent network state.  For V2 transactions (and beyond) the &#x60;/preview-v2&#x60; endpoint should be used instead. 
    * @param transactionPreviewRequest  (required)
    * @return TransactionPreviewResponse
    * @throws ApiException if fails to make API call
@@ -256,8 +259,8 @@ public class TransactionApi {
   }
 
   /**
-   * Transaction Preview
-   * Preview a transaction against the latest network state, and returns the preview receipt. 
+   * Transaction Preview V1
+   * Preview a transaction against the latest network state, and returns the preview receipt. If the node has enabled it, you may be able to also preview against recent network state.  For V2 transactions (and beyond) the &#x60;/preview-v2&#x60; endpoint should be used instead. 
    * @param transactionPreviewRequest  (required)
    * @return ApiResponse&lt;TransactionPreviewResponse&gt;
    * @throws ApiException if fails to make API call
@@ -309,6 +312,84 @@ public class TransactionApi {
 
     try {
       byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(transactionPreviewRequest);
+      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    if (memberVarReadTimeout != null) {
+      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    }
+    if (memberVarInterceptor != null) {
+      memberVarInterceptor.accept(localVarRequestBuilder);
+    }
+    return localVarRequestBuilder;
+  }
+  /**
+   * Transaction Preview V2
+   * Previews a transaction against the latest network state, and returns the preview receipt. If the node has enabled it, you may be able to also preview against recent network state.  This endpoint supports V2 transactions (and beyond). If you still need to preview V1 transactions, you should use the &#x60;/preview&#x60; endpoint instead. 
+   * @param transactionPreviewV2Request  (required)
+   * @return TransactionPreviewV2Response
+   * @throws ApiException if fails to make API call
+   */
+  public TransactionPreviewV2Response transactionPreviewV2Post(TransactionPreviewV2Request transactionPreviewV2Request) throws ApiException {
+    ApiResponse<TransactionPreviewV2Response> localVarResponse = transactionPreviewV2PostWithHttpInfo(transactionPreviewV2Request);
+    return localVarResponse.getData();
+  }
+
+  /**
+   * Transaction Preview V2
+   * Previews a transaction against the latest network state, and returns the preview receipt. If the node has enabled it, you may be able to also preview against recent network state.  This endpoint supports V2 transactions (and beyond). If you still need to preview V1 transactions, you should use the &#x60;/preview&#x60; endpoint instead. 
+   * @param transactionPreviewV2Request  (required)
+   * @return ApiResponse&lt;TransactionPreviewV2Response&gt;
+   * @throws ApiException if fails to make API call
+   */
+  public ApiResponse<TransactionPreviewV2Response> transactionPreviewV2PostWithHttpInfo(TransactionPreviewV2Request transactionPreviewV2Request) throws ApiException {
+    HttpRequest.Builder localVarRequestBuilder = transactionPreviewV2PostRequestBuilder(transactionPreviewV2Request);
+    try {
+      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
+          localVarRequestBuilder.build(),
+          HttpResponse.BodyHandlers.ofInputStream());
+      if (memberVarResponseInterceptor != null) {
+        memberVarResponseInterceptor.accept(localVarResponse);
+      }
+      try {
+        if (localVarResponse.statusCode()/ 100 != 2) {
+          throw getApiException("transactionPreviewV2Post", localVarResponse);
+        }
+        return new ApiResponse<TransactionPreviewV2Response>(
+          localVarResponse.statusCode(),
+          localVarResponse.headers().map(),
+          memberVarObjectMapper.readValue(localVarResponse.body(), new TypeReference<TransactionPreviewV2Response>() {}) // closes the InputStream
+          
+        );
+      } finally {
+      }
+    } catch (IOException e) {
+      throw new ApiException(e);
+    }
+    catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ApiException(e);
+    }
+  }
+
+  private HttpRequest.Builder transactionPreviewV2PostRequestBuilder(TransactionPreviewV2Request transactionPreviewV2Request) throws ApiException {
+    // verify the required parameter 'transactionPreviewV2Request' is set
+    if (transactionPreviewV2Request == null) {
+      throw new ApiException(400, "Missing the required parameter 'transactionPreviewV2Request' when calling transactionPreviewV2Post");
+    }
+
+    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+
+    String localVarPath = "/transaction/preview-v2";
+
+    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+
+    localVarRequestBuilder.header("Content-Type", "application/json");
+    localVarRequestBuilder.header("Accept", "application/json");
+
+    try {
+      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(transactionPreviewV2Request);
       localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
     } catch (IOException e) {
       throw new ApiException(e);

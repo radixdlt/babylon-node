@@ -16,6 +16,7 @@ import { exists, mapValues } from '../runtime';
 /**
  * Represents a proof from the execution of the babylon genesis protocol update, which starts
  * the babylon-node ledger.
+ * 
  * Behind-the-scenes, this is now the same as a `ProtocolUpdateLedgerProofOrigin`,
  * but is kept separate for backwards-compatibility.
  * 
@@ -24,7 +25,7 @@ import { exists, mapValues } from '../runtime';
  * 
  * * `batch_group_idx` (placeholder of 0)
  * * `batch_group_name` (placeholder of "")
- * * `batch_idx` (whatever the non-grouped index was)
+ * * `batch_idx` (placeholder of 0)
  * * `batch_name` (placeholder of "")
  * * `is_end_of_update` (placeholder of false)
  * @export
