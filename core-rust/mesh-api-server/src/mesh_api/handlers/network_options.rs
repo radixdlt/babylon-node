@@ -30,7 +30,8 @@ pub(crate) async fn handle_network_options(
             errors: list_available_api_errors(),
             historical_balance_lookup: false,
             timestamp_start_index: proof_iter.find_map(|p| {
-                if p.ledger_header.proposer_timestamp_ms != 0 {
+                // Observed that some timestamp are 0 or 1
+                if p.ledger_header.proposer_timestamp_ms > 1 {
                     Some(
                         to_mesh_api_block_index_from_state_version(p.ledger_header.state_version)
                             .unwrap(),
