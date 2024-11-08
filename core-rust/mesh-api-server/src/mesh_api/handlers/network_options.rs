@@ -10,12 +10,19 @@ pub(crate) async fn handle_network_options(
 
     let mut proof_iter = database.get_proof_iter(StateVersion::pre_genesis());
 
+    // TODO:MESH for some reason the version sometimes is empty
+    let node_version = if state.node_display_version.is_empty() {
+        "unknown"
+    } else {
+        &state.node_display_version
+    };
+
     // See https://docs.cdp.coinbase.com/mesh/docs/models#networkoptionsresponse for field
     // definitions
     Ok(Json(models::NetworkOptionsResponse {
         version: Box::new(models::Version {
             rosetta_version: SCHEMA_VERSION.to_string(),
-            node_version: state.node_display_version.clone(),
+            node_version: node_version.to_string(),
             middleware_version: None,
             metadata: None,
         }),
