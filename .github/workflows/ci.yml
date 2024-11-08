@@ -255,7 +255,7 @@ jobs:
         env:
           # This is to skip keygen step
           RADIXDLT_NODE_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=
-        run: ./gradlew :core:run --info &
+        run: ./gradlew :core:run --info --daemon &
       - name: Wait for 2 minutes
         run: sleep 2m
       - name: Run mesh-cli tests (TODO:MESH add other checks)
