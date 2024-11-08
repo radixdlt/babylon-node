@@ -54,7 +54,7 @@ pub fn extract_component_address(
         .ok_or(ExtractionError::InvalidAddress)
 }
 
-pub fn to_mesh_api_acount_from_address(
+pub fn to_mesh_api_account_from_address(
     mapping_context: &MappingContext,
     address: impl AsRef<NodeId>,
 ) -> Result<models::AccountIdentifier, MappingError> {

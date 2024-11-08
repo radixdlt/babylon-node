@@ -24,7 +24,7 @@ pub(crate) async fn handle_block(
         .get_committed_transaction_identifiers(state_version)
         .ok_or_else(|| {
             ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
-                "No transaction at given index {}",
+                "Failed fetching transaction identifiers for state version {}",
                 state_version.number()
             ))
         })?;
@@ -36,26 +36,25 @@ pub(crate) async fn handle_block(
             // Unfortunately non-user transactions don't have txid,
             // let's use state_version as transaction_identifier.
             None => (vec![], format!("state_version_{}", state_version)),
-            Some(h) => {
+            Some(user_hashes) => {
                 let local_transaction_execution = database
                     .get_committed_local_transaction_execution(state_version)
                     .ok_or_else(|| {
                         ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
-                            "Failed fetching transaction exectution for state version {}",
+                            "Failed fetching transaction execution for state version {}",
                             state_version.number()
                         ))
                     })?;
 
-                let mut operations = vec![];
-
                 let mapping_context = MappingContext::new(&state.network);
 
                 let transaction_identifier =
-                    to_api_hash_bech32m(&mapping_context, &h.transaction_intent_hash)?;
+                    to_api_hash_bech32m(&mapping_context, &user_hashes.transaction_intent_hash)?;
 
                 let status = MeshApiOperationStatus::from(local_transaction_execution.outcome);
 
                 let mut index = 0_i64;
+                let mut operations = vec![];
                 for (address, balance_changes) in local_transaction_execution
                     .global_balance_summary
                     .global_balance_changes
@@ -104,6 +103,7 @@ pub(crate) async fn handle_block(
         metadata: None,
     };
 
+    // see https://docs.cdp.coinbase.com/mesh/docs/models#blockresponse
     Ok(Json(models::BlockResponse {
         block: Some(Box::new(block)),
         other_transactions: None,

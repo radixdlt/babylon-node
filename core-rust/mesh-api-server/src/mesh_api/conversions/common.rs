@@ -15,11 +15,11 @@ pub fn to_mesh_api_operation(
     } else {
         MeshApiOperationTypes::Withdraw
     };
-
     let currency =
         to_mesh_api_currency_from_resource_address(mapping_context, database, resource_address)?;
+    let account = to_mesh_api_account_from_address(mapping_context, account_address)?;
 
-    let account = to_mesh_api_acount_from_address(mapping_context, account_address)?;
+    // see https://docs.cdp.coinbase.com/mesh/docs/models#operation
     Ok(models::Operation {
         operation_identifier: Box::new(models::OperationIdentifier::new(index)),
         related_operations: None,
