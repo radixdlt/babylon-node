@@ -39,6 +39,6 @@ tower-http = { workspace = true }
 hyper = { workspace = true }
 paste = { workspace = true }
 
-convert_case = { version = "=0.6.0" }
-regex = { version = "=1.9.3"}
-lazy_static = { version = "=1.4.0" }
+convert_case = { version = "0.6.0" }
+regex = { version = "1.9.3"}
+lazy_static = { version = "1.4.0" }

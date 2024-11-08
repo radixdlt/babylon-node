@@ -23,10 +23,10 @@ tokio-util = { workspace = true }
 prometheus = { workspace = true }
 blake2 = { workspace = true }
 
-bech32 = { version = "=0.9.1", default-features = false }
-parking_lot = { version = "=0.12.1" }
-tracing-opentelemetry = { version = "=0.18.0" }
-tracing-subscriber = { version = "=0.3.17" }
-opentelemetry = { version = "=0.18.0", default-features = false, features = ["rt-tokio", "trace"] }
-opentelemetry-jaeger = { version = "=0.17.0", features = ["rt-tokio"] }
-rocksdb = { version = "=0.21.0" }
+bech32 = { version = "0.9.1", default-features = false }
+parking_lot = { version = "0.12.1" }
+tracing-opentelemetry = { version = "0.18.0" }
+tracing-subscriber = { version = "0.3.17" }
+opentelemetry = { version = "0.18.0", default-features = false, features = ["rt-tokio", "trace"] }
+opentelemetry-jaeger = { version = "0.17.0", features = ["rt-tokio"] }
+rocksdb = { version = "0.21.0" }
