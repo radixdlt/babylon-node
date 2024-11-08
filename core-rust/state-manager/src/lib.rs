@@ -65,7 +65,7 @@
 extern crate core;
 
 mod accumulator_tree;
-mod commit_bundle;
+pub mod commit_bundle;
 mod committer;
 pub mod jni;
 mod limits;
@@ -87,8 +87,8 @@ mod test;
 
 pub mod prelude {
     // Other prelude re-exports
-    pub(crate) use crate::engine_prelude::*;
-    pub(crate) use node_common::prelude::*;
+    pub use crate::engine_prelude::*;
+    pub use node_common::prelude::*;
 
     // Public prelude
     pub use crate::mempool::*;
@@ -100,20 +100,20 @@ pub mod prelude {
     pub use crate::types::*;
 
     // Extra items on the internal prelude
-    pub(crate) use crate::accumulator_tree::*;
-    pub(crate) use crate::committer::*;
-    pub(crate) use crate::jni::LedgerSyncLimitsConfig;
-    pub(crate) use crate::limits::*;
-    pub(crate) use crate::metrics::*;
-    pub(crate) use crate::staging::*;
-    pub(crate) use crate::state_manager::*;
-    pub(crate) use crate::system_commits::*;
-    pub(crate) use crate::system_executor::*;
+    pub use crate::accumulator_tree::*;
+    pub use crate::committer::*;
+    pub use crate::jni::LedgerSyncLimitsConfig;
+    pub use crate::limits::*;
+    pub use crate::metrics::*;
+    pub use crate::staging::*;
+    pub use crate::state_manager::*;
+    pub use crate::system_commits::*;
+    pub use crate::system_executor::*;
 }
 
 pub mod jni_prelude {
     pub use crate::jni::node_rust_environment::*;
-    pub(crate) use crate::prelude::*;
+    pub use crate::prelude::*;
     pub use node_common::jni_prelude::*;
 }
 

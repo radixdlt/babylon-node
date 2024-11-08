@@ -29,7 +29,7 @@ impl ResponseForPanic for InternalServerErrorResponseForPanic {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct ResponseError {
+pub struct ResponseError {
     status_code: StatusCode,
     public_error_message: String,
     public_details: Option<models::ErrorDetails>,

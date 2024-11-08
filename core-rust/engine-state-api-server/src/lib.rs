@@ -69,16 +69,16 @@ mod engine_state_api;
 pub mod jni;
 
 #[allow(unused_imports)]
-pub(crate) mod prelude {
-    pub(crate) use crate::engine_prelude::*;
-    pub(crate) use node_common::prelude::*;
-    pub(crate) use state_manager::prelude::*;
+pub mod prelude {
+    pub use crate::engine_prelude::*;
+    pub use node_common::prelude::*;
+    pub use state_manager::prelude::*;
 
-    pub(crate) use crate::engine_state_api::*;
-    pub(crate) use historical_state::*;
+    pub use crate::engine_state_api::*;
+    pub use historical_state::*;
 
     // Axum imports
-    pub(crate) use axum::{
+    pub use axum::{
         body::BoxBody,
         http::Uri,
         response::{IntoResponse, Response},
@@ -86,12 +86,12 @@ pub(crate) mod prelude {
     };
 }
 
-pub(crate) mod jni_prelude {
-    pub(crate) use crate::prelude::*;
-    pub(crate) use state_manager::jni_prelude::*;
+pub mod jni_prelude {
+    pub use crate::prelude::*;
+    pub use state_manager::jni_prelude::*;
 }
 
-pub(crate) mod engine_prelude {
+pub mod engine_prelude {
     pub use radix_blueprint_schema_init::*;
 
     pub use radix_engine::object_modules::metadata::*;

@@ -99,7 +99,7 @@ impl ErrorDetails for StreamProofsErrorDetails {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct InternalServerErrorResponseForPanic;
+pub struct InternalServerErrorResponseForPanic;
 
 impl ResponseForPanic for InternalServerErrorResponseForPanic {
     type ResponseBody = BoxBody;
@@ -116,7 +116,7 @@ impl ResponseForPanic for InternalServerErrorResponseForPanic {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct ResponseError<E: ErrorDetails> {
+pub struct ResponseError<E: ErrorDetails> {
     status_code: StatusCode,
     public_error_message: String,
     trace: Option<LogTraceId>,
@@ -141,7 +141,7 @@ impl<E: ErrorDetails> IntoResponse for ResponseError<E> {
     }
 }
 
-pub(crate) fn assert_matching_network<E: ErrorDetails>(
+pub fn assert_matching_network<E: ErrorDetails>(
     request_network: &str,
     network_definition: &NetworkDefinition,
 ) -> Result<(), ResponseError<E>> {
@@ -154,7 +154,7 @@ pub(crate) fn assert_matching_network<E: ErrorDetails>(
     Ok(())
 }
 
-pub(crate) fn assert_unbounded_endpoints_flag_enabled<E: ErrorDetails>(
+pub fn assert_unbounded_endpoints_flag_enabled<E: ErrorDetails>(
     state: &CoreApiState,
 ) -> Result<(), ResponseError<E>> {
     if !state.flags.enable_unbounded_endpoints {
@@ -189,7 +189,7 @@ impl<E: ErrorDetails> From<PreviewerError> for ResponseError<E> {
 }
 
 // TODO - Add logging, metrics and tracing for all of these errors - require the error is passed in here
-pub(crate) fn client_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
+pub fn client_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::BAD_REQUEST,
         public_error_message: message.into(),
@@ -198,7 +198,7 @@ pub(crate) fn client_error<E: ErrorDetails>(message: impl Into<String>) -> Respo
     }
 }
 
-pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
+pub fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::NOT_FOUND,
         public_error_message: message.into(),
@@ -207,7 +207,7 @@ pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> Re
     }
 }
 
-pub(crate) fn server_error<E: ErrorDetails>(public_message: impl Into<String>) -> ResponseError<E> {
+pub fn server_error<E: ErrorDetails>(public_message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::INTERNAL_SERVER_ERROR,
         public_error_message: public_message.into(),
@@ -216,7 +216,7 @@ pub(crate) fn server_error<E: ErrorDetails>(public_message: impl Into<String>) -
     }
 }
 
-pub(crate) fn detailed_error<E: ErrorDetails>(
+pub fn detailed_error<E: ErrorDetails>(
     status_code: StatusCode,
     public_message: impl Into<String>,
     details: impl Into<E>,
@@ -229,7 +229,7 @@ pub(crate) fn detailed_error<E: ErrorDetails>(
     }
 }
 
-pub(crate) fn length_limit_error<E: ErrorDetails>() -> ResponseError<E> {
+pub fn length_limit_error<E: ErrorDetails>() -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::PAYLOAD_TOO_LARGE,
         public_error_message: "length limit exceeded".into(),

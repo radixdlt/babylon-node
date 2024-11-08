@@ -77,16 +77,17 @@ mod server;
 #[allow(clippy::all)]
 mod generated;
 
-pub(crate) use constants::*;
-pub(crate) use conversions::*;
-pub(crate) use errors::*;
-pub(crate) use extractors::*;
-pub(crate) use helpers::*;
-pub(crate) use server::{create_server, CoreApiServerConfig, CoreApiState};
+pub use constants::*;
+pub use conversions::*;
+pub use errors::*;
+pub use extractors::*;
+pub use handlers::*;
+pub use helpers::*;
+pub use server::*;
 
-pub(crate) mod models {
-    pub(crate) use super::generated::models::*;
-    pub(crate) use super::generated::SCHEMA_VERSION;
+pub mod models {
+    pub use super::generated::models::*;
+    pub use super::generated::SCHEMA_VERSION;
 }
 
 // Re-exports for handlers
