@@ -21,10 +21,7 @@ pub(crate) async fn handle_construction_payloads(
     } else {
         return Err(client_error("Missing public_keys", false));
     };
-    let address = state
-        .address_encoder()
-        .encode(ComponentAddress::preallocated_account_from_public_key(&public_key).as_bytes())
-        .expect("Failed to encode account address");
+    let address = state.public_key_to_address(public_key);
 
     let mut builder = ManifestBuilder::new();
     for operation in request.operations {
