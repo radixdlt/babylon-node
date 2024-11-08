@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use hyper::StatusCode;
+use models::SignatureType;
 use std::any::Any;
 use std::borrow::Borrow;
 
@@ -291,6 +292,35 @@ pub(crate) fn assert_public_key(
         )),
         _ => Err(client_error(
             format!("Invalid curve type: {:?}", &public_key.curve_type),
+            false,
+        )),
+    }
+}
+
+pub(crate) fn assert_signature(
+    signature: &crate::mesh_api::generated::models::Signature,
+) -> Result<SignatureV1, ResponseError> {
+    match signature.signature_type {
+        SignatureType::Ecdsa => Ok(SignatureV1::Secp256k1(
+            from_hex(&signature.hex_bytes)
+                .ok()
+                .and_then(|bytes| Secp256k1Signature::try_from(bytes.as_slice()).ok())
+                .ok_or(client_error(
+                    format!("Invalid Secp256k1 signature: {}", signature.hex_bytes),
+                    false,
+                ))?,
+        )),
+        SignatureType::Ed25519 => Ok(SignatureV1::Ed25519(
+            from_hex(&signature.hex_bytes)
+                .ok()
+                .and_then(|bytes| Ed25519Signature::try_from(bytes.as_slice()).ok())
+                .ok_or(client_error(
+                    format!("Invalid Ed25519 signature: {}", signature.hex_bytes),
+                    false,
+                ))?,
+        )),
+        _ => Err(client_error(
+            format!("Invalid signature type: {:?}", &signature.signature_type),
             false,
         )),
     }

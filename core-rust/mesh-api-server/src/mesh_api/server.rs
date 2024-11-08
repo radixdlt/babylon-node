@@ -134,8 +134,9 @@ pub async fn create_server<F>(
         .route("/construction/metadata", post(handle_construction_metadata))
         .route("/construction/payloads", post(handle_construction_payloads))
         .route("/construction/parse", post(handle_construction_parse))
+        .route("/construction/combine", post(handle_construction_combine))
         .route("/construction/hash", post(handle_construction_hash))
-        .route("/construction/submit", post(handle_endpoint_todo))
+        .route("/construction/submit", post(handle_construction_submit))
         // Below endpoints are optional
         .route("/call", post(handle_endpoint_not_supported))
         .route("/search/transaction", post(handle_endpoint_not_supported))
