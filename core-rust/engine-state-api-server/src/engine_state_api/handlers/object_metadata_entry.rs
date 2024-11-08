@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_object_metadata_entry(
+pub async fn handle_object_metadata_entry(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectMetadataEntryRequest>,
 ) -> Result<Json<models::ObjectMetadataEntryResponse>, ResponseError> {

@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_kv_store_entry(
+pub async fn handle_kv_store_entry(
     state: State<EngineStateApiState>,
     Json(request): Json<models::KeyValueStoreEntryRequest>,
 ) -> Result<Json<models::KeyValueStoreEntryResponse>, ResponseError> {

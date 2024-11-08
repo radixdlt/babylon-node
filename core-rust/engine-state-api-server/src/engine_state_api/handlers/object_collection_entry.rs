@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_object_collection_entry(
+pub async fn handle_object_collection_entry(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectCollectionEntryRequest>,
 ) -> Result<Json<models::ObjectCollectionEntryResponse>, ResponseError> {

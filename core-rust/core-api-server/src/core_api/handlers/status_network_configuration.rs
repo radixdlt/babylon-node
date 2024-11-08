@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_status_network_configuration(
+pub async fn handle_status_network_configuration(
     state: State<CoreApiState>,
 ) -> Result<Json<models::NetworkConfigurationResponse>, ResponseError<()>> {
     let network = state.network.clone();

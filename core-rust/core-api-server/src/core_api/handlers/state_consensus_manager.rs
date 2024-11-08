@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_state_consensus_manager(
+pub async fn handle_state_consensus_manager(
     state: State<CoreApiState>,
     Json(request): Json<models::StateConsensusManagerRequest>,
 ) -> Result<Json<models::StateConsensusManagerResponse>, ResponseError<()>> {

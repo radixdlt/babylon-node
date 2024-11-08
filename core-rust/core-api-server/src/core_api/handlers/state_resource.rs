@@ -12,7 +12,7 @@ enum ManagerByType {
     ),
 }
 
-pub(crate) async fn handle_state_resource(
+pub async fn handle_state_resource(
     state: State<CoreApiState>,
     Json(request): Json<models::StateResourceRequest>,
 ) -> Result<Json<models::StateResourceResponse>, ResponseError<()>> {

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use radix_engine_toolkit_common::receipt::RuntimeToolkitTransactionReceipt;
 
-pub(crate) async fn handle_transaction_preview(
+pub async fn handle_transaction_preview(
     state: State<CoreApiState>,
     Json(request): Json<models::TransactionPreviewRequest>,
 ) -> Result<Json<models::TransactionPreviewResponse>, ResponseError<()>> {

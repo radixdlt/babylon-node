@@ -2,7 +2,7 @@ use crate::core_api::handlers::to_api_ledger_proof;
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_stream_proofs(
+pub async fn handle_stream_proofs(
     state: State<CoreApiState>,
     Json(request): Json<models::StreamProofsRequest>,
 ) -> Result<Json<models::StreamProofsResponse>, ResponseError<models::StreamProofsErrorDetails>> {

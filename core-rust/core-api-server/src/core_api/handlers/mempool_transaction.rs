@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_mempool_transaction(
+pub async fn handle_mempool_transaction(
     state: State<CoreApiState>,
     Json(request): Json<models::MempoolTransactionRequest>,
 ) -> Result<Json<models::MempoolTransactionResponse>, ResponseError<()>> {

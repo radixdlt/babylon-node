@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_object_field(
+pub async fn handle_object_field(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectFieldRequest>,
 ) -> Result<Json<models::ObjectFieldResponse>, ResponseError> {

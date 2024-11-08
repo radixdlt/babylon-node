@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use state_manager::query::{dump_component_state, VaultData};
 
-pub(crate) async fn handle_state_account(
+pub async fn handle_state_account(
     state: State<CoreApiState>,
     Json(request): Json<models::StateAccountRequest>,
 ) -> Result<Json<models::StateAccountResponse>, ResponseError<()>> {

@@ -4,7 +4,7 @@ use crate::core_api::handlers::to_api_committed_intent_metadata;
 use models::lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails;
 
 #[tracing::instrument(level = "debug", skip(state))]
-pub(crate) async fn handle_lts_transaction_submit(
+pub async fn handle_lts_transaction_submit(
     State(state): State<CoreApiState>,
     Json(request): Json<models::LtsTransactionSubmitRequest>,
 ) -> Result<

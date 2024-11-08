@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_lts_transaction_status(
+pub async fn handle_lts_transaction_status(
     state: State<CoreApiState>,
     Json(request): Json<models::LtsTransactionStatusRequest>,
 ) -> Result<Json<models::LtsTransactionStatusResponse>, ResponseError<()>> {

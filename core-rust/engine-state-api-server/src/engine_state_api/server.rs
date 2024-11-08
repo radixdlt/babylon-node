@@ -156,7 +156,7 @@ pub async fn create_server<F>(
 }
 
 #[tracing::instrument]
-pub(crate) async fn handle_missing_engine_state_path() -> Result<(), ResponseError> {
+pub async fn handle_missing_engine_state_path() -> Result<(), ResponseError> {
     Err(ResponseError::new(
         StatusCode::NOT_FOUND,
         "Try /engine-state",

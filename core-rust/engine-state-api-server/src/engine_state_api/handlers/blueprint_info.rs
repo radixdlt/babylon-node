@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_blueprint_info(
+pub async fn handle_blueprint_info(
     state: State<EngineStateApiState>,
     Json(request): Json<models::BlueprintInfoRequest>,
 ) -> Result<Json<models::BlueprintInfoResponse>, ResponseError> {

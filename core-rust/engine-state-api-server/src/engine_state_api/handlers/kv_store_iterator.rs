@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_kv_store_iterator(
+pub async fn handle_kv_store_iterator(
     state: State<EngineStateApiState>,
     Json(request): Json<models::KeyValueStoreIteratorRequest>,
 ) -> Result<Json<models::KeyValueStoreIteratorResponse>, ResponseError> {

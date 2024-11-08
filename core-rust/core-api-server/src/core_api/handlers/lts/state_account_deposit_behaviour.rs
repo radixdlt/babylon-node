@@ -5,7 +5,7 @@ use crate::prelude::*;
 const MAX_RESOURCES: usize = 20;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_lts_state_account_deposit_behaviour(
+pub async fn handle_lts_state_account_deposit_behaviour(
     state: State<CoreApiState>,
     Json(request): Json<models::LtsStateAccountDepositBehaviourRequest>,
 ) -> Result<Json<models::LtsStateAccountDepositBehaviourResponse>, ResponseError<()>> {

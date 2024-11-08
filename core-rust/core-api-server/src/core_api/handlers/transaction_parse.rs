@@ -16,7 +16,7 @@ pub struct ParseContext<'a> {
     committability_validator: &'a CommittabilityValidator,
 }
 
-pub(crate) async fn handle_transaction_parse(
+pub async fn handle_transaction_parse(
     state: State<CoreApiState>,
     Json(request): Json<models::TransactionParseRequest>,
 ) -> Result<Json<models::TransactionParseResponse>, ResponseError<()>> {

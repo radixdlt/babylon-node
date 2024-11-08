@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_entity_schema_entry(
+pub async fn handle_entity_schema_entry(
     state: State<EngineStateApiState>,
     Json(request): Json<models::EntitySchemaEntryRequest>,
 ) -> Result<Json<models::EntitySchemaEntryResponse>, ResponseError> {

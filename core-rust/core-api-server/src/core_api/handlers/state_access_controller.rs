@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use super::component_dump_to_vaults_and_nodes;
 
-pub(crate) async fn handle_state_access_controller(
+pub async fn handle_state_access_controller(
     state: State<CoreApiState>,
     Json(request): Json<models::StateAccessControllerRequest>,
 ) -> Result<Json<models::StateAccessControllerResponse>, ResponseError<()>> {

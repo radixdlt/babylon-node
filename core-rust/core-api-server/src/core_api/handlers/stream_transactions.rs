@@ -3,7 +3,7 @@ use crate::prelude::*;
 use super::to_api_committed_state_identifiers;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_stream_transactions(
+pub async fn handle_stream_transactions(
     state: State<CoreApiState>,
     Json(request): Json<models::StreamTransactionsRequest>,
 ) -> Result<

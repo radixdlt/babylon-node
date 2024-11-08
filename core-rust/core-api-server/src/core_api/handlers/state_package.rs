@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_state_package(
+pub async fn handle_state_package(
     state: State<CoreApiState>,
     Json(request): Json<models::StatePackageRequest>,
 ) -> Result<Json<models::StatePackageResponse>, ResponseError<()>> {

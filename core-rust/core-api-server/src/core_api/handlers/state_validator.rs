@@ -1,7 +1,7 @@
 use super::component_dump_to_vaults_and_nodes;
 use crate::prelude::*;
 
-pub(crate) async fn handle_state_validator(
+pub async fn handle_state_validator(
     state: State<CoreApiState>,
     Json(request): Json<models::StateValidatorRequest>,
 ) -> Result<Json<models::StateValidatorResponse>, ResponseError<()>> {

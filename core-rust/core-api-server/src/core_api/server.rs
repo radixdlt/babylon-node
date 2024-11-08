@@ -208,7 +208,7 @@ pub async fn create_server<F>(
 }
 
 #[tracing::instrument]
-pub(crate) async fn handle_no_core_path() -> Result<(), ResponseError<()>> {
+pub async fn handle_no_core_path() -> Result<(), ResponseError<()>> {
     Err(not_found_error("Try /core"))
 }
 

@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_entity_info(
+pub async fn handle_entity_info(
     state: State<EngineStateApiState>,
     Json(request): Json<models::EntityInfoRequest>,
 ) -> Result<Json<models::EntityInfoResponse>, ResponseError> {

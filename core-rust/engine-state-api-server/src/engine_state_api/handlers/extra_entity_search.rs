@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_extra_entity_search(
+pub async fn handle_extra_entity_search(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ExtraEntitySearchRequest>,
 ) -> Result<Json<models::ExtraEntitySearchResponse>, ResponseError> {

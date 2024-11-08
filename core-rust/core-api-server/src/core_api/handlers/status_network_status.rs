@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_status_network_status(
+pub async fn handle_status_network_status(
     state: State<CoreApiState>,
     Json(request): Json<models::NetworkStatusRequest>,
 ) -> Result<Json<models::NetworkStatusResponse>, ResponseError<()>> {

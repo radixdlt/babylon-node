@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_object_collection_iterator(
+pub async fn handle_object_collection_iterator(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectCollectionIteratorRequest>,
 ) -> Result<Json<models::ObjectCollectionIteratorResponse>, ResponseError> {

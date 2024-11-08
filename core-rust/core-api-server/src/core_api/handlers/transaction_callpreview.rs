@@ -11,7 +11,7 @@ macro_rules! args_from_bytes_vec {
 }
 
 #[tracing::instrument(level = "debug", skip_all)]
-pub(crate) async fn handle_transaction_callpreview(
+pub async fn handle_transaction_callpreview(
     State(state): State<CoreApiState>,
     Json(request): Json<models::TransactionCallPreviewRequest>,
 ) -> Result<Json<models::TransactionCallPreviewResponse>, ResponseError<()>> {

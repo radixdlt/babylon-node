@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use crate::core_api::models::StateNonFungibleResponse;
 
-pub(crate) async fn handle_state_non_fungible(
+pub async fn handle_state_non_fungible(
     state: State<CoreApiState>,
     Json(request): Json<models::StateNonFungibleRequest>,
 ) -> Result<Json<StateNonFungibleResponse>, ResponseError<()>> {

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_lts_state_account_fungible_resource_balance(
+pub async fn handle_lts_state_account_fungible_resource_balance(
     state: State<CoreApiState>,
     Json(request): Json<models::LtsStateAccountFungibleResourceBalanceRequest>,
 ) -> Result<Json<models::LtsStateAccountFungibleResourceBalanceResponse>, ResponseError<()>> {

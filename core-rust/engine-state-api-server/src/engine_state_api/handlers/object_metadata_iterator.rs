@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_object_metadata_iterator(
+pub async fn handle_object_metadata_iterator(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectMetadataIteratorRequest>,
 ) -> Result<Json<models::ObjectMetadataIteratorResponse>, ResponseError> {

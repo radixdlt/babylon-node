@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
+pub async fn handle_lts_stream_account_transaction_outcomes(
     state: State<CoreApiState>,
     Json(request): Json<models::LtsStreamAccountTransactionOutcomesRequest>,
 ) -> Result<Json<models::LtsStreamAccountTransactionOutcomesResponse>, ResponseError<()>> {

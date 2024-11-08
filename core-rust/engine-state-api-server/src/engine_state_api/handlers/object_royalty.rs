@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_object_royalty(
+pub async fn handle_object_royalty(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectRoyaltyRequest>,
 ) -> Result<Json<models::ObjectRoyaltyResponse>, ResponseError> {

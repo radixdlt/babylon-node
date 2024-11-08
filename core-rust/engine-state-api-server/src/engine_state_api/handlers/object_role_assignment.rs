@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub(crate) async fn handle_object_role_assignment(
+pub async fn handle_object_role_assignment(
     state: State<EngineStateApiState>,
     Json(request): Json<models::ObjectRoleAssignmentRequest>,
 ) -> Result<Json<models::ObjectRoleAssignmentResponse>, ResponseError> {

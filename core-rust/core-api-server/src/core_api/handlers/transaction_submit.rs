@@ -2,7 +2,7 @@ use crate::prelude::*;
 use models::transaction_submit_error_details::TransactionSubmitErrorDetails;
 
 #[tracing::instrument(level = "debug", skip(state))]
-pub(crate) async fn handle_transaction_submit(
+pub async fn handle_transaction_submit(
     State(state): State<CoreApiState>,
     Json(request): Json<models::TransactionSubmitRequest>,
 ) -> Result<Json<models::TransactionSubmitResponse>, ResponseError<TransactionSubmitErrorDetails>> {

@@ -2,7 +2,7 @@ use crate::core_api::handlers::to_api_committed_transaction;
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_transaction_receipt(
+pub async fn handle_transaction_receipt(
     state: State<CoreApiState>,
     Json(request): Json<models::TransactionReceiptRequest>,
 ) -> Result<Json<models::TransactionReceiptResponse>, ResponseError<()>> {

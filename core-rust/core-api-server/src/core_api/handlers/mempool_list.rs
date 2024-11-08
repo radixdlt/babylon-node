@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[tracing::instrument(level = "debug", skip(state))]
-pub(crate) async fn handle_mempool_list(
+pub async fn handle_mempool_list(
     State(state): State<CoreApiState>,
     Json(request): Json<models::MempoolListRequest>,
 ) -> Result<Json<models::MempoolListResponse>, ResponseError<()>> {

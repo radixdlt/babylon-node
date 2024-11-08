@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
-pub(crate) async fn handle_status_scenarios(
+pub async fn handle_status_scenarios(
     state: State<CoreApiState>,
     Json(request): Json<models::ScenariosRequest>,
 ) -> Result<Json<models::ScenariosResponse>, ResponseError<()>> {

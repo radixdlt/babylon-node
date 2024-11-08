@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use super::map_to_vault_balance;
 
-pub(crate) async fn handle_state_component(
+pub async fn handle_state_component(
     state: State<CoreApiState>,
     Json(request): Json<models::StateComponentRequest>,
 ) -> Result<Json<models::StateComponentResponse>, ResponseError<()>> {
