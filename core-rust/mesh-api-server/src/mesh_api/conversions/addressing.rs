@@ -61,11 +61,6 @@ pub fn to_mesh_api_acount_from_address(
     let node_id: &NodeId = address.as_ref();
     let address = to_api_entity_address(mapping_context, node_id)?;
 
-    println!(
-        "to_mesh_api_acount_from_address node_id = {:?} {}",
-        node_id.is_global_account(),
-        address
-    );
     if !node_id.is_global_account() {
         return Err(MappingError::InvalidAccount {
             message: format!("address {} is not an account", address),

@@ -20,13 +20,12 @@ pub(crate) async fn handle_network_options(
             metadata: None,
         }),
         allow: Box::new(models::Allow {
-            operation_statuses: vec![
-                models::OperationStatus::new("Success".to_string(), true),
-                models::OperationStatus::new("Failure".to_string(), false),
-            ],
-            // TODO::MESH Add enum with operation types
-            // see comment https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830848173
-            operation_types: OperationTypes::iter().map(|o| o.to_string()).collect(),
+            operation_statuses: MeshApiOperationStatus::iter()
+                .map(|s| models::OperationStatus::new(s.to_string(), s.into()))
+                .collect(),
+            operation_types: MeshApiOperationTypes::iter()
+                .map(|o| o.to_string())
+                .collect(),
             errors: list_available_api_errors(),
             historical_balance_lookup: false,
             timestamp_start_index: proof_iter.find_map(|p| {

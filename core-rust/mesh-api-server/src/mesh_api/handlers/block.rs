@@ -35,13 +35,13 @@ pub(crate) async fn handle_block(
             // otherwise mesh-cli returns error.
             // Unfortunately non-user transactions don't have txid,
             // let's use state_version as transaction_identifier.
-            None => (vec![], format!("state_version_{})", state_version)),
+            None => (vec![], format!("state_version_{}", state_version)),
             Some(h) => {
                 let local_transaction_execution = database
                     .get_committed_local_transaction_execution(state_version)
                     .ok_or_else(|| {
                         ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
-                            "Local transaction execution not available {}",
+                            "Failed fetching transaction exectution for state version {}",
                             state_version.number()
                         ))
                     })?;
@@ -52,6 +52,9 @@ pub(crate) async fn handle_block(
 
                 let transaction_identifier =
                     to_api_hash_bech32m(&mapping_context, &h.transaction_intent_hash)?;
+
+                let status = MeshApiOperationStatus::from(local_transaction_execution.outcome);
+
                 let mut index = 0_i64;
                 for (address, balance_changes) in local_transaction_execution
                     .global_balance_summary
@@ -64,6 +67,7 @@ pub(crate) async fn handle_block(
                                     &mapping_context,
                                     database.deref(),
                                     index,
+                                    status.clone(),
                                     &address,
                                     &resource_address,
                                     amount,
