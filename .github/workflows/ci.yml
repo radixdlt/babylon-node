@@ -251,12 +251,13 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Install mesh-cli
         run: curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/master/scripts/install.sh | sh -s
+      - name: Build Node
+        run: ./gradlew build
       - name: Run Node in the background
         env:
-          RADIXDLT_HOST_IP_ADDRESS: 127.0.0.1
           # This is to skip keygen step
           RADIXDLT_NODE_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=
-        run: ./gradlew :core:run --info --daemon &
+        run: ./gradlew :core:run --info &
       - name: Wait for 2 minutes
         run: sleep 2m
       - name: Run mesh-cli tests (TODO:MESH add other checks)
