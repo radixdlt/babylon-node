@@ -96,6 +96,10 @@ impl MeshApiState {
         AddressBech32Encoder::new(&self.network)
     }
 
+    pub fn hash_encoder(&self) -> TransactionHashBech32Encoder {
+        TransactionHashBech32Encoder::new(&self.network)
+    }
+
     pub fn public_key_to_address(&self, public_key: PublicKey) -> String {
         self.address_encoder()
             .encode(ComponentAddress::preallocated_account_from_public_key(&public_key).as_bytes())
@@ -130,7 +134,7 @@ pub async fn create_server<F>(
         .route("/construction/metadata", post(handle_construction_metadata))
         .route("/construction/payloads", post(handle_construction_payloads))
         .route("/construction/parse", post(handle_construction_parse))
-        .route("/construction/hash", post(handle_endpoint_todo))
+        .route("/construction/hash", post(handle_construction_hash))
         .route("/construction/submit", post(handle_endpoint_todo))
         // Below endpoints are optional
         .route("/call", post(handle_endpoint_not_supported))
