@@ -68,7 +68,6 @@ import static org.junit.Assert.assertEquals;
 
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.api.TransactionApi;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.BlueprintFunctionTargetIdentifier;
 import com.radixdlt.api.core.generated.models.TargetIdentifierType;
@@ -133,7 +132,7 @@ public final class CallPreviewTest extends DeterministicCoreApiTestBase {
 
       // Act: Preview a transaction
       final var callPreviewResponse =
-          new TransactionApi(buildApiClient()).transactionCallPreviewPost(callPreviewRequest);
+          getTransactionApi().transactionCallPreviewPost(callPreviewRequest);
 
       // Assert: It should succeed despite empty faucet
       assertEquals(TransactionStatus.SUCCEEDED, callPreviewResponse.getStatus());

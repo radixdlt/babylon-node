@@ -103,7 +103,9 @@ public record GenesisData(
         GenesisData.class, codecs -> StructCodec.fromRecordComponents(GenesisData.class, codecs));
   }
 
-  public static GenesisData testingWithSingleValidator() {
+  // NOTE: From tests, see also GenesisBuilder
+
+  public static GenesisData withSingleValidatorForRadixShell() {
     final var validatorKey = ECKeyPair.fromSeed(new byte[] {0x02}).getPublicKey();
     return new GenesisData(
         UInt64.fromNonNegativeLong(1L),

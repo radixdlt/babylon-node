@@ -69,6 +69,7 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.CoreApiHelper;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.bft.Round;
@@ -92,6 +93,7 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * A deterministic test where each event that occurs in the network is emitted and processed
@@ -224,6 +226,26 @@ public final class DeterministicTest implements AutoCloseable {
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  public static DeterministicTest rev2Default(
+      int numValidators, int roundsPerEpoch, TemporaryFolder temporaryFolder) {
+    return new Builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(numValidators, true))
+        .functionalNodeModule(
+            FunctionalRadixNodeModule.rev2Default(numValidators, roundsPerEpoch, temporaryFolder));
+  }
+
+  public static DeterministicTest rev2DefaultWithCoreApi(
+      int numValidators,
+      int roundsPerEpoch,
+      TemporaryFolder temporaryFolder,
+      CoreApiHelper coreApiHelper) {
+    return new Builder()
+        .addPhysicalNodes(PhysicalNodeConfig.createBatch(numValidators, true))
+        .addModule(coreApiHelper.module())
+        .functionalNodeModule(
+            FunctionalRadixNodeModule.rev2Default(numValidators, roundsPerEpoch, temporaryFolder));
   }
 
   public DeterministicNetwork getNetwork() {

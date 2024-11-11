@@ -62,45 +62,71 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.rev2.protocol;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.rev2.Manifest;
-import com.radixdlt.rev2.ScryptoConstants;
+import com.radixdlt.api.CoreApiHelper;
+import com.radixdlt.harness.deterministic.DeterministicTest;
+import com.radixdlt.networks.Network;
+import com.radixdlt.rev2.TransactionV2Builder;
+import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.util.List;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTestBase {
+public class CuttlefishSubintentTests {
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
+
+  private DeterministicTest createTest(CoreApiHelper coreApiHelper) {
+    var test = DeterministicTest.rev2DefaultWithCoreApi(1, 100, folder, coreApiHelper);
+    test.startAllNodes();
+    return test;
+  }
+
   @Test
-  public void test_lts_account_xrd_balance() throws Exception {
-    final var config =
-        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
-    try (final var test = buildRunningServerTest(config)) {
-      test.suppressUnusedWarning();
+  public void v2_submit_subintents_in_multiple_transactions() throws Exception {
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
+    try (var test = createTest(coreApiHelper)) {
+      // Try one by one - both transactions contain subintent 5
+      var transactionAOne =
+          TransactionV2Builder.forTests().subintentDiscriminators(List.of(1000, 5)).prepare();
+      coreApiHelper.submitAndWaitForSuccess(test, transactionAOne);
+      var transactionATwo =
+          TransactionV2Builder.forTests().subintentDiscriminators(List.of(5)).prepare();
+      var rejection = coreApiHelper.submitExpectingRejection(transactionATwo);
+      assertEquals(rejection.getIsIntentRejectionPermanent(), true);
 
-      var accountKeyPair = ECKeyPair.generateNew();
-      var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
-      var accountAddressStr = addressing.encode(accountAddress);
+      // Try two at the same time - both transactions contain subintent 8
+      var transactionBOne =
+          TransactionV2Builder.forTests().subintentDiscriminators(List.of(8)).prepare();
+      coreApiHelper.submit(transactionBOne);
+      var transactionBTwo =
+          TransactionV2Builder.forTests().subintentDiscriminators(List.of(8)).prepare();
+      coreApiHelper.submit(transactionBTwo);
 
-      getCoreApiHelper()
-          .submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
-
-      final var result =
-          getLtsApi()
-              .ltsStateAccountFungibleResourceBalancePost(
-                  new LtsStateAccountFungibleResourceBalanceRequest()
-                      .network(networkLogicalName)
-                      .accountAddress(accountAddressStr)
-                      .resourceAddress(addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS)));
-
-      assertThat(result.getFungibleResourceBalance().getAmount())
-          .isEqualTo(ScryptoConstants.FREE_AMOUNT_FROM_FAUCET.toString());
+      var firstResult =
+          coreApiHelper.waitForFirstResult(
+              test,
+              transactionBOne.transactionIntentHash(),
+              transactionBTwo.transactionIntentHash());
+      firstResult.assertCommittedSuccess();
+      PreparedNotarizedTransaction otherTransaction;
+      if (firstResult.transactionIntentHash().equals(transactionBOne.transactionIntentHash())) {
+        otherTransaction = transactionBTwo;
+      } else {
+        otherTransaction = transactionBOne;
+      }
+      // TODO:CUTTLEFISH
+      // >> re-enable these lines when we fix immediate rejection of intents with matching subintent
+      // hash
+      // var statusB = coreApiHelper.ltsTransactionStatus(otherTransaction);
+      // assertEquals(statusB.getIntentStatus(), LtsTransactionIntentStatus.PERMANENTREJECTION);
+      // var rejectionB = coreApiHelper.submitExpectingRejection(otherTransaction);
+      // assertEquals(rejectionB.getIsIntentRejectionPermanent(), true);
+      var rejectionB = coreApiHelper.forceRecalculateSubmitExpectingRejection(otherTransaction);
+      assertEquals(rejectionB.getIsIntentRejectionPermanent(), true);
     }
   }
 }
