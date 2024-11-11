@@ -108,7 +108,7 @@ pub async fn create_server<F>(
         .route("/block", post(handle_block))
         .route("/block/transaction", post(handle_block_transaction))
         // TODO:MESH mempool
-        .route("/mempool", post(handle_endpoint_todo))
+        .route("/mempool", post(handle_mempool))
         .route("/mempool/transaction", post(handle_endpoint_todo))
         .route("/construction/derive", post(handle_endpoint_todo))
         .route("/construction/preprocess", post(handle_endpoint_todo))
