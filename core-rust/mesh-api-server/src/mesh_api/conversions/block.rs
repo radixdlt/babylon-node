@@ -22,17 +22,29 @@ pub fn to_mesh_api_block_identifier_from_ledger_header(
 pub fn extract_state_version_from_mesh_api_partial_block_identifier(
     block_identifier: &models::PartialBlockIdentifier,
 ) -> Result<Option<StateVersion>, ExtractionError> {
-    let state_version = if let Some(index) = block_identifier.index {
-        Some(StateVersion::of(index as u64))
-    } else if let Some(hash) = &block_identifier.hash {
-        let index = hash
-            .parse::<i64>()
-            .map_err(|_| ExtractionError::InvalidInteger {
-                message: "Error converting hash to integer".to_string(),
-            })?;
-        Some(StateVersion::of(index as u64))
-    } else {
-        None
+    let state_version = match &block_identifier.hash {
+        Some(hash) => {
+            let index_from_hash =
+                hash.parse::<i64>()
+                    .map_err(|_| ExtractionError::InvalidInteger {
+                        message: "Error converting hash to integer".to_string(),
+                    })?;
+
+            if let Some(index) = block_identifier.index {
+                if index == index_from_hash {
+                    Some(StateVersion::of(index as u64))
+                } else {
+                    return Err(ExtractionError::InvalidBlockIdentifier {
+                        message: format!("Hash {} does not match index {}", index_from_hash, index),
+                    });
+                }
+            } else {
+                Some(StateVersion::of(index_from_hash as u64))
+            }
+        }
+        None => block_identifier
+            .index
+            .map(|index| StateVersion::of(index as u64)),
     };
 
     Ok(state_version)
