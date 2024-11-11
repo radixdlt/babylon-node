@@ -19,6 +19,12 @@ import {
     LedgerStateSelectorFromJSONTyped,
     LedgerStateSelectorToJSON,
 } from './LedgerStateSelector';
+import type { PreviewFlags } from './PreviewFlags';
+import {
+    PreviewFlagsFromJSON,
+    PreviewFlagsFromJSONTyped,
+    PreviewFlagsToJSON,
+} from './PreviewFlags';
 import type { PublicKey } from './PublicKey';
 import {
     PublicKeyFromJSON,
@@ -31,12 +37,6 @@ import {
     TransactionMessageFromJSONTyped,
     TransactionMessageToJSON,
 } from './TransactionMessage';
-import type { TransactionPreviewRequestFlags } from './TransactionPreviewRequestFlags';
-import {
-    TransactionPreviewRequestFlagsFromJSON,
-    TransactionPreviewRequestFlagsFromJSONTyped,
-    TransactionPreviewRequestFlagsToJSON,
-} from './TransactionPreviewRequestFlags';
 import type { TransactionPreviewResponseOptions } from './TransactionPreviewResponseOptions';
 import {
     TransactionPreviewResponseOptionsFromJSON,
@@ -76,7 +76,8 @@ export interface TransactionPreviewRequest {
     blobs_hex?: Array<string>;
     /**
      * An integer between `0` and `10^10`, marking the epoch at which the transaction starts
-     * being valid. If omitted, the current epoch will be used (taking into account the
+     * being valid.
+     * If not provided, the current epoch will be used (taking into account the
      * `at_ledger_state`, if specified).
      * @type {number}
      * @memberof TransactionPreviewRequest
@@ -84,8 +85,8 @@ export interface TransactionPreviewRequest {
     start_epoch_inclusive?: number;
     /**
      * An integer between `0` and `10^10`, marking the epoch at which the transaction is no
-     * longer valid. If omitted, a maximum epoch (relative to the `start_epoch_inclusive`) will
-     * be used.
+     * longer valid.
+     * If not provided, a maximum epoch (relative to the `start_epoch_inclusive`) will be used.
      * @type {number}
      * @memberof TransactionPreviewRequest
      */
@@ -97,7 +98,8 @@ export interface TransactionPreviewRequest {
      */
     notary_public_key?: PublicKey;
     /**
-     * Whether the notary should count as a signatory (defaults to `false`).
+     * Whether the notary should be used as a signer (optional).
+     * If not provided, this defaults to false.
      * @type {boolean}
      * @memberof TransactionPreviewRequest
      */
@@ -105,23 +107,26 @@ export interface TransactionPreviewRequest {
     /**
      * An integer between `0` and `65535`, giving the validator tip as a percentage amount.
      * A value of `1` corresponds to a 1% fee.
+     * If not provided, this defaults to 0.
      * @type {number}
      * @memberof TransactionPreviewRequest
      */
-    tip_percentage: number;
+    tip_percentage?: number;
     /**
      * An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created
      * (to enable submitting an otherwise identical/duplicate intent).
+     * If not provided, this defaults to 0.
      * @type {number}
      * @memberof TransactionPreviewRequest
      */
-    nonce: number;
+    nonce?: number;
     /**
-     * A list of public keys to be used as transaction signers
+     * A list of public keys to be used as transaction signers.
+     * If not provided, this defaults to an empty array.
      * @type {Array<PublicKey>}
      * @memberof TransactionPreviewRequest
      */
-    signer_public_keys: Array<PublicKey>;
+    signer_public_keys?: Array<PublicKey>;
     /**
      * 
      * @type {TransactionMessage}
@@ -136,10 +141,10 @@ export interface TransactionPreviewRequest {
     options?: TransactionPreviewResponseOptions;
     /**
      * 
-     * @type {TransactionPreviewRequestFlags}
+     * @type {PreviewFlags}
      * @memberof TransactionPreviewRequest
      */
-    flags: TransactionPreviewRequestFlags;
+    flags?: PreviewFlags;
 }
 
 /**
@@ -149,10 +154,6 @@ export function instanceOfTransactionPreviewRequest(value: object): boolean {
     let isInstance = true;
     isInstance = isInstance && "network" in value;
     isInstance = isInstance && "manifest" in value;
-    isInstance = isInstance && "tip_percentage" in value;
-    isInstance = isInstance && "nonce" in value;
-    isInstance = isInstance && "signer_public_keys" in value;
-    isInstance = isInstance && "flags" in value;
 
     return isInstance;
 }
@@ -175,12 +176,12 @@ export function TransactionPreviewRequestFromJSONTyped(json: any, ignoreDiscrimi
         'end_epoch_exclusive': !exists(json, 'end_epoch_exclusive') ? undefined : json['end_epoch_exclusive'],
         'notary_public_key': !exists(json, 'notary_public_key') ? undefined : PublicKeyFromJSON(json['notary_public_key']),
         'notary_is_signatory': !exists(json, 'notary_is_signatory') ? undefined : json['notary_is_signatory'],
-        'tip_percentage': json['tip_percentage'],
-        'nonce': json['nonce'],
-        'signer_public_keys': ((json['signer_public_keys'] as Array<any>).map(PublicKeyFromJSON)),
+        'tip_percentage': !exists(json, 'tip_percentage') ? undefined : json['tip_percentage'],
+        'nonce': !exists(json, 'nonce') ? undefined : json['nonce'],
+        'signer_public_keys': !exists(json, 'signer_public_keys') ? undefined : ((json['signer_public_keys'] as Array<any>).map(PublicKeyFromJSON)),
         'message': !exists(json, 'message') ? undefined : TransactionMessageFromJSON(json['message']),
         'options': !exists(json, 'options') ? undefined : TransactionPreviewResponseOptionsFromJSON(json['options']),
-        'flags': TransactionPreviewRequestFlagsFromJSON(json['flags']),
+        'flags': !exists(json, 'flags') ? undefined : PreviewFlagsFromJSON(json['flags']),
     };
 }
 
@@ -203,10 +204,10 @@ export function TransactionPreviewRequestToJSON(value?: TransactionPreviewReques
         'notary_is_signatory': value.notary_is_signatory,
         'tip_percentage': value.tip_percentage,
         'nonce': value.nonce,
-        'signer_public_keys': ((value.signer_public_keys as Array<any>).map(PublicKeyToJSON)),
+        'signer_public_keys': value.signer_public_keys === undefined ? undefined : ((value.signer_public_keys as Array<any>).map(PublicKeyToJSON)),
         'message': TransactionMessageToJSON(value.message),
         'options': TransactionPreviewResponseOptionsToJSON(value.options),
-        'flags': TransactionPreviewRequestFlagsToJSON(value.flags),
+        'flags': PreviewFlagsToJSON(value.flags),
     };
 }
 

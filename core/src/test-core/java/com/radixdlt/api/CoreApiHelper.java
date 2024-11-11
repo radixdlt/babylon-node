@@ -204,6 +204,10 @@ public class CoreApiHelper {
     return new StatusApi(apiClient).statusNetworkConfigurationPost().getWellKnownAddresses();
   }
 
+  public String networkName() {
+    return network.getLogicalName();
+  }
+
   public TransactionSubmitResponse submit(PreparedNotarizedTransaction transaction)
       throws ApiException {
     return transactionApi()
@@ -384,7 +388,7 @@ public class CoreApiHelper {
     return submitAndWaitForResult(test, transaction).assertPermanentRejection();
   }
 
-  public TransactionStatusResponse getStatus(PreparedNotarizedTransaction transaction)
+  public TransactionStatusResponse transactionStatus(PreparedNotarizedTransaction transaction)
       throws ApiException {
     return transactionApi()
         .transactionStatusPost(

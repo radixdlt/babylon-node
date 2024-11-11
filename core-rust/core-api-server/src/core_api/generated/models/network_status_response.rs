@@ -21,8 +21,8 @@ pub struct NetworkStatusResponse {
     pub post_genesis_state_identifier: Option<Box<crate::core_api::generated::models::CommittedStateIdentifier>>,
     #[serde(rename = "post_genesis_epoch_round", skip_serializing_if = "Option::is_none")]
     pub post_genesis_epoch_round: Option<Box<crate::core_api::generated::models::EpochRound>>,
-    #[serde(rename = "current_state_identifier", skip_serializing_if = "Option::is_none")]
-    pub current_state_identifier: Option<Box<crate::core_api::generated::models::CommittedStateIdentifier>>,
+    #[serde(rename = "current_state_identifier")]
+    pub current_state_identifier: Box<crate::core_api::generated::models::CommittedStateIdentifier>,
     #[serde(rename = "current_epoch_round", skip_serializing_if = "Option::is_none")]
     pub current_epoch_round: Option<Box<crate::core_api::generated::models::EpochRound>>,
     /// A descriptor for the current protocol version that the node is running. 
@@ -31,13 +31,13 @@ pub struct NetworkStatusResponse {
 }
 
 impl NetworkStatusResponse {
-    pub fn new(pre_genesis_state_identifier: crate::core_api::generated::models::CommittedStateIdentifier, current_protocol_version: String) -> NetworkStatusResponse {
+    pub fn new(pre_genesis_state_identifier: crate::core_api::generated::models::CommittedStateIdentifier, current_state_identifier: crate::core_api::generated::models::CommittedStateIdentifier, current_protocol_version: String) -> NetworkStatusResponse {
         NetworkStatusResponse {
             pre_genesis_state_identifier: Box::new(pre_genesis_state_identifier),
             genesis_epoch_round: None,
             post_genesis_state_identifier: None,
             post_genesis_epoch_round: None,
-            current_state_identifier: None,
+            current_state_identifier: Box::new(current_state_identifier),
             current_epoch_round: None,
             current_protocol_version,
         }

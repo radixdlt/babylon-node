@@ -21,12 +21,12 @@ import { exists, mapValues } from '../runtime';
  * 
  * NOTE: Some of these values may be placeholder values for protocol updates pre-Cuttlefish
  * on nodes which haven't resynced since Cuttlefish. In particular, the following values might be
- * invalid on such nodesL
+ * invalid on such nodes:
  * 
  * * `config_hash` (placeholder of all zeros)
  * * `batch_group_idx` (placeholder of 0)
  * * `batch_group_name` (placeholder of "")
- * * `batch_idx` (whatever the non-grouped index was)
+ * * `batch_idx` (placeholder of 0)
  * * `batch_name` (placeholder of "")
  * * `is_end_of_update` (placeholder of false)
  * @export

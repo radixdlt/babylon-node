@@ -47,6 +47,7 @@ fn extract_preview_request(
 
     let signer_public_keys: Vec<_> = request
         .signer_public_keys
+        .unwrap_or_default()
         .into_iter()
         .map(extract_public_key)
         .collect::<Result<_, _>>()
@@ -75,17 +76,12 @@ fn extract_preview_request(
             })
             .transpose()?,
         notary_is_signatory: request.notary_is_signatory.unwrap_or(false),
-        tip_percentage: extract_u16_from_api_i32(request.tip_percentage)
+        tip_percentage: extract_u16_from_api_i32(request.tip_percentage.unwrap_or_default())
             .map_err(|err| err.into_response_error("tip_percentage"))?,
-        nonce: extract_u32_from_api_i64(request.nonce)
+        nonce: extract_u32_from_api_i64(request.nonce.unwrap_or_default())
             .map_err(|err| err.into_response_error("nonce"))?,
         signer_public_keys,
-        flags: PreviewFlags {
-            use_free_credit: request.flags.use_free_credit,
-            assume_all_signature_proofs: request.flags.assume_all_signature_proofs,
-            skip_epoch_check: request.flags.skip_epoch_check,
-            disable_auth: request.flags.disable_auth_checks.unwrap_or(false),
-        },
+        flags: extract_preview_flags(request.flags.as_ref().map(|f| &**f)),
         message: request
             .message
             .map(|message| {
@@ -94,6 +90,17 @@ fn extract_preview_request(
             .transpose()?
             .unwrap_or_else(|| MessageV1::None),
     })
+}
+
+pub fn extract_preview_flags(flags: Option<&models::PreviewFlags>) -> PreviewFlags {
+    PreviewFlags {
+        use_free_credit: flags.and_then(|o| o.use_free_credit).unwrap_or(false),
+        assume_all_signature_proofs: flags
+            .and_then(|o| o.assume_all_signature_proofs)
+            .unwrap_or(false),
+        skip_epoch_check: flags.and_then(|o| o.skip_epoch_check).unwrap_or(false),
+        disable_auth: flags.and_then(|o| o.disable_auth_checks).unwrap_or(false),
+    }
 }
 
 fn to_api_response(
@@ -110,17 +117,9 @@ fn to_api_response(
     // Produce a toolkit transaction receipt for the transaction preview if it was requested in the
     // request opt-ins.
     let toolkit_receipt = if should_include_toolkit_receipt {
-        Some(
-            RuntimeToolkitTransactionReceipt::try_from(engine_receipt.clone())
-                .ok()
-                .and_then(|value| {
-                    value
-                        .into_serializable_receipt(&context.address_encoder)
-                        .ok()
-                })
-                .and_then(|value| serde_json::to_value(&value).ok())
-                .ok_or(server_error("Can't produce toolkit transaction receipt."))?,
-        )
+        let receipt = to_api_toolkit_receipt(context, engine_receipt.clone())
+            .ok_or(server_error("Can't produce toolkit transaction receipt."))?;
+        Some(receipt)
     } else {
         None
     };
@@ -138,56 +137,9 @@ fn to_api_response(
 
     let response = match engine_receipt.result {
         TransactionResult::Commit(commit_result) => {
-            let mut instruction_resource_changes = Vec::new();
-
-            let execution_trace = commit_result
-                .execution_trace
-                .as_ref()
-                .expect("preview should have been executed with execution trace enabled");
-            for (index, resource_changes) in &execution_trace.resource_changes {
-                let resource_changes: Vec<models::ResourceChange> = resource_changes
-                    .iter()
-                    .map(|v| {
-                        Ok(models::ResourceChange {
-                            resource_address: to_api_resource_address(
-                                context,
-                                &v.resource_address,
-                            )?,
-                            component_entity: Box::new(to_api_entity_reference(
-                                context, &v.node_id,
-                            )?),
-                            vault_entity: Box::new(to_api_entity_reference(context, &v.vault_id)?),
-                            amount: to_api_decimal(&v.amount),
-                        })
-                    })
-                    .collect::<Result<_, MappingError>>()
-                    .map_err(|_| server_error("Can't map entity references"))?;
-
-                let instruction = models::InstructionResourceChanges {
-                    index: to_api_index_as_i64(*index)?,
-                    resource_changes,
-                };
-
-                instruction_resource_changes.push(instruction);
-            }
-
-            let logs = commit_result
-                .application_logs
-                .iter()
-                .map(
-                    |(level, message)| models::TransactionPreviewResponseLogsInner {
-                        level: level.to_string(),
-                        message: message.to_string(),
-                    },
-                )
-                .collect();
-
-            let local_receipt = LocalTransactionReceipt::new(
-                commit_result,
-                result.state_changes,
-                result.global_balance_summary,
-                execution_fee_data,
-            );
+            let instruction_resource_changes =
+                to_api_instruction_resource_changes(context, &commit_result)?;
+            let logs = to_api_receipt_logs(&commit_result);
 
             models::TransactionPreviewResponse {
                 at_ledger_state,
@@ -195,7 +147,12 @@ fn to_api_response(
                 receipt: Box::new(to_api_receipt(
                     None::<&ActualStateManagerDatabase>,
                     context,
-                    local_receipt,
+                    LocalTransactionReceipt::new(
+                        commit_result,
+                        result.state_changes,
+                        result.global_balance_summary,
+                        execution_fee_data,
+                    ),
                 )?),
                 radix_engine_toolkit_receipt: toolkit_receipt,
                 instruction_resource_changes,
@@ -205,25 +162,11 @@ fn to_api_response(
         TransactionResult::Reject(reject_result) => models::TransactionPreviewResponse {
             at_ledger_state,
             encoded_receipt,
-            receipt: Box::new(models::TransactionReceipt {
-                status: models::TransactionStatus::Rejected,
-                fee_summary: Box::new(to_api_fee_summary(
-                    context,
-                    &execution_fee_data.fee_summary,
-                )?),
-                fee_source: None,
-                fee_destination: None,
-                costing_parameters: Box::new(to_api_costing_parameters(
-                    context,
-                    &execution_fee_data.engine_costing_parameters,
-                    &execution_fee_data.transaction_costing_parameters,
-                )?),
-                state_updates: Box::default(),
-                events: None,
-                output: None,
-                next_epoch: None,
-                error_message: Some(format!("{reject_result:?}")),
-            }),
+            receipt: Box::new(to_rejection_receipt(
+                context,
+                execution_fee_data,
+                reject_result,
+            )?),
             radix_engine_toolkit_receipt: toolkit_receipt,
             instruction_resource_changes: vec![],
             logs: vec![],
@@ -236,7 +179,92 @@ fn to_api_response(
     Ok(response)
 }
 
-fn extract_message(message: models::TransactionMessage) -> Result<MessageV1, ExtractionError> {
+pub fn to_rejection_receipt(
+    context: &MappingContext,
+    execution_fee_data: ExecutionFeeData,
+    reject_result: RejectResult,
+) -> Result<models::TransactionReceipt, MappingError> {
+    Ok(models::TransactionReceipt {
+        status: models::TransactionStatus::Rejected,
+        fee_summary: Box::new(to_api_fee_summary(
+            context,
+            &execution_fee_data.fee_summary,
+        )?),
+        fee_source: None,
+        fee_destination: None,
+        costing_parameters: Box::new(to_api_costing_parameters(
+            context,
+            &execution_fee_data.engine_costing_parameters,
+            &execution_fee_data.transaction_costing_parameters,
+        )?),
+        state_updates: Box::default(),
+        events: None,
+        output: None,
+        next_epoch: None,
+        error_message: Some(format!("{reject_result:?}")),
+    })
+}
+
+pub fn to_api_toolkit_receipt(
+    context: &MappingContext,
+    engine_receipt: TransactionReceipt,
+) -> Option<serde_json::Value> {
+    let runtime_receipt = RuntimeToolkitTransactionReceipt::try_from(engine_receipt).ok()?;
+    let serializable = runtime_receipt
+        .into_serializable_receipt(&context.address_encoder)
+        .ok()?;
+    serde_json::to_value(&serializable).ok()
+}
+
+pub fn to_api_instruction_resource_changes(
+    context: &MappingContext,
+    commit_result: &CommitResult,
+) -> Result<Vec<models::InstructionResourceChanges>, MappingError> {
+    let execution_trace = commit_result
+        .execution_trace
+        .as_ref()
+        .expect("preview should have been executed with execution trace enabled");
+
+    execution_trace
+        .resource_changes
+        .iter()
+        .map(|(index, resource_changes)| -> Result<_, MappingError> {
+            let resource_changes: Vec<models::ResourceChange> = resource_changes
+                .iter()
+                .map(|v| {
+                    Ok(models::ResourceChange {
+                        resource_address: to_api_resource_address(context, &v.resource_address)?,
+                        component_entity: Box::new(to_api_entity_reference(context, &v.node_id)?),
+                        vault_entity: Box::new(to_api_entity_reference(context, &v.vault_id)?),
+                        amount: to_api_decimal(&v.amount),
+                    })
+                })
+                .collect::<Result<_, MappingError>>()?;
+
+            Ok(models::InstructionResourceChanges {
+                index: to_api_index_as_i64(*index)?,
+                resource_changes,
+            })
+        })
+        .collect()
+}
+
+pub fn to_api_receipt_logs(
+    commit_result: &CommitResult,
+) -> Vec<models::TransactionPreviewResponseLogsInner> {
+    commit_result
+        .application_logs
+        .iter()
+        .map(
+            |(level, message)| models::TransactionPreviewResponseLogsInner {
+                level: level.to_string(),
+                message: message.to_string(),
+            },
+        )
+        .collect()
+}
+
+pub fn extract_message(message: models::TransactionMessage) -> Result<MessageV1, ExtractionError> {
     Ok(match message {
         models::TransactionMessage::PlaintextTransactionMessage { mime_type, content } => {
             MessageV1::Plaintext(PlaintextMessageV1 {

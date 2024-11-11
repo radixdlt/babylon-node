@@ -484,6 +484,43 @@ extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareNota
     })
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoSbor)]
+struct PrepareUnsigngedPreviewTransactionV2Request {
+    raw_transaction_intent: RawTransactionIntent,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode)]
+pub struct JavaPreparedPreviewTransactionV2 {
+    pub raw_preview_transaction: RawPreviewTransaction,
+    pub transaction_intent_hash: TransactionIntentHash,
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_prepareUnsignedPreviewTransactionV2(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |request: PrepareUnsigngedPreviewTransactionV2Request| -> Result<JavaPreparedPreviewTransactionV2, StringError> {
+        let transaction_intent = TransactionIntentV2::from_raw(&request.raw_transaction_intent)?;
+
+        let subintent_count = transaction_intent.non_root_subintents.0.len();
+
+        let preview_transaction = PreviewTransactionV2 {
+            transaction_intent,
+            root_signer_public_keys: Default::default(),
+            non_root_subintent_signer_public_keys: (0..subintent_count).map(|_| Default::default()).collect(),
+        };
+
+        let prepared = preview_transaction.prepare(&PreparationSettings::latest())?;
+
+        Ok(JavaPreparedPreviewTransactionV2 {
+            raw_preview_transaction: preview_transaction.to_raw()?,
+            transaction_intent_hash: prepared.transaction_intent.transaction_intent_hash(),
+        })
+    })
+}
+
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_transaction_TransactionPreparer_userTransactionToLedger(
     env: JNIEnv,

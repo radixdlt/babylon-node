@@ -143,7 +143,8 @@ public final class CuttlefishProtocolUpdateTest {
       } catch (Exception ignored) {
       }
       assertEquals(
-          TransactionIntentStatus.NOTSEEN, coreApiHelper.getStatus(transactionA).getIntentStatus());
+          TransactionIntentStatus.NOTSEEN,
+          coreApiHelper.transactionStatus(transactionA).getIntentStatus());
 
       // Arrange: Run the protocol update:
       test.runUntilState(
@@ -163,31 +164,34 @@ public final class CuttlefishProtocolUpdateTest {
 
       assertEquals(
           TransactionIntentStatus.INMEMPOOL,
-          coreApiHelper.getStatus(transactionB).getIntentStatus());
+          coreApiHelper.transactionStatus(transactionB).getIntentStatus());
       test.runUntilState(allCommittedTransactionSuccess(transactionB.raw()), 1000);
       assertEquals(
           TransactionIntentStatus.COMMITTEDSUCCESS,
-          coreApiHelper.getStatus(transactionB).getIntentStatus());
+          coreApiHelper.transactionStatus(transactionB).getIntentStatus());
 
       // ... and for what it's worth, we can now resubmit the first transaction
       // (it never even got to the pending transaction result cache)
       assertEquals(
-          TransactionIntentStatus.NOTSEEN, coreApiHelper.getStatus(transactionA).getIntentStatus());
+          TransactionIntentStatus.NOTSEEN,
+          coreApiHelper.transactionStatus(transactionA).getIntentStatus());
       coreApiHelper.submit(transactionA);
       assertEquals(
           TransactionIntentStatus.INMEMPOOL,
-          coreApiHelper.getStatus(transactionA).getIntentStatus());
+          coreApiHelper.transactionStatus(transactionA).getIntentStatus());
       test.runUntilState(allCommittedTransactionSuccess(transactionA.raw()), 1000);
       assertEquals(
           TransactionIntentStatus.COMMITTEDSUCCESS,
-          coreApiHelper.getStatus(transactionA).getIntentStatus());
+          coreApiHelper.transactionStatus(transactionA).getIntentStatus());
     }
   }
 
   @Test
   public void protocol_update_process_updates_status_summary() throws ApiException {
     final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
-    try (var ignored = createTest(IMMEDIATELY_CUTTLEFISH, coreApiHelper.module())) {
+    try (var test = createTest(IMMEDIATELY_CUTTLEFISH, coreApiHelper.module())) {
+      test.suppressUnusedWarning();
+
       var latestStateVersion =
           coreApiHelper.getNetworkStatus().getCurrentStateIdentifier().getStateVersion();
       var lastTransaction = coreApiHelper.getTransactionFromStream(latestStateVersion);

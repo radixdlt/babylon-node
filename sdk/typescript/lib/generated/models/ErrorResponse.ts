@@ -41,6 +41,13 @@ import {
     StreamTransactionsErrorResponseToJSON,
 } from './StreamTransactionsErrorResponse';
 import {
+    TransactionPreviewV2ErrorResponse,
+    instanceOfTransactionPreviewV2ErrorResponse,
+    TransactionPreviewV2ErrorResponseFromJSON,
+    TransactionPreviewV2ErrorResponseFromJSONTyped,
+    TransactionPreviewV2ErrorResponseToJSON,
+} from './TransactionPreviewV2ErrorResponse';
+import {
     TransactionSubmitErrorResponse,
     instanceOfTransactionSubmitErrorResponse,
     TransactionSubmitErrorResponseFromJSON,
@@ -53,7 +60,7 @@ import {
  * 
  * @export
  */
-export type ErrorResponse = { error_type: 'Basic' } & BasicErrorResponse | { error_type: 'LtsTransactionSubmit' } & LtsTransactionSubmitErrorResponse | { error_type: 'StreamProofs' } & StreamProofsErrorResponse | { error_type: 'StreamTransactions' } & StreamTransactionsErrorResponse | { error_type: 'TransactionSubmit' } & TransactionSubmitErrorResponse;
+export type ErrorResponse = { error_type: 'Basic' } & BasicErrorResponse | { error_type: 'LtsTransactionSubmit' } & LtsTransactionSubmitErrorResponse | { error_type: 'StreamProofs' } & StreamProofsErrorResponse | { error_type: 'StreamTransactions' } & StreamTransactionsErrorResponse | { error_type: 'TransactionPreviewV2' } & TransactionPreviewV2ErrorResponse | { error_type: 'TransactionSubmit' } & TransactionSubmitErrorResponse;
 
 export function ErrorResponseFromJSON(json: any): ErrorResponse {
     return ErrorResponseFromJSONTyped(json, false);
@@ -72,6 +79,8 @@ export function ErrorResponseFromJSONTyped(json: any, ignoreDiscriminator: boole
             return {...StreamProofsErrorResponseFromJSONTyped(json, true), error_type: 'StreamProofs'};
         case 'StreamTransactions':
             return {...StreamTransactionsErrorResponseFromJSONTyped(json, true), error_type: 'StreamTransactions'};
+        case 'TransactionPreviewV2':
+            return {...TransactionPreviewV2ErrorResponseFromJSONTyped(json, true), error_type: 'TransactionPreviewV2'};
         case 'TransactionSubmit':
             return {...TransactionSubmitErrorResponseFromJSONTyped(json, true), error_type: 'TransactionSubmit'};
         default:
@@ -95,6 +104,8 @@ export function ErrorResponseToJSON(value?: ErrorResponse | null): any {
             return StreamProofsErrorResponseToJSON(value);
         case 'StreamTransactions':
             return StreamTransactionsErrorResponseToJSON(value);
+        case 'TransactionPreviewV2':
+            return TransactionPreviewV2ErrorResponseToJSON(value);
         case 'TransactionSubmit':
             return TransactionSubmitErrorResponseToJSON(value);
         default:

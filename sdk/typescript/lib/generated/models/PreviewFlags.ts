@@ -16,85 +16,97 @@ import { exists, mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface TransactionPreviewRequestFlags
+ * @interface PreviewFlags
  */
-export interface TransactionPreviewRequestFlags {
+export interface PreviewFlags {
     /**
-     * Whether to use a virtual, preview-only pool of XRD to pay for all execution fees.
-     * @type {boolean}
-     * @memberof TransactionPreviewRequestFlags
-     */
-    use_free_credit: boolean;
-    /**
-     * Whether the virtual signature proofs should be automatically placed in the auth zone.
-     * @type {boolean}
-     * @memberof TransactionPreviewRequestFlags
-     */
-    assume_all_signature_proofs: boolean;
-    /**
-     * Whether to skip the epoch range check (i.e. ignoring the `start_epoch_inclusive` and
-     * `end_epoch_exclusive` parameters, if specified).
+     * If enabled, a large simulated pool of XRD is marked as locked.
      * 
-     * Note: effectively, without an epoch range, the Radix Engine cannot perform the
-     * *intent hash duplicate* detection, which means that this check will be skipped as well.
+     * This mode can be used to estimate fees. To get a reliable estimate, we recommend that your
+     * transaction is as close as possible to the real transaction. For example:
+     * - You should still use a lock fee command, but you can set it to lock a fee of 0.
+     * - You should include the public keys that will sign the transaction, so the cost of
+     *   signature verification and payload size can be accounted for.
      * @type {boolean}
-     * @memberof TransactionPreviewRequestFlags
+     * @memberof PreviewFlags
      */
-    skip_epoch_check: boolean;
+    use_free_credit?: boolean;
     /**
-     * Whether to skip the auth checks during execution.
+     * If enabled, each manifest processor's auth zone will be given a simulated proof of
+     * every signature, which can be used to pass signature access rules.
+     * 
+     * This can be used to preview transactions even if the required signatures are not
+     * known ahead of time.
+     * 
+     * See the documentation on
+     * [advanced access rules](https://docs.radixdlt.com/docs/advanced-accessrules#signature-requirements)
+     * for more information.
+     * @type {boolean}
+     * @memberof PreviewFlags
+     */
+    assume_all_signature_proofs?: boolean;
+    /**
+     * If enabled, the various runtime epoch-related verifications are skipped:
+     * - The `start_epoch_inclusive` and `end_epoch_exclusive` parameters, if specified, are ignored.
+     * - The duplicate intent checks (which rely on the expiry epoch) are also ignored.
+     * 
+     * However, if the start and end epoch are provided, they must still be statically valid.
+     * We recommend using a value of `start_epoch_inclusive = 1` and `end_epoch_exclusive = 2` in this
+     * case.
+     * @type {boolean}
+     * @memberof PreviewFlags
+     */
+    skip_epoch_check?: boolean;
+    /**
+     * If enabled, all authorization checks are skipped during execution.
      * 
      * This could be used to e.g.:
      * * Preview protocol update style transactions.
-     * * Mint resources for previewing trades with resources you don't own. If doing this, be warned:
-     *   * Only resources which were potentially mintable/burnable at creation time
-     *     will be mintable/burnable, due to feature flags on the resource.
-     *   * Please see the below warning about unexpected results if using this approach.
+     * * Mint resources for previewing trades with resources you don't own.
+     *   If doing this, be warned: only resources which were potentially mintable/burnable
+     *   at creation time will be mintable/burnable, due to feature flags on the resource.
      * 
      * Warning: this mode of operation is quite a departure from normal operation:
      * * Calculated fees will likely be lower than a standard execution.
      * * This mode can subtly break invariants some dApp code might rely on, or result in unexpected
-     *   behaviour, so the resulting execution result might not be valid for your needs. For example,
-     *   if I used this flag to mint pool units to preview a redemption (or some dApp interaction which
+     *   behaviour, so the execution result might not be valid for your needs. For example,
+     *   if this flag was used to mint pool units to preview a redemption (or some dApp interaction which
      *   behind the scenes redeemed them), they'd redeem for less than they're currently worth,
      *   because the blueprint code relies on the total supply of the pool units to calculate their
      *   redemption worth, and you've just inflated the total supply through the mint operation.
      * @type {boolean}
-     * @memberof TransactionPreviewRequestFlags
+     * @memberof PreviewFlags
      */
     disable_auth_checks?: boolean;
 }
 
 /**
- * Check if a given object implements the TransactionPreviewRequestFlags interface.
+ * Check if a given object implements the PreviewFlags interface.
  */
-export function instanceOfTransactionPreviewRequestFlags(value: object): boolean {
+export function instanceOfPreviewFlags(value: object): boolean {
     let isInstance = true;
-    isInstance = isInstance && "use_free_credit" in value;
-    isInstance = isInstance && "assume_all_signature_proofs" in value;
-    isInstance = isInstance && "skip_epoch_check" in value;
 
     return isInstance;
 }
 
-export function TransactionPreviewRequestFlagsFromJSON(json: any): TransactionPreviewRequestFlags {
-    return TransactionPreviewRequestFlagsFromJSONTyped(json, false);
+export function PreviewFlagsFromJSON(json: any): PreviewFlags {
+    return PreviewFlagsFromJSONTyped(json, false);
 }
 
-export function TransactionPreviewRequestFlagsFromJSONTyped(json: any, ignoreDiscriminator: boolean): TransactionPreviewRequestFlags {
+export function PreviewFlagsFromJSONTyped(json: any, ignoreDiscriminator: boolean): PreviewFlags {
     if ((json === undefined) || (json === null)) {
         return json;
     }
     return {
         
-        'use_free_credit': json['use_free_credit'],
-        'assume_all_signature_proofs': json['assume_all_signature_proofs'],
-        'skip_epoch_check': json['skip_epoch_check'],
+        'use_free_credit': !exists(json, 'use_free_credit') ? undefined : json['use_free_credit'],
+        'assume_all_signature_proofs': !exists(json, 'assume_all_signature_proofs') ? undefined : json['assume_all_signature_proofs'],
+        'skip_epoch_check': !exists(json, 'skip_epoch_check') ? undefined : json['skip_epoch_check'],
         'disable_auth_checks': !exists(json, 'disable_auth_checks') ? undefined : json['disable_auth_checks'],
     };
 }
 
-export function TransactionPreviewRequestFlagsToJSON(value?: TransactionPreviewRequestFlags | null): any {
+export function PreviewFlagsToJSON(value?: PreviewFlags | null): any {
     if (value === undefined) {
         return undefined;
     }

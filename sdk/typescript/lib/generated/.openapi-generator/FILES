@@ -98,6 +98,8 @@ models/CommittedStateIdentifier.ts
 models/CommittedStateIdentifierAllOf.ts
 models/CommittedTransaction.ts
 models/CommittedTransactionBalanceChanges.ts
+models/CompiledPreviewTransaction.ts
+models/CompiledPreviewTransactionAllOf.ts
 models/CompleteProtocolUpdateStatus.ts
 models/CompleteProtocolUpdateStatusAllOf.ts
 models/ComponentMethodTargetIdentifier.ts
@@ -240,6 +242,8 @@ models/InstructionResourceChanges.ts
 models/IntentCoreV2.ts
 models/IntentHeaderV2.ts
 models/IntentSignatures.ts
+models/InvalidTransactionPreviewV2ErrorDetails.ts
+models/InvalidTransactionPreviewV2ErrorDetailsAllOf.ts
 models/KeyValueBasedStructure.ts
 models/KeyValueBlueprintCollectionSchema.ts
 models/KeyValueBlueprintCollectionSchemaAllOf.ts
@@ -463,6 +467,10 @@ models/PoolVault.ts
 models/PresentedBadge.ts
 models/PresentedBadgeBase.ts
 models/PresentedBadgeType.ts
+models/PreviewFlags.ts
+models/PreviewTransaction.ts
+models/PreviewTransactionBase.ts
+models/PreviewTransactionType.ts
 models/PrimaryRoleRecoveryAttempt.ts
 models/ProofAccessRuleNode.ts
 models/ProofAccessRuleNodeAllOf.ts
@@ -657,10 +665,17 @@ models/TransactionParseResponse.ts
 models/TransactionPayloadDetails.ts
 models/TransactionPayloadStatus.ts
 models/TransactionPreviewRequest.ts
-models/TransactionPreviewRequestFlags.ts
 models/TransactionPreviewResponse.ts
 models/TransactionPreviewResponseLogsInner.ts
 models/TransactionPreviewResponseOptions.ts
+models/TransactionPreviewV2ErrorDetails.ts
+models/TransactionPreviewV2ErrorDetailsBase.ts
+models/TransactionPreviewV2ErrorDetailsType.ts
+models/TransactionPreviewV2ErrorResponse.ts
+models/TransactionPreviewV2ErrorResponseAllOf.ts
+models/TransactionPreviewV2Request.ts
+models/TransactionPreviewV2Response.ts
+models/TransactionPreviewV2ResponseOptions.ts
 models/TransactionReceipt.ts
 models/TransactionReceiptRequest.ts
 models/TransactionReceiptResponse.ts
