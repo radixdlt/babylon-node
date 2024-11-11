@@ -93,6 +93,8 @@ pub fn to_mesh_api_transaction_identifier(
                 .global_balance_summary
                 .global_balance_changes
             {
+                // TODO:MESH support LockFee, Mint, Burn
+                // see https://github.com/radixdlt/babylon-node/pull/1018#discussion_r1834905560
                 if address.is_account() {
                     for (resource_address, balance_change) in balance_changes {
                         if let BalanceChange::Fungible(amount) = balance_change {
