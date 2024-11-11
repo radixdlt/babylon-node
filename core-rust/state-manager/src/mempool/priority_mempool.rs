@@ -212,6 +212,8 @@ pub struct PriorityMempool {
     data: IndexMap<NotarizedTransactionHash, MempoolData>,
     /// Mapping from [`TransactionIntentHash`] to all transactions ([`NotarizedTransactionHash`]) that submit said intent.
     intent_lookup: HashMap<TransactionIntentHash, HashSet<NotarizedTransactionHash>>,
+    /// Mapping from [`SubintentHash`] to all transactions ([`NotarizedTransactionHash`]) that contain said subintent.
+    subintent_lookup: HashMap<SubintentHash, HashSet<NotarizedTransactionHash>>,
     /// Keeps ordering of the transactions by their [`ProposalPriority`].
     proposal_priority_index: SecondaryIndex<ProposalPriority, NotarizedTransactionHash>,
     /// Keeps ordering of the transactions by their validity end epoch.
@@ -229,6 +231,7 @@ impl PriorityMempool {
             remaining_total_transactions_size: config.max_total_transactions_size,
             data: IndexMap::new(),
             intent_lookup: HashMap::new(),
+            subintent_lookup: HashMap::new(),
             proposal_priority_index: SecondaryIndex::new(),
             end_epoch_exclusive_index: SecondaryIndex::new(),
             executed_state_version_index: SecondaryIndex::new(),
@@ -352,10 +355,19 @@ impl PriorityMempool {
         // Add intent lookup
         self.intent_lookup
             .entry(intent_hash)
-            .and_modify(|e| {
-                e.insert(notarized_transaction_hash);
-            })
-            .or_insert_with(|| HashSet::from([notarized_transaction_hash]));
+            .or_default()
+            .insert(notarized_transaction_hash);
+
+        for subintent_hash in &transaction_data
+            .transaction
+            .hashes
+            .non_root_subintent_hashes
+        {
+            self.subintent_lookup
+                .entry(*subintent_hash)
+                .or_default()
+                .insert(notarized_transaction_hash);
+        }
 
         Ok(to_be_removed)
     }
@@ -389,6 +401,22 @@ impl PriorityMempool {
         let data: Vec<_> = self
             .intent_lookup
             .get(intent_hash)
+            .iter()
+            .flat_map(|notarized_transaction_hashes| notarized_transaction_hashes.iter())
+            .map(|notarized_transaction_hash| self.data.index(notarized_transaction_hash))
+            .cloned()
+            .collect();
+        data.into_iter()
+            .inspect(|data| {
+                self.remove_data(data.clone());
+            })
+            .collect()
+    }
+
+    pub fn remove_by_subintent_hash(&mut self, subintent_hash: &SubintentHash) -> Vec<MempoolData> {
+        let data: Vec<_> = self
+            .subintent_lookup
+            .get(subintent_hash)
             .iter()
             .flat_map(|notarized_transaction_hashes| notarized_transaction_hashes.iter())
             .map(|notarized_transaction_hash| self.data.index(notarized_transaction_hash))
@@ -457,8 +485,13 @@ impl PriorityMempool {
     pub fn get_payload(
         &self,
         notarized_transaction_hash: &NotarizedTransactionHash,
-    ) -> Option<&MempoolTransaction> {
-        Some(&self.data.get(notarized_transaction_hash)?.transaction)
+    ) -> Option<Arc<MempoolTransaction>> {
+        Some(
+            self.data
+                .get(notarized_transaction_hash)?
+                .transaction
+                .clone(),
+        )
     }
 
     /// Returns [`count`] randomly sampled transactions from the mempool.
@@ -526,7 +559,7 @@ impl PriorityMempool {
 
         self.data.swap_remove(notarized_transaction_hash);
 
-        // Update intent_lookup
+        // Update intent_lookup and subintent lookups
         let payload_lookup = self
             .intent_lookup
             .get_mut(intent_hash)
@@ -537,6 +570,18 @@ impl PriorityMempool {
         }
         if payload_lookup.is_empty() {
             self.intent_lookup.remove(intent_hash);
+        }
+        for subintent_hash in &data.transaction.hashes.non_root_subintent_hashes {
+            let subintent_lookup = self
+                .subintent_lookup
+                .get_mut(subintent_hash)
+                .expect("Mempool subintent hash lookup out of sync on remove");
+            if !subintent_lookup.remove(notarized_transaction_hash) {
+                panic!("Mempool subintent hash lookup out of sync on remove");
+            }
+            if subintent_lookup.is_empty() {
+                self.subintent_lookup.remove(subintent_hash);
+            }
         }
 
         self.proposal_priority_index

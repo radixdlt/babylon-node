@@ -67,6 +67,7 @@ package com.radixdlt.rev2.protocol;
 import static org.junit.Assert.assertEquals;
 
 import com.radixdlt.api.CoreApiHelper;
+import com.radixdlt.api.core.generated.models.LtsTransactionIntentStatus;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.TransactionV2Builder;
@@ -118,15 +119,13 @@ public class CuttlefishSubintentTests {
       } else {
         otherTransaction = transactionBOne;
       }
-      // TODO:CUTTLEFISH
-      // >> re-enable these lines when we fix immediate rejection of intents with matching subintent
-      // hash
-      // var statusB = coreApiHelper.ltsTransactionStatus(otherTransaction);
-      // assertEquals(statusB.getIntentStatus(), LtsTransactionIntentStatus.PERMANENTREJECTION);
-      // var rejectionB = coreApiHelper.submitExpectingRejection(otherTransaction);
-      // assertEquals(rejectionB.getIsIntentRejectionPermanent(), true);
-      var rejectionB = coreApiHelper.forceRecalculateSubmitExpectingRejection(otherTransaction);
+
+      var statusB = coreApiHelper.ltsTransactionStatus(otherTransaction);
+      assertEquals(statusB.getIntentStatus(), LtsTransactionIntentStatus.PERMANENTREJECTION);
+      var rejectionB = coreApiHelper.submitExpectingRejection(otherTransaction);
       assertEquals(rejectionB.getIsIntentRejectionPermanent(), true);
+      var rejectionBTwo = coreApiHelper.forceRecalculateSubmitExpectingRejection(otherTransaction);
+      assertEquals(rejectionBTwo.getIsIntentRejectionPermanent(), true);
     }
   }
 }

@@ -96,12 +96,16 @@ public class OneNodeFallingBehindTest {
           .networkModules(
               NetworkOrdering.inOrder(),
               NetworkLatencies.fixed(),
+              // Alternate between node 0 receiving messages for 10 seconds
+              // and having all messages dropped for 10 seconds
               NetworkDroppers.dropAllMessagesForOneNode(10000, 10000))
           .ledgerAndEpochsAndSync(
               ConsensusConfig.of(3000), 100, epoch -> IntStream.range(0, 10), syncRelayConfig)
           .addTestModules(
               ConsensusMonitors.safety(),
-              ConsensusMonitors.liveness(30, TimeUnit.SECONDS),
+              // Allow 10 + a few seconds to start-up and for during processing
+              // to allow for covering the 10s periods of dropped messages
+              ConsensusMonitors.liveness(13, TimeUnit.SECONDS, 13, TimeUnit.SECONDS),
               ConsensusMonitors.vertexRequestRate(
                   100), // Conservative check, TODO: too conservative
               LedgerMonitors.consensusToLedger(),

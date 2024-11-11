@@ -68,9 +68,29 @@ use std::time::Instant;
 
 use tracing::warn;
 
-/// A high-level API giving a thread-safe access to the `PriorityMempool`.
+/// A high-level API giving thread-safe access to all aspects of pending transaction state:
+/// * [`PriorityMempool`]
+/// * [`PendingTransactionResultCache`] and [`CommittabilityValidator`] through the
+///   [`CachedCommittabilityValidator`]
+///
+/// It is intended to encapsulate the logic, invariants/atomicity, and lock safety of
+/// this system.
+///
+/// This means that the API of the mempool manager is relatively wide, as it covers
+/// interactions with the mempool and results cache during submit, mempool sync,
+/// prepare and commit.
+///
+/// This encapsulation will also allow us to safely refactor the internals of this
+/// logic, for example, by combining the [`PriorityMempool`] and [`PendingTransactionResultCache`]
+/// in future.
+///
+/// In particular, the [`MempoolManager`] is responsible for preventing deadlocks,
+/// by ensuring that locks, if taken out simultaneously, are taken out in a very
+/// particular order:
+/// * First, the [`PendingTransactionResultCache`] lock.
+/// * Then, the [`PriorityMempool`] lock.
 pub struct MempoolManager {
-    mempool: Arc<RwLock<PriorityMempool>>,
+    mempool: RwLock<PriorityMempool>,
     relay_dispatcher: Option<MempoolRelayDispatcher>,
     cached_committability_validator: CachedCommittabilityValidator,
     metrics: MempoolManagerMetrics,
@@ -79,7 +99,7 @@ pub struct MempoolManager {
 impl MempoolManager {
     /// Creates a manager and registers its metrics.
     pub fn new(
-        mempool: Arc<RwLock<PriorityMempool>>,
+        mempool: RwLock<PriorityMempool>,
         relay_dispatcher: MempoolRelayDispatcher,
         cached_committability_validator: CachedCommittabilityValidator,
         metric_registry: &MetricRegistry,
@@ -94,7 +114,7 @@ impl MempoolManager {
 
     /// Creates a testing manager (without the JNI-based relay dispatcher) and registers its metrics.
     pub fn new_for_testing(
-        mempool: Arc<RwLock<PriorityMempool>>,
+        mempool: RwLock<PriorityMempool>,
         cached_committability_validator: CachedCommittabilityValidator,
         metric_registry: &MetricRegistry,
     ) -> Self {
@@ -105,22 +125,28 @@ impl MempoolManager {
             metrics: MempoolManagerMetrics::new(metric_registry),
         }
     }
-}
 
-impl MempoolManager {
+    /// This is *INTERNAL ONLY* as it must be used carefully to avoid deadlocks,
+    /// as described in the RustDoc of [`MempoolManager`].
+    fn cache(&self) -> &RwLock<PendingTransactionResultCache> {
+        self.cached_committability_validator.get_cache()
+    }
+
     pub fn get_proposal_transactions(
         &self,
         max_count: usize,
         max_payload_size_bytes: u64,
         user_payload_hashes_to_exclude: &HashSet<NotarizedTransactionHash>,
     ) -> Vec<Arc<MempoolTransaction>> {
-        let read_mempool = self.mempool.read();
-
-        read_mempool.get_proposal_transactions(
+        self.mempool.read().get_proposal_transactions(
             max_count,
             max_payload_size_bytes,
             user_payload_hashes_to_exclude,
         )
+    }
+
+    pub fn get_mempool_count(&self) -> usize {
+        self.mempool.read().get_count()
     }
 
     /// Picks a random subset of transactions to be relayed via a mempool sync.
@@ -134,7 +160,10 @@ impl MempoolManager {
         // which peer/peers are we sending this to? or what do we know about said peer to have in it's mempool?
         // However (NOTE/WARN): changing transactions selection without careful consideration of the peer selection,
         // can lead to a scenario where we keep sending same transactions to same peer.
-        let candidate_transactions = self.mempool.read().get_k_random_transactions(max_count * 2);
+        let candidate_transactions = {
+            // We use a block to scope the lock guard
+            self.mempool.read().get_k_random_transactions(max_count * 2)
+        };
 
         let mut payload_size_so_far = 0;
         candidate_transactions
@@ -151,15 +180,50 @@ impl MempoolManager {
             .collect()
     }
 
+    pub fn all_known_pending_payloads_for_intent(
+        &self,
+        intent_hash: &TransactionIntentHash,
+    ) -> HashMap<NotarizedTransactionHash, PendingTransactionRecord> {
+        self.cache()
+            .read()
+            .peek_all_known_payloads_for_intent(intent_hash)
+    }
+
+    pub fn get_mempool_payload_hashes_for_intent(
+        &self,
+        intent_hash: &TransactionIntentHash,
+    ) -> Vec<NotarizedTransactionHash> {
+        self.mempool
+            .read()
+            .get_notarized_transaction_hashes_for_intent(intent_hash)
+    }
+
+    pub fn get_mempool_payload(
+        &self,
+        notarized_transaction_hash: &NotarizedTransactionHash,
+    ) -> Option<Arc<MempoolTransaction>> {
+        self.mempool.read().get_payload(notarized_transaction_hash)
+    }
+
+    pub fn get_mempool_all_hashes(&self) -> Vec<(TransactionIntentHash, NotarizedTransactionHash)> {
+        self.mempool
+            .read()
+            .all_hashes_iter()
+            .map(|(intent_hash, payload_hash)| (*intent_hash, *payload_hash))
+            .collect()
+    }
+
     /// Checks the committability of up to `max_reevaluated_count` of transactions executed against
     /// earliest state versions and removes the newly rejected ones from the mempool.
     pub fn reevaluate_transaction_committability(&self, max_reevaluated_count: u32) {
-        let candidate_transactions = self
-            .mempool
-            .read()
-            .iter_by_state_version()
-            .take(max_reevaluated_count as usize)
-            .collect::<Vec<_>>(); // collect, just to release the mempool lock
+        let candidate_transactions = {
+            // We use a block to scope the lock guard
+            self.mempool
+                .read()
+                .iter_by_state_version()
+                .take(max_reevaluated_count as usize)
+                .collect::<Vec<_>>() // collect, to allow releasing the lock early
+        };
 
         for candidate_transaction in candidate_transactions {
             // invoking the check automatically removes the transaction when rejected
@@ -230,19 +294,23 @@ impl MempoolManager {
                 // so we can't cache anything - just return an error
                 return Err(MempoolAddError::Rejected(
                     MempoolAddRejection::for_static_rejection(prepare_error.into()),
+                    None,
                 ));
             }
         };
 
-        // STEP 2 - Check if transaction is already in mempool to avoid transaction execution.
-        if self
-            .mempool
-            .read()
-            .contains_transaction(&prepared.notarized_transaction_hash())
-        {
-            return Err(MempoolAddError::Duplicate(
-                prepared.notarized_transaction_hash(),
-            ));
+        let notarized_transaction_hash = prepared.notarized_transaction_hash();
+
+        // STEP 2 - Check if transaction is already in the mempool to avoid transaction execution.
+        let is_in_mempool = {
+            // We use a block to scope the lock guard
+            self.mempool
+                .read()
+                .contains_transaction(&notarized_transaction_hash)
+        };
+
+        if is_in_mempool {
+            return Err(MempoolAddError::Duplicate(notarized_transaction_hash));
         }
 
         // STEP 3 - We validate + run the transaction through
@@ -265,7 +333,9 @@ impl MempoolManager {
             latest_attempt_against_state,
         } = record
             .should_accept_into_mempool(check_result)
-            .map_err(MempoolAddError::Rejected)?;
+            .map_err(|rejection| {
+                MempoolAddError::Rejected(rejection, Some(notarized_transaction_hash))
+            })?;
 
         let mempool_transaction = Arc::new(MempoolTransaction {
             executable,
@@ -283,30 +353,86 @@ impl MempoolManager {
         }
     }
 
+    pub fn observe_pending_execution_result(
+        &self,
+        user_transaction_hashes: UserTransactionHashes,
+        invalid_at_epoch: Option<Epoch>,
+        attempt: TransactionAttempt,
+    ) {
+        // Taking out both locks enforces atomicity of the update across the mempool and cache.
+        // SAFETY: We use the correct order as described in the `MempoolManager` RustDoc.
+        let mut pending_cache = self.cache().write();
+        let mut mempool = self.mempool.write();
+
+        mempool.observe_pending_execution_result(
+            &user_transaction_hashes.notarized_transaction_hash,
+            &attempt,
+        );
+        pending_cache.track_transaction_result(user_transaction_hashes, invalid_at_epoch, attempt);
+    }
+
     /// Removes all the transactions that have the given intent hashes.
     /// This method is meant to be called for transactions that were successfully committed - and
     /// this assumption is important for metric correctness.
-    pub fn remove_committed<'a>(
+    pub fn handle_committed_transactions(
         &self,
-        intent_hashes: impl IntoIterator<Item = &'a TransactionIntentHash>,
+        commit_time: SystemTime,
+        epoch_change: Option<EpochChangeEvent>,
+        committed_transactions: Vec<(CommittedUserTransactionIdentifiers, Vec<Nullification>)>,
     ) {
-        let mut write_mempool = self.mempool.write();
-        let removed = intent_hashes
-            .into_iter()
-            .flat_map(|intent_hash| write_mempool.remove_by_intent_hash(intent_hash))
-            .collect::<Vec<_>>();
-        drop(write_mempool);
-        removed
-            .into_iter()
-            .filter(|data| data.source == MempoolAddSource::CoreApi)
-            .map(|data| data.added_at.elapsed().as_secs_f64())
-            .for_each(|wait| self.metrics.from_local_api_to_commit_wait.observe(wait));
-    }
+        // TODO:CUTTLEFISH - We should review the atomicity of these operations between the mempool
+        // and the cache. They weren't atomic before, but maybe they should be.
 
-    /// Removes transactions no longer valid at or after the given epoch.
-    pub fn remove_txns_where_end_epoch_expired(&self, epoch: Epoch) -> Vec<MempoolData> {
-        self.mempool
-            .write()
-            .remove_txns_where_end_epoch_expired(epoch)
+        if let Some(epoch_change) = epoch_change {
+            self.mempool
+                .write()
+                .remove_txns_where_end_epoch_expired(epoch_change.epoch);
+        }
+
+        for (committed, nullifications) in committed_transactions.iter() {
+            for nullification in nullifications.iter() {
+                let Nullification::Intent { intent_hash, .. } = nullification;
+                match intent_hash {
+                    IntentHash::Transaction(transaction_intent_hash) => {
+                        let removed_payloads = {
+                            // SAFETY: Take out both locks at once for atomicity.
+                            // This take order is as per that of locks in `MempoolManager` RustDoc.
+                            // At some point, we should consider merging the cache and the mempool into a single structure.
+                            let mut cache = self.cache().write();
+                            let mut mempool = self.mempool.write();
+
+                            cache.handle_nullified_transaction_intent(
+                                commit_time,
+                                committed,
+                                *transaction_intent_hash,
+                            );
+                            mempool.remove_by_intent_hash(transaction_intent_hash)
+                        };
+
+                        for removed_data in removed_payloads {
+                            let is_same_transaction =
+                                removed_data.transaction.hashes.transaction_intent_hash
+                                    == *transaction_intent_hash;
+                            if is_same_transaction
+                                && removed_data.source == MempoolAddSource::CoreApi
+                            {
+                                self.metrics
+                                    .from_local_api_to_commit_wait
+                                    .observe(removed_data.added_at.elapsed().as_secs_f64());
+                            }
+                        }
+                    }
+                    IntentHash::Subintent(subintent_hash) => {
+                        // SAFETY: Take out both locks at once for atomicity.
+                        // This take order is as per that of locks in `MempoolManager` RustDoc.
+                        let mut cache = self.cache().write();
+                        let mut mempool = self.mempool.write();
+
+                        mempool.remove_by_subintent_hash(subintent_hash);
+                        cache.handle_nullified_subintent(commit_time, committed, *subintent_hash);
+                    }
+                }
+            }
+        }
     }
 }

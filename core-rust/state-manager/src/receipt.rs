@@ -271,13 +271,17 @@ pub struct LocalTransactionReceipt {
     pub local_execution: LocalTransactionExecution,
 }
 
+pub struct TransientReceipt {
+    pub nullifications: Vec<Nullification>,
+}
+
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoSbor)]
     pub VersionedLedgerTransactionReceipt(LedgerTransactionReceiptVersions) => LedgerTransactionReceipt = LedgerTransactionReceiptV1,
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_transaction_receipt.bin"
+            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_transaction_receipt_cuttlefish.bin"
         ))]
     ]
 }
@@ -316,9 +320,12 @@ define_versioned! {
     },
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_local_transaction_execution.bin"
-        ))]
+        #[sbor_assert(
+            backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_local_transaction_execution_cuttlefish.bin"
+            ),
+            settings(allow_name_changes)
+        )]
     ]
 }
 
@@ -353,6 +360,8 @@ impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
             substates_system_structure: value.substates_system_structure,
             events_system_structure: value.events_system_structure,
             next_epoch: value.next_epoch,
+            // May miss pre-cuttlefish intent nullifications. This is detailed in the Rustdoc below.
+            nullifications: Vec::new(),
         }
     }
 }
@@ -371,6 +380,9 @@ pub struct LocalTransactionExecutionV2 {
     pub substates_system_structure: BySubstate<SubstateSystemStructure>,
     pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
     pub next_epoch: Option<EpochChangeEvent>,
+    /// Pre-cuttlefish, this may be missing Intent nullifications.
+    /// But this is guaranteed to include all subintent nullifications.
+    pub nullifications: Vec<Nullification>,
 }
 
 impl LedgerTransactionReceipt {
@@ -433,6 +445,7 @@ impl LocalTransactionReceipt {
                 ),
                 events_system_structure: system_structure.event_system_structures,
                 next_epoch,
+                nullifications: commit_result.performed_nullifications,
             },
         }
     }

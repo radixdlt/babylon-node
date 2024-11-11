@@ -184,7 +184,7 @@ fn to_api_parsed_notarized_transaction(
         .map(|error| {
             Box::new(models::ParsedNotarizedTransactionAllOfValidationError {
                 reason: format!("{error:?}"),
-                is_permanent: error.is_permanent_for_payload(),
+                is_permanent: error.is_permanent_for_payload(&AtState::Static),
             })
         });
 
