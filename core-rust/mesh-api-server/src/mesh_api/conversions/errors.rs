@@ -23,6 +23,9 @@ pub enum MappingError {
     InvalidAccount {
         message: String,
     },
+    InvalidTransactionIdentifier {
+        message: String,
+    },
 }
 
 impl From<MappingError> for ResponseError {

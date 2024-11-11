@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-pub fn to_api_hash_bech32m<T: IsTransactionHash>(
+pub fn to_api_transaction_hash_bech32m<T: IsTransactionHash>(
     context: &MappingContext,
     hash: &T,
 ) -> Result<String, MappingError> {

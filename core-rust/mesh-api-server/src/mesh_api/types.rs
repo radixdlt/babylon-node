@@ -28,11 +28,12 @@ impl From<DetailedTransactionOutcome> for MeshApiOperationStatus {
     }
 }
 
-impl From<MeshApiOperationStatus> for bool {
+impl From<MeshApiOperationStatus> for models::OperationStatus {
     fn from(value: MeshApiOperationStatus) -> Self {
-        match value {
-            MeshApiOperationStatus::Success => true,
+        let successful = match value {
             MeshApiOperationStatus::Failure => false,
-        }
+            MeshApiOperationStatus::Success => true,
+        };
+        Self::new(value.to_string(), successful)
     }
 }

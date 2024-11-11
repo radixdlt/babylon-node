@@ -20,9 +20,7 @@ pub(crate) async fn handle_network_options(
             metadata: None,
         }),
         allow: Box::new(models::Allow {
-            operation_statuses: MeshApiOperationStatus::iter()
-                .map(|s| models::OperationStatus::new(s.to_string(), s.into()))
-                .collect(),
+            operation_statuses: MeshApiOperationStatus::iter().map(|s| s.into()).collect(),
             operation_types: MeshApiOperationTypes::iter()
                 .map(|o| o.to_string())
                 .collect(),
