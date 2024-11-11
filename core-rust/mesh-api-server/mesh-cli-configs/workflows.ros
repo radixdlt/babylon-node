@@ -1,0 +1,14 @@
+radix_workflow(1){
+  create_account{
+    network = {"network":"localnet", "blockchain":"radix"};
+    key = generate_key({"curve_type":"secp256k1"});
+    account = derive({
+      "network_identifier": {{network}},
+      "public_key": {{key.public_key}}
+    });
+    save_account({
+      "account_identifier": {{account.account_identifier}},
+      "keypair": {{key}}
+    });
+  }
+}
