@@ -1,4 +1,5 @@
 mod account_balance;
+mod block;
 mod construction_combine;
 mod construction_derive;
 mod construction_hash;
@@ -12,6 +13,7 @@ mod network_options;
 mod network_status;
 
 pub(crate) use account_balance::*;
+pub(crate) use block::*;
 pub(crate) use construction_combine::*;
 pub(crate) use construction_derive::*;
 pub(crate) use construction_hash::*;

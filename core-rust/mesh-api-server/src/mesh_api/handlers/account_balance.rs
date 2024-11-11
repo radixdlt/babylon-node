@@ -93,15 +93,11 @@ pub(crate) async fn handle_account_balance(
                 database.deref(),
                 &fungible_resource_address,
             )?;
-            Ok(models::Amount {
-                value: to_api_decimal(&amount),
-                currency: Box::new(currency),
-                metadata: None,
-            })
+            Ok(to_mesh_api_amount(amount, currency)?)
         })
         .collect::<Result<Vec<_>, MappingError>>()?;
 
-    // See https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field
+    // see https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field
     // definitions
     Ok(Json(models::AccountBalanceResponse {
         block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
