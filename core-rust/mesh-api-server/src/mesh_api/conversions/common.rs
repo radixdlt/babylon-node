@@ -43,16 +43,11 @@ pub fn to_mesh_api_transaction_identifier(
         .transaction_hashes
         .as_user()
     {
-        // According to the description in https://docs.cdp.coinbase.com/mesh/docs/models#blockresponse
-        // blocks must form a canonical, CONNECTED chain of blocks.
-        // Two options here:
-        // 1. In case of non-user transaction we return empty transaction, to preserve block continuity.
-        // 2. [Presumably] We could return None for non-user transactions, if `parent_block_identifier`
-        //    for user transaction was pointing to the previous user transaction.
-        //
-        // Let's go with 1) for now.
-        // Unfortunately non-user transactions don't have txid,
-        // Let's use state_version as transaction_identifier.
+        // TODO:MESH Support non-user transactions.
+        // For now we take into account only user transactions.
+        // For non-user we return empty operations vector and artificial transaction identifier
+        // (unfortunately non-user transactions don't have txid, let's use state_version as
+        // transaction_identifier).
         None => {
             let transaction_identifier = format!("state_version_{}", state_version);
             if requested_transaction_identifier.is_some_and(|tx_id| tx_id != transaction_identifier)
