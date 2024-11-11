@@ -68,6 +68,7 @@ mod helpers;
 mod metrics;
 mod metrics_layer;
 mod server;
+mod types;
 
 #[allow(unused)]
 #[rustfmt::skip]
@@ -78,6 +79,7 @@ pub(crate) use conversions::*;
 pub(crate) use errors::*;
 pub(crate) use helpers::*;
 pub(crate) use server::{create_server, MeshApiServerConfig, MeshApiState};
+pub(crate) use types::*;
 
 pub(crate) mod models {
     pub(crate) use super::generated::models::*;

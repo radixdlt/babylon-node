@@ -27,6 +27,8 @@ pub(crate) enum ApiError {
     AccountNotFound,
     #[strum(serialize = "Invalid resource")]
     InvalidResource,
+    #[strum(serialize = "Transaction not found")]
+    TransactionNotFound,
 }
 
 impl From<ApiError> for ResponseError {
@@ -199,26 +201,4 @@ pub(crate) fn assert_matching_network(
             .with_details(format!("Invalid network - subnetworks not supported",)));
     }
     Ok(())
-}
-
-pub(crate) fn assert_account(
-    account_identifier: &models::AccountIdentifier,
-) -> Result<(), ResponseError> {
-    if let Some(_) = account_identifier.sub_account {
-        return Err(client_error("Sub accounts not supported.", false));
-    }
-    if !account_identifier.address.starts_with("account_") {
-        return Err(client_error(
-            "Only addresses starting account_ work with this endpoint.",
-            false,
-        ));
-    }
-    Ok(())
-}
-
-// TODO:MESH - Add logging, metrics and tracing for all of these errors - require the error is passed in here
-pub(crate) fn client_error(message: impl Into<String>, retriable: bool) -> ResponseError {
-    ResponseError::from(ApiError::InvalidRequest)
-        .retriable(retriable)
-        .with_details(message)
 }

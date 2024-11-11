@@ -4,7 +4,7 @@
         "network": "localnet"
     },
     "online_url": "http://localhost:3337/mesh",
-    "data_directory": "",
+    "data_directory": "test-data",
     "http_timeout": 10,
     "max_retries": 5,
     "retry_elapsed_time": 0,
@@ -39,7 +39,11 @@
         "results_output_file": "",
         "pruning_block_disabled": false,
         "pruning_balance_disabled": false,
-        "initial_balance_fetch_disabled": false
+        "initial_balance_fetch_disabled": false,
+        "end_conditions":{
+          "tip":true,
+          "index": 10000
+        }
     },
     "construction": null,
     "perf": null,
