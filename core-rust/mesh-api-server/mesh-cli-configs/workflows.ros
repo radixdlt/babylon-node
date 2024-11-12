@@ -2,13 +2,68 @@ radix_workflow(1){
   create_account{
     network = {"network":"localnet", "blockchain":"radix"};
     key = generate_key({"curve_type":"secp256k1"});
-    account = derive({
+    recipient = derive({
       "network_identifier": {{network}},
       "public_key": {{key.public_key}}
     });
     save_account({
-      "account_identifier": {{account.account_identifier}},
+      "account_identifier": {{recipient.account_identifier}},
       "keypair": {{key}}
     });
+    print_message("recipient:");
+    print_message({{recipient}});
+  },
+  transfer{
+    currency = {"symbol":"resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv", "decimals":18};
+    min_balance = "100000000000000000000";
+
+    sender = find_balance({
+      "minimum_balance":{
+        "value": {{min_balance}},
+        "currency": {{currency}}
+      }
+    });
+    print_message("sender:");
+    print_message({{sender}});
+
+    fee_amount = "100000000000000000";
+    transfer_amount = "500000000000000000";
+
+    transfer.confirmation_depth = "1";
+    transfer.network = {{network}};
+    transfer.operations = [
+      {
+        "operation_identifier":{"index":0},
+        "type":"LockFee",
+        "status":"SUCCESS",
+        "account":{{sender.account_identifier}},
+        "amount":{
+          "value":{{fee_amount}},
+          "currency":{{currency}}
+        }
+      },
+      {
+        "operation_identifier":{"index":1},
+        "type":"Withdraw",
+        "status":"SUCCESS",
+        "account":{{sender.account_identifier}},
+        "amount":{
+          "value":{{transfer_amount}},
+          "currency":{{currency}}
+        }
+      },
+      {
+        "operation_identifier":{"index":1},
+        "type":"Deposit",
+        "status":"SUCCESS",
+        "account":{{recipient.account_identifier}},
+        "amount":{
+          "value":{{transfer_amount}},
+          "currency":{{currency}}
+        }
+      }
+    ];
+
+    print_message({{transfer}});
   }
 }
