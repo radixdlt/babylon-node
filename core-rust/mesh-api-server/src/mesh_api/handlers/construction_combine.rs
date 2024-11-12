@@ -7,7 +7,7 @@ pub(crate) async fn handle_construction_combine(
     assert_matching_network(&request.network_identifier, &state.network)?;
 
     let signature = if request.signatures.len() == 1 {
-        assert_signature(&request.signatures[0])?
+        extract_signature(&request.signatures[0])?
     } else {
         return Err(client_error(
             format!(

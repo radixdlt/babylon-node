@@ -1,7 +1,7 @@
+use super::ConstructionMetadata;
 use crate::prelude::*;
 use models::{AccountIdentifier, SignatureType, SigningPayload};
 use radix_transactions::prelude::ManifestBuilder;
-use rand::Rng;
 
 pub(crate) async fn handle_construction_payloads(
     state: State<MeshApiState>,
@@ -11,7 +11,7 @@ pub(crate) async fn handle_construction_payloads(
 
     let public_key = if let Some(public_keys) = request.public_keys {
         if public_keys.len() == 1 {
-            assert_public_key(&public_keys[0])?
+            extract_public_key(&public_keys[0])?
         } else {
             return Err(client_error(
                 format!("Expected 1 public key, but received {}", public_keys.len()),
@@ -23,12 +23,21 @@ pub(crate) async fn handle_construction_payloads(
     };
     let address = state.public_key_to_address(public_key);
 
+    let metadata: ConstructionMetadata = serde_json::from_value(
+        request
+            .metadata
+            .ok_or(client_error("Missing metadata", false))?,
+    )
+    .map_err(|_| client_error("Invalid metadata", false))?;
+
+    let extraction_context = ExtractionContext::new(&state.network);
     let mut builder = ManifestBuilder::new();
     for operation in request.operations {
         match operation._type.as_str() {
             "LockFee" => {
-                let account = assert_account_from_option(&state.network, operation.account)?;
-                let (address, quantity) = assert_amount_from_option(operation.amount.clone())?;
+                let account = extract_account_from_option(&extraction_context, operation.account)?;
+                let (address, quantity) =
+                    extract_amount_from_option(&extraction_context, operation.amount.clone())?;
                 if address != XRD {
                     return Err(client_error(
                         format!("LockFee only supports XRD: actual = {:?}", operation.amount),
@@ -38,13 +47,15 @@ pub(crate) async fn handle_construction_payloads(
                 builder = builder.lock_fee(account, quantity);
             }
             "Withdraw" => {
-                let account = assert_account_from_option(&state.network, operation.account)?;
-                let (address, quantity) = assert_amount_from_option(operation.amount)?;
+                let account = extract_account_from_option(&extraction_context, operation.account)?;
+                let (address, quantity) =
+                    extract_amount_from_option(&extraction_context, operation.amount)?;
                 builder = builder.withdraw_from_account(account, address, quantity);
             }
             "Deposit" => {
-                let account = assert_account_from_option(&state.network, operation.account)?;
-                let (address, quantity) = assert_amount_from_option(operation.amount)?;
+                let account = extract_account_from_option(&extraction_context, operation.account)?;
+                let (address, quantity) =
+                    extract_amount_from_option(&extraction_context, operation.amount)?;
                 let bucket = builder.generate_bucket_name("bucket");
                 builder = builder.take_from_worktop(address, quantity, &bucket);
                 builder = builder.try_deposit_or_abort(account, None, bucket);
@@ -57,18 +68,12 @@ pub(crate) async fn handle_construction_payloads(
     }
     let manifest = builder.build();
 
-    let database = state.state_manager.database.snapshot();
-    let current_epoch = database
-        .get_latest_epoch_proof()
-        .unwrap()
-        .ledger_header
-        .epoch;
     let intent = IntentV1 {
         header: TransactionHeaderV1 {
             network_id: state.network.id,
-            start_epoch_inclusive: current_epoch, // TODO:MESH move variables to metadata for deterministic payloads
-            end_epoch_exclusive: current_epoch.after(100).unwrap(),
-            nonce: rand::thread_rng().gen(),
+            start_epoch_inclusive: Epoch::of(metadata.start_epoch_inclusive),
+            end_epoch_exclusive: Epoch::of(metadata.end_epoch_exclusive),
+            nonce: metadata.nonce,
             notary_public_key: public_key,
             notary_is_signatory: true,
             tip_percentage: 0,

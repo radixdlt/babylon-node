@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use models::{AccountIdentifier, Amount, Currency, Operation, OperationIdentifier};
+use models::AccountIdentifier;
+use models::{Operation, OperationIdentifier};
 use radix_engine_interface::blueprints::account::{
     AccountLockFeeManifestInput, AccountTryDepositOrAbortManifestInput,
     AccountWithdrawManifestInput,
@@ -49,8 +50,39 @@ pub(crate) async fn handle_construction_parse(
         (instructions, signers)
     };
 
+    let database = state.state_manager.database.snapshot();
+    let operations = parse_instructions(
+        &instructions,
+        &MappingContext::new(&state.network),
+        database.deref(),
+    )?;
+
+    // See https://docs.cdp.coinbase.com/mesh/docs/models#constructionparseresponse for field
+    // definitions
+    Ok(Json(models::ConstructionParseResponse {
+        operations,
+        signers: None,
+        account_identifier_signers: Some(
+            signers
+                .into_iter()
+                .map(|x| AccountIdentifier {
+                    address: state.public_key_to_address(x),
+                    sub_account: None,
+                    metadata: None,
+                })
+                .collect(),
+        ),
+        metadata: None,
+    }))
+}
+
+pub fn parse_instructions(
+    instructions: &[InstructionV1],
+    mapping_context: &MappingContext,
+    database: &StateManagerDatabase<impl ReadableRocks>,
+) -> Result<Vec<Operation>, ResponseError> {
     let mut operations = Vec::new();
-    let index = 0;
+    let mut index = 0;
     while index < instructions.len() {
         let mut instruction = &instructions[index];
         match instruction {
@@ -72,23 +104,18 @@ pub(crate) async fn handle_construction_parse(
                             related_operations: None,
                             _type: "LockFee".to_owned(),
                             status: None,
-                            account: Some(Box::new(AccountIdentifier {
-                                address: state
-                                    .address_encoder()
-                                    .encode(global_address.as_bytes())
-                                    .unwrap(),
-                                sub_account: None,
-                                metadata: None,
-                            })),
-                            amount: Some(Box::new(Amount {
-                                value: input.amount.to_string(), // TODO: fix decimal
-                                currency: Box::new(Currency {
-                                    symbol: "XRD".to_owned(),
-                                    decimals: 18,
-                                    metadata: None,
-                                }),
-                                metadata: None,
-                            })),
+                            account: Some(Box::new(to_mesh_api_account_from_address(
+                                mapping_context,
+                                global_address,
+                            )?)),
+                            amount: Some(Box::new(to_mesh_api_amount(
+                                input.amount.clone(),
+                                to_mesh_api_currency_from_resource_address(
+                                    mapping_context,
+                                    database,
+                                    &XRD,
+                                )?,
+                            )?)),
                             coin_change: None,
                             metadata: None,
                         });
@@ -104,23 +131,18 @@ pub(crate) async fn handle_construction_parse(
                             related_operations: None,
                             _type: "Withdraw".to_owned(),
                             status: None,
-                            account: Some(Box::new(AccountIdentifier {
-                                address: state
-                                    .address_encoder()
-                                    .encode(global_address.as_bytes())
-                                    .unwrap(),
-                                sub_account: None,
-                                metadata: None,
-                            })),
-                            amount: Some(Box::new(Amount {
-                                value: input.amount.to_string(), // TODO: fix decimal
-                                currency: Box::new(Currency {
-                                    symbol: "XRD".to_owned(), // TODO: fix resource
-                                    decimals: 18,
-                                    metadata: None,
-                                }),
-                                metadata: None,
-                            })),
+                            account: Some(Box::new(to_mesh_api_account_from_address(
+                                mapping_context,
+                                global_address,
+                            )?)),
+                            amount: Some(Box::new(to_mesh_api_amount(
+                                input.amount.clone(),
+                                to_mesh_api_currency_from_resource_address(
+                                    mapping_context,
+                                    database,
+                                    &input.resource_address,
+                                )?,
+                            )?)),
                             coin_change: None,
                             metadata: None,
                         });
@@ -134,9 +156,10 @@ pub(crate) async fn handle_construction_parse(
                 }
             }
             InstructionV1::TakeFromWorktop(TakeFromWorktop {
-                resource_address: _,
+                resource_address,
                 amount,
             }) if index < instructions.len() - 1 => {
+                index = index + 1;
                 instruction = &instructions[index];
                 if let InstructionV1::CallMethod(CallMethod {
                     address: DynamicGlobalAddress::Static(global_address),
@@ -156,23 +179,18 @@ pub(crate) async fn handle_construction_parse(
                                 related_operations: None,
                                 _type: "Withdraw".to_owned(),
                                 status: None,
-                                account: Some(Box::new(AccountIdentifier {
-                                    address: state
-                                        .address_encoder()
-                                        .encode(global_address.as_bytes())
-                                        .unwrap(),
-                                    sub_account: None,
-                                    metadata: None,
-                                })),
-                                amount: Some(Box::new(Amount {
-                                    value: amount.to_string(), // TODO: fix decimal
-                                    currency: Box::new(Currency {
-                                        symbol: "XRD".to_owned(), // TODO: fix resource
-                                        decimals: 18,
-                                        metadata: None,
-                                    }),
-                                    metadata: None,
-                                })),
+                                account: Some(Box::new(to_mesh_api_account_from_address(
+                                    mapping_context,
+                                    global_address,
+                                )?)),
+                                amount: Some(Box::new(to_mesh_api_amount(
+                                    *amount,
+                                    to_mesh_api_currency_from_resource_address(
+                                        mapping_context,
+                                        database,
+                                        resource_address,
+                                    )?,
+                                )?)),
                                 coin_change: None,
                                 metadata: None,
                             });
@@ -193,23 +211,8 @@ pub(crate) async fn handle_construction_parse(
                 ));
             }
         }
+        index = index + 1;
     }
 
-    // See https://docs.cdp.coinbase.com/mesh/docs/models#constructionparseresponse for field
-    // definitions
-    Ok(Json(models::ConstructionParseResponse {
-        operations,
-        signers: None,
-        account_identifier_signers: Some(
-            signers
-                .into_iter()
-                .map(|x| AccountIdentifier {
-                    address: state.public_key_to_address(x),
-                    sub_account: None,
-                    metadata: None,
-                })
-                .collect(),
-        ),
-        metadata: None,
-    }))
+    Ok(operations)
 }

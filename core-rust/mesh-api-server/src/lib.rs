@@ -75,6 +75,7 @@ pub(crate) mod prelude {
     pub(crate) use state_manager::prelude::*;
 
     pub(crate) use crate::mesh_api::*;
+    pub(crate) use borrow::Borrow;
     pub(crate) use historical_state::*;
 
     // Axum imports

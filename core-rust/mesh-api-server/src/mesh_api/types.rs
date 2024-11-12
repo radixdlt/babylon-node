@@ -1,7 +1,7 @@
 use crate::engine_prelude::*;
 use crate::prelude::*;
 
-#[derive(Debug, Clone, EnumIter, Display, FromRepr)]
+#[derive(Debug, Clone, EnumIter, Display, FromRepr, AsRefStr)]
 #[repr(i64)]
 pub(crate) enum MeshApiOperationTypes {
     Withdraw,

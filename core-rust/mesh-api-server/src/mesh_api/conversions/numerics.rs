@@ -169,3 +169,50 @@ pub fn to_mesh_api_amount(
 
     Ok(models::Amount::new(value.attos().to_string(), currency))
 }
+
+pub(crate) fn extract_amount(
+    extraction_context: &ExtractionContext,
+    amount: &models::Amount,
+) -> Result<(ResourceAddress, Decimal), ResponseError> {
+    let address = ResourceAddress::try_from_bech32(
+        &extraction_context.address_decoder,
+        &amount.currency.symbol,
+    )
+    .ok_or(client_error(
+        format!("Invalid resource address: {:?}", amount.currency.symbol),
+        false,
+    ))?;
+
+    let scale = if amount.currency.decimals < 0 || amount.currency.decimals > 18 {
+        return Err(client_error(
+            format!("Invalid decimals: {}", amount.currency.decimals),
+            false,
+        ));
+    } else {
+        dec!(10)
+            .checked_powi(amount.currency.decimals as i64)
+            .unwrap()
+    };
+
+    let quantity = Decimal::from_str(&amount.value)
+        .ok()
+        .and_then(|x| x.checked_div(scale))
+        .ok_or(client_error(
+            format!("Invalid quantity: {:?}", amount.value),
+            false,
+        ))?;
+
+    Ok((address, quantity))
+}
+
+pub(crate) fn extract_amount_from_option(
+    extraction_context: &ExtractionContext,
+    amount: Option<Box<crate::mesh_api::generated::models::Amount>>,
+) -> Result<(ResourceAddress, Decimal), ResponseError> {
+    extract_amount(
+        extraction_context,
+        amount
+            .ok_or(client_error("Missing amount", false))?
+            .borrow(),
+    )
+}
