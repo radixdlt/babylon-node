@@ -59,7 +59,12 @@ fn extract_preview_executable(
 
     validate_preview_transaction(state_manager, flags, raw_preview_transaction).map_err(|err| {
         let status_code = StatusCode::BAD_REQUEST;
-        let public_message = "";
+        // The gateway uses this message in the error it passes  back to the client -
+        // so this must include a detailed error message for debugging purposes.
+        // Specifically in the case of the wallet it passes this back to the Connector Extension
+        // to include in its logs, which dApp builders can read.
+        let public_message = format!("Validation Error: {:?}", err);
+
         let details =
             models::TransactionPreviewV2ErrorDetails::InvalidTransactionPreviewV2ErrorDetails {
                 validation_error: format!("{:?}", err),
