@@ -260,8 +260,10 @@ jobs:
         run: ./gradlew :core:run --info &
       - name: Wait for 2 minutes
         run: sleep 2m
-      - name: Run mesh-cli tests (TODO:MESH add other checks)
-        run: ./bin/rosetta-cli check:data --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
+      - name: Run Data API tests
+        run: ./rosetta-cli/rosetta-cli-0.10.4-linux-amd64 check:data --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
+      - name: Run Construction API tests
+        run: ./rosetta-cli/rosetta-cli-0.10.4-linux-amd64 check:data --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
   cross-xwin:
     name: Cross compile to Windows
     runs-on: ubuntu-latest
