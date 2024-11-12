@@ -70,20 +70,63 @@ import com.radixdlt.api.DeterministicMeshApiTestBase;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
 import com.radixdlt.api.mesh.generated.models.*;
 import com.radixdlt.rev2.TransactionBuilder;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.ArrayList;
 import org.junit.Test;
 
-public class MeshApiMempoolEndpointTest extends DeterministicMeshApiTestBase {
-  private static final Logger log = LogManager.getLogger();
+public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
 
   @Test
-  public void test_mempool_queries() throws Exception {
+  public void test_mempool_endpoint() throws Exception {
     try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
-      var transaction1 = TransactionBuilder.forTests().prepare();
+      // Arrange
+      var network_identifier =
+          new NetworkIdentifier().blockchain("radix").network(networkLogicalName);
+      var expected_transaction_identifiers = new ArrayList<TransactionIdentifier>();
+
+      for (int i = 0; i < 2; i++) {
+        var transaction = TransactionBuilder.forTests().prepare();
+
+        expected_transaction_identifiers.add(
+            new TransactionIdentifier()
+                .hash(addressing.encode(transaction.transactionIntentHash())));
+
+        // Submit transaction to the CoreAPI
+        var response =
+            getCoreTransactionApi()
+                .transactionSubmitPost(
+                    new TransactionSubmitRequest()
+                        .network(networkLogicalName)
+                        .notarizedTransactionHex(transaction.hexPayloadBytes()));
+
+        assertThat(response.getDuplicate()).isFalse();
+      }
+
+      // Act
+      // Get mempool from the MeshAPI
+      var mempool_response =
+          getMempoolApi()
+              .mempool(new NetworkRequest().networkIdentifier(network_identifier))
+              .getTransactionIdentifiers();
+
+      // Assert that both transactions are in the mempool  list
+      assertThat(mempool_response).isEqualTo(expected_transaction_identifiers);
+    }
+  }
+
+  @Test
+  public void test_mempool_transaction_endpoint() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      // Arrange
+      var network_identifier =
+          new NetworkIdentifier().blockchain("radix").network(networkLogicalName);
+
+      var transaction = TransactionBuilder.forTests().prepare();
+      var transaction_identifier =
+          new TransactionIdentifier().hash(addressing.encode(transaction.transactionIntentHash()));
 
       // Submit transaction to the CoreAPI
       var response =
@@ -91,53 +134,23 @@ public class MeshApiMempoolEndpointTest extends DeterministicMeshApiTestBase {
               .transactionSubmitPost(
                   new TransactionSubmitRequest()
                       .network(networkLogicalName)
-                      .notarizedTransactionHex(transaction1.hexPayloadBytes()));
+                      .notarizedTransactionHex(transaction.hexPayloadBytes()));
 
       assertThat(response.getDuplicate()).isFalse();
 
-      var transaction2 = TransactionBuilder.forTests().prepare();
-
-      // Submit transaction2 to the CoreAPI
-      response =
-          getCoreTransactionApi()
-              .transactionSubmitPost(
-                  new TransactionSubmitRequest()
-                      .network(networkLogicalName)
-                      .notarizedTransactionHex(transaction2.hexPayloadBytes()));
-      assertThat(response.getDuplicate()).isFalse();
-
-      var network_identifier =
-          new NetworkIdentifier().blockchain("radix").network(networkLogicalName);
-      var transaction1_identifier =
-          new TransactionIdentifier().hash(addressing.encode(transaction1.transactionIntentHash()));
-      var transaction2_identifier =
-          new TransactionIdentifier().hash(addressing.encode(transaction2.transactionIntentHash()));
-
-      // Get mempool from the MeshAPI
-      var mempool_response =
-          getMempoolApi()
-              .mempool(new NetworkRequest().networkIdentifier(network_identifier))
-              .getTransactionIdentifiers();
-
-      log.info("response = {}", mempool_response);
-
-      // Assert that both transactions are in the mempool  list
-      assertThat(
-          mempool_response.equals(List.of(transaction1_identifier, transaction2_identifier)));
-
+      // Act
+      // Get mempool transaction from the MeshAPI
       var mempool_transaction_response =
           getMempoolApi()
               .mempoolTransaction(
                   new MempoolTransactionRequest()
                       .networkIdentifier(network_identifier)
-                      .transactionIdentifier(transaction1_identifier))
+                      .transactionIdentifier(transaction_identifier))
               .getTransaction();
-      log.info("response = {}", mempool_transaction_response);
 
       // Assert that transaction1 is in the mempool transaction list
-      assertThat(
-          mempool_transaction_response.equals(
-              new Transaction().transactionIdentifier(transaction1_identifier)));
+      assertThat(mempool_transaction_response)
+          .isEqualTo(new Transaction().transactionIdentifier(transaction_identifier));
     }
   }
 }
