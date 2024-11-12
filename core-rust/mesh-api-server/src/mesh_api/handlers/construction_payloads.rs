@@ -21,6 +21,10 @@ pub(crate) async fn handle_construction_payloads(
     } else {
         return Err(client_error("Missing public_keys", false));
     };
+    let signature_type = match &public_key {
+        PublicKey::Secp256k1(_) => SignatureType::EcdsaRecovery,
+        PublicKey::Ed25519(_) => SignatureType::Ed25519,
+    };
     let address = state.public_key_to_address(public_key);
 
     let metadata: ConstructionMetadata = serde_json::from_value(
@@ -117,7 +121,7 @@ pub(crate) async fn handle_construction_payloads(
                 metadata: None,
             })),
             hex_bytes: hex::encode(signed_intent_hash.as_bytes()),
-            signature_type: Some(SignatureType::Ecdsa),
+            signature_type: Some(signature_type),
         }],
     }))
 }

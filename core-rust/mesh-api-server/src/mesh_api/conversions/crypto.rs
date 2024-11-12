@@ -34,10 +34,17 @@ pub(crate) fn extract_signature(
     signature: &crate::mesh_api::generated::models::Signature,
 ) -> Result<SignatureV1, ResponseError> {
     match signature.signature_type {
-        SignatureType::Ecdsa => Ok(SignatureV1::Secp256k1(
+        SignatureType::EcdsaRecovery => Ok(SignatureV1::Secp256k1(
             hex::decode(&signature.hex_bytes)
                 .ok()
-                .and_then(|bytes| Secp256k1Signature::try_from(bytes.as_slice()).ok())
+                .and_then(|mut bytes| {
+                    // Mesh uses r + s + v
+                    // Radix uses v + r + s
+                    if let Some(v) = bytes.pop() {
+                        bytes.insert(0, v);
+                    }
+                    Secp256k1Signature::try_from(bytes.as_slice()).ok()
+                })
                 .ok_or(client_error(
                     format!("Invalid Secp256k1 signature: {}", signature.hex_bytes),
                     false,

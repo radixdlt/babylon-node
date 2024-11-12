@@ -15,7 +15,7 @@ radix_workflow(1){
   },
   transfer{
     currency = {"symbol":"resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv", "decimals":18};
-    min_balance = "100000000000000000000";
+    min_balance = "1111000000000000000000";
 
     sender = find_balance({
       "minimum_balance":{
@@ -26,8 +26,8 @@ radix_workflow(1){
     print_message("sender:");
     print_message({{sender}});
 
-    fee_amount = "100000000000000000";
-    transfer_amount = "500000000000000000";
+    fee_amount = "22000000000000000000";
+    transfer_amount = "33000000000000000000";
 
     transfer.confirmation_depth = "1";
     transfer.network = {{network}};

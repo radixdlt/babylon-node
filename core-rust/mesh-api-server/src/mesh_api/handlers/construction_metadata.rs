@@ -33,8 +33,8 @@ pub(crate) async fn handle_construction_metadata(
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ConstructionMetadata {
-  pub  start_epoch_inclusive: u64,
-  pub  end_epoch_exclusive: u64,
-  pub nonce: u32,
-  pub tip_percentage: u16,
+    pub start_epoch_inclusive: u64,
+    pub end_epoch_exclusive: u64,
+    pub nonce: u32,
+    pub tip_percentage: u16,
 }
