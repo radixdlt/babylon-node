@@ -30,7 +30,7 @@ pub(crate) async fn handle_transaction_preview_v2(
         include_logs: options.and_then(|o| o.logs).unwrap_or(false),
     };
 
-    let preview_flags = extract_preview_flags(request.flags.as_ref().map(|f| &**f));
+    let preview_flags = extract_preview_flags(request.flags.as_deref());
     let disable_auth = preview_flags.disable_auth;
 
     let preview_executable =

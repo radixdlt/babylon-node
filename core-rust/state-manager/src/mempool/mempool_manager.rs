@@ -380,9 +380,6 @@ impl MempoolManager {
         epoch_change: Option<EpochChangeEvent>,
         committed_transactions: Vec<(CommittedUserTransactionIdentifiers, Vec<Nullification>)>,
     ) {
-        // TODO:CUTTLEFISH - We should review the atomicity of these operations between the mempool
-        // and the cache. They weren't atomic before, but maybe they should be.
-
         if let Some(epoch_change) = epoch_change {
             self.mempool
                 .write()
