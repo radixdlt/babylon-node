@@ -128,8 +128,14 @@ impl MempoolAddRejection {
     }
 }
 
-impl Display for MempoolAddError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolAddError {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
         match self {
             MempoolAddError::PriorityThresholdNotMet {
                 min_tip_basis_points_required,
@@ -143,7 +149,9 @@ impl Display for MempoolAddError {
                 }
             },
             MempoolAddError::Duplicate(_) => write!(f, "Duplicate Entry"),
-            MempoolAddError::Rejected(rejection, _) => write!(f, "{}", rejection.reason),
+            MempoolAddError::Rejected(rejection, _) => {
+                rejection.reason.contextual_format(f, context)
+            }
         }
     }
 }

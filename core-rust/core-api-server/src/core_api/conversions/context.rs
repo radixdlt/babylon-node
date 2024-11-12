@@ -11,6 +11,14 @@ pub struct MappingContext {
     pub substate_options: SubstateOptions,
 }
 
+impl<'a> From<&'a MappingContext> for ScryptoValueDisplayContext<'a> {
+    fn from(val: &'a MappingContext) -> Self {
+        ScryptoValueDisplayContext {
+            address_bech32_encoder: Some(&val.address_encoder),
+        }
+    }
+}
+
 impl MappingContext {
     pub fn new(network_definition: &NetworkDefinition) -> Self {
         Self {

@@ -231,7 +231,7 @@ impl ProcessedCommitResult {
                 "{} (ledger hash: {}) failed: {:?}",
                 desc,
                 self.hash_structures_diff.ledger_hashes.transaction_root,
-                error.render()
+                error.to_string(NO_NETWORK)
             );
         }
         self

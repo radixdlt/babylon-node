@@ -53,7 +53,7 @@ pub(crate) async fn handle_transaction_submit(
                     StatusCode::BAD_REQUEST,
                     "The transaction execution resulted in a rejection",
                     TransactionSubmitErrorDetails::TransactionSubmitRejectedErrorDetails {
-                        error_message: format!("{}", rejection.reason),
+                        error_message: rejection.reason.to_string(&mapping_context),
                         is_fresh: !rejection.was_cached,
                         is_payload_rejection_permanent: rejection.is_permanent_for_payload(),
                         is_intent_rejection_permanent: rejection.is_permanent_for_intent(),

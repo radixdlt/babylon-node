@@ -210,8 +210,14 @@ pub enum RetrySettings {
     FromProposerTimestamp { proposer_timestamp: Instant },
 }
 
-impl fmt::Display for MempoolRejectionReason {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolRejectionReason {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
         match self {
             MempoolRejectionReason::SubintentAlreadyFinalized(error) => {
                 write!(f, "Subintent already finalized: {error:?}")
@@ -220,7 +226,7 @@ impl fmt::Display for MempoolRejectionReason {
                 write!(f, "Already committed: {error:?}")
             }
             MempoolRejectionReason::FromExecution(rejection_error) => {
-                write!(f, "{rejection_error}")
+                rejection_error.contextual_format(f, context)
             }
             MempoolRejectionReason::ValidationError(validation_error) => {
                 write!(f, "Validation Error: {validation_error:?}")
