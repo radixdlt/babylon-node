@@ -37,8 +37,10 @@ pub(crate) async fn handle_construction_payloads(
     let extraction_context = ExtractionContext::new(&state.network);
     let mut builder = ManifestBuilder::new();
     for operation in request.operations {
-        match operation._type.as_str() {
-            "LockFee" => {
+        let operation_type = MeshApiOperationTypes::from_str(operation._type.as_str())
+            .map_err(|_| client_error(format!("Invalid operation: {}", operation._type), false))?;
+        match operation_type {
+            MeshApiOperationTypes::LockFee => {
                 let account = extract_account_from_option(&extraction_context, operation.account)?;
                 let (address, quantity) =
                     extract_amount_from_option(&extraction_context, operation.amount.clone())?;
@@ -50,23 +52,19 @@ pub(crate) async fn handle_construction_payloads(
                 }
                 builder = builder.lock_fee(account, quantity);
             }
-            "Withdraw" => {
+            MeshApiOperationTypes::Withdraw => {
                 let account = extract_account_from_option(&extraction_context, operation.account)?;
                 let (address, quantity) =
                     extract_amount_from_option(&extraction_context, operation.amount)?;
                 builder = builder.withdraw_from_account(account, address, quantity);
             }
-            "Deposit" => {
+            MeshApiOperationTypes::Deposit => {
                 let account = extract_account_from_option(&extraction_context, operation.account)?;
                 let (address, quantity) =
                     extract_amount_from_option(&extraction_context, operation.amount)?;
                 let bucket = builder.generate_bucket_name("bucket");
                 builder = builder.take_from_worktop(address, quantity, &bucket);
                 builder = builder.try_deposit_or_abort(account, None, bucket);
-            }
-            _ => {
-                return Err(ResponseError::from(ApiError::InvalidRequest)
-                    .with_details(format!("Invalid operation: {}", operation._type)))
             }
         }
     }
@@ -80,7 +78,7 @@ pub(crate) async fn handle_construction_payloads(
             nonce: metadata.nonce,
             notary_public_key: public_key,
             notary_is_signatory: true,
-            tip_percentage: 0,
+            tip_percentage: metadata.tip_percentage,
         },
         instructions: InstructionsV1(manifest.instructions),
         blobs: BlobsV1 {
@@ -90,9 +88,9 @@ pub(crate) async fn handle_construction_payloads(
     };
 
     let intent_bytes = intent.to_raw().unwrap();
-    let prepared_intent =
-        PreparedIntentV1::prepare(&intent_bytes, &PreparationSettings::latest()).unwrap();
-    let intent_hash = prepared_intent.transaction_intent_hash();
+    let intent_hash = PreparedIntentV1::prepare(&intent_bytes, &PreparationSettings::latest())
+        .unwrap()
+        .transaction_intent_hash();
     let intent_signatures_hash = hash_encoded_sbor_value(&IntentSignaturesV1 {
         signatures: Default::default(),
     });

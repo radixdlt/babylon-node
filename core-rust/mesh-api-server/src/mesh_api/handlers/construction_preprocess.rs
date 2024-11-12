@@ -8,8 +8,10 @@ pub(crate) async fn handle_construction_preprocess(
 
     let mut fee_lockers = Vec::new();
     for operation in request.operations {
-        match operation._type.as_str() {
-            "LockFee" => {
+        let operation_type = MeshApiOperationTypes::from_str(operation._type.as_str())
+            .map_err(|_| client_error(format!("Invalid operation: {}", operation._type), false))?;
+        match operation_type {
+            MeshApiOperationTypes::LockFee => {
                 let account = extract_account_from_option(
                     &ExtractionContext::new(&state.network),
                     operation.account,

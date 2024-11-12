@@ -61,6 +61,7 @@ radix_workflow(1){
       }
     ];
 
+    print_message("transfer:");
     print_message({{transfer}});
   }
 }
