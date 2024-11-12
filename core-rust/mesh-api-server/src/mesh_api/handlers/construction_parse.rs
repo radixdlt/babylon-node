@@ -82,9 +82,10 @@ pub fn parse_instructions(
     database: &StateManagerDatabase<impl ReadableRocks>,
 ) -> Result<Vec<Operation>, ResponseError> {
     let mut operations = Vec::new();
-    let mut index = 0;
-    while index < instructions.len() {
-        let mut instruction = &instructions[index];
+    let mut next_index = 0;
+    while next_index < instructions.len() {
+        let mut instruction = &instructions[next_index];
+        next_index = next_index + 1;
         match instruction {
             InstructionV1::CallMethod(CallMethod {
                 address: DynamicGlobalAddress::Static(global_address),
@@ -158,9 +159,9 @@ pub fn parse_instructions(
             InstructionV1::TakeFromWorktop(TakeFromWorktop {
                 resource_address,
                 amount,
-            }) if index < instructions.len() - 1 => {
-                index = index + 1;
-                instruction = &instructions[index];
+            }) if next_index < instructions.len() => {
+                instruction = &instructions[next_index];
+                next_index = next_index + 1;
                 if let InstructionV1::CallMethod(CallMethod {
                     address: DynamicGlobalAddress::Static(global_address),
                     method_name,
@@ -177,7 +178,7 @@ pub fn parse_instructions(
                                     network_index: None,
                                 }),
                                 related_operations: None,
-                                _type: "Withdraw".to_owned(),
+                                _type: "Deposit".to_owned(),
                                 status: None,
                                 account: Some(Box::new(to_mesh_api_account_from_address(
                                     mapping_context,
@@ -211,7 +212,6 @@ pub fn parse_instructions(
                 ));
             }
         }
-        index = index + 1;
     }
 
     Ok(operations)

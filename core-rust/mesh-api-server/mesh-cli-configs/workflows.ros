@@ -35,7 +35,6 @@ radix_workflow(1){
       {
         "operation_identifier":{"index":0},
         "type":"LockFee",
-        "status":"SUCCESS",
         "account":{{sender.account_identifier}},
         "amount":{
           "value":{{fee_amount}},
@@ -45,7 +44,6 @@ radix_workflow(1){
       {
         "operation_identifier":{"index":1},
         "type":"Withdraw",
-        "status":"SUCCESS",
         "account":{{sender.account_identifier}},
         "amount":{
           "value":{{transfer_amount}},
@@ -53,9 +51,8 @@ radix_workflow(1){
         }
       },
       {
-        "operation_identifier":{"index":1},
+        "operation_identifier":{"index":2},
         "type":"Deposit",
-        "status":"SUCCESS",
         "account":{{recipient.account_identifier}},
         "amount":{
           "value":{{transfer_amount}},
