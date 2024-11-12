@@ -93,7 +93,7 @@ use rocksdb::*;
 /// ## Ordering
 ///
 /// The order of the list is not significant.
-const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 25] = [
+const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 26] = [
     RawLedgerTransactionsCf::NAME,
     CommittedTransactionIdentifiersCf::NAME,
     TransactionReceiptsCf::NAME,
@@ -101,6 +101,7 @@ const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 25] = [
     IntentHashesCf::NAME,
     NotarizedTransactionHashesCf::NAME,
     LedgerTransactionHashesCf::NAME,
+    FinalizedSubintentHashesCf::NAME,
     LedgerProofsCf::NAME,
     EpochLedgerProofsCf::NAME,
     ProtocolUpdateInitLedgerProofsCf::NAME,
@@ -696,6 +697,18 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         db_context
             .cf(TransactionReceiptsCf)
             .put(&state_version, &receipt.on_ledger);
+
+        for nullification in &receipt.local_execution.nullifications {
+            let Nullification::Intent { intent_hash, .. } = nullification;
+            match intent_hash {
+                IntentHash::Transaction { .. } => {} // Already handled
+                IntentHash::Subintent(subintent_hash) => {
+                    db_context
+                        .cf(FinalizedSubintentHashesCf)
+                        .put(subintent_hash, &state_version);
+                }
+            }
+        }
 
         if self.is_local_transaction_execution_index_enabled() {
             db_context

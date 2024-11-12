@@ -150,6 +150,20 @@ impl DefaultCf for LedgerTransactionHashesCf {
     type ValueCodec = StateVersionDbCodec;
 }
 
+/// DB "index" table for finalized [`SubintentHash`] resolution.
+/// Schema: `SubintentHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
+/// Note: This table does not use explicit versioning wrapper, since the value represents a DB
+/// key of another table (and versioning DB keys is not useful).
+pub struct FinalizedSubintentHashesCf;
+impl DefaultCf for FinalizedSubintentHashesCf {
+    type Key = SubintentHash;
+    type Value = StateVersion;
+
+    const NAME_SOURCE: &'static str = "finalized_subintent_hashes";
+    type KeyCodec = HashDbCodec<SubintentHash>;
+    type ValueCodec = StateVersionDbCodec;
+}
+
 /// Radix Engine's runtime Substate database.
 /// Schema: `encode_to_rocksdb_bytes(DbPartitionKey, DbSortKey)` -> `Vec<u8>`
 /// Note: This table does not use explicit versioning wrapper, since each serialized substate
