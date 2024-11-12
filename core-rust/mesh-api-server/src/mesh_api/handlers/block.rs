@@ -1,3 +1,5 @@
+use models::transaction_identifier;
+
 use crate::prelude::*;
 
 pub(crate) async fn handle_block(
@@ -30,12 +32,12 @@ pub(crate) async fn handle_block(
             ))
         })?;
 
-    let (operations, transaction_identifier) = to_mesh_api_transaction_identifier(
+    let operations = to_mesh_api_operations(&mapping_context, database.deref(), state_version)?;
+
+    let transaction_identifier = to_mesh_api_transaction_identifier(
         &mapping_context,
-        database.deref(),
-        state_version,
         &transaction_identifiers,
-        None,
+        state_version,
     )?;
 
     // see https://docs.cdp.coinbase.com/mesh/docs/models#transaction
@@ -88,13 +90,23 @@ pub(crate) async fn handle_block_transaction(
             ))
         })?;
 
-    let (operations, transaction_identifier) = to_mesh_api_transaction_identifier(
+    let transaction_identifier = to_mesh_api_transaction_identifier(
         &mapping_context,
-        database.deref(),
-        state_version,
         &transaction_identifiers,
-        Some(&request.transaction_identifier.hash),
+        state_version,
     )?;
+    if !request
+        .transaction_identifier
+        .as_ref()
+        .eq(&transaction_identifier)
+    {
+        return Err(MappingError::InvalidTransactionIdentifier {
+            message: format!("transaction_identifier does not match with block_identifier"),
+        }
+        .into());
+    }
+
+    let operations = to_mesh_api_operations(&mapping_context, database.deref(), state_version)?;
 
     // see https://docs.cdp.coinbase.com/mesh/docs/models#transaction
     let transaction = models::Transaction {

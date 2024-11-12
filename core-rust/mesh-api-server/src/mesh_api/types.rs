@@ -6,6 +6,9 @@ pub(crate) enum MeshApiOperationTypes {
     Withdraw,
     Deposit,
     LockFee,
+    FeeDistributed,
+    TipDistributed,
+    RoyaltyDistributed,
     // Mint,
     // Burn,
 }
@@ -34,5 +37,16 @@ impl From<MeshApiOperationStatus> for models::OperationStatus {
             MeshApiOperationStatus::Success => true,
         };
         Self::new(value.to_string(), successful)
+    }
+}
+
+impl From<FeePaymentBalanceChangeType> for MeshApiOperationTypes {
+    fn from(value: FeePaymentBalanceChangeType) -> Self {
+        match value {
+            FeePaymentBalanceChangeType::FeePayment => Self::LockFee,
+            FeePaymentBalanceChangeType::FeeDistributed => Self::FeeDistributed,
+            FeePaymentBalanceChangeType::TipDistributed => Self::TipDistributed,
+            FeePaymentBalanceChangeType::RoyaltyDistributed => Self::RoyaltyDistributed,
+        }
     }
 }

@@ -26,6 +26,11 @@ pub enum MappingError {
     InvalidTransactionIdentifier {
         message: String,
     },
+    /// An error occurring when the contents of some Node-maintained index table do not match the
+    /// Engine-owned data (most likely due to a bug on either side).
+    InternalIndexDataMismatch {
+        message: String,
+    },
 }
 
 impl From<MappingError> for ResponseError {
