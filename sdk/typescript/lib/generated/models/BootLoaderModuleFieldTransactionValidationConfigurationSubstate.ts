@@ -13,6 +13,13 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { TransactionValidationConfig } from './TransactionValidationConfig';
+import {
+    TransactionValidationConfigFromJSON,
+    TransactionValidationConfigFromJSONTyped,
+    TransactionValidationConfigToJSON,
+} from './TransactionValidationConfig';
+
 /**
  * 
  * @export
@@ -31,6 +38,12 @@ export interface BootLoaderModuleFieldTransactionValidationConfigurationSubstate
      * @memberof BootLoaderModuleFieldTransactionValidationConfigurationSubstate
      */
     is_locked: boolean;
+    /**
+     * 
+     * @type {TransactionValidationConfig}
+     * @memberof BootLoaderModuleFieldTransactionValidationConfigurationSubstate
+     */
+    config: TransactionValidationConfig;
 }
 
 
@@ -50,6 +63,7 @@ export function instanceOfBootLoaderModuleFieldTransactionValidationConfiguratio
     let isInstance = true;
     isInstance = isInstance && "substate_type" in value;
     isInstance = isInstance && "is_locked" in value;
+    isInstance = isInstance && "config" in value;
 
     return isInstance;
 }
@@ -66,6 +80,7 @@ export function BootLoaderModuleFieldTransactionValidationConfigurationSubstateF
         
         'substate_type': json['substate_type'],
         'is_locked': json['is_locked'],
+        'config': TransactionValidationConfigFromJSON(json['config']),
     };
 }
 
@@ -80,6 +95,7 @@ export function BootLoaderModuleFieldTransactionValidationConfigurationSubstateT
         
         'substate_type': value.substate_type,
         'is_locked': value.is_locked,
+        'config': TransactionValidationConfigToJSON(value.config),
     };
 }
 

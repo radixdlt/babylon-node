@@ -14,11 +14,11 @@
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ProtectedAccessRuleAllOf {
     #[serde(rename = "access_rule")]
-    pub access_rule: Option<crate::engine_state_api::generated::models::AccessRuleNode>, // Using Option permits Default trait; Will always be Some in normal use
+    pub access_rule: Option<crate::engine_state_api::generated::models::CompositeRequirement>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl ProtectedAccessRuleAllOf {
-    pub fn new(access_rule: crate::engine_state_api::generated::models::AccessRuleNode) -> ProtectedAccessRuleAllOf {
+    pub fn new(access_rule: crate::engine_state_api::generated::models::CompositeRequirement) -> ProtectedAccessRuleAllOf {
         ProtectedAccessRuleAllOf {
             access_rule: Option::Some(access_rule),
         }

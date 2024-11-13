@@ -14,7 +14,15 @@
 
 
 /**
+ * To improve clarity, some `EntityType` names have been updated at Cuttlefish.
  * 
+ * But, due to backwards compatibility, the old names continue to be used here.
+ * 
+ * Notably:
+ * * `GlobalVirtualSecp256k1Account` is now `GlobalPreallocatedSecp256k1Account` elsewhere
+ * * `GlobalVirtualSecp256k1Identity` is now `GlobalPreallocatedSecp256k1Identity` elsewhere
+ * * `GlobalVirtualEd25519Account` is now `GlobalPreallocatedEd25519Account` elsewhere
+ * * `GlobalVirtualEd25519Identity` is now `GlobalPreallocatedEd25519Identity` elsewhere
  * @export
  */
 export const EntityType = {

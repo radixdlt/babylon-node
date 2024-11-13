@@ -34,6 +34,7 @@ import com.radixdlt.api.core.generated.models.AccountVaultEntrySubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldKernelBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldSystemBootSubstate;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldTransactionValidationConfigurationSubstate;
+import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldTransactionValidationConfigurationSubstateAllOf;
 import com.radixdlt.api.core.generated.models.BootLoaderModuleFieldVmBootSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldConfigSubstate;
 import com.radixdlt.api.core.generated.models.ConsensusManagerFieldCurrentProposalStatisticSubstate;
@@ -77,6 +78,7 @@ import com.radixdlt.api.core.generated.models.Substate;
 import com.radixdlt.api.core.generated.models.SubstateType;
 import com.radixdlt.api.core.generated.models.TransactionTrackerCollectionEntrySubstate;
 import com.radixdlt.api.core.generated.models.TransactionTrackerFieldStateSubstate;
+import com.radixdlt.api.core.generated.models.TransactionValidationConfig;
 import com.radixdlt.api.core.generated.models.TwoResourcePoolFieldStateSubstate;
 import com.radixdlt.api.core.generated.models.TypeInfoModuleFieldTypeInfoSubstate;
 import com.radixdlt.api.core.generated.models.ValidatorFieldProtocolUpdateReadinessSignalSubstate;
@@ -91,6 +93,7 @@ import com.radixdlt.api.core.generated.client.JSON;
  * BootLoaderModuleFieldTransactionValidationConfigurationSubstate
  */
 @JsonPropertyOrder({
+  BootLoaderModuleFieldTransactionValidationConfigurationSubstate.JSON_PROPERTY_CONFIG
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -156,8 +159,37 @@ import com.radixdlt.api.core.generated.client.JSON;
 })
 
 public class BootLoaderModuleFieldTransactionValidationConfigurationSubstate extends Substate {
+  public static final String JSON_PROPERTY_CONFIG = "config";
+  private TransactionValidationConfig config;
+
   public BootLoaderModuleFieldTransactionValidationConfigurationSubstate() { 
   }
+
+  public BootLoaderModuleFieldTransactionValidationConfigurationSubstate config(TransactionValidationConfig config) {
+    this.config = config;
+    return this;
+  }
+
+   /**
+   * Get config
+   * @return config
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_CONFIG)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public TransactionValidationConfig getConfig() {
+    return config;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_CONFIG)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setConfig(TransactionValidationConfig config) {
+    this.config = config;
+  }
+
 
   /**
    * Return true if this BootLoaderModuleFieldTransactionValidationConfigurationSubstate object is equal to o.
@@ -170,12 +202,14 @@ public class BootLoaderModuleFieldTransactionValidationConfigurationSubstate ext
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    return super.equals(o);
+    BootLoaderModuleFieldTransactionValidationConfigurationSubstate bootLoaderModuleFieldTransactionValidationConfigurationSubstate = (BootLoaderModuleFieldTransactionValidationConfigurationSubstate) o;
+    return Objects.equals(this.config, bootLoaderModuleFieldTransactionValidationConfigurationSubstate.config) &&
+        super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode());
+    return Objects.hash(config, super.hashCode());
   }
 
   @Override
@@ -183,6 +217,7 @@ public class BootLoaderModuleFieldTransactionValidationConfigurationSubstate ext
     StringBuilder sb = new StringBuilder();
     sb.append("class BootLoaderModuleFieldTransactionValidationConfigurationSubstate {\n");
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
+    sb.append("    config: ").append(toIndentedString(config)).append("\n");
     sb.append("}");
     return sb.toString();
   }

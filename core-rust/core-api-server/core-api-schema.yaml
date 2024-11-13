@@ -5,6 +5,11 @@ openapi: 3.1.0
 #
 # => If a u8, use type: integer, format: int32, minimum: 0, maximum: 255
 # => If an i8, use type: integer, format: int32, minimum: -128, maximum: 127 (also, why are you using an i8!?)
+# => If a u16:
+#         type: integer
+#         format: int32
+#         minimum: 0
+#         maximum: 65535
 # => If a u32:
 #    => If there's a domain-imposed requirement that fits it within an i32 (2,147,483,647 = 2^31 - 1), with bound B use
 #         type: integer
@@ -2018,12 +2023,15 @@ components:
           $ref: "#/components/schemas/NextEpoch"
         output:
           type: array
-          description: The manifest line-by-line engine return data (only present if `status` is `Succeeded`)
+          description: |
+            The return data for each line of the transaction intent's manifest.
+            This property is only present if the `status` is `Succeeded`.
           items:
             $ref: "#/components/schemas/SborData"
         error_message:
           type: string
-          description: Error message (only present if status is `Failed` or `Rejected`)
+          description: |
+            The error message. This property is only present if the status is `Failed` or `Rejected`.
     FeeSummary:
       type: object
       required:
@@ -2084,6 +2092,7 @@ components:
         - xrd_storage_price
         - xrd_archive_storage_price
         - tip_percentage
+        # - tip_proportion - Can be made required post Cuttlefish
       properties:
         execution_cost_unit_price:
           type: string
@@ -2134,7 +2143,20 @@ components:
           format: int32
           minimum: 0
           maximum: 65535
-          description: An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+          deprecated: true
+          description: |
+            NOTE: V2 transactions specify the tip in basis points, which gets rounded down for this `tip_percentage` field.
+            It is recommended to instead use the `tip_proportion` field to get a fully accurate value.
+
+            An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+        tip_proportion:
+          type: string
+          description: |
+            A string-encoded decimal, giving the validator tip as a proportional amount.
+            A value of `"0.01"` corresponds to 1% of the fee being paid as a tip.
+
+            NOTE: This field is not marked as required for Cuttlefish launch, to permit cuttlefish clients to talk to pre-cuttlefish nodes.
+            This can be changed after Cuttlefish enactment once all nodes are on Cuttlefish.
     FeeSource:
       type: object
       required:
@@ -2875,6 +2897,13 @@ components:
         - DenyAll
     AccessRule:
       type: object
+      description: |
+        A representation of an access rule in the Radix Engine.
+
+        Note that some of the field and discriminator names use an older naming schema,
+        for backwards compatibility.
+
+        See the [advanced access rules](https://docs.radixdlt.com/docs/advanced-accessrules) docs for more information.
       required:
         - type
       properties:
@@ -2895,7 +2924,7 @@ components:
             - access_rule
           properties:
             access_rule:
-              $ref: '#/components/schemas/AccessRuleNode'
+              $ref: '#/components/schemas/CompositeRequirement'
     AllowAllAccessRule:
       allOf:
         - $ref: '#/components/schemas/AccessRule'
@@ -2904,38 +2933,42 @@ components:
       allOf:
         - $ref: '#/components/schemas/AccessRule'
         - type: object
-    AccessRuleNodeType:
+    CompositeRequirementType:
       type: string
+      description: |
+        `ProofRule` is now called `BasicRequirement`.
       enum:
         - ProofRule
         - AnyOf
         - AllOf
-    AccessRuleNode:
+    CompositeRequirement:
       type: object
       required:
         - type
+      description: |
+        This type was historically called `AccessRuleNode`.
       properties:
         type:
-          $ref: '#/components/schemas/AccessRuleNodeType'
+          $ref: '#/components/schemas/CompositeRequirementType'
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match AccessRuleNodeType options above
-          ProofRule: '#/components/schemas/ProofAccessRuleNode'
-          AnyOf: '#/components/schemas/AnyOfAccessRuleNode'
-          AllOf: '#/components/schemas/AllOfAccessRuleNode'
-    ProofAccessRuleNode:
+          # NOTE: These need to match CompositeRequirementType options above
+          ProofRule: '#/components/schemas/ProofRuleCompositeRequirement'
+          AnyOf: '#/components/schemas/AnyOfCompositeRequirement'
+          AllOf: '#/components/schemas/AllOfCompositeRequirement'
+    ProofRuleCompositeRequirement:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNode'
+        - $ref: '#/components/schemas/CompositeRequirement'
         - type: object
           required:
             - proof_rule
           properties:
             proof_rule:
-              $ref: '#/components/schemas/ProofRule'
-    AnyOfAccessRuleNode:
+              $ref: '#/components/schemas/BasicRequirement'
+    AnyOfCompositeRequirement:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNode'
+        - $ref: '#/components/schemas/CompositeRequirement'
         - type: object
           required:
             - access_rules
@@ -2943,10 +2976,10 @@ components:
             access_rules:
               type: array
               items:
-                $ref: '#/components/schemas/AccessRuleNode'
-    AllOfAccessRuleNode:
+                $ref: '#/components/schemas/CompositeRequirement'
+    AllOfCompositeRequirement:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNode'
+        - $ref: '#/components/schemas/CompositeRequirement'
         - type: object
           required:
             - access_rules
@@ -2954,8 +2987,8 @@ components:
             access_rules:
               type: array
               items:
-                $ref: '#/components/schemas/AccessRuleNode'
-    ProofRuleType:
+                $ref: '#/components/schemas/CompositeRequirement'
+    BasicRequirementType:
       type: string
       enum:
         - Require
@@ -2963,34 +2996,34 @@ components:
         - AllOf
         - AnyOf
         - CountOf
-    ProofRule:
+    BasicRequirement:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/ProofRuleType'
+          $ref: '#/components/schemas/BasicRequirementType'
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match ProofRuleType options above
-          Require: '#/components/schemas/RequireProofRule'
-          AmountOf: '#/components/schemas/AmountOfProofRule'
-          AllOf: '#/components/schemas/AllOfProofRule'
-          AnyOf: '#/components/schemas/AnyOfProofRule'
-          CountOf: '#/components/schemas/CountOfProofRule'
-    RequireProofRule:
+          # NOTE: These need to match BasicRequirementType options above
+          Require: '#/components/schemas/RequireBasicRequirement'
+          AmountOf: '#/components/schemas/AmountOfBasicRequirement'
+          AllOf: '#/components/schemas/AllOfBasicRequirement'
+          AnyOf: '#/components/schemas/AnyOfBasicRequirement'
+          CountOf: '#/components/schemas/CountOfBasicRequirement'
+    RequireBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - requirement
           properties:
             requirement:
               $ref: '#/components/schemas/Requirement'
-    AmountOfProofRule:
+    AmountOfBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - amount
@@ -3000,9 +3033,9 @@ components:
               type: string
             resource:
               $ref: '#/components/schemas/ResourceAddress'
-    AllOfProofRule:
+    AllOfBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - list
@@ -3011,9 +3044,9 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Requirement'
-    AnyOfProofRule:
+    AnyOfBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - list
@@ -3022,9 +3055,9 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Requirement'
-    CountOfProofRule:
+    CountOfBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - count
@@ -3038,6 +3071,7 @@ components:
                 $ref: '#/components/schemas/Requirement'
     Requirement:
       type: object
+      description: This is called `ResourceOrNonFungible` in the engine.
       required:
         - type
       properties:
@@ -3977,6 +4011,16 @@ components:
 #####################################################
     EntityType:
       type: string
+      description: |
+        To improve clarity, some `EntityType` names have been updated at Cuttlefish.
+
+        But, due to backwards compatibility, the old names continue to be used here.
+
+        Notably:
+        * `GlobalVirtualSecp256k1Account` is now `GlobalPreallocatedSecp256k1Account` elsewhere
+        * `GlobalVirtualSecp256k1Identity` is now `GlobalPreallocatedSecp256k1Identity` elsewhere
+        * `GlobalVirtualEd25519Account` is now `GlobalPreallocatedEd25519Account` elsewhere
+        * `GlobalVirtualEd25519Identity` is now `GlobalPreallocatedEd25519Identity` elsewhere
       enum:
         - GlobalPackage
         - GlobalConsensusManager
@@ -4558,7 +4602,120 @@ components:
       allOf:
         - $ref: '#/components/schemas/Substate'
         - type: object
-        # TODO:CUTTLEFISH
+          required:
+            - config
+          properties:
+            config:
+              $ref: '#/components/schemas/TransactionValidationConfig'
+    TransactionValidationConfig:
+      type: object
+      required:
+        - max_signer_signatures_per_intent
+        - max_references_per_intent
+        - min_tip_percentage
+        - max_tip_percentage
+        - max_epoch_range
+        - max_instructions
+        - message_validation
+        - v1_transactions_allow_notary_to_duplicate_signer
+        - preparation_settings
+        - manifest_validation
+        - v2_transactions_allowed
+        - min_tip_basis_points
+        - max_tip_basis_points
+        - max_subintent_depth
+        - max_total_signature_validations
+        - max_total_references
+      properties:
+        max_signer_signatures_per_intent:
+          type: string
+        max_references_per_intent:
+          type: string
+        min_tip_percentage:
+          description: Only applies to V1 transactions
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 65535
+        max_tip_percentage:
+          description: Only applies to V1 transactions
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 65535
+        max_epoch_range:
+          type: string
+        max_instructions:
+          type: string
+        message_validation:
+          $ref: '#/components/schemas/MessageValidationConfig'
+        v1_transactions_allow_notary_to_duplicate_signer:
+          type: boolean
+        preparation_settings:
+          $ref: '#/components/schemas/PreparationSettings'
+        manifest_validation:
+          $ref: '#/components/schemas/ManifestValidationRuleset'
+        v2_transactions_allowed:
+          type: boolean
+        min_tip_basis_points:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+        max_tip_basis_points:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 4294967295
+        max_subintent_depth:
+          type: string
+        max_total_signature_validations:
+          type: string
+        max_total_references:
+          type: string
+    MessageValidationConfig:
+      type: object
+      required:
+        - max_plaintext_message_length
+        - max_encrypted_message_length
+        - max_mime_type_length
+        - max_decryptors
+      properties:
+        max_plaintext_message_length:
+          type: string
+        max_encrypted_message_length:
+          type: string
+        max_mime_type_length:
+          type: string
+        max_decryptors:
+          type: string
+    PreparationSettings:
+      type: object
+      required:
+        - v2_transactions_permitted
+        - max_user_payload_length
+        - max_ledger_payload_length
+        - max_child_subintents_per_intent
+        - max_subintents_per_transaction
+        - max_blobs
+      properties:
+        v2_transactions_permitted:
+          type: boolean
+        max_user_payload_length:
+          type: string
+        max_ledger_payload_length:
+          type: string
+        max_child_subintents_per_intent:
+          type: string
+        max_subintents_per_transaction:
+          type: string
+        max_blobs:
+          type: string
+    ManifestValidationRuleset:
+      type: string
+      enum:
+        - Basic
+        - Cuttlefish
     ProtocolUpdateStatusModuleFieldSummarySubstate:
       allOf:
         - $ref: '#/components/schemas/Substate'
@@ -6243,15 +6400,34 @@ components:
               format: int32
               minimum: 0
               maximum: 65535
+              deprecated: true
               description: |
-                Tip percentage of the submitted (and rejected) transaction.
+                NOTE: This is kept for backwards compatibility, but we recommend using `tip_proportion` instead.
+
+                Tip percentage of the submitted (and rejected) transaction. For V2 transactions specifying basis point tips,
+                the amount is rounded down.
             min_tip_percentage_required:
               type: integer
               format: int32
               minimum: 0
               maximum: 65535
+              deprecated: true
               description: |
+                NOTE: This is kept for backwards compatibility, but we recommend using `min_tip_proportion_required` instead.
+
                 A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
+                A missing value means there is no tip that can guarantee submission.
+            tip_proportion:
+              type: string
+              description: |
+                The string-encoded decimal tip proportion of the submitted (and rejected) transaction.
+
+                This field will always be present on Cuttlefish nodes, but is marked as not-required for Cuttlefish launch,
+                to avoid a dependency on clients to update after the node is updated.
+            min_tip_proportion_required:
+              type: string
+              description: |
+                A lower bound for tip proportion at current mempool state. Anything lower than this will very likely result in a mempool rejection.
                 A missing value means there is no tip that can guarantee submission.
     LtsTransactionSubmitIntentAlreadyCommitted:
       allOf:
@@ -6821,23 +6997,36 @@ components:
             $ref: "#/components/schemas/AddressType"
         well_known_addresses:
           type: object
-          description: Key addresses for this network.
+          description: |
+            Key addresses for this network, as per https://docs.radixdlt.com/docs/well-known-addresses.
+
+            Note that at Cuttlefish, some of these names have been updated elsewhere in the stack,
+            but for backwards compatibility, we must use the old names here.
+
+            Notably:
+            - `secp256k1_signature_virtual_badge` is now `secp256k1_signature_resource` elsewhere
+            - `ed25519_signature_virtual_badge` is now `ed25519_signature_resource` elsewhere
+            - `package_of_direct_caller_virtual_badge` is now `package_of_direct_caller_resource` elsewhere
+            - `global_caller_virtual_badge` is now `global_caller_resource` elsewhere
+            - `system_transaction_badge` is now `system_transaction_resource` elsewhere
           required:
+            # Resource Managers
             - xrd
             - secp256k1_signature_virtual_badge
             - ed25519_signature_virtual_badge
+            - system_transaction_badge
             - package_of_direct_caller_virtual_badge
             - global_caller_virtual_badge
-            - system_transaction_badge
             - package_owner_badge
             - validator_owner_badge
             - account_owner_badge
             - identity_owner_badge
+            # Packages
             - package_package
             - resource_package
-            - account_package
             - identity_package
             - consensus_manager_package
+            - account_package
             - access_controller_package
             - transaction_processor_package
             - metadata_module_package
@@ -6846,10 +7035,14 @@ components:
             - genesis_helper_package
             - faucet_package
             - pool_package
+            # - locker_package - Can be made required post Bottlenose
+            # - transaction_tracker_package - Can be made required post Cuttlefish
+            # - test_utils_package - Can be made required post Cuttlefish
+            # Components
             - consensus_manager
+            - transaction_tracker
             - genesis_helper
             - faucet
-            - transaction_tracker
           properties:
             xrd:
               type: string
@@ -6857,11 +7050,11 @@ components:
               type: string
             ed25519_signature_virtual_badge:
               type: string
+            system_transaction_badge:
+              type: string
             package_of_direct_caller_virtual_badge:
               type: string
             global_caller_virtual_badge:
-              type: string
-            system_transaction_badge:
               type: string
             package_owner_badge:
               type: string
@@ -6897,7 +7090,11 @@ components:
               type: string
             pool_package:
               type: string
+            transaction_tracker_package:
+              type: string
             locker_package:
+              type: string
+            test_utils_package:
               type: string
             consensus_manager:
               type: string
@@ -7470,21 +7667,41 @@ components:
         - type: object
           required:
             - tip_percentage
+            # - tip_proportion - Can be made required post Cuttlefish
           properties:
             tip_percentage:
               type: integer
               format: int32
               minimum: 0
               maximum: 65535
+              deprecated: true
               description: |
-                Tip percentage of the submitted (and rejected) transaction.
+                NOTE: This is kept for backwards compatibility, but we recommend using `tip_proportion` instead.
+
+                Tip percentage of the submitted (and rejected) transaction. For V2 transactions specifying basis point tips,
+                the amount is rounded down.
             min_tip_percentage_required:
               type: integer
               format: int32
               minimum: 0
               maximum: 65535
+              deprecated: true
               description: |
+                NOTE: This is kept for backwards compatibility, but we recommend using `min_tip_proportion_required` instead.
+
                 A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
+                A missing value means there is no tip that can guarantee submission.
+            tip_proportion:
+              type: string
+              description: |
+                The string-encoded decimal tip proportion of the submitted (and rejected) transaction.
+
+                This field will always be present on Cuttlefish nodes, but is marked as not-required for Cuttlefish launch,
+                to avoid a dependency on clients to update after the node is updated.
+            min_tip_proportion_required:
+              type: string
+              description: |
+                A lower bound for tip proportion at current mempool state. Anything lower than this will very likely result in a mempool rejection.
                 A missing value means there is no tip that can guarantee submission.
     TransactionSubmitIntentAlreadyCommitted:
       allOf:

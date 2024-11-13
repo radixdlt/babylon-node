@@ -37,9 +37,12 @@ pub struct CostingParameters {
     /// The string-encoded decimal representing the price of 1 byte of archive storage, expressed in XRD. A decimal is formed of some signed integer `m` of attos (`10^(-18)`) units, where `-2^(192 - 1) <= m < 2^(192 - 1)`. 
     #[serde(rename = "xrd_archive_storage_price")]
     pub xrd_archive_storage_price: String,
-    /// An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.
+    /// NOTE: V2 transactions specify the tip in basis points, which gets rounded down for this `tip_percentage` field. It is recommended to instead use the `tip_proportion` field to get a fully accurate value.  An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee. 
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i32,
+    /// A string-encoded decimal, giving the validator tip as a proportional amount. A value of `\"0.01\"` corresponds to 1% of the fee being paid as a tip.  NOTE: This field is not marked as required for Cuttlefish launch, to permit cuttlefish clients to talk to pre-cuttlefish nodes. This can be changed after Cuttlefish enactment once all nodes are on Cuttlefish. 
+    #[serde(rename = "tip_proportion", skip_serializing_if = "Option::is_none")]
+    pub tip_proportion: Option<String>,
 }
 
 impl CostingParameters {
@@ -54,6 +57,7 @@ impl CostingParameters {
             xrd_storage_price,
             xrd_archive_storage_price,
             tip_percentage,
+            tip_proportion: None,
         }
     }
 }

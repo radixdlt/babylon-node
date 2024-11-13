@@ -709,6 +709,9 @@ pub fn to_api_costing_parameters(
         xrd_storage_price: to_api_decimal(&engine_costing_parameters.state_storage_price),
         xrd_archive_storage_price: to_api_decimal(&engine_costing_parameters.archive_storage_price),
         tip_percentage: tip_percentage_decimal.try_into().unwrap_or(i32::MAX),
+        tip_proportion: Some(to_api_decimal(
+            &transaction_costing_parameters.tip_proportion,
+        )),
     })
 }
 

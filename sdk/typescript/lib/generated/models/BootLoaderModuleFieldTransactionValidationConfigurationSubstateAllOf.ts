@@ -13,12 +13,25 @@
  */
 
 import { exists, mapValues } from '../runtime';
+import type { TransactionValidationConfig } from './TransactionValidationConfig';
+import {
+    TransactionValidationConfigFromJSON,
+    TransactionValidationConfigFromJSONTyped,
+    TransactionValidationConfigToJSON,
+} from './TransactionValidationConfig';
+
 /**
  * 
  * @export
  * @interface BootLoaderModuleFieldTransactionValidationConfigurationSubstateAllOf
  */
 export interface BootLoaderModuleFieldTransactionValidationConfigurationSubstateAllOf {
+    /**
+     * 
+     * @type {TransactionValidationConfig}
+     * @memberof BootLoaderModuleFieldTransactionValidationConfigurationSubstateAllOf
+     */
+    config: TransactionValidationConfig;
     /**
      * 
      * @type {string}
@@ -42,6 +55,7 @@ export type BootLoaderModuleFieldTransactionValidationConfigurationSubstateAllOf
  */
 export function instanceOfBootLoaderModuleFieldTransactionValidationConfigurationSubstateAllOf(value: object): boolean {
     let isInstance = true;
+    isInstance = isInstance && "config" in value;
 
     return isInstance;
 }
@@ -56,6 +70,7 @@ export function BootLoaderModuleFieldTransactionValidationConfigurationSubstateA
     }
     return {
         
+        'config': TransactionValidationConfigFromJSON(json['config']),
         'substate_type': !exists(json, 'substate_type') ? undefined : json['substate_type'],
     };
 }
@@ -69,6 +84,7 @@ export function BootLoaderModuleFieldTransactionValidationConfigurationSubstateA
     }
     return {
         
+        'config': TransactionValidationConfigToJSON(value.config),
         'substate_type': value.substate_type,
     };
 }

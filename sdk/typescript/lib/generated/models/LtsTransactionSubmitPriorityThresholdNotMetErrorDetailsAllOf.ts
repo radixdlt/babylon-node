@@ -20,18 +20,41 @@ import { exists, mapValues } from '../runtime';
  */
 export interface LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
     /**
-     * Tip percentage of the submitted (and rejected) transaction.
+     * NOTE: This is kept for backwards compatibility, but we recommend using `tip_proportion` instead.
+     * 
+     * Tip percentage of the submitted (and rejected) transaction. For V2 transactions specifying basis point tips,
+     * the amount is rounded down.
      * @type {number}
      * @memberof LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf
+     * @deprecated
      */
     tip_percentage: number;
     /**
+     * NOTE: This is kept for backwards compatibility, but we recommend using `min_tip_proportion_required` instead.
+     * 
      * A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection.
      * A missing value means there is no tip that can guarantee submission.
      * @type {number}
      * @memberof LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf
+     * @deprecated
      */
     min_tip_percentage_required?: number;
+    /**
+     * The string-encoded decimal tip proportion of the submitted (and rejected) transaction.
+     * 
+     * This field will always be present on Cuttlefish nodes, but is marked as not-required for Cuttlefish launch,
+     * to avoid a dependency on clients to update after the node is updated.
+     * @type {string}
+     * @memberof LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf
+     */
+    tip_proportion?: string;
+    /**
+     * A lower bound for tip proportion at current mempool state. Anything lower than this will very likely result in a mempool rejection.
+     * A missing value means there is no tip that can guarantee submission.
+     * @type {string}
+     * @memberof LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf
+     */
+    min_tip_proportion_required?: string;
     /**
      * 
      * @type {string}
@@ -72,6 +95,8 @@ export function LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOfFrom
         
         'tip_percentage': json['tip_percentage'],
         'min_tip_percentage_required': !exists(json, 'min_tip_percentage_required') ? undefined : json['min_tip_percentage_required'],
+        'tip_proportion': !exists(json, 'tip_proportion') ? undefined : json['tip_proportion'],
+        'min_tip_proportion_required': !exists(json, 'min_tip_proportion_required') ? undefined : json['min_tip_proportion_required'],
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -87,6 +112,8 @@ export function LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOfToJS
         
         'tip_percentage': value.tip_percentage,
         'min_tip_percentage_required': value.min_tip_percentage_required,
+        'tip_proportion': value.tip_proportion,
+        'min_tip_proportion_required': value.min_tip_proportion_required,
         'type': value.type,
     };
 }

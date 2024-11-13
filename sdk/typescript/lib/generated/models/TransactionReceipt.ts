@@ -123,13 +123,14 @@ export interface TransactionReceipt {
      */
     next_epoch?: NextEpoch;
     /**
-     * The manifest line-by-line engine return data (only present if `status` is `Succeeded`)
+     * The return data for each line of the transaction intent's manifest.
+     * This property is only present if the `status` is `Succeeded`.
      * @type {Array<SborData>}
      * @memberof TransactionReceipt
      */
     output?: Array<SborData>;
     /**
-     * Error message (only present if status is `Failed` or `Rejected`)
+     * The error message. This property is only present if the status is `Failed` or `Rejected`.
      * @type {string}
      * @memberof TransactionReceipt
      */

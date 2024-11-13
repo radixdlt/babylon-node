@@ -14,7 +14,17 @@
 
 import { exists, mapValues } from '../runtime';
 /**
- * Key addresses for this network.
+ * Key addresses for this network, as per https://docs.radixdlt.com/docs/well-known-addresses.
+ * 
+ * Note that at Cuttlefish, some of these names have been updated elsewhere in the stack,
+ * but for backwards compatibility, we must use the old names here.
+ * 
+ * Notably:
+ * - `secp256k1_signature_virtual_badge` is now `secp256k1_signature_resource` elsewhere
+ * - `ed25519_signature_virtual_badge` is now `ed25519_signature_resource` elsewhere
+ * - `package_of_direct_caller_virtual_badge` is now `package_of_direct_caller_resource` elsewhere
+ * - `global_caller_virtual_badge` is now `global_caller_resource` elsewhere
+ * - `system_transaction_badge` is now `system_transaction_resource` elsewhere
  * @export
  * @interface NetworkConfigurationResponseWellKnownAddresses
  */
@@ -42,6 +52,12 @@ export interface NetworkConfigurationResponseWellKnownAddresses {
      * @type {string}
      * @memberof NetworkConfigurationResponseWellKnownAddresses
      */
+    system_transaction_badge: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof NetworkConfigurationResponseWellKnownAddresses
+     */
     package_of_direct_caller_virtual_badge: string;
     /**
      * 
@@ -49,12 +65,6 @@ export interface NetworkConfigurationResponseWellKnownAddresses {
      * @memberof NetworkConfigurationResponseWellKnownAddresses
      */
     global_caller_virtual_badge: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof NetworkConfigurationResponseWellKnownAddresses
-     */
-    system_transaction_badge: string;
     /**
      * 
      * @type {string}
@@ -162,7 +172,19 @@ export interface NetworkConfigurationResponseWellKnownAddresses {
      * @type {string}
      * @memberof NetworkConfigurationResponseWellKnownAddresses
      */
+    transaction_tracker_package?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof NetworkConfigurationResponseWellKnownAddresses
+     */
     locker_package?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof NetworkConfigurationResponseWellKnownAddresses
+     */
+    test_utils_package?: string;
     /**
      * 
      * @type {string}
@@ -197,9 +219,9 @@ export function instanceOfNetworkConfigurationResponseWellKnownAddresses(value: 
     isInstance = isInstance && "xrd" in value;
     isInstance = isInstance && "secp256k1_signature_virtual_badge" in value;
     isInstance = isInstance && "ed25519_signature_virtual_badge" in value;
+    isInstance = isInstance && "system_transaction_badge" in value;
     isInstance = isInstance && "package_of_direct_caller_virtual_badge" in value;
     isInstance = isInstance && "global_caller_virtual_badge" in value;
-    isInstance = isInstance && "system_transaction_badge" in value;
     isInstance = isInstance && "package_owner_badge" in value;
     isInstance = isInstance && "validator_owner_badge" in value;
     isInstance = isInstance && "account_owner_badge" in value;
@@ -238,9 +260,9 @@ export function NetworkConfigurationResponseWellKnownAddressesFromJSONTyped(json
         'xrd': json['xrd'],
         'secp256k1_signature_virtual_badge': json['secp256k1_signature_virtual_badge'],
         'ed25519_signature_virtual_badge': json['ed25519_signature_virtual_badge'],
+        'system_transaction_badge': json['system_transaction_badge'],
         'package_of_direct_caller_virtual_badge': json['package_of_direct_caller_virtual_badge'],
         'global_caller_virtual_badge': json['global_caller_virtual_badge'],
-        'system_transaction_badge': json['system_transaction_badge'],
         'package_owner_badge': json['package_owner_badge'],
         'validator_owner_badge': json['validator_owner_badge'],
         'account_owner_badge': json['account_owner_badge'],
@@ -258,7 +280,9 @@ export function NetworkConfigurationResponseWellKnownAddressesFromJSONTyped(json
         'genesis_helper_package': json['genesis_helper_package'],
         'faucet_package': json['faucet_package'],
         'pool_package': json['pool_package'],
+        'transaction_tracker_package': !exists(json, 'transaction_tracker_package') ? undefined : json['transaction_tracker_package'],
         'locker_package': !exists(json, 'locker_package') ? undefined : json['locker_package'],
+        'test_utils_package': !exists(json, 'test_utils_package') ? undefined : json['test_utils_package'],
         'consensus_manager': json['consensus_manager'],
         'genesis_helper': json['genesis_helper'],
         'faucet': json['faucet'],
@@ -278,9 +302,9 @@ export function NetworkConfigurationResponseWellKnownAddressesToJSON(value?: Net
         'xrd': value.xrd,
         'secp256k1_signature_virtual_badge': value.secp256k1_signature_virtual_badge,
         'ed25519_signature_virtual_badge': value.ed25519_signature_virtual_badge,
+        'system_transaction_badge': value.system_transaction_badge,
         'package_of_direct_caller_virtual_badge': value.package_of_direct_caller_virtual_badge,
         'global_caller_virtual_badge': value.global_caller_virtual_badge,
-        'system_transaction_badge': value.system_transaction_badge,
         'package_owner_badge': value.package_owner_badge,
         'validator_owner_badge': value.validator_owner_badge,
         'account_owner_badge': value.account_owner_badge,
@@ -298,7 +322,9 @@ export function NetworkConfigurationResponseWellKnownAddressesToJSON(value?: Net
         'genesis_helper_package': value.genesis_helper_package,
         'faucet_package': value.faucet_package,
         'pool_package': value.pool_package,
+        'transaction_tracker_package': value.transaction_tracker_package,
         'locker_package': value.locker_package,
+        'test_utils_package': value.test_utils_package,
         'consensus_manager': value.consensus_manager,
         'genesis_helper': value.genesis_helper,
         'faucet': value.faucet,

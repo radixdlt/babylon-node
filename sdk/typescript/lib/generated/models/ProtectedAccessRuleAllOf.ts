@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { AccessRuleNode } from './AccessRuleNode';
+import type { CompositeRequirement } from './CompositeRequirement';
 import {
-    AccessRuleNodeFromJSON,
-    AccessRuleNodeFromJSONTyped,
-    AccessRuleNodeToJSON,
-} from './AccessRuleNode';
+    CompositeRequirementFromJSON,
+    CompositeRequirementFromJSONTyped,
+    CompositeRequirementToJSON,
+} from './CompositeRequirement';
 
 /**
  * 
@@ -28,10 +28,10 @@ import {
 export interface ProtectedAccessRuleAllOf {
     /**
      * 
-     * @type {AccessRuleNode}
+     * @type {CompositeRequirement}
      * @memberof ProtectedAccessRuleAllOf
      */
-    access_rule: AccessRuleNode;
+    access_rule: CompositeRequirement;
     /**
      * 
      * @type {string}
@@ -70,7 +70,7 @@ export function ProtectedAccessRuleAllOfFromJSONTyped(json: any, ignoreDiscrimin
     }
     return {
         
-        'access_rule': AccessRuleNodeFromJSON(json['access_rule']),
+        'access_rule': CompositeRequirementFromJSON(json['access_rule']),
         'type': !exists(json, 'type') ? undefined : json['type'],
     };
 }
@@ -84,7 +84,7 @@ export function ProtectedAccessRuleAllOfToJSON(value?: ProtectedAccessRuleAllOf 
     }
     return {
         
-        'access_rule': AccessRuleNodeToJSON(value.access_rule),
+        'access_rule': CompositeRequirementToJSON(value.access_rule),
         'type': value.type,
     };
 }
