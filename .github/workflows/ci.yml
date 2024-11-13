@@ -249,8 +249,6 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Install mesh-cli
-        run: curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/master/scripts/install.sh | sh -s
       - name: Build Node
         run: ./gradlew build
       - name: Run Node in the background
@@ -260,8 +258,12 @@ jobs:
         run: ./gradlew :core:run --info &
       - name: Wait for 2 minutes
         run: sleep 2m
-      - name: Run mesh-cli tests (TODO:MESH add other checks)
+      - name: Install mesh-cli
+        run: curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/master/scripts/install.sh | sh -s
+      - name: Run Data API tests
         run: ./bin/rosetta-cli check:data --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
+      - name: Run Construction API tests
+        run: ./bin/rosetta-cli check:construction --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
   cross-xwin:
     name: Cross compile to Windows
     runs-on: ubuntu-latest

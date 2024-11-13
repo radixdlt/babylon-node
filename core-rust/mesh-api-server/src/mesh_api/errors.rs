@@ -1,10 +1,8 @@
 use crate::prelude::*;
-use std::any::Any;
-
 use hyper::StatusCode;
-
 use rand::distributions::Alphanumeric;
 use rand::Rng;
+use std::any::Any;
 use strum::{Display, EnumIter, IntoEnumIterator};
 use tower_http::catch_panic::ResponseForPanic;
 
@@ -201,4 +199,11 @@ pub(crate) fn assert_matching_network(
             .with_details(format!("Invalid network - subnetworks not supported",)));
     }
     Ok(())
+}
+
+// TODO:MESH - Add logging, metrics and tracing for all of these errors - require the error is passed in here
+pub(crate) fn client_error(message: impl Into<String>, retriable: bool) -> ResponseError {
+    ResponseError::from(ApiError::InvalidRequest)
+        .retriable(retriable)
+        .with_details(message)
 }

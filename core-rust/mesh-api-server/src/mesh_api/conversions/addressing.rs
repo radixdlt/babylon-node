@@ -97,6 +97,19 @@ pub fn extract_account(
     }
 }
 
+pub fn extract_account_from_option(
+    extraction_context: &ExtractionContext,
+    account_identifier: Option<Box<crate::mesh_api::generated::models::AccountIdentifier>>,
+) -> Result<ComponentAddress, ResponseError> {
+    extract_account(
+        extraction_context,
+        account_identifier
+            .ok_or(client_error("Missing account", false))?
+            .borrow(),
+    )
+    .map_err(|e| client_error(format!("Failed to extract account: {e:?}"), false))
+}
+
 pub fn to_mesh_api_currency_from_resource_address(
     mapping_context: &MappingContext,
     database: &StateManagerDatabase<impl ReadableRocks>,

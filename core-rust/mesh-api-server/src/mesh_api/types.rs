@@ -1,12 +1,11 @@
 use crate::engine_prelude::*;
 use crate::prelude::*;
 
-#[derive(Debug, Clone, EnumIter, Display, FromRepr)]
-#[repr(i64)]
+#[derive(Debug, Clone, EnumIter, Display, EnumString)]
 pub(crate) enum MeshApiOperationTypes {
     Withdraw,
     Deposit,
-    // LockFee,
+    LockFee,
     // Mint,
     // Burn,
 }
