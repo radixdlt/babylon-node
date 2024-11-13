@@ -62,6 +62,8 @@
  * permissions under this License.
  */
 
+use std::num::NonZeroUsize;
+
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::jni_prelude::*;
 use crate::store::jmt_gc::*;
@@ -166,7 +168,6 @@ impl StateManagerConfig {
 pub struct StateManager {
     pub network_definition: NetworkDefinition,
     pub database: Arc<DbLock<ActualStateManagerDatabase>>,
-    pub mempool: Arc<RwLock<PriorityMempool>>,
     pub mempool_manager: Arc<MempoolManager>,
     pub transaction_validator: Arc<RwLock<TransactionValidator>>,
     pub committability_validator: Arc<RwLock<CommittabilityValidator>>,
@@ -176,7 +177,6 @@ pub struct StateManager {
     pub transaction_executor_factory: Arc<TransactionExecutorFactory>,
     pub execution_cache_manager: Arc<ExecutionCacheManager>,
     pub system_executor: Arc<SystemExecutor>,
-    pub pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     pub protocol_manager: Arc<ProtocolManager>,
     pub protocol_update_executor: Arc<NodeProtocolUpdateExecutor>,
     pub ledger_metrics: Arc<LedgerMetrics>,
@@ -245,18 +245,20 @@ impl StateManager {
             logging_config.engine_trace,
         ));
 
-        let mempool = Arc::new(
-            lock_factory
-                .named("mempool")
-                .new_rwlock(PriorityMempool::new(
-                    mempool_config.unwrap_or_default(),
-                    metrics_registry,
-                )),
-        );
-        let pending_transaction_result_cache =
-            Arc::new(lock_factory.named("pending_cache").new_rwlock(
-                PendingTransactionResultCache::new(mempool.clone(), 10000, 10000),
+        let mempool = lock_factory
+            .named("mempool")
+            .new_rwlock(PriorityMempool::new(
+                mempool_config.unwrap_or_default(),
+                metrics_registry,
             ));
+        let pending_transaction_result_cache =
+            lock_factory
+                .named("pending_cache")
+                .new_rwlock(PendingTransactionResultCache::new(
+                    NonZeroUsize::new(10000).unwrap(),
+                    NonZeroUsize::new(10000).unwrap(),
+                    NonZeroUsize::new(10000).unwrap(),
+                ));
 
         let committability_validator =
             Arc::new(lock_factory.named("committability_validator").new_rwlock(
@@ -269,16 +271,16 @@ impl StateManager {
         let cached_committability_validator = CachedCommittabilityValidator::new(
             database.clone(),
             committability_validator.clone(),
-            pending_transaction_result_cache.clone(),
+            pending_transaction_result_cache,
         );
         let mempool_manager = Arc::new(match mempool_relay_dispatcher {
             None => MempoolManager::new_for_testing(
-                mempool.clone(),
+                mempool,
                 cached_committability_validator,
                 metrics_registry,
             ),
             Some(mempool_relay_dispatcher) => MempoolManager::new(
-                mempool.clone(),
+                mempool,
                 mempool_relay_dispatcher,
                 cached_committability_validator,
                 metrics_registry,
@@ -301,7 +303,7 @@ impl StateManager {
         let preparator = Arc::new(Preparator::new(
             database.clone(),
             transaction_executor_factory.clone(),
-            pending_transaction_result_cache.clone(),
+            mempool_manager.clone(),
             transaction_validator.clone(),
             vertex_limits_config.unwrap_or_default(),
             metrics_registry,
@@ -321,7 +323,6 @@ impl StateManager {
             transaction_validator.clone(),
             mempool_manager.clone(),
             execution_cache_manager.clone(),
-            pending_transaction_result_cache.clone(),
             protocol_manager.clone(),
             ledger_metrics.clone(),
         ));
@@ -374,7 +375,6 @@ impl StateManager {
         let state_manager = Self {
             network_definition,
             database,
-            mempool,
             mempool_manager,
             transaction_validator,
             committability_validator,
@@ -384,7 +384,6 @@ impl StateManager {
             transaction_executor_factory,
             execution_cache_manager,
             system_executor,
-            pending_transaction_result_cache,
             protocol_manager,
             protocol_update_executor,
             ledger_metrics,

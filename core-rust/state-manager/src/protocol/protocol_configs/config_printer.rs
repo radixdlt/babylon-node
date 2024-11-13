@@ -18,6 +18,7 @@ use super::*;
 
 #[test]
 fn print_fixed_config_code() {
+    // This is used for stokenet and dumunet
     let version = ProtocolVersionName::cuttlefish();
     let start_epoch = Epoch::of(1);
     let end_epoch = Epoch::of(10000000);
@@ -30,17 +31,21 @@ fn print_fixed_config_code() {
 
 #[test]
 fn print_calculated_protocol_config_code() {
+    // This is used for mainnet calculations
+
     // PARAMETERS
     let calculator = CalculationParameters {
         expected_epoch_length: Duration::minutes(5),
         // This data can come from the Core API /core/state/consensus-manager response
-        base_epoch: Epoch::of(97091),
-        base_epoch_effective_start: DateTime::<Utc>::from_str("2024-05-09T18:01:00.000Z").unwrap(),
+        base_epoch: Epoch::of(150729),
+        base_epoch_effective_start: DateTime::<Utc>::from_str("2024-11-13T01:18:58.703Z").unwrap(),
     };
 
+    // See https://learn.radixdlt.com/article/radix-foundation-protocol-update-candidate-policies
+    // For guidance on how to set these paramaters
     let version = ProtocolVersionName::cuttlefish();
-    let target_start = DateTime::<Utc>::from_str("2024-06-03T18:00:00.000Z").unwrap();
-    let enactment_window = Duration::days(28);
+    let target_start = DateTime::<Utc>::from_str("2024-12-10T16:00:00.000Z").unwrap();
+    let enactment_window = Duration::days(10); // Normally set to 28 days, but shorter due to christmas
     let proposed_thresholds = [(dec!(0.75), Duration::days(14))];
 
     // CALCULATE

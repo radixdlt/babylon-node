@@ -23,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.LedgerStateSelector;
+import com.radixdlt.api.core.generated.models.PreviewFlags;
 import com.radixdlt.api.core.generated.models.PublicKey;
 import com.radixdlt.api.core.generated.models.TransactionMessage;
-import com.radixdlt.api.core.generated.models.TransactionPreviewRequestFlags;
 import com.radixdlt.api.core.generated.models.TransactionPreviewResponseOptions;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -86,7 +86,7 @@ public class TransactionPreviewRequest {
   private Long nonce;
 
   public static final String JSON_PROPERTY_SIGNER_PUBLIC_KEYS = "signer_public_keys";
-  private List<PublicKey> signerPublicKeys = new ArrayList<>();
+  private List<PublicKey> signerPublicKeys = null;
 
   public static final String JSON_PROPERTY_MESSAGE = "message";
   private TransactionMessage message;
@@ -95,7 +95,7 @@ public class TransactionPreviewRequest {
   private TransactionPreviewResponseOptions options;
 
   public static final String JSON_PROPERTY_FLAGS = "flags";
-  private TransactionPreviewRequestFlags flags;
+  private PreviewFlags flags;
 
   public TransactionPreviewRequest() { 
   }
@@ -218,13 +218,13 @@ public class TransactionPreviewRequest {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch at which the transaction starts being valid. If omitted, the current epoch will be used (taking into account the &#x60;at_ledger_state&#x60;, if specified). 
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch at which the transaction starts being valid. If not provided, the current epoch will be used (taking into account the &#x60;at_ledger_state&#x60;, if specified). 
    * minimum: 0
    * maximum: 10000000000
    * @return startEpochInclusive
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid. If omitted, the current epoch will be used (taking into account the `at_ledger_state`, if specified). ")
+  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking the epoch at which the transaction starts being valid. If not provided, the current epoch will be used (taking into account the `at_ledger_state`, if specified). ")
   @JsonProperty(JSON_PROPERTY_START_EPOCH_INCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -246,13 +246,13 @@ public class TransactionPreviewRequest {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch at which the transaction is no longer valid. If omitted, a maximum epoch (relative to the &#x60;start_epoch_inclusive&#x60;) will be used. 
+   * An integer between &#x60;0&#x60; and &#x60;10^10&#x60;, marking the epoch at which the transaction is no longer valid. If not provided, a maximum epoch (relative to the &#x60;start_epoch_inclusive&#x60;) will be used. 
    * minimum: 0
    * maximum: 10000000000
    * @return endEpochExclusive
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid. If omitted, a maximum epoch (relative to the `start_epoch_inclusive`) will be used. ")
+  @ApiModelProperty(value = "An integer between `0` and `10^10`, marking the epoch at which the transaction is no longer valid. If not provided, a maximum epoch (relative to the `start_epoch_inclusive`) will be used. ")
   @JsonProperty(JSON_PROPERTY_END_EPOCH_EXCLUSIVE)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -300,11 +300,11 @@ public class TransactionPreviewRequest {
   }
 
    /**
-   * Whether the notary should count as a signatory (defaults to &#x60;false&#x60;).
+   * Whether the notary should be used as a signer (optional). If not provided, this defaults to false. 
    * @return notaryIsSignatory
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "Whether the notary should count as a signatory (defaults to `false`).")
+  @ApiModelProperty(value = "Whether the notary should be used as a signer (optional). If not provided, this defaults to false. ")
   @JsonProperty(JSON_PROPERTY_NOTARY_IS_SIGNATORY)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -326,15 +326,15 @@ public class TransactionPreviewRequest {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;65535&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to a 1% fee. 
+   * An integer between &#x60;0&#x60; and &#x60;65535&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to a 1% fee. If not provided, this defaults to 0. 
    * minimum: 0
    * maximum: 65535
    * @return tipPercentage
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to a 1% fee. ")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to a 1% fee. If not provided, this defaults to 0. ")
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Integer getTipPercentage() {
     return tipPercentage;
@@ -342,7 +342,7 @@ public class TransactionPreviewRequest {
 
 
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTipPercentage(Integer tipPercentage) {
     this.tipPercentage = tipPercentage;
   }
@@ -354,15 +354,15 @@ public class TransactionPreviewRequest {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). 
+   * An integer between &#x60;0&#x60; and &#x60;2^32 - 1&#x60;, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). If not provided, this defaults to 0. 
    * minimum: 0
    * maximum: 4294967295
    * @return nonce
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). ")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent). If not provided, this defaults to 0. ")
   @JsonProperty(JSON_PROPERTY_NONCE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public Long getNonce() {
     return nonce;
@@ -370,7 +370,7 @@ public class TransactionPreviewRequest {
 
 
   @JsonProperty(JSON_PROPERTY_NONCE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setNonce(Long nonce) {
     this.nonce = nonce;
   }
@@ -382,18 +382,21 @@ public class TransactionPreviewRequest {
   }
 
   public TransactionPreviewRequest addSignerPublicKeysItem(PublicKey signerPublicKeysItem) {
+    if (this.signerPublicKeys == null) {
+      this.signerPublicKeys = new ArrayList<>();
+    }
     this.signerPublicKeys.add(signerPublicKeysItem);
     return this;
   }
 
    /**
-   * A list of public keys to be used as transaction signers
+   * A list of public keys to be used as transaction signers. If not provided, this defaults to an empty array. 
    * @return signerPublicKeys
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "A list of public keys to be used as transaction signers")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A list of public keys to be used as transaction signers. If not provided, this defaults to an empty array. ")
   @JsonProperty(JSON_PROPERTY_SIGNER_PUBLIC_KEYS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public List<PublicKey> getSignerPublicKeys() {
     return signerPublicKeys;
@@ -401,7 +404,7 @@ public class TransactionPreviewRequest {
 
 
   @JsonProperty(JSON_PROPERTY_SIGNER_PUBLIC_KEYS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setSignerPublicKeys(List<PublicKey> signerPublicKeys) {
     this.signerPublicKeys = signerPublicKeys;
   }
@@ -459,7 +462,7 @@ public class TransactionPreviewRequest {
   }
 
 
-  public TransactionPreviewRequest flags(TransactionPreviewRequestFlags flags) {
+  public TransactionPreviewRequest flags(PreviewFlags flags) {
     this.flags = flags;
     return this;
   }
@@ -468,19 +471,19 @@ public class TransactionPreviewRequest {
    * Get flags
    * @return flags
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
   @JsonProperty(JSON_PROPERTY_FLAGS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
-  public TransactionPreviewRequestFlags getFlags() {
+  public PreviewFlags getFlags() {
     return flags;
   }
 
 
   @JsonProperty(JSON_PROPERTY_FLAGS)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setFlags(TransactionPreviewRequestFlags flags) {
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setFlags(PreviewFlags flags) {
     this.flags = flags;
   }
 

@@ -3,12 +3,6 @@ use std::any::Any;
 
 use tower_http::catch_panic::ResponseForPanic;
 
-use models::{
-    lts_transaction_submit_error_details::LtsTransactionSubmitErrorDetails,
-    stream_proofs_error_details::StreamProofsErrorDetails,
-    transaction_submit_error_details::TransactionSubmitErrorDetails,
-};
-
 /// A marker trait for custom error details
 pub trait ErrorDetails: serde::Serialize + Debug + Sized {
     fn to_error_response(
@@ -34,7 +28,7 @@ impl ErrorDetails for () {
     }
 }
 
-impl ErrorDetails for TransactionSubmitErrorDetails {
+impl ErrorDetails for models::TransactionSubmitErrorDetails {
     fn to_error_response(
         details: Option<Self>,
         code: i32,
@@ -50,7 +44,7 @@ impl ErrorDetails for TransactionSubmitErrorDetails {
     }
 }
 
-impl ErrorDetails for LtsTransactionSubmitErrorDetails {
+impl ErrorDetails for models::LtsTransactionSubmitErrorDetails {
     fn to_error_response(
         details: Option<Self>,
         code: i32,
@@ -58,6 +52,22 @@ impl ErrorDetails for LtsTransactionSubmitErrorDetails {
         trace_id: Option<String>,
     ) -> models::ErrorResponse {
         models::ErrorResponse::LtsTransactionSubmitErrorResponse {
+            code,
+            message,
+            trace_id,
+            details: details.map(Box::new),
+        }
+    }
+}
+
+impl ErrorDetails for models::TransactionPreviewV2ErrorDetails {
+    fn to_error_response(
+        details: Option<Self>,
+        code: i32,
+        message: String,
+        trace_id: Option<String>,
+    ) -> models::ErrorResponse {
+        models::ErrorResponse::TransactionPreviewV2ErrorResponse {
             code,
             message,
             trace_id,
@@ -82,7 +92,7 @@ impl ErrorDetails for models::StreamTransactionsErrorDetails {
     }
 }
 
-impl ErrorDetails for StreamProofsErrorDetails {
+impl ErrorDetails for models::StreamProofsErrorDetails {
     fn to_error_response(
         details: Option<Self>,
         code: i32,

@@ -67,7 +67,7 @@ use crate::prelude::*;
 pub struct Preparator {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     transaction_executor_factory: Arc<TransactionExecutorFactory>,
-    pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+    mempool_manager: Arc<MempoolManager>,
     transaction_validator: Arc<RwLock<TransactionValidator>>,
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
@@ -77,7 +77,7 @@ impl Preparator {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         transaction_executor_factory: Arc<TransactionExecutorFactory>,
-        pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+        mempool_manager: Arc<MempoolManager>,
         transaction_validator: Arc<RwLock<TransactionValidator>>,
         vertex_limits_config: VertexLimitsConfig,
         metrics_registry: &MetricRegistry,
@@ -85,7 +85,7 @@ impl Preparator {
         Self {
             database,
             transaction_executor_factory,
-            pending_transaction_result_cache,
+            mempool_manager,
             transaction_validator,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
@@ -436,8 +436,7 @@ impl Preparator {
                                 user_hashes.clone(),
                             ));
                             pending_transaction_results.push(PendingTransactionResult {
-                                transaction_intent_hash: user_hashes.transaction_intent_hash,
-                                notarized_transaction_hash: user_hashes.notarized_transaction_hash,
+                                user_hashes: user_hashes.clone(),
                                 invalid_at_epoch: prepared_details.end_epoch_exclusive,
                                 rejection_reason: Some(error.into()),
                             });
@@ -452,8 +451,6 @@ impl Preparator {
 
             let prepared_details = prepared_details.retrieve_captured();
             let user_hashes = prepared_details.hashes.as_user().unwrap().clone();
-            let transaction_intent_hash = user_hashes.transaction_intent_hash;
-            let notarized_transaction_hash = user_hashes.notarized_transaction_hash;
             let ledger_transaction_hash = prepared_details.hashes.ledger_transaction_hash;
             let invalid_at_epoch = prepared_details.end_epoch_exclusive;
 
@@ -484,11 +481,10 @@ impl Preparator {
                                 index,
                                 raw_ledger_transaction,
                                 ledger_transaction_hash,
-                                user_hashes,
+                                user_hashes.clone(),
                             ));
                             pending_transaction_results.push(PendingTransactionResult {
-                                transaction_intent_hash,
-                                notarized_transaction_hash,
+                                user_hashes,
                                 invalid_at_epoch,
                                 rejection_reason: None,
                             });
@@ -524,8 +520,7 @@ impl Preparator {
                 }) => {
                     let error_message = format!("{:?}", &result.reason);
                     pending_transaction_results.push(PendingTransactionResult {
-                        transaction_intent_hash: user_hashes.transaction_intent_hash,
-                        notarized_transaction_hash: user_hashes.notarized_transaction_hash,
+                        user_hashes: user_hashes.clone(),
                         invalid_at_epoch,
                         rejection_reason: Some(MempoolRejectionReason::FromExecution(Box::new(
                             result.reason,
@@ -556,22 +551,19 @@ impl Preparator {
             debug!("TXN INVALID: {}", &rejection.error);
         }
 
-        let mut write_pending_transaction_result_cache =
-            self.pending_transaction_result_cache.write();
         for pending_transaction_result in pending_transaction_results {
             let attempt = TransactionAttempt {
                 rejection: pending_transaction_result.rejection_reason,
                 against_state: pending_transaction_base_state.clone(),
                 timestamp: pending_transaction_timestamp,
             };
-            write_pending_transaction_result_cache.track_transaction_result(
-                pending_transaction_result.transaction_intent_hash,
-                pending_transaction_result.notarized_transaction_hash,
+
+            self.mempool_manager.observe_pending_execution_result(
+                pending_transaction_result.user_hashes,
                 Some(pending_transaction_result.invalid_at_epoch),
                 attempt,
             );
         }
-        drop(write_pending_transaction_result_cache);
 
         self.vertex_prepare_metrics.update(
             total_proposal_size,
@@ -647,8 +639,7 @@ pub struct PreparedScenarioMetadata {
 }
 
 struct PendingTransactionResult {
-    pub transaction_intent_hash: TransactionIntentHash,
-    pub notarized_transaction_hash: NotarizedTransactionHash,
+    pub user_hashes: UserTransactionHashes,
     pub invalid_at_epoch: Epoch,
     pub rejection_reason: Option<MempoolRejectionReason>,
 }

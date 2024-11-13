@@ -42,7 +42,9 @@ import com.radixdlt.api.core.generated.client.JSON;
  */
 @JsonPropertyOrder({
   TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_TIP_PERCENTAGE,
-  TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED
+  TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED,
+  TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_TIP_PROPORTION,
+  TransactionSubmitPriorityThresholdNotMetErrorDetails.JSON_PROPERTY_MIN_TIP_PROPORTION_REQUIRED
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @JsonIgnoreProperties(
@@ -63,6 +65,12 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
   public static final String JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED = "min_tip_percentage_required";
   private Integer minTipPercentageRequired;
 
+  public static final String JSON_PROPERTY_TIP_PROPORTION = "tip_proportion";
+  private String tipProportion;
+
+  public static final String JSON_PROPERTY_MIN_TIP_PROPORTION_REQUIRED = "min_tip_proportion_required";
+  private String minTipProportionRequired;
+
   public TransactionSubmitPriorityThresholdNotMetErrorDetails() { 
   }
 
@@ -72,13 +80,15 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
   }
 
    /**
-   * Tip percentage of the submitted (and rejected) transaction. 
+   * NOTE: This is kept for backwards compatibility, but we recommend using &#x60;tip_proportion&#x60; instead.  Tip percentage of the submitted (and rejected) transaction. For V2 transactions specifying basis point tips, the amount is rounded down. 
    * minimum: 0
    * maximum: 65535
    * @return tipPercentage
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "Tip percentage of the submitted (and rejected) transaction. ")
+  @ApiModelProperty(required = true, value = "NOTE: This is kept for backwards compatibility, but we recommend using `tip_proportion` instead.  Tip percentage of the submitted (and rejected) transaction. For V2 transactions specifying basis point tips, the amount is rounded down. ")
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -100,13 +110,15 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
   }
 
    /**
-   * A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
+   * NOTE: This is kept for backwards compatibility, but we recommend using &#x60;min_tip_proportion_required&#x60; instead.  A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
    * minimum: 0
    * maximum: 65535
    * @return minTipPercentageRequired
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. ")
+  @ApiModelProperty(value = "NOTE: This is kept for backwards compatibility, but we recommend using `min_tip_proportion_required` instead.  A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. ")
   @JsonProperty(JSON_PROPERTY_MIN_TIP_PERCENTAGE_REQUIRED)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -119,6 +131,58 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMinTipPercentageRequired(Integer minTipPercentageRequired) {
     this.minTipPercentageRequired = minTipPercentageRequired;
+  }
+
+
+  public TransactionSubmitPriorityThresholdNotMetErrorDetails tipProportion(String tipProportion) {
+    this.tipProportion = tipProportion;
+    return this;
+  }
+
+   /**
+   * The string-encoded decimal tip proportion of the submitted (and rejected) transaction.  This field will always be present on Cuttlefish nodes, but is marked as not-required for Cuttlefish launch, to avoid a dependency on clients to update after the node is updated. 
+   * @return tipProportion
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "The string-encoded decimal tip proportion of the submitted (and rejected) transaction.  This field will always be present on Cuttlefish nodes, but is marked as not-required for Cuttlefish launch, to avoid a dependency on clients to update after the node is updated. ")
+  @JsonProperty(JSON_PROPERTY_TIP_PROPORTION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTipProportion() {
+    return tipProportion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TIP_PROPORTION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTipProportion(String tipProportion) {
+    this.tipProportion = tipProportion;
+  }
+
+
+  public TransactionSubmitPriorityThresholdNotMetErrorDetails minTipProportionRequired(String minTipProportionRequired) {
+    this.minTipProportionRequired = minTipProportionRequired;
+    return this;
+  }
+
+   /**
+   * A lower bound for tip proportion at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
+   * @return minTipProportionRequired
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A lower bound for tip proportion at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. ")
+  @JsonProperty(JSON_PROPERTY_MIN_TIP_PROPORTION_REQUIRED)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getMinTipProportionRequired() {
+    return minTipProportionRequired;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_MIN_TIP_PROPORTION_REQUIRED)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setMinTipProportionRequired(String minTipProportionRequired) {
+    this.minTipProportionRequired = minTipProportionRequired;
   }
 
 
@@ -136,12 +200,14 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
     TransactionSubmitPriorityThresholdNotMetErrorDetails transactionSubmitPriorityThresholdNotMetErrorDetails = (TransactionSubmitPriorityThresholdNotMetErrorDetails) o;
     return Objects.equals(this.tipPercentage, transactionSubmitPriorityThresholdNotMetErrorDetails.tipPercentage) &&
         Objects.equals(this.minTipPercentageRequired, transactionSubmitPriorityThresholdNotMetErrorDetails.minTipPercentageRequired) &&
+        Objects.equals(this.tipProportion, transactionSubmitPriorityThresholdNotMetErrorDetails.tipProportion) &&
+        Objects.equals(this.minTipProportionRequired, transactionSubmitPriorityThresholdNotMetErrorDetails.minTipProportionRequired) &&
         super.equals(o);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(tipPercentage, minTipPercentageRequired, super.hashCode());
+    return Objects.hash(tipPercentage, minTipPercentageRequired, tipProportion, minTipProportionRequired, super.hashCode());
   }
 
   @Override
@@ -151,6 +217,8 @@ public class TransactionSubmitPriorityThresholdNotMetErrorDetails extends Transa
     sb.append("    ").append(toIndentedString(super.toString())).append("\n");
     sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
     sb.append("    minTipPercentageRequired: ").append(toIndentedString(minTipPercentageRequired)).append("\n");
+    sb.append("    tipProportion: ").append(toIndentedString(tipProportion)).append("\n");
+    sb.append("    minTipProportionRequired: ").append(toIndentedString(minTipProportionRequired)).append("\n");
     sb.append("}");
     return sb.toString();
   }

@@ -462,6 +462,10 @@ impl<
 /// This is the most verbose and customizable trait. Usual cases can use one of the more convenient
 /// traits defined below.
 pub trait TypedCf {
+    /// The logical column family name by which Rocks knows this column family.
+    /// This cannot be changed without wiping the database.
+    const NAME: &'static str;
+
     /// Type of the key.
     type Key;
     /// Type of the value.
@@ -473,8 +477,6 @@ pub trait TypedCf {
     /// Type of the [`DbCodec`] for the values.
     type ValueCodec: DbCodec<Self::Value>;
 
-    /// Column family name (as known to the DB).
-    const NAME: &'static str;
     /// Creates a new [`DbCodec`] for keys within this column family.
     fn key_codec(&self) -> Self::KeyCodec;
     /// Creates a new [`DbCodec`] for values within this column family.
@@ -484,16 +486,18 @@ pub trait TypedCf {
 /// A convenience trait implementing [`TypedCf`] for a simple case where both [`DbCodec`]s have
 /// cheap [`Default`] implementations.
 pub trait DefaultCf {
+    /// The logical column family name by which Rocks knows this column family.
+    /// This cannot be changed without wiping the database.
+    ///
+    /// This is used to populate [`TypedCf::NAME`] and uses a different ident to avoid awkward
+    /// fully-qualified syntax wherever it is used.
+    const NAME_SOURCE: &'static str;
+
     /// Type of the key.
     type Key;
     /// Type of the value.
     type Value;
 
-    /// Column family name (as known to the DB).
-    ///
-    /// Note: this deliberately uses a different identifier than [`TypedCf::NAME`] to avoid awkward
-    /// fully-qualified syntax wherever it is used.
-    const DEFAULT_NAME: &'static str;
     /// Key codec type.
     type KeyCodec: Default;
     /// Value codec type.
@@ -508,13 +512,13 @@ impl<
         D: DefaultCf<Key = K, Value = V, KeyCodec = KC, ValueCodec = VC>,
     > TypedCf for D
 {
+    const NAME: &'static str = Self::NAME_SOURCE;
+
     type Key = K;
     type Value = V;
 
     type KeyCodec = KC;
     type ValueCodec = VC;
-
-    const NAME: &'static str = Self::DEFAULT_NAME;
 
     fn key_codec(&self) -> KC {
         KC::default()
@@ -528,16 +532,19 @@ impl<
 /// A convenience trait implementing [`TypedCf`] for a popular case where a "versioned SBOR"
 /// encoding is used for values.
 pub trait VersionedCf {
+    /// The logical column family name by which Rocks knows this column family.
+    /// This cannot be changed without wiping the database.
+    ///
+    /// This is used to populate [`TypedCf::NAME`] and uses a different ident to avoid awkward
+    /// fully-qualified syntax wherever it is used.
+    const NAME_SOURCE: &'static str;
+
     type Key;
     type Value: Into<Self::VersionedValue> + Clone;
 
-    /// Column family name (as known to the DB).
-    ///
-    /// Note: this deliberately uses a different identifier than [`TypedCf::NAME`] to avoid awkward
-    /// fully-qualified syntax wherever it is used.
-    const VERSIONED_NAME: &'static str;
     /// Key codec type.
     type KeyCodec: Default;
+
     /// Versioned **value** type (a codec for it is known, i.e. SBOR-based).
     type VersionedValue: ScryptoEncode
         + ScryptoDecode
@@ -557,10 +564,11 @@ where
     KC: Default,
     D: VersionedCf<Key = K, Value = V, KeyCodec = KC, VersionedValue = VV>,
 {
+    const NAME_SOURCE: &'static str = <Self as VersionedCf>::NAME_SOURCE;
+
     type Key = K;
     type Value = V;
 
-    const DEFAULT_NAME: &'static str = Self::VERSIONED_NAME;
     type KeyCodec = KC;
     type ValueCodec = VersionedDbCodec<SborDbCodec<VV>, V, VV>;
 }

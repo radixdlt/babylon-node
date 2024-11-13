@@ -157,16 +157,42 @@ impl LedgerTransactionOutcome {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub enum DetailedTransactionOutcome {
+pub enum DetailedTransactionOutcomeV1 {
     Success(Vec<Vec<u8>>),
     Failure(LenientRuntimeError),
 }
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum DetailedTransactionOutcomeV2 {
+    Success(Vec<Vec<u8>>),
+    Failure(PersistableRuntimeError),
+}
+
+impl From<DetailedTransactionOutcomeV1> for DetailedTransactionOutcomeV2 {
+    fn from(value: DetailedTransactionOutcomeV1) -> Self {
+        match value {
+            DetailedTransactionOutcomeV1::Success(output) => {
+                DetailedTransactionOutcomeV2::Success(output)
+            }
+            DetailedTransactionOutcomeV1::Failure(error) => {
+                DetailedTransactionOutcomeV2::Failure(PersistableRuntimeError {
+                    // All pre-Cuttlefish errors should use the pre-Cuttlefish schema,
+                    // at schema index 0
+                    schema_index: 0,
+                    encoded_error: error.0,
+                })
+            }
+        }
+    }
+}
+
+pub type DetailedTransactionOutcome = DetailedTransactionOutcomeV2;
 
 /// A wrapper for SBOR-encoded [`RuntimeError`] which may turn out to no longer be decodable (due
 /// to differences in historical error enum schema).
 #[derive(Debug, Clone, ScryptoEncode, ScryptoDecode, ScryptoDescribe)]
 #[sbor(transparent)]
-pub struct LenientRuntimeError(ScryptoValue);
+pub struct LenientRuntimeError(ScryptoOwnedRawValue);
 
 impl Categorize<ScryptoCustomValueKind> for LenientRuntimeError {
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -213,7 +239,7 @@ impl From<TransactionOutcome> for DetailedTransactionOutcome {
                         .collect(),
                 )
             }
-            TransactionOutcome::Failure(error) => Self::Failure(LenientRuntimeError::from(error)),
+            TransactionOutcome::Failure(error) => Self::Failure(error.create_persistable()),
         }
     }
 }
@@ -271,13 +297,17 @@ pub struct LocalTransactionReceipt {
     pub local_execution: LocalTransactionExecution,
 }
 
+pub struct TransientReceipt {
+    pub nullifications: Vec<Nullification>,
+}
+
 define_single_versioned! {
     #[derive(Debug, Clone, ScryptoSbor)]
     pub VersionedLedgerTransactionReceipt(LedgerTransactionReceiptVersions) => LedgerTransactionReceipt = LedgerTransactionReceiptV1,
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_transaction_receipt.bin"
+            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_transaction_receipt_cuttlefish.bin"
         ))]
     ]
 }
@@ -316,15 +346,18 @@ define_versioned! {
     },
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
-        #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_local_transaction_execution.bin"
-        ))]
+        #[sbor_assert(
+            backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_local_transaction_execution_cuttlefish.bin"
+            ),
+            settings(allow_name_changes)
+        )]
     ]
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct LocalTransactionExecutionV1 {
-    pub outcome: DetailedTransactionOutcome,
+    pub outcome: DetailedTransactionOutcomeV1,
     pub fee_summary: TransactionFeeSummary,
     pub fee_source: FeeSource,
     pub fee_destination: FeeDestination,
@@ -341,7 +374,7 @@ pub struct LocalTransactionExecutionV1 {
 impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
     fn from(value: LocalTransactionExecutionV1) -> Self {
         LocalTransactionExecutionV2 {
-            outcome: value.outcome,
+            outcome: value.outcome.into(),
             fee_summary: value.fee_summary,
             fee_source: value.fee_source,
             fee_destination: value.fee_destination,
@@ -353,13 +386,15 @@ impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
             substates_system_structure: value.substates_system_structure,
             events_system_structure: value.events_system_structure,
             next_epoch: value.next_epoch,
+            // May miss pre-cuttlefish intent nullifications. This is detailed in the Rustdoc below.
+            nullifications: Vec::new(),
         }
     }
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct LocalTransactionExecutionV2 {
-    pub outcome: DetailedTransactionOutcome,
+    pub outcome: DetailedTransactionOutcomeV2,
     pub fee_summary: TransactionFeeSummary,
     pub fee_source: FeeSource,
     pub fee_destination: FeeDestination,
@@ -371,6 +406,9 @@ pub struct LocalTransactionExecutionV2 {
     pub substates_system_structure: BySubstate<SubstateSystemStructure>,
     pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
     pub next_epoch: Option<EpochChangeEvent>,
+    /// Pre-cuttlefish, this may be missing Intent nullifications.
+    /// But this is guaranteed to include all subintent nullifications.
+    pub nullifications: Vec<Nullification>,
 }
 
 impl LedgerTransactionReceipt {
@@ -433,6 +471,7 @@ impl LocalTransactionReceipt {
                 ),
                 events_system_structure: system_structure.event_system_structures,
                 next_epoch,
+                nullifications: commit_result.performed_nullifications,
             },
         }
     }

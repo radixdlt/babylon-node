@@ -70,7 +70,7 @@ export interface TransactionPreviewResponse {
      */
     receipt: TransactionReceipt;
     /**
-     * An optional field which is only provided if the `request_radix_engine_toolkit_receipt`
+     * An optional field which is only provided if the `radix_engine_toolkit_receipt`
      * flag is set to true when requesting a transaction preview from the API.
      * 
      * This receipt is primarily intended for use with the toolkit and may contain information 

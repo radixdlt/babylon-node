@@ -77,6 +77,12 @@ pub(crate) async fn handle_status_network_configuration(
             faucet_package: bech32_encoder.encode(FAUCET_PACKAGE.as_ref()).unwrap(),
             pool_package: bech32_encoder.encode(POOL_PACKAGE.as_ref()).unwrap(),
             locker_package: Some(bech32_encoder.encode(LOCKER_PACKAGE.as_ref()).unwrap()),
+            test_utils_package: Some(bech32_encoder.encode(TEST_UTILS_PACKAGE.as_ref()).unwrap()),
+            transaction_tracker_package: Some(
+                bech32_encoder
+                    .encode(TRANSACTION_TRACKER_PACKAGE.as_ref())
+                    .unwrap(),
+            ),
             consensus_manager: bech32_encoder.encode(CONSENSUS_MANAGER.as_ref()).unwrap(),
             genesis_helper: bech32_encoder.encode(GENESIS_HELPER.as_ref()).unwrap(),
             faucet: bech32_encoder.encode(FAUCET.as_ref()).unwrap(),

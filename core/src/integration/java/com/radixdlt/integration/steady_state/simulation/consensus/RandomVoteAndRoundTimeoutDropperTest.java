@@ -100,7 +100,8 @@ public class RandomVoteAndRoundTimeoutDropperTest {
               NetworkLatencies.fixed(),
               NetworkDroppers.randomVotesAndRoundTimeoutsDropped(0.4))
           .addTestModules(
-              ConsensusMonitors.safety(), ConsensusMonitors.liveness(20, TimeUnit.SECONDS));
+              ConsensusMonitors.safety(),
+              ConsensusMonitors.liveness(20, TimeUnit.SECONDS, 20, TimeUnit.SECONDS));
 
   /**
    * Tests a configuration of 4 nodes with a dropping proposal adversary Test should fail with

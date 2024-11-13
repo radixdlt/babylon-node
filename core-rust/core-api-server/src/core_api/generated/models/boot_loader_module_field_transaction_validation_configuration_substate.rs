@@ -17,13 +17,16 @@ pub struct BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
     pub substate_type: crate::core_api::generated::models::SubstateType,
     #[serde(rename = "is_locked")]
     pub is_locked: bool,
+    #[serde(rename = "config")]
+    pub config: Box<crate::core_api::generated::models::TransactionValidationConfig>,
 }
 
 impl BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
-    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool) -> BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
+    pub fn new(substate_type: crate::core_api::generated::models::SubstateType, is_locked: bool, config: crate::core_api::generated::models::TransactionValidationConfig) -> BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
         BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
             substate_type,
             is_locked,
+            config: Box::new(config),
         }
     }
 }

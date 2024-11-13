@@ -89,7 +89,7 @@ pub enum MempoolAddError {
         tip_basis_points: u32,
     },
     Duplicate(NotarizedTransactionHash),
-    Rejected(MempoolAddRejection),
+    Rejected(MempoolAddRejection, Option<NotarizedTransactionHash>),
 }
 
 #[derive(Debug, Clone)]
@@ -115,40 +115,27 @@ impl MempoolAddRejection {
     }
 
     pub fn is_permanent_for_payload(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_payload(),
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => self.reason.is_permanent_for_payload(),
-        }
+        self.reason.is_permanent_for_payload(&self.against_state)
     }
 
     pub fn is_permanent_for_intent(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_intent(),
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => self.reason.is_permanent_for_payload(),
-        }
+        self.reason.is_permanent_for_intent(&self.against_state)
     }
 
     pub fn transaction_intent_already_committed_error(&self) -> Option<&AlreadyCommittedError> {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => {
-                    self.reason.transaction_intent_already_committed_error()
-                }
-                AtSpecificState::PendingPreparingVertices { .. } => None,
-            },
-            AtState::Static => None,
-        }
+        self.reason
+            .transaction_intent_already_committed_error(&self.against_state)
     }
 }
 
-impl Display for MempoolAddError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolAddError {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
         match self {
             MempoolAddError::PriorityThresholdNotMet {
                 min_tip_basis_points_required,
@@ -162,7 +149,9 @@ impl Display for MempoolAddError {
                 }
             },
             MempoolAddError::Duplicate(_) => write!(f, "Duplicate Entry"),
-            MempoolAddError::Rejected(rejection) => write!(f, "{}", rejection.reason),
+            MempoolAddError::Rejected(rejection, _) => {
+                rejection.reason.contextual_format(f, context)
+            }
         }
     }
 }

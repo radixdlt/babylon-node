@@ -35,17 +35,20 @@ pub(crate) async fn handle_lts_transaction_submit(
             "The mempool is full and the submitted transaction's priority is not sufficient to replace any existing transactions. Try submitting with a larger tip to increase the transaction's priority.",
             LtsTransactionSubmitErrorDetails::LtsTransactionSubmitPriorityThresholdNotMetErrorDetails {
                 tip_percentage: TipSpecifier::BasisPoints(tip_basis_points).truncate_to_percentage_u32() as i32, // Dividing by 100 means this is inbounds
+                tip_proportion: Some(to_api_decimal(&TipSpecifier::BasisPoints(tip_basis_points).proportion())),
                 min_tip_percentage_required: min_tip_basis_points_required.map(|x| TipSpecifier::BasisPoints(x).truncate_to_percentage_u32() as i32),
+                min_tip_proportion_required: min_tip_basis_points_required.map(|x| to_api_decimal(&TipSpecifier::BasisPoints(x).proportion())),
             },
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::LtsTransactionSubmitResponse::new(true)),
-        Err(MempoolAddError::Rejected(rejection)) => {
+        Err(MempoolAddError::Rejected(rejection, notarized_transaction_hash)) => {
             if let Some(already_committed_error) = rejection.transaction_intent_already_committed_error() {
+                let is_same_transaction = Some(already_committed_error.committed_notarized_transaction_hash) == notarized_transaction_hash;
                 Err(detailed_error(
                     StatusCode::BAD_REQUEST,
                     "The transaction intent has already been committed",
                     LtsTransactionSubmitErrorDetails::LtsTransactionSubmitIntentAlreadyCommitted {
-                        committed_as: Box::new(to_api_committed_intent_metadata(&mapping_context, already_committed_error)?)
+                        committed_as: Box::new(to_api_committed_intent_metadata(&mapping_context, already_committed_error, is_same_transaction)?)
                     }
                 ))
             } else {
@@ -53,7 +56,7 @@ pub(crate) async fn handle_lts_transaction_submit(
                     StatusCode::BAD_REQUEST,
                     "Transaction was rejected",
                     LtsTransactionSubmitErrorDetails::LtsTransactionSubmitRejectedErrorDetails {
-                        error_message: format!("{}", rejection.reason),
+                        error_message: rejection.reason.to_string(&mapping_context),
                         is_fresh: !rejection.was_cached,
                         is_payload_rejection_permanent: rejection.is_permanent_for_payload(),
                         is_intent_rejection_permanent: rejection.is_permanent_for_intent(),

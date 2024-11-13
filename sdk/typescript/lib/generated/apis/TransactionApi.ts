@@ -22,6 +22,9 @@ import type {
   TransactionParseResponse,
   TransactionPreviewRequest,
   TransactionPreviewResponse,
+  TransactionPreviewV2ErrorResponse,
+  TransactionPreviewV2Request,
+  TransactionPreviewV2Response,
   TransactionReceiptRequest,
   TransactionReceiptResponse,
   TransactionStatusRequest,
@@ -45,6 +48,12 @@ import {
     TransactionPreviewRequestToJSON,
     TransactionPreviewResponseFromJSON,
     TransactionPreviewResponseToJSON,
+    TransactionPreviewV2ErrorResponseFromJSON,
+    TransactionPreviewV2ErrorResponseToJSON,
+    TransactionPreviewV2RequestFromJSON,
+    TransactionPreviewV2RequestToJSON,
+    TransactionPreviewV2ResponseFromJSON,
+    TransactionPreviewV2ResponseToJSON,
     TransactionReceiptRequestFromJSON,
     TransactionReceiptRequestToJSON,
     TransactionReceiptResponseFromJSON,
@@ -71,6 +80,10 @@ export interface TransactionParsePostRequest {
 
 export interface TransactionPreviewPostRequest {
     transactionPreviewRequest: TransactionPreviewRequest;
+}
+
+export interface TransactionPreviewV2PostRequest {
+    transactionPreviewV2Request: TransactionPreviewV2Request;
 }
 
 export interface TransactionReceiptPostRequest {
@@ -161,8 +174,8 @@ export class TransactionApi extends runtime.BaseAPI {
     }
 
     /**
-     * Preview a transaction against the latest network state, and returns the preview receipt. 
-     * Transaction Preview
+     * Preview a transaction against the latest network state, and returns the preview receipt. If the node has enabled it, you may be able to also preview against recent network state.  For V2 transactions (and beyond) the `/preview-v2` endpoint should be used instead. 
+     * Transaction Preview V1
      */
     async transactionPreviewPostRaw(requestParameters: TransactionPreviewPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TransactionPreviewResponse>> {
         if (requestParameters.transactionPreviewRequest === null || requestParameters.transactionPreviewRequest === undefined) {
@@ -187,11 +200,46 @@ export class TransactionApi extends runtime.BaseAPI {
     }
 
     /**
-     * Preview a transaction against the latest network state, and returns the preview receipt. 
-     * Transaction Preview
+     * Preview a transaction against the latest network state, and returns the preview receipt. If the node has enabled it, you may be able to also preview against recent network state.  For V2 transactions (and beyond) the `/preview-v2` endpoint should be used instead. 
+     * Transaction Preview V1
      */
     async transactionPreviewPost(requestParameters: TransactionPreviewPostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TransactionPreviewResponse> {
         const response = await this.transactionPreviewPostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Previews a transaction against the latest network state, and returns the preview receipt. If the node has enabled it, you may be able to also preview against recent network state.  This endpoint supports V2 transactions (and beyond). If you still need to preview V1 transactions, you should use the `/preview` endpoint instead. 
+     * Transaction Preview V2
+     */
+    async transactionPreviewV2PostRaw(requestParameters: TransactionPreviewV2PostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TransactionPreviewV2Response>> {
+        if (requestParameters.transactionPreviewV2Request === null || requestParameters.transactionPreviewV2Request === undefined) {
+            throw new runtime.RequiredError('transactionPreviewV2Request','Required parameter requestParameters.transactionPreviewV2Request was null or undefined when calling transactionPreviewV2Post.');
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        const response = await this.request({
+            path: `/transaction/preview-v2`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: TransactionPreviewV2RequestToJSON(requestParameters.transactionPreviewV2Request),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => TransactionPreviewV2ResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Previews a transaction against the latest network state, and returns the preview receipt. If the node has enabled it, you may be able to also preview against recent network state.  This endpoint supports V2 transactions (and beyond). If you still need to preview V1 transactions, you should use the `/preview` endpoint instead. 
+     * Transaction Preview V2
+     */
+    async transactionPreviewV2Post(requestParameters: TransactionPreviewV2PostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TransactionPreviewV2Response> {
+        const response = await this.transactionPreviewV2PostRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

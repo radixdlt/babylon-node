@@ -21,7 +21,7 @@ import {
 } from './RequirementType';
 
 /**
- * 
+ * This is called `ResourceOrNonFungible` in the engine.
  * @export
  * @interface RequirementBase
  */

@@ -92,13 +92,12 @@ use crate::safety_store_components::SafetyState;
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
 
 const ALL_ADDRESS_BOOK_COLUMN_FAMILIES: [&str; 3] = [
-    AddressBookCf::VERSIONED_NAME,
-    HighPriorityPeersCf::VERSIONED_NAME,
-    MigrationStatusCf::DEFAULT_NAME,
+    AddressBookCf::NAME,
+    HighPriorityPeersCf::NAME,
+    MigrationStatusCf::NAME,
 ];
 
-const ALL_SAFETY_STORE_COLUMN_FAMILIES: [&str; 2] =
-    [SafetyStoreCf::DEFAULT_NAME, MigrationStatusCf::DEFAULT_NAME];
+const ALL_SAFETY_STORE_COLUMN_FAMILIES: [&str; 2] = [SafetyStoreCf::NAME, MigrationStatusCf::NAME];
 
 pub type ActualAddressBookDatabase = AddressBookDatabase<DirectRocks>;
 pub type ActualSafetyStoreDatabase = SafetyStoreDatabase<DirectRocks>;

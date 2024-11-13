@@ -78,7 +78,7 @@ define_single_versioned! {
     outer_attributes: [
         #[derive(ScryptoSborAssertion)]
         #[sbor_assert(backwards_compatible(
-            cuttlefish = "FILE:CF_SCHEMA_versioned_safety_state.bin"
+            cuttlefish = "FILE:CF_SCHEMA_versioned_safety_state_cuttlefish.bin"
         ))]
     ]
 }

@@ -75,7 +75,7 @@ impl DefaultCf for MigrationStatusCf {
     type Key = ();
     type Value = MigrationStatus;
 
-    const DEFAULT_NAME: &'static str = "migration_status";
+    const NAME_SOURCE: &'static str = "migration_status";
     type KeyCodec = UnitDbCodec;
     type ValueCodec = SborDbCodec<MigrationStatus>;
 }
@@ -86,7 +86,7 @@ impl VersionedCf for AddressBookCf {
     type Key = NodeSecp256k1PublicKey;
     type Value = AddressBookEntry;
 
-    const VERSIONED_NAME: &'static str = "address_book";
+    const NAME_SOURCE: &'static str = "address_book";
     type KeyCodec = RawPublicKeyDbCodec;
     type VersionedValue = VersionedAddressBookEntry;
 }
@@ -97,7 +97,7 @@ impl VersionedCf for SafetyStoreCf {
     type Key = ();
     type Value = SafetyState;
 
-    const VERSIONED_NAME: &'static str = "safety_store";
+    const NAME_SOURCE: &'static str = "safety_store";
     type KeyCodec = UnitDbCodec;
     type VersionedValue = VersionedSafetyState;
 }
@@ -108,7 +108,7 @@ impl VersionedCf for HighPriorityPeersCf {
     type Key = ();
     type Value = HighPriorityPeers;
 
-    const VERSIONED_NAME: &'static str = "high_priority_peers";
+    const NAME_SOURCE: &'static str = "high_priority_peers";
     type KeyCodec = UnitDbCodec;
     type VersionedValue = VersionedHighPriorityPeers;
 }

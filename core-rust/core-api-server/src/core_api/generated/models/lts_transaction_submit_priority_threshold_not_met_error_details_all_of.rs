@@ -13,12 +13,18 @@
 
 #[derive(Clone, Debug, PartialEq, Default, serde::Serialize, serde::Deserialize)]
 pub struct LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
-    /// Tip percentage of the submitted (and rejected) transaction. 
+    /// NOTE: This is kept for backwards compatibility, but we recommend using `tip_proportion` instead.  Tip percentage of the submitted (and rejected) transaction. For V2 transactions specifying basis point tips, the amount is rounded down. 
     #[serde(rename = "tip_percentage")]
     pub tip_percentage: i32,
-    /// A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
+    /// NOTE: This is kept for backwards compatibility, but we recommend using `min_tip_proportion_required` instead.  A lower bound for tip percentage at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
     #[serde(rename = "min_tip_percentage_required", skip_serializing_if = "Option::is_none")]
     pub min_tip_percentage_required: Option<i32>,
+    /// The string-encoded decimal tip proportion of the submitted (and rejected) transaction.  This field will always be present on Cuttlefish nodes, but is marked as not-required for Cuttlefish launch, to avoid a dependency on clients to update after the node is updated. 
+    #[serde(rename = "tip_proportion", skip_serializing_if = "Option::is_none")]
+    pub tip_proportion: Option<String>,
+    /// A lower bound for tip proportion at current mempool state. Anything lower than this will very likely result in a mempool rejection. A missing value means there is no tip that can guarantee submission. 
+    #[serde(rename = "min_tip_proportion_required", skip_serializing_if = "Option::is_none")]
+    pub min_tip_proportion_required: Option<String>,
 }
 
 impl LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
@@ -26,6 +32,8 @@ impl LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
         LtsTransactionSubmitPriorityThresholdNotMetErrorDetailsAllOf {
             tip_percentage,
             min_tip_percentage_required: None,
+            tip_proportion: None,
+            min_tip_proportion_required: None,
         }
     }
 }

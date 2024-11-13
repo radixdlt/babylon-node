@@ -9,7 +9,6 @@ pub fn to_api_protocol_update_status_substate(
     _context: &MappingContext,
     substate: &ProtocolUpdateStatusSummarySubstate,
 ) -> Result<models::Substate, MappingError> {
-    // TODO:CUTTLEFISH
     let ProtocolUpdateStatusSummary {
         protocol_version,
         update_status,

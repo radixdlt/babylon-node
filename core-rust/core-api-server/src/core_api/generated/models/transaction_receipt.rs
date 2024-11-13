@@ -30,10 +30,10 @@ pub struct TransactionReceipt {
     pub events: Option<Vec<crate::core_api::generated::models::Event>>,
     #[serde(rename = "next_epoch", skip_serializing_if = "Option::is_none")]
     pub next_epoch: Option<Box<crate::core_api::generated::models::NextEpoch>>,
-    /// The manifest line-by-line engine return data (only present if `status` is `Succeeded`)
+    /// The return data for each line of the transaction intent's manifest. This property is only present if the `status` is `Succeeded`. 
     #[serde(rename = "output", skip_serializing_if = "Option::is_none")]
     pub output: Option<Vec<crate::core_api::generated::models::SborData>>,
-    /// Error message (only present if status is `Failed` or `Rejected`)
+    /// The error message. This property is only present if the status is `Failed` or `Rejected`. 
     #[serde(rename = "error_message", skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
 }

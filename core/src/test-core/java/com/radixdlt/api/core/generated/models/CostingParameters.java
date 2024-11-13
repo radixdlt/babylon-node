@@ -39,7 +39,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   CostingParameters.JSON_PROPERTY_XRD_USD_PRICE,
   CostingParameters.JSON_PROPERTY_XRD_STORAGE_PRICE,
   CostingParameters.JSON_PROPERTY_XRD_ARCHIVE_STORAGE_PRICE,
-  CostingParameters.JSON_PROPERTY_TIP_PERCENTAGE
+  CostingParameters.JSON_PROPERTY_TIP_PERCENTAGE,
+  CostingParameters.JSON_PROPERTY_TIP_PROPORTION
 })
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class CostingParameters {
@@ -69,6 +70,9 @@ public class CostingParameters {
 
   public static final String JSON_PROPERTY_TIP_PERCENTAGE = "tip_percentage";
   private Integer tipPercentage;
+
+  public static final String JSON_PROPERTY_TIP_PROPORTION = "tip_proportion";
+  private String tipProportion;
 
   public CostingParameters() { 
   }
@@ -293,13 +297,15 @@ public class CostingParameters {
   }
 
    /**
-   * An integer between &#x60;0&#x60; and &#x60;65535&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to 1% of the fee.
+   * NOTE: V2 transactions specify the tip in basis points, which gets rounded down for this &#x60;tip_percentage&#x60; field. It is recommended to instead use the &#x60;tip_proportion&#x60; field to get a fully accurate value.  An integer between &#x60;0&#x60; and &#x60;65535&#x60;, giving the validator tip as a percentage amount. A value of &#x60;1&#x60; corresponds to 1% of the fee. 
    * minimum: 0
    * maximum: 65535
    * @return tipPercentage
+   * @deprecated
   **/
+  @Deprecated
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee.")
+  @ApiModelProperty(required = true, value = "NOTE: V2 transactions specify the tip in basis points, which gets rounded down for this `tip_percentage` field. It is recommended to instead use the `tip_proportion` field to get a fully accurate value.  An integer between `0` and `65535`, giving the validator tip as a percentage amount. A value of `1` corresponds to 1% of the fee. ")
   @JsonProperty(JSON_PROPERTY_TIP_PERCENTAGE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -312,6 +318,32 @@ public class CostingParameters {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTipPercentage(Integer tipPercentage) {
     this.tipPercentage = tipPercentage;
+  }
+
+
+  public CostingParameters tipProportion(String tipProportion) {
+    this.tipProportion = tipProportion;
+    return this;
+  }
+
+   /**
+   * A string-encoded decimal, giving the validator tip as a proportional amount. A value of &#x60;\&quot;0.01\&quot;&#x60; corresponds to 1% of the fee being paid as a tip.  NOTE: This field is not marked as required for Cuttlefish launch, to permit cuttlefish clients to talk to pre-cuttlefish nodes. This can be changed after Cuttlefish enactment once all nodes are on Cuttlefish. 
+   * @return tipProportion
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "A string-encoded decimal, giving the validator tip as a proportional amount. A value of `\"0.01\"` corresponds to 1% of the fee being paid as a tip.  NOTE: This field is not marked as required for Cuttlefish launch, to permit cuttlefish clients to talk to pre-cuttlefish nodes. This can be changed after Cuttlefish enactment once all nodes are on Cuttlefish. ")
+  @JsonProperty(JSON_PROPERTY_TIP_PROPORTION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTipProportion() {
+    return tipProportion;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TIP_PROPORTION)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTipProportion(String tipProportion) {
+    this.tipProportion = tipProportion;
   }
 
 
@@ -335,12 +367,13 @@ public class CostingParameters {
         Objects.equals(this.xrdUsdPrice, costingParameters.xrdUsdPrice) &&
         Objects.equals(this.xrdStoragePrice, costingParameters.xrdStoragePrice) &&
         Objects.equals(this.xrdArchiveStoragePrice, costingParameters.xrdArchiveStoragePrice) &&
-        Objects.equals(this.tipPercentage, costingParameters.tipPercentage);
+        Objects.equals(this.tipPercentage, costingParameters.tipPercentage) &&
+        Objects.equals(this.tipProportion, costingParameters.tipProportion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(executionCostUnitPrice, executionCostUnitLimit, executionCostUnitLoan, finalizationCostUnitPrice, finalizationCostUnitLimit, xrdUsdPrice, xrdStoragePrice, xrdArchiveStoragePrice, tipPercentage);
+    return Objects.hash(executionCostUnitPrice, executionCostUnitLimit, executionCostUnitLoan, finalizationCostUnitPrice, finalizationCostUnitLimit, xrdUsdPrice, xrdStoragePrice, xrdArchiveStoragePrice, tipPercentage, tipProportion);
   }
 
   @Override
@@ -356,6 +389,7 @@ public class CostingParameters {
     sb.append("    xrdStoragePrice: ").append(toIndentedString(xrdStoragePrice)).append("\n");
     sb.append("    xrdArchiveStoragePrice: ").append(toIndentedString(xrdArchiveStoragePrice)).append("\n");
     sb.append("    tipPercentage: ").append(toIndentedString(tipPercentage)).append("\n");
+    sb.append("    tipProportion: ").append(toIndentedString(tipProportion)).append("\n");
     sb.append("}");
     return sb.toString();
   }

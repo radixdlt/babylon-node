@@ -31,6 +31,7 @@ import com.radixdlt.api.core.generated.models.ErrorResponseType;
 import com.radixdlt.api.core.generated.models.LtsTransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.StreamProofsErrorResponse;
 import com.radixdlt.api.core.generated.models.StreamTransactionsErrorResponse;
+import com.radixdlt.api.core.generated.models.TransactionPreviewV2ErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponseAllOf;
@@ -57,6 +58,7 @@ import com.radixdlt.api.core.generated.client.JSON;
   @JsonSubTypes.Type(value = LtsTransactionSubmitErrorResponse.class, name = "LtsTransactionSubmit"),
   @JsonSubTypes.Type(value = StreamProofsErrorResponse.class, name = "StreamProofs"),
   @JsonSubTypes.Type(value = StreamTransactionsErrorResponse.class, name = "StreamTransactions"),
+  @JsonSubTypes.Type(value = TransactionPreviewV2ErrorResponse.class, name = "TransactionPreviewV2"),
   @JsonSubTypes.Type(value = TransactionSubmitErrorResponse.class, name = "TransactionSubmit"),
 })
 
@@ -142,6 +144,7 @@ static {
   mappings.put("LtsTransactionSubmit", LtsTransactionSubmitErrorResponse.class);
   mappings.put("StreamProofs", StreamProofsErrorResponse.class);
   mappings.put("StreamTransactions", StreamTransactionsErrorResponse.class);
+  mappings.put("TransactionPreviewV2", TransactionPreviewV2ErrorResponse.class);
   mappings.put("TransactionSubmit", TransactionSubmitErrorResponse.class);
   mappings.put("TransactionSubmitErrorResponse", TransactionSubmitErrorResponse.class);
   JSON.registerDiscriminator(TransactionSubmitErrorResponse.class, "error_type", mappings);

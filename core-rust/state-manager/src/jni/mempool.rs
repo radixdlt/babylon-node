@@ -81,11 +81,13 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
         &env,
         request_payload,
         |transaction: RawNotarizedTransaction| -> Result<(), MempoolAddErrorJava> {
-            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env).add_if_committable(
-                MempoolAddSource::MempoolSync,
-                transaction,
-                false,
-            )?;
+            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
+                .add_if_committable(MempoolAddSource::MempoolSync, transaction, false)
+                .map_err(|err| {
+                    let encoder =
+                        JNINodeRustEnvironment::get_address_encoder(&env, j_node_rust_env);
+                    MempoolAddErrorJava::new_from(err, (&encoder).into())
+                })?;
             Ok(())
         },
     )
@@ -123,9 +125,9 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> i32 {
-        let mempool = JNINodeRustEnvironment::get_mempool(&env, j_node_rust_env);
-        let read_mempool = mempool.read();
-        read_mempool.get_count().try_into().unwrap()
+        let mempool_count =
+            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env).get_mempool_count();
+        mempool_count.try_into().unwrap()
     })
 }
 
@@ -200,8 +202,8 @@ enum MempoolAddErrorJava {
     Rejected(String),
 }
 
-impl From<MempoolAddError> for MempoolAddErrorJava {
-    fn from(err: MempoolAddError) -> Self {
+impl MempoolAddErrorJava {
+    fn new_from(err: MempoolAddError, display_context: ScryptoValueDisplayContext) -> Self {
         match err {
             MempoolAddError::PriorityThresholdNotMet {
                 min_tip_basis_points_required: min_tip_percentage_required,
@@ -211,8 +213,8 @@ impl From<MempoolAddError> for MempoolAddErrorJava {
                 tip_basis_points,
             },
             MempoolAddError::Duplicate(hash) => MempoolAddErrorJava::Duplicate(hash),
-            MempoolAddError::Rejected(rejection) => {
-                MempoolAddErrorJava::Rejected(rejection.reason.to_string())
+            MempoolAddError::Rejected(rejection, _) => {
+                MempoolAddErrorJava::Rejected(rejection.reason.to_string(display_context))
             }
         }
     }

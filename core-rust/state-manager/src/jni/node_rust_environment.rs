@@ -214,6 +214,11 @@ impl JNINodeRustEnvironment {
             .clone()
     }
 
+    pub fn get_address_encoder(env: &JNIEnv, j_node_rust_env: JObject) -> AddressBech32Encoder {
+        let env = Self::get(env, j_node_rust_env);
+        AddressBech32Encoder::new(&env.state_manager.network_definition)
+    }
+
     pub fn get_database(
         env: &JNIEnv,
         j_node_rust_env: JObject,
@@ -236,13 +241,6 @@ impl JNINodeRustEnvironment {
         j_node_rust_env: JObject,
     ) -> Arc<ActualSafetyStoreDatabase> {
         Self::get(env, j_node_rust_env).safety_store_store.clone()
-    }
-
-    pub fn get_mempool(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<RwLock<PriorityMempool>> {
-        Self::get(env, j_node_rust_env)
-            .state_manager
-            .mempool
-            .clone()
     }
 
     pub fn get_mempool_manager(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<MempoolManager> {
