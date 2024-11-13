@@ -13,12 +13,12 @@
  */
 
 import { exists, mapValues } from '../runtime';
-import type { AccessRuleNode } from './AccessRuleNode';
+import type { CompositeRequirement } from './CompositeRequirement';
 import {
-    AccessRuleNodeFromJSON,
-    AccessRuleNodeFromJSONTyped,
-    AccessRuleNodeToJSON,
-} from './AccessRuleNode';
+    CompositeRequirementFromJSON,
+    CompositeRequirementFromJSONTyped,
+    CompositeRequirementToJSON,
+} from './CompositeRequirement';
 
 /**
  * 
@@ -34,10 +34,10 @@ export interface ProtectedAccessRule {
     type: ProtectedAccessRuleTypeEnum;
     /**
      * 
-     * @type {AccessRuleNode}
+     * @type {CompositeRequirement}
      * @memberof ProtectedAccessRule
      */
-    access_rule: AccessRuleNode;
+    access_rule: CompositeRequirement;
 }
 
 
@@ -72,7 +72,7 @@ export function ProtectedAccessRuleFromJSONTyped(json: any, ignoreDiscriminator:
     return {
         
         'type': json['type'],
-        'access_rule': AccessRuleNodeFromJSON(json['access_rule']),
+        'access_rule': CompositeRequirementFromJSON(json['access_rule']),
     };
 }
 
@@ -86,7 +86,7 @@ export function ProtectedAccessRuleToJSON(value?: ProtectedAccessRule | null): a
     return {
         
         'type': value.type,
-        'access_rule': AccessRuleNodeToJSON(value.access_rule),
+        'access_rule': CompositeRequirementToJSON(value.access_rule),
     };
 }
 

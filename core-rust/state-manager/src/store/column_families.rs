@@ -13,7 +13,7 @@ impl DefaultCf for RawLedgerTransactionsCf {
     type Key = StateVersion;
     type Value = RawLedgerTransaction;
 
-    const DEFAULT_NAME: &'static str = "raw_ledger_transactions";
+    const NAME_SOURCE: &'static str = "raw_ledger_transactions";
     type KeyCodec = StateVersionDbCodec;
     type ValueCodec = RawLedgerTransactionDbCodec;
 }
@@ -25,7 +25,7 @@ impl VersionedCf for CommittedTransactionIdentifiersCf {
     type Key = StateVersion;
     type Value = CommittedTransactionIdentifiers;
 
-    const VERSIONED_NAME: &'static str = "committed_transaction_identifiers";
+    const NAME_SOURCE: &'static str = "committed_transaction_identifiers";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedCommittedTransactionIdentifiers;
 }
@@ -37,7 +37,7 @@ impl VersionedCf for TransactionReceiptsCf {
     type Key = StateVersion;
     type Value = LedgerTransactionReceipt;
 
-    const VERSIONED_NAME: &'static str = "transaction_receipts";
+    const NAME_SOURCE: &'static str = "transaction_receipts";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerTransactionReceipt;
 }
@@ -50,7 +50,7 @@ impl VersionedCf for LocalTransactionExecutionsCf {
     type Key = StateVersion;
     type Value = LocalTransactionExecution;
 
-    const VERSIONED_NAME: &'static str = "local_transaction_executions";
+    const NAME_SOURCE: &'static str = "local_transaction_executions";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLocalTransactionExecution;
 }
@@ -62,7 +62,7 @@ impl VersionedCf for LedgerProofsCf {
     type Key = StateVersion;
     type Value = LedgerProof;
 
-    const VERSIONED_NAME: &'static str = "ledger_proofs";
+    const NAME_SOURCE: &'static str = "ledger_proofs";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
@@ -75,7 +75,7 @@ impl VersionedCf for EpochLedgerProofsCf {
     type Key = Epoch;
     type Value = LedgerProof;
 
-    const VERSIONED_NAME: &'static str = "epoch_ledger_proofs";
+    const NAME_SOURCE: &'static str = "epoch_ledger_proofs";
     type KeyCodec = EpochDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
@@ -89,7 +89,7 @@ impl VersionedCf for ProtocolUpdateInitLedgerProofsCf {
     type Key = StateVersion;
     type Value = LedgerProof;
 
-    const VERSIONED_NAME: &'static str = "protocol_update_init_ledger_proofs";
+    const NAME_SOURCE: &'static str = "protocol_update_init_ledger_proofs";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
@@ -103,7 +103,7 @@ impl VersionedCf for ProtocolUpdateExecutionLedgerProofsCf {
     type Key = StateVersion;
     type Value = LedgerProof;
 
-    const VERSIONED_NAME: &'static str = "protocol_update_execution_ledger_proofs";
+    const NAME_SOURCE: &'static str = "protocol_update_execution_ledger_proofs";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedLedgerProof;
 }
@@ -117,7 +117,7 @@ impl DefaultCf for IntentHashesCf {
     type Key = TransactionIntentHash;
     type Value = StateVersion;
 
-    const DEFAULT_NAME: &'static str = "intent_hashes";
+    const NAME_SOURCE: &'static str = "intent_hashes";
     type KeyCodec = HashDbCodec<TransactionIntentHash>;
     type ValueCodec = StateVersionDbCodec;
 }
@@ -131,7 +131,7 @@ impl DefaultCf for NotarizedTransactionHashesCf {
     type Key = NotarizedTransactionHash;
     type Value = StateVersion;
 
-    const DEFAULT_NAME: &'static str = "notarized_transaction_hashes";
+    const NAME_SOURCE: &'static str = "notarized_transaction_hashes";
     type KeyCodec = HashDbCodec<NotarizedTransactionHash>;
     type ValueCodec = StateVersionDbCodec;
 }
@@ -145,8 +145,22 @@ impl DefaultCf for LedgerTransactionHashesCf {
     type Key = LedgerTransactionHash;
     type Value = StateVersion;
 
-    const DEFAULT_NAME: &'static str = "ledger_transaction_hashes";
+    const NAME_SOURCE: &'static str = "ledger_transaction_hashes";
     type KeyCodec = HashDbCodec<LedgerTransactionHash>;
+    type ValueCodec = StateVersionDbCodec;
+}
+
+/// DB "index" table for finalized [`SubintentHash`] resolution.
+/// Schema: `SubintentHash.as_ref::<[u8]>()` -> `StateVersion.to_bytes()`
+/// Note: This table does not use explicit versioning wrapper, since the value represents a DB
+/// key of another table (and versioning DB keys is not useful).
+pub struct FinalizedSubintentHashesCf;
+impl DefaultCf for FinalizedSubintentHashesCf {
+    type Key = SubintentHash;
+    type Value = StateVersion;
+
+    const NAME_SOURCE: &'static str = "finalized_subintent_hashes";
+    type KeyCodec = HashDbCodec<SubintentHash>;
     type ValueCodec = StateVersionDbCodec;
 }
 
@@ -159,7 +173,7 @@ impl DefaultCf for SubstatesCf {
     type Key = DbSubstateKey;
     type Value = DbSubstateValue;
 
-    const DEFAULT_NAME: &'static str = "substates";
+    const NAME_SOURCE: &'static str = "substates";
     type KeyCodec = SubstateKeyDbCodec;
     type ValueCodec = DirectDbCodec;
 }
@@ -173,7 +187,7 @@ impl VersionedCf for SubstateNodeAncestryRecordsCf {
     type Key = NodeId;
     type Value = SubstateNodeAncestryRecord;
 
-    const VERSIONED_NAME: &'static str = "substate_node_ancestry_records";
+    const NAME_SOURCE: &'static str = "substate_node_ancestry_records";
     type KeyCodec = NodeIdDbCodec;
     type VersionedValue = VersionedSubstateNodeAncestryRecord;
 }
@@ -186,7 +200,7 @@ impl VersionedCf for VertexStoreCf {
     type Key = ();
     type Value = VertexStoreBlob;
 
-    const VERSIONED_NAME: &'static str = "vertex_store";
+    const NAME_SOURCE: &'static str = "vertex_store";
     type KeyCodec = UnitDbCodec;
     type VersionedValue = VersionedVertexStoreBlob;
 }
@@ -199,7 +213,7 @@ impl VersionedCf for StateTreeNodesCf {
     type Value = TreeNode;
 
     // Note: the legacy `state_hash_tree` name lives on here because it already got persisted.
-    const VERSIONED_NAME: &'static str = "state_hash_tree_nodes";
+    const NAME_SOURCE: &'static str = "state_hash_tree_nodes";
     type KeyCodec = StoredTreeNodeKeyDbCodec;
     type VersionedValue = VersionedTreeNode;
 }
@@ -212,7 +226,7 @@ impl VersionedCf for StaleStateTreePartsCf {
     type Value = StaleTreeParts;
 
     // Note: the legacy `state_hash_tree` name lives on here because it already got persisted.
-    const VERSIONED_NAME: &'static str = "stale_state_hash_tree_parts";
+    const NAME_SOURCE: &'static str = "stale_state_hash_tree_parts";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedStaleTreeParts;
 }
@@ -224,7 +238,7 @@ impl VersionedCf for TransactionAccuTreeSlicesCf {
     type Key = StateVersion;
     type Value = TransactionAccuTreeSlice;
 
-    const VERSIONED_NAME: &'static str = "transaction_accu_tree_slices";
+    const NAME_SOURCE: &'static str = "transaction_accu_tree_slices";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedTransactionAccuTreeSlice;
 }
@@ -236,7 +250,7 @@ impl VersionedCf for ReceiptAccuTreeSlicesCf {
     type Key = StateVersion;
     type Value = ReceiptAccuTreeSlice;
 
-    const VERSIONED_NAME: &'static str = "receipt_accu_tree_slices";
+    const NAME_SOURCE: &'static str = "receipt_accu_tree_slices";
     type KeyCodec = StateVersionDbCodec;
     type VersionedValue = VersionedReceiptAccuTreeSlice;
 }
@@ -337,7 +351,7 @@ impl VersionedCf for ExecutedScenariosCf {
     type Value = ExecutedScenario;
 
     // Note: a legacy name is still used here, even though we now have scenarios run outside Genesis
-    const VERSIONED_NAME: &'static str = "executed_genesis_scenarios";
+    const NAME_SOURCE: &'static str = "executed_genesis_scenarios";
     type KeyCodec = ScenarioSequenceNumberDbCodec;
     type VersionedValue = VersionedExecutedScenario;
 }
@@ -350,7 +364,7 @@ impl VersionedCf for LedgerProofsGcProgressCf {
     type Key = ();
     type Value = LedgerProofsGcProgress;
 
-    const VERSIONED_NAME: &'static str = "ledger_proofs_gc_progress";
+    const NAME_SOURCE: &'static str = "ledger_proofs_gc_progress";
     type KeyCodec = UnitDbCodec;
     type VersionedValue = VersionedLedgerProofsGcProgress;
 }
@@ -362,7 +376,7 @@ impl VersionedCf for TypeAndCreationIndexedEntitiesCf {
     type Key = (EntityType, CreationId);
     type Value = EntityBlueprintId;
 
-    const VERSIONED_NAME: &'static str = "type_and_creation_indexed_entities";
+    const NAME_SOURCE: &'static str = "type_and_creation_indexed_entities";
     type KeyCodec = TypeAndCreationIndexKeyDbCodec;
     type VersionedValue = VersionedEntityBlueprintId;
 }
@@ -374,7 +388,7 @@ impl VersionedCf for BlueprintAndCreationIndexedObjectsCf {
     type Key = (PackageAddress, Hash, CreationId);
     type Value = ObjectBlueprintName;
 
-    const VERSIONED_NAME: &'static str = "blueprint_and_creation_indexed_objects";
+    const NAME_SOURCE: &'static str = "blueprint_and_creation_indexed_objects";
     type KeyCodec = BlueprintAndCreationIndexKeyDbCodec;
     type VersionedValue = VersionedObjectBlueprintName;
 }
@@ -388,7 +402,7 @@ impl DefaultCf for AssociatedStateTreeValuesCf {
     type Key = StoredTreeNodeKey;
     type Value = DbSubstateValue;
 
-    const DEFAULT_NAME: &'static str = "associated_state_tree_values";
+    const NAME_SOURCE: &'static str = "associated_state_tree_values";
     type KeyCodec = StoredTreeNodeKeyDbCodec;
     type ValueCodec = DirectDbCodec;
 }

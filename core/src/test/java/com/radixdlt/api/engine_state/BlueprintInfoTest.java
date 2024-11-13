@@ -130,9 +130,9 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
                   .rule(
                       new ProtectedAccessRule()
                           .accessRule(
-                              new ProofAccessRuleNode()
+                              new ProofRuleCompositeRequirement()
                                   .proofRule(
-                                      new RequireProofRule()
+                                      new RequireBasicRequirement()
                                           .requirement(
                                               new NonFungibleRequirement()
                                                   .nonFungible(
@@ -141,8 +141,8 @@ public final class BlueprintInfoTest extends DeterministicEngineStateApiTestBase
                                                               "resource_test1nfxxxxxxxxxxsystxnxxxxxxxxx002683325037xxxxxxxxx39ajmy")
                                                           .localId("#0#"))
                                                   .type(RequirementType.NONFUNGIBLE))
-                                          .type(ProofRuleType.REQUIRE))
-                                  .type(AccessRuleNodeType.PROOFRULE))
+                                          .type(BasicRequirementType.REQUIRE))
+                                  .type(CompositeRequirementType.PROOFRULE))
                           .type(AccessRuleType.PROTECTED))
                   .type(BlueprintFunctionAuthorizationType.BYACCESSRULE));
 

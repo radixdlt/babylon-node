@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.radixdlt.api.engine_state.generated.models.AccessRuleNode;
+import com.radixdlt.api.engine_state.generated.models.CompositeRequirement;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -37,12 +37,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @javax.annotation.processing.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class ProtectedAccessRuleAllOf {
   public static final String JSON_PROPERTY_ACCESS_RULE = "access_rule";
-  private AccessRuleNode accessRule;
+  private CompositeRequirement accessRule;
 
   public ProtectedAccessRuleAllOf() { 
   }
 
-  public ProtectedAccessRuleAllOf accessRule(AccessRuleNode accessRule) {
+  public ProtectedAccessRuleAllOf accessRule(CompositeRequirement accessRule) {
     this.accessRule = accessRule;
     return this;
   }
@@ -56,14 +56,14 @@ public class ProtectedAccessRuleAllOf {
   @JsonProperty(JSON_PROPERTY_ACCESS_RULE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccessRuleNode getAccessRule() {
+  public CompositeRequirement getAccessRule() {
     return accessRule;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ACCESS_RULE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRule(AccessRuleNode accessRule) {
+  public void setAccessRule(CompositeRequirement accessRule) {
     this.accessRule = accessRule;
   }
 

@@ -35,8 +35,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import com.radixdlt.api.core.generated.client.JSON;
 /**
- * Requirement
+ * This is called &#x60;ResourceOrNonFungible&#x60; in the engine.
  */
+@ApiModel(description = "This is called `ResourceOrNonFungible` in the engine.")
 @JsonPropertyOrder({
   Requirement.JSON_PROPERTY_TYPE
 })

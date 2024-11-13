@@ -28,16 +28,16 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
 /**
- * Key addresses for this network.
+ * Key addresses for this network, as per https://docs.radixdlt.com/docs/well-known-addresses.  Note that at Cuttlefish, some of these names have been updated elsewhere in the stack, but for backwards compatibility, we must use the old names here.  Notably: - &#x60;secp256k1_signature_virtual_badge&#x60; is now &#x60;secp256k1_signature_resource&#x60; elsewhere - &#x60;ed25519_signature_virtual_badge&#x60; is now &#x60;ed25519_signature_resource&#x60; elsewhere - &#x60;package_of_direct_caller_virtual_badge&#x60; is now &#x60;package_of_direct_caller_resource&#x60; elsewhere - &#x60;global_caller_virtual_badge&#x60; is now &#x60;global_caller_resource&#x60; elsewhere - &#x60;system_transaction_badge&#x60; is now &#x60;system_transaction_resource&#x60; elsewhere 
  */
-@ApiModel(description = "Key addresses for this network.")
+@ApiModel(description = "Key addresses for this network, as per https://docs.radixdlt.com/docs/well-known-addresses.  Note that at Cuttlefish, some of these names have been updated elsewhere in the stack, but for backwards compatibility, we must use the old names here.  Notably: - `secp256k1_signature_virtual_badge` is now `secp256k1_signature_resource` elsewhere - `ed25519_signature_virtual_badge` is now `ed25519_signature_resource` elsewhere - `package_of_direct_caller_virtual_badge` is now `package_of_direct_caller_resource` elsewhere - `global_caller_virtual_badge` is now `global_caller_resource` elsewhere - `system_transaction_badge` is now `system_transaction_resource` elsewhere ")
 @JsonPropertyOrder({
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_XRD,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_SECP256K1_SIGNATURE_VIRTUAL_BADGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ED25519_SIGNATURE_VIRTUAL_BADGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GLOBAL_CALLER_VIRTUAL_BADGE,
-  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_PACKAGE_OWNER_BADGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_VALIDATOR_OWNER_BADGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_ACCOUNT_OWNER_BADGE,
@@ -55,7 +55,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_POOL_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_TRANSACTION_TRACKER_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_LOCKER_PACKAGE,
+  NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_TEST_UTILS_PACKAGE,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_CONSENSUS_MANAGER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_GENESIS_HELPER,
   NetworkConfigurationResponseWellKnownAddresses.JSON_PROPERTY_FAUCET,
@@ -72,14 +74,14 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   public static final String JSON_PROPERTY_ED25519_SIGNATURE_VIRTUAL_BADGE = "ed25519_signature_virtual_badge";
   private String ed25519SignatureVirtualBadge;
 
+  public static final String JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE = "system_transaction_badge";
+  private String systemTransactionBadge;
+
   public static final String JSON_PROPERTY_PACKAGE_OF_DIRECT_CALLER_VIRTUAL_BADGE = "package_of_direct_caller_virtual_badge";
   private String packageOfDirectCallerVirtualBadge;
 
   public static final String JSON_PROPERTY_GLOBAL_CALLER_VIRTUAL_BADGE = "global_caller_virtual_badge";
   private String globalCallerVirtualBadge;
-
-  public static final String JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE = "system_transaction_badge";
-  private String systemTransactionBadge;
 
   public static final String JSON_PROPERTY_PACKAGE_OWNER_BADGE = "package_owner_badge";
   private String packageOwnerBadge;
@@ -132,8 +134,14 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   public static final String JSON_PROPERTY_POOL_PACKAGE = "pool_package";
   private String poolPackage;
 
+  public static final String JSON_PROPERTY_TRANSACTION_TRACKER_PACKAGE = "transaction_tracker_package";
+  private String transactionTrackerPackage;
+
   public static final String JSON_PROPERTY_LOCKER_PACKAGE = "locker_package";
   private String lockerPackage;
+
+  public static final String JSON_PROPERTY_TEST_UTILS_PACKAGE = "test_utils_package";
+  private String testUtilsPackage;
 
   public static final String JSON_PROPERTY_CONSENSUS_MANAGER = "consensus_manager";
   private String consensusManager;
@@ -228,6 +236,32 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   }
 
 
+  public NetworkConfigurationResponseWellKnownAddresses systemTransactionBadge(String systemTransactionBadge) {
+    this.systemTransactionBadge = systemTransactionBadge;
+    return this;
+  }
+
+   /**
+   * Get systemTransactionBadge
+   * @return systemTransactionBadge
+  **/
+  @javax.annotation.Nonnull
+  @ApiModelProperty(required = true, value = "")
+  @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+  public String getSystemTransactionBadge() {
+    return systemTransactionBadge;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE)
+  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  public void setSystemTransactionBadge(String systemTransactionBadge) {
+    this.systemTransactionBadge = systemTransactionBadge;
+  }
+
+
   public NetworkConfigurationResponseWellKnownAddresses packageOfDirectCallerVirtualBadge(String packageOfDirectCallerVirtualBadge) {
     this.packageOfDirectCallerVirtualBadge = packageOfDirectCallerVirtualBadge;
     return this;
@@ -277,32 +311,6 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setGlobalCallerVirtualBadge(String globalCallerVirtualBadge) {
     this.globalCallerVirtualBadge = globalCallerVirtualBadge;
-  }
-
-
-  public NetworkConfigurationResponseWellKnownAddresses systemTransactionBadge(String systemTransactionBadge) {
-    this.systemTransactionBadge = systemTransactionBadge;
-    return this;
-  }
-
-   /**
-   * Get systemTransactionBadge
-   * @return systemTransactionBadge
-  **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
-  @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-
-  public String getSystemTransactionBadge() {
-    return systemTransactionBadge;
-  }
-
-
-  @JsonProperty(JSON_PROPERTY_SYSTEM_TRANSACTION_BADGE)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setSystemTransactionBadge(String systemTransactionBadge) {
-    this.systemTransactionBadge = systemTransactionBadge;
   }
 
 
@@ -748,6 +756,32 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   }
 
 
+  public NetworkConfigurationResponseWellKnownAddresses transactionTrackerPackage(String transactionTrackerPackage) {
+    this.transactionTrackerPackage = transactionTrackerPackage;
+    return this;
+  }
+
+   /**
+   * Get transactionTrackerPackage
+   * @return transactionTrackerPackage
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_TRACKER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTransactionTrackerPackage() {
+    return transactionTrackerPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TRANSACTION_TRACKER_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTransactionTrackerPackage(String transactionTrackerPackage) {
+    this.transactionTrackerPackage = transactionTrackerPackage;
+  }
+
+
   public NetworkConfigurationResponseWellKnownAddresses lockerPackage(String lockerPackage) {
     this.lockerPackage = lockerPackage;
     return this;
@@ -771,6 +805,32 @@ public class NetworkConfigurationResponseWellKnownAddresses {
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setLockerPackage(String lockerPackage) {
     this.lockerPackage = lockerPackage;
+  }
+
+
+  public NetworkConfigurationResponseWellKnownAddresses testUtilsPackage(String testUtilsPackage) {
+    this.testUtilsPackage = testUtilsPackage;
+    return this;
+  }
+
+   /**
+   * Get testUtilsPackage
+   * @return testUtilsPackage
+  **/
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "")
+  @JsonProperty(JSON_PROPERTY_TEST_UTILS_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+
+  public String getTestUtilsPackage() {
+    return testUtilsPackage;
+  }
+
+
+  @JsonProperty(JSON_PROPERTY_TEST_UTILS_PACKAGE)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
+  public void setTestUtilsPackage(String testUtilsPackage) {
+    this.testUtilsPackage = testUtilsPackage;
   }
 
 
@@ -893,9 +953,9 @@ public class NetworkConfigurationResponseWellKnownAddresses {
     return Objects.equals(this.xrd, networkConfigurationResponseWellKnownAddresses.xrd) &&
         Objects.equals(this.secp256k1SignatureVirtualBadge, networkConfigurationResponseWellKnownAddresses.secp256k1SignatureVirtualBadge) &&
         Objects.equals(this.ed25519SignatureVirtualBadge, networkConfigurationResponseWellKnownAddresses.ed25519SignatureVirtualBadge) &&
+        Objects.equals(this.systemTransactionBadge, networkConfigurationResponseWellKnownAddresses.systemTransactionBadge) &&
         Objects.equals(this.packageOfDirectCallerVirtualBadge, networkConfigurationResponseWellKnownAddresses.packageOfDirectCallerVirtualBadge) &&
         Objects.equals(this.globalCallerVirtualBadge, networkConfigurationResponseWellKnownAddresses.globalCallerVirtualBadge) &&
-        Objects.equals(this.systemTransactionBadge, networkConfigurationResponseWellKnownAddresses.systemTransactionBadge) &&
         Objects.equals(this.packageOwnerBadge, networkConfigurationResponseWellKnownAddresses.packageOwnerBadge) &&
         Objects.equals(this.validatorOwnerBadge, networkConfigurationResponseWellKnownAddresses.validatorOwnerBadge) &&
         Objects.equals(this.accountOwnerBadge, networkConfigurationResponseWellKnownAddresses.accountOwnerBadge) &&
@@ -913,7 +973,9 @@ public class NetworkConfigurationResponseWellKnownAddresses {
         Objects.equals(this.genesisHelperPackage, networkConfigurationResponseWellKnownAddresses.genesisHelperPackage) &&
         Objects.equals(this.faucetPackage, networkConfigurationResponseWellKnownAddresses.faucetPackage) &&
         Objects.equals(this.poolPackage, networkConfigurationResponseWellKnownAddresses.poolPackage) &&
+        Objects.equals(this.transactionTrackerPackage, networkConfigurationResponseWellKnownAddresses.transactionTrackerPackage) &&
         Objects.equals(this.lockerPackage, networkConfigurationResponseWellKnownAddresses.lockerPackage) &&
+        Objects.equals(this.testUtilsPackage, networkConfigurationResponseWellKnownAddresses.testUtilsPackage) &&
         Objects.equals(this.consensusManager, networkConfigurationResponseWellKnownAddresses.consensusManager) &&
         Objects.equals(this.genesisHelper, networkConfigurationResponseWellKnownAddresses.genesisHelper) &&
         Objects.equals(this.faucet, networkConfigurationResponseWellKnownAddresses.faucet) &&
@@ -922,7 +984,7 @@ public class NetworkConfigurationResponseWellKnownAddresses {
 
   @Override
   public int hashCode() {
-    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, systemTransactionBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, consensusManagerPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, roleAssignmentModulePackage, genesisHelperPackage, faucetPackage, poolPackage, lockerPackage, consensusManager, genesisHelper, faucet, transactionTracker);
+    return Objects.hash(xrd, secp256k1SignatureVirtualBadge, ed25519SignatureVirtualBadge, systemTransactionBadge, packageOfDirectCallerVirtualBadge, globalCallerVirtualBadge, packageOwnerBadge, validatorOwnerBadge, accountOwnerBadge, identityOwnerBadge, packagePackage, resourcePackage, accountPackage, identityPackage, consensusManagerPackage, accessControllerPackage, transactionProcessorPackage, metadataModulePackage, royaltyModulePackage, roleAssignmentModulePackage, genesisHelperPackage, faucetPackage, poolPackage, transactionTrackerPackage, lockerPackage, testUtilsPackage, consensusManager, genesisHelper, faucet, transactionTracker);
   }
 
   @Override
@@ -932,9 +994,9 @@ public class NetworkConfigurationResponseWellKnownAddresses {
     sb.append("    xrd: ").append(toIndentedString(xrd)).append("\n");
     sb.append("    secp256k1SignatureVirtualBadge: ").append(toIndentedString(secp256k1SignatureVirtualBadge)).append("\n");
     sb.append("    ed25519SignatureVirtualBadge: ").append(toIndentedString(ed25519SignatureVirtualBadge)).append("\n");
+    sb.append("    systemTransactionBadge: ").append(toIndentedString(systemTransactionBadge)).append("\n");
     sb.append("    packageOfDirectCallerVirtualBadge: ").append(toIndentedString(packageOfDirectCallerVirtualBadge)).append("\n");
     sb.append("    globalCallerVirtualBadge: ").append(toIndentedString(globalCallerVirtualBadge)).append("\n");
-    sb.append("    systemTransactionBadge: ").append(toIndentedString(systemTransactionBadge)).append("\n");
     sb.append("    packageOwnerBadge: ").append(toIndentedString(packageOwnerBadge)).append("\n");
     sb.append("    validatorOwnerBadge: ").append(toIndentedString(validatorOwnerBadge)).append("\n");
     sb.append("    accountOwnerBadge: ").append(toIndentedString(accountOwnerBadge)).append("\n");
@@ -952,7 +1014,9 @@ public class NetworkConfigurationResponseWellKnownAddresses {
     sb.append("    genesisHelperPackage: ").append(toIndentedString(genesisHelperPackage)).append("\n");
     sb.append("    faucetPackage: ").append(toIndentedString(faucetPackage)).append("\n");
     sb.append("    poolPackage: ").append(toIndentedString(poolPackage)).append("\n");
+    sb.append("    transactionTrackerPackage: ").append(toIndentedString(transactionTrackerPackage)).append("\n");
     sb.append("    lockerPackage: ").append(toIndentedString(lockerPackage)).append("\n");
+    sb.append("    testUtilsPackage: ").append(toIndentedString(testUtilsPackage)).append("\n");
     sb.append("    consensusManager: ").append(toIndentedString(consensusManager)).append("\n");
     sb.append("    genesisHelper: ").append(toIndentedString(genesisHelper)).append("\n");
     sb.append("    faucet: ").append(toIndentedString(faucet)).append("\n");

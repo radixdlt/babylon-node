@@ -81,7 +81,7 @@ fn extract_preview_request(
         nonce: extract_u32_from_api_i64(request.nonce.unwrap_or_default())
             .map_err(|err| err.into_response_error("nonce"))?,
         signer_public_keys,
-        flags: extract_preview_flags(request.flags.as_ref().map(|f| &**f)),
+        flags: extract_preview_flags(request.flags.as_deref()),
         message: request
             .message
             .map(|message| {

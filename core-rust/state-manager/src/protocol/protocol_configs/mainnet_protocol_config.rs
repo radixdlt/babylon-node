@@ -44,5 +44,24 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
                 },
             ],
         },
+        ProtocolVersionName::cuttlefish() => EnactAtStartOfEpochIfValidatorsReady {
+            // =================================================================
+            // PROTOCOL_VERSION: "cuttlefish"
+            // READINESS_SIGNAL: "96e00440adafe5e2000000cuttlefish"
+            // =================================================================
+            // The below estimates are based off:
+            // - Calculating relative to epoch 150729
+            // - Using that epoch 150729 started at 2024-11-13T01:18:58.703Z
+            // - Assuming epoch length will be 5 mins
+            // =================================================================
+            lower_bound_inclusive: Epoch::of(158682), // estimated: 2024-12-10T16:03:58.703Z
+            upper_bound_exclusive: Epoch::of(161562), // estimated: 2024-12-20T16:03:58.703Z
+            readiness_thresholds: vec![
+                SignalledReadinessThreshold {
+                    required_ratio_of_stake_supported: dec!(0.75),
+                    required_consecutive_completed_epochs_of_support: 4032, // estimated: 2 weeks
+                },
+            ],
+        },
     })
 }

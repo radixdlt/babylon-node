@@ -76,43 +76,50 @@ use rocksdb::*;
 /// business purpose and DB schema) and to put the important general notes regarding all of them
 /// (see below).
 ///
-/// **Note on the key encoding used throughout all column families:**
+/// ## Key encoding
+///
 /// We often rely on the RocksDB's unsurprising ability to efficiently list entries sorted
 /// lexicographically by key. For this reason, our byte-level encoding of certain keys (e.g.
 /// [`StateVersion`]) needs to reflect the business-level ordering of the represented concept (i.e.
 /// since state versions grow, the "last" state version must have a lexicographically greatest key,
 /// which means that we need to use a constant-length big-endian integer encoding).
 ///
-/// **Note on the name strings:**
+/// ## Use of `Cf::NAME`
+///
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
-/// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 25] = [
-    RawLedgerTransactionsCf::DEFAULT_NAME,
-    CommittedTransactionIdentifiersCf::VERSIONED_NAME,
-    TransactionReceiptsCf::VERSIONED_NAME,
-    LocalTransactionExecutionsCf::VERSIONED_NAME,
-    IntentHashesCf::DEFAULT_NAME,
-    NotarizedTransactionHashesCf::DEFAULT_NAME,
-    LedgerTransactionHashesCf::DEFAULT_NAME,
-    LedgerProofsCf::VERSIONED_NAME,
-    EpochLedgerProofsCf::VERSIONED_NAME,
-    ProtocolUpdateInitLedgerProofsCf::VERSIONED_NAME,
-    ProtocolUpdateExecutionLedgerProofsCf::VERSIONED_NAME,
-    SubstatesCf::DEFAULT_NAME,
-    SubstateNodeAncestryRecordsCf::VERSIONED_NAME,
-    VertexStoreCf::VERSIONED_NAME,
-    StateTreeNodesCf::VERSIONED_NAME,
-    StaleStateTreePartsCf::VERSIONED_NAME,
-    TransactionAccuTreeSlicesCf::VERSIONED_NAME,
-    ReceiptAccuTreeSlicesCf::VERSIONED_NAME,
+/// define them explicitly, rather than rely on derivations from type names which may change.
+///
+/// ## Ordering
+///
+/// The order of the list is not significant.
+const ALL_STATE_MANAGER_COLUMN_FAMILIES: [&str; 26] = [
+    RawLedgerTransactionsCf::NAME,
+    CommittedTransactionIdentifiersCf::NAME,
+    TransactionReceiptsCf::NAME,
+    LocalTransactionExecutionsCf::NAME,
+    IntentHashesCf::NAME,
+    NotarizedTransactionHashesCf::NAME,
+    LedgerTransactionHashesCf::NAME,
+    FinalizedSubintentHashesCf::NAME,
+    LedgerProofsCf::NAME,
+    EpochLedgerProofsCf::NAME,
+    ProtocolUpdateInitLedgerProofsCf::NAME,
+    ProtocolUpdateExecutionLedgerProofsCf::NAME,
+    SubstatesCf::NAME,
+    SubstateNodeAncestryRecordsCf::NAME,
+    VertexStoreCf::NAME,
+    StateTreeNodesCf::NAME,
+    StaleStateTreePartsCf::NAME,
+    TransactionAccuTreeSlicesCf::NAME,
+    ReceiptAccuTreeSlicesCf::NAME,
     ExtensionsDataCf::NAME,
     AccountChangeStateVersionsCf::NAME,
-    ExecutedScenariosCf::VERSIONED_NAME,
-    LedgerProofsGcProgressCf::VERSIONED_NAME,
-    AssociatedStateTreeValuesCf::DEFAULT_NAME,
-    TypeAndCreationIndexedEntitiesCf::VERSIONED_NAME,
-    BlueprintAndCreationIndexedObjectsCf::VERSIONED_NAME,
+    ExecutedScenariosCf::NAME,
+    LedgerProofsGcProgressCf::NAME,
+    AssociatedStateTreeValuesCf::NAME,
+    TypeAndCreationIndexedEntitiesCf::NAME,
+    BlueprintAndCreationIndexedObjectsCf::NAME,
 ];
 
 pub type ActualStateManagerDatabase = StateManagerDatabase<DirectRocks>;
@@ -690,6 +697,18 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         db_context
             .cf(TransactionReceiptsCf)
             .put(&state_version, &receipt.on_ledger);
+
+        for nullification in &receipt.local_execution.nullifications {
+            let Nullification::Intent { intent_hash, .. } = nullification;
+            match intent_hash {
+                IntentHash::Transaction { .. } => {} // Already handled
+                IntentHash::Subintent(subintent_hash) => {
+                    db_context
+                        .cf(FinalizedSubintentHashesCf)
+                        .put(subintent_hash, &state_version);
+                }
+            }
+        }
 
         if self.is_local_transaction_execution_index_enabled() {
             db_context

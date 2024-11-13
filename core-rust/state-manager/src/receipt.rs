@@ -157,16 +157,42 @@ impl LedgerTransactionOutcome {
 }
 
 #[derive(Debug, Clone, ScryptoSbor)]
-pub enum DetailedTransactionOutcome {
+pub enum DetailedTransactionOutcomeV1 {
     Success(Vec<Vec<u8>>),
     Failure(LenientRuntimeError),
 }
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum DetailedTransactionOutcomeV2 {
+    Success(Vec<Vec<u8>>),
+    Failure(PersistableRuntimeError),
+}
+
+impl From<DetailedTransactionOutcomeV1> for DetailedTransactionOutcomeV2 {
+    fn from(value: DetailedTransactionOutcomeV1) -> Self {
+        match value {
+            DetailedTransactionOutcomeV1::Success(output) => {
+                DetailedTransactionOutcomeV2::Success(output)
+            }
+            DetailedTransactionOutcomeV1::Failure(error) => {
+                DetailedTransactionOutcomeV2::Failure(PersistableRuntimeError {
+                    // All pre-Cuttlefish errors should use the pre-Cuttlefish schema,
+                    // at schema index 0
+                    schema_index: 0,
+                    encoded_error: error.0,
+                })
+            }
+        }
+    }
+}
+
+pub type DetailedTransactionOutcome = DetailedTransactionOutcomeV2;
 
 /// A wrapper for SBOR-encoded [`RuntimeError`] which may turn out to no longer be decodable (due
 /// to differences in historical error enum schema).
 #[derive(Debug, Clone, ScryptoEncode, ScryptoDecode, ScryptoDescribe)]
 #[sbor(transparent)]
-pub struct LenientRuntimeError(ScryptoValue);
+pub struct LenientRuntimeError(ScryptoOwnedRawValue);
 
 impl Categorize<ScryptoCustomValueKind> for LenientRuntimeError {
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -213,7 +239,7 @@ impl From<TransactionOutcome> for DetailedTransactionOutcome {
                         .collect(),
                 )
             }
-            TransactionOutcome::Failure(error) => Self::Failure(LenientRuntimeError::from(error)),
+            TransactionOutcome::Failure(error) => Self::Failure(error.create_persistable()),
         }
     }
 }
@@ -331,7 +357,7 @@ define_versioned! {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct LocalTransactionExecutionV1 {
-    pub outcome: DetailedTransactionOutcome,
+    pub outcome: DetailedTransactionOutcomeV1,
     pub fee_summary: TransactionFeeSummary,
     pub fee_source: FeeSource,
     pub fee_destination: FeeDestination,
@@ -348,7 +374,7 @@ pub struct LocalTransactionExecutionV1 {
 impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
     fn from(value: LocalTransactionExecutionV1) -> Self {
         LocalTransactionExecutionV2 {
-            outcome: value.outcome,
+            outcome: value.outcome.into(),
             fee_summary: value.fee_summary,
             fee_source: value.fee_source,
             fee_destination: value.fee_destination,
@@ -368,7 +394,7 @@ impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
 
 #[derive(Debug, Clone, ScryptoSbor)]
 pub struct LocalTransactionExecutionV2 {
-    pub outcome: DetailedTransactionOutcome,
+    pub outcome: DetailedTransactionOutcomeV2,
     pub fee_summary: TransactionFeeSummary,
     pub fee_source: FeeSource,
     pub fee_destination: FeeDestination,

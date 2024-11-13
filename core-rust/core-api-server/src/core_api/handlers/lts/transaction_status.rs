@@ -75,7 +75,7 @@ pub(crate) async fn handle_lts_transaction_status(
                 models::LtsTransactionIntentStatus::CommittedFailure,
                 models::LtsTransactionPayloadStatus::CommittedFailure,
                 "FAILURE",
-                Some(error.render()),
+                Some(error.to_string(&mapping_context)),
             ),
         };
 
@@ -202,7 +202,7 @@ fn map_rejected_payloads_due_to_known_commit(
         .map(|(notarized_transaction_hash, transaction_record)| {
             let error_string_to_use = transaction_record
                 .most_applicable_rejection()
-                .map(|reason| reason.to_string())
+                .map(|reason| reason.to_string(context))
                 // Note: in theory, we should not see the "no rejection" for any transaction here,
                 // since we only enter this method after seeing their intent hash committed by a
                 // different payload. However, the cache update happens asynchronously after the
@@ -216,7 +216,7 @@ fn map_rejected_payloads_due_to_known_commit(
                                 *committed_notarized_transaction_hash,
                         },
                     )
-                    .to_string()
+                    .to_string(context)
                 });
             Ok(models::LtsTransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(&notarized_transaction_hash),
@@ -247,7 +247,7 @@ fn map_pending_payloads_not_in_mempool(
                     } else {
                         models::LtsTransactionPayloadStatus::TransientlyRejected
                     },
-                    error_message: Some(reason.to_string()),
+                    error_message: Some(reason.to_string(context)),
                 },
                 None => models::LtsTransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),

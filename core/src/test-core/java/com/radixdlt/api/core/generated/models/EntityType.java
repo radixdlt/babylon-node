@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.HashMap;
+import io.swagger.annotations.ApiModel;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 
@@ -24,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Gets or Sets EntityType
+ * To improve clarity, some &#x60;EntityType&#x60; names have been updated at Cuttlefish.  But, due to backwards compatibility, the old names continue to be used here.  Notably: * &#x60;GlobalVirtualSecp256k1Account&#x60; is now &#x60;GlobalPreallocatedSecp256k1Account&#x60; elsewhere * &#x60;GlobalVirtualSecp256k1Identity&#x60; is now &#x60;GlobalPreallocatedSecp256k1Identity&#x60; elsewhere * &#x60;GlobalVirtualEd25519Account&#x60; is now &#x60;GlobalPreallocatedEd25519Account&#x60; elsewhere * &#x60;GlobalVirtualEd25519Identity&#x60; is now &#x60;GlobalPreallocatedEd25519Identity&#x60; elsewhere 
  */
 public enum EntityType {
   

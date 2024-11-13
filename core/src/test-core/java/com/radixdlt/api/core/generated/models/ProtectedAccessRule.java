@@ -26,9 +26,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.api.core.generated.models.AccessRule;
-import com.radixdlt.api.core.generated.models.AccessRuleNode;
 import com.radixdlt.api.core.generated.models.AccessRuleType;
 import com.radixdlt.api.core.generated.models.AllowAllAccessRule;
+import com.radixdlt.api.core.generated.models.CompositeRequirement;
 import com.radixdlt.api.core.generated.models.DenyAllAccessRule;
 import com.radixdlt.api.core.generated.models.ProtectedAccessRule;
 import com.radixdlt.api.core.generated.models.ProtectedAccessRuleAllOf;
@@ -58,12 +58,12 @@ import com.radixdlt.api.core.generated.client.JSON;
 
 public class ProtectedAccessRule extends AccessRule {
   public static final String JSON_PROPERTY_ACCESS_RULE = "access_rule";
-  private AccessRuleNode accessRule;
+  private CompositeRequirement accessRule;
 
   public ProtectedAccessRule() { 
   }
 
-  public ProtectedAccessRule accessRule(AccessRuleNode accessRule) {
+  public ProtectedAccessRule accessRule(CompositeRequirement accessRule) {
     this.accessRule = accessRule;
     return this;
   }
@@ -77,14 +77,14 @@ public class ProtectedAccessRule extends AccessRule {
   @JsonProperty(JSON_PROPERTY_ACCESS_RULE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
-  public AccessRuleNode getAccessRule() {
+  public CompositeRequirement getAccessRule() {
     return accessRule;
   }
 
 
   @JsonProperty(JSON_PROPERTY_ACCESS_RULE)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setAccessRule(AccessRuleNode accessRule) {
+  public void setAccessRule(CompositeRequirement accessRule) {
     this.accessRule = accessRule;
   }
 

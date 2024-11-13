@@ -16,11 +16,11 @@ pub struct ProtectedAccessRule {
     #[serde(rename = "type")]
     pub _type: crate::core_api::generated::models::AccessRuleType,
     #[serde(rename = "access_rule")]
-    pub access_rule: Option<crate::core_api::generated::models::AccessRuleNode>, // Using Option permits Default trait; Will always be Some in normal use
+    pub access_rule: Option<crate::core_api::generated::models::CompositeRequirement>, // Using Option permits Default trait; Will always be Some in normal use
 }
 
 impl ProtectedAccessRule {
-    pub fn new(_type: crate::core_api::generated::models::AccessRuleType, access_rule: crate::core_api::generated::models::AccessRuleNode) -> ProtectedAccessRule {
+    pub fn new(_type: crate::core_api::generated::models::AccessRuleType, access_rule: crate::core_api::generated::models::CompositeRequirement) -> ProtectedAccessRule {
         ProtectedAccessRule {
             _type,
             access_rule: Option::Some(access_rule),

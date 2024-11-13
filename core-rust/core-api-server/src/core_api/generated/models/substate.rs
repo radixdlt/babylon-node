@@ -81,6 +81,8 @@ pub enum Substate {
     BootLoaderModuleFieldTransactionValidationConfigurationSubstate {
         #[serde(rename = "is_locked")]
         is_locked: bool,
+        #[serde(rename = "config")]
+        config: Box<crate::core_api::generated::models::TransactionValidationConfig>,
     },
     #[serde(rename="BootLoaderModuleFieldVmBoot")]
     BootLoaderModuleFieldVmBootSubstate {
