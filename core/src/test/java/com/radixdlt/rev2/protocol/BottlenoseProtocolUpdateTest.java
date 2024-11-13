@@ -72,6 +72,7 @@ import static org.junit.Assert.*;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Module;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.CoreApiHelper;
 import com.radixdlt.api.core.generated.api.StreamApi;
 import com.radixdlt.api.core.generated.api.TransactionApi;
 import com.radixdlt.api.core.generated.client.ApiException;
@@ -148,7 +149,7 @@ public final class BottlenoseProtocolUpdateTest {
                     .type(TargetIdentifierType.FUNCTION))
             .addArgumentsItem("4d0101"); // hex-encoded SBOR `true` (for `allow_recover` parameter)
 
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Arrange: Start a single node network, reach state just before Bottlenose:
       test.startAllNodes();
@@ -184,7 +185,7 @@ public final class BottlenoseProtocolUpdateTest {
 
   @Test
   public void core_api_streams_bottlenose_flash_transactions() throws Exception {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Arrange: Start a single Node network and capture the state version right before Bottlenose:
       test.startAllNodes();

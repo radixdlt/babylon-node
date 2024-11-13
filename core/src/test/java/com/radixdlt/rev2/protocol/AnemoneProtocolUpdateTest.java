@@ -74,6 +74,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.api.CoreApiHelper;
 import com.radixdlt.api.core.generated.api.StreamApi;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.environment.EventDispatcher;
@@ -196,7 +197,7 @@ public final class AnemoneProtocolUpdateTest {
 
   @Test
   public void core_api_streams_anemone_flash_transactions() throws Exception {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper(Network.INTEGRATIONTESTNET);
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Start a single node network and run until protocol update:
       test.startAllNodes();

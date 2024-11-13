@@ -74,12 +74,15 @@ import com.radixdlt.consensus.epoch.EpochsConsensusModule;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.environment.*;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.*;
 import com.radixdlt.modules.StateComputerConfig.*;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
@@ -141,6 +144,10 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       this.pacemakerBackoffRate = pacemakerBackoffRate;
       this.additionalRoundTimeIfProposalReceivedMs = additionalRoundTimeIfProposalReceivedMs;
       this.timeoutQuorumResolutionDelayMs = timeoutQuorumResolutionDelayMs;
+    }
+
+    public static ConsensusConfig testDefault() {
+      return ConsensusConfig.of(1000);
     }
 
     public static ConsensusConfig of(
@@ -289,6 +296,21 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         SafetyRecoveryConfig.MOCKED,
         ConsensusConfig.of(),
         LedgerConfig.stateComputerNoSync(StateComputerConfig.mockedNoEpochs(numValidators)));
+  }
+
+  public static FunctionalRadixNodeModule rev2Default(
+      int numValidators, int roundsPerEpoch, TemporaryFolder temporaryFolder) {
+    var genesis =
+        GenesisBuilder.createTestGenesisWithNumValidators(
+            numValidators,
+            Decimal.ofNonNegative(10000),
+            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(roundsPerEpoch));
+    return new FunctionalRadixNodeModule(
+        NodeStorageConfig.tempFolder(temporaryFolder),
+        true,
+        FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
+        FunctionalRadixNodeModule.ConsensusConfig.testDefault(),
+        LedgerConfig.stateComputerNoSync(StateComputerConfig.rev2().withGenesis(genesis)));
   }
 
   public boolean supportsEpochs() {

@@ -65,12 +65,11 @@
 package com.radixdlt.api;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.core.generated.api.*;
-import com.radixdlt.api.core.generated.models.*;
+import com.radixdlt.api.core.generated.api.TransactionApi;
+import com.radixdlt.api.mesh.generated.api.MempoolApi;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -79,25 +78,28 @@ import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.*;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sync.SyncRelayConfig;
-import java.util.List;
 import org.assertj.core.api.ThrowableAssert;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
-public abstract class DeterministicCoreApiTestBase {
+public abstract class DeterministicMeshApiTestBase {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
   public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
   public static String networkLogicalName = networkDefinition.logical_name();
 
+  /** For now, we use CoreAPI for e.g. submitting transactions */
   private final CoreApiHelper coreApiHelper;
 
-  protected DeterministicCoreApiTestBase() {
+  private final MeshApiHelper meshApiHelper;
+
+  protected DeterministicMeshApiTestBase() {
     this.coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
+    this.meshApiHelper = new MeshApiHelper(Network.INTEGRATIONTESTNET);
   }
 
   protected StateComputerConfig.REv2StateComputerConfig defaultConfig() {
@@ -117,6 +119,7 @@ public abstract class DeterministicCoreApiTestBase {
             .messageSelector(firstSelector())
             .addMonitors()
             .addModule(coreApiHelper.module())
+            .addModule(meshApiHelper.module())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     NodeStorageConfig.tempFolder(folder),
@@ -140,56 +143,11 @@ public abstract class DeterministicCoreApiTestBase {
     return coreApiHelper.assertErrorResponseOfType(apiCall, responseClass);
   }
 
-  public MempoolApi getMempoolApi() {
-    return coreApiHelper.mempoolApi();
-  }
-
-  protected StatusApi getStatusApi() {
-    return coreApiHelper.statusApi();
-  }
-
-  protected TransactionApi getTransactionApi() {
+  protected TransactionApi getCoreTransactionApi() {
     return coreApiHelper.transactionApi();
   }
 
-  protected StreamApi getStreamApi() {
-    return coreApiHelper.streamApi();
-  }
-
-  protected StateApi getStateApi() {
-    return coreApiHelper.stateApi();
-  }
-
-  protected LtsApi getLtsApi() {
-    return coreApiHelper.ltsApi();
-  }
-
-  protected CoreApiHelper getCoreApiHelper() {
-    return coreApiHelper;
-  }
-
-  public ResourceAddress createFreeMintBurnNonFungibleResource(DeterministicTest test)
-      throws Exception {
-    var committedNewResourceTxn =
-        getCoreApiHelper()
-            .submitAndWaitForSuccess(test, Manifest.createAllowAllNonFungibleResource(), List.of());
-
-    final var receipt =
-        getTransactionApi()
-            .transactionReceiptPost(
-                new TransactionReceiptRequest()
-                    .network(networkLogicalName)
-                    .intentHash(committedNewResourceTxn.transactionIntentHash().hex()));
-
-    final var newResourceAddressStr =
-        receipt
-            .getCommitted()
-            .getReceipt()
-            .getStateUpdates()
-            .getNewGlobalEntities()
-            .get(0)
-            .getEntityAddress();
-
-    return addressing.decodeResourceAddress(newResourceAddressStr);
+  public MempoolApi getMempoolApi() {
+    return meshApiHelper.mempoolApi();
   }
 }

@@ -83,6 +83,7 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.utils.FreePortFinder;
@@ -104,11 +105,11 @@ public abstract class DeterministicEngineStateApiTestBase {
 
   private final ApiClient apiClient;
 
-  private final int coreApiPort;
+  private final CoreApiHelper coreApiHelper;
 
   protected DeterministicEngineStateApiTestBase() {
     this.engineStateApiPort = FreePortFinder.findFreeLocalPort();
-    this.coreApiPort = FreePortFinder.findFreeLocalPort();
+    this.coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     this.apiClient = this.buildApiClient();
   }
 
@@ -138,15 +139,7 @@ public abstract class DeterministicEngineStateApiTestBase {
                     return new StartProcessorOnRunner("N/A", engineStateApiServer::start);
                   }
                 })
-            .addModule(
-                new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)))
-            .addModule(
-                new AbstractModule() {
-                  @ProvidesIntoSet
-                  private StartProcessorOnRunner startCodeApiServer(CoreApiServer coreApiServer) {
-                    return new StartProcessorOnRunner("N/A", coreApiServer::start);
-                  }
-                })
+            .addModule(coreApiHelper.module())
             .functionalNodeModule(
                 new FunctionalRadixNodeModule(
                     NodeStorageConfig.tempFolder(folder),
@@ -205,6 +198,6 @@ public abstract class DeterministicEngineStateApiTestBase {
   }
 
   protected CoreApiHelper getCoreApiHelper() {
-    return new CoreApiHelper(networkDefinition, coreApiPort);
+    return coreApiHelper;
   }
 }
