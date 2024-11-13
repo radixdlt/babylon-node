@@ -61,6 +61,8 @@
                 }
             }
         ],
+        "stale_depth": 1000,
+        "broadcast_limit": 1000,
         "end_conditions": {
             "radix_workflow": 1
         }
