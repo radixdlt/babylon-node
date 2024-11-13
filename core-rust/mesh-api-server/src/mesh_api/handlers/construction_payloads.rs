@@ -45,7 +45,7 @@ pub(crate) async fn handle_construction_payloads(
                 let account = extract_account_from_option(&extraction_context, operation.account)?;
                 let (address, quantity) =
                     extract_amount_from_option(&extraction_context, operation.amount)?;
-                builder = builder.withdraw_from_account(account, address, quantity);
+                builder = builder.withdraw_from_account(account, address, -quantity);
             }
             MeshApiOperationTypes::Deposit => {
                 let account = extract_account_from_option(&extraction_context, operation.account)?;

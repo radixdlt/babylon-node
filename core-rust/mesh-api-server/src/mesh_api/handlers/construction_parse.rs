@@ -137,7 +137,7 @@ pub fn parse_instructions(
                                 global_address,
                             )?)),
                             amount: Some(Box::new(to_mesh_api_amount(
-                                input.amount.clone(),
+                                -input.amount.clone(),
                                 to_mesh_api_currency_from_resource_address(
                                     mapping_context,
                                     database,
