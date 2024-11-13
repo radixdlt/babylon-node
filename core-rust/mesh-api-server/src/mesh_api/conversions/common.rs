@@ -1,5 +1,9 @@
 use crate::prelude::*;
 
+pub fn from_hex<T: AsRef<[u8]>>(v: T) -> Result<Vec<u8>, ExtractionError> {
+    hex::decode(v).map_err(|_| ExtractionError::InvalidHex)
+}
+
 pub fn to_mesh_api_operation(
     mapping_context: &MappingContext,
     database: &StateManagerDatabase<impl ReadableRocks>,

@@ -64,132 +64,110 @@
 
 package com.radixdlt.api;
 
-import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.reflect.ClassPath;
+import com.google.inject.AbstractModule;
+import com.google.inject.Module;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.addressing.Addressing;
-import com.radixdlt.api.core.generated.api.*;
-import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.genesis.GenesisBuilder;
-import com.radixdlt.genesis.GenesisConsensusManagerConfig;
-import com.radixdlt.harness.deterministic.DeterministicTest;
-import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
-import com.radixdlt.modules.FunctionalRadixNodeModule;
-import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
-import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.api.mesh.generated.api.*;
+import com.radixdlt.api.mesh.generated.client.ApiClient;
+import com.radixdlt.api.mesh.generated.client.ApiException;
+import com.radixdlt.api.mesh.generated.models.*;
+import com.radixdlt.environment.StartProcessorOnRunner;
+import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.*;
 import com.radixdlt.rev2.NetworkDefinition;
-import com.radixdlt.sync.SyncRelayConfig;
-import java.util.List;
+import com.radixdlt.utils.FreePortFinder;
+import java.net.http.HttpClient;
 import org.assertj.core.api.ThrowableAssert;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 
-public abstract class DeterministicCoreApiTestBase {
+public class MeshApiHelper {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-  public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
-  public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
-  public static String networkLogicalName = networkDefinition.logical_name();
+  private final int meshApiPort;
+  private final Network network;
+  private final NetworkDefinition networkDefinition;
+  private final Addressing addressing;
+  private final ApiClient apiClient;
 
-  private final CoreApiHelper coreApiHelper;
-
-  protected DeterministicCoreApiTestBase() {
-    this.coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
+  static {
+    ensureOpenApiModelsAreReady();
   }
 
-  protected StateComputerConfig.REv2StateComputerConfig defaultConfig() {
-    return StateComputerConfig.rev2()
-        .withGenesis(
-            GenesisBuilder.createTestGenesisWithNumValidators(
-                1,
-                Decimal.ONE,
-                GenesisConsensusManagerConfig.Builder.testDefaults()
-                    .epochExactRoundCount(1000000)));
+  public static MeshApiHelper forTests() {
+    return new MeshApiHelper(Network.INTEGRATIONTESTNET);
   }
 
-  protected DeterministicTest buildRunningServerTest(StateComputerConfig stateComputerConfig) {
-    var test =
-        DeterministicTest.builder()
-            .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
-            .messageSelector(firstSelector())
-            .addMonitors()
-            .addModule(coreApiHelper.module())
-            .functionalNodeModule(
-                new FunctionalRadixNodeModule(
-                    NodeStorageConfig.tempFolder(folder),
-                    true,
-                    FunctionalRadixNodeModule.SafetyRecoveryConfig.MOCKED,
-                    FunctionalRadixNodeModule.ConsensusConfig.of(1000),
-                    FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
-                        stateComputerConfig, SyncRelayConfig.of(200, 10, 2000))));
+  public MeshApiHelper(Network network) {
+    this.meshApiPort = FreePortFinder.findFreeLocalPort();
+    this.addressing = Addressing.ofNetwork(network);
+    this.network = network;
+    this.networkDefinition = NetworkDefinition.from(network);
+    final var apiClient = new ApiClient();
+    apiClient.updateBaseUri("http://127.0.0.1:" + meshApiPort + "/mesh");
+    apiClient.setHttpClientBuilder(
+        HttpClient.newBuilder().sslContext(DummySslContextFactory.create()));
+    this.apiClient = apiClient;
+  }
+
+  private static void ensureOpenApiModelsAreReady() {
+    /* The generated Open API models are rubbish and requires that static initializers run on models before
+     * deserialization to work correctly... But that doesn't happen in e.g. models under the response model in
+     * assertErrorResponseOfType.
+     * As a workaround for now, let's go through all the types and explicitly ensure their static initializers run
+     * by using the Class.forName method.
+     */
     try {
-      test.startAllNodes();
+      ClassPath.from(ClassLoader.getSystemClassLoader()).getAllClasses().stream()
+          .filter(clazz -> clazz.getPackageName().equals("com.radixdlt.api.mesh.generated.models"))
+          .forEach(
+              clazz -> {
+                try {
+                  Class.forName(clazz.getName());
+                } catch (Exception ex) {
+                  throw new RuntimeException(ex);
+                }
+              });
     } catch (Exception ex) {
-      test.close();
-      throw ex;
+      throw new RuntimeException(ex);
     }
-    return test;
+  }
+
+  public Module module() {
+    return new AbstractModule() {
+      @Override
+      protected void configure() {
+        install(
+            new MeshApiServerModule(
+                "127.0.0.1", meshApiPort, ApplicationVersion.INSTANCE.display()));
+      }
+
+      @ProvidesIntoSet
+      private StartProcessorOnRunner startCoreApi(MeshApiServer meshApiServer) {
+        // This is a slightly hacky way to run something on node start-up in a Deterministic test.
+        // Stop is called by the AutoClosable binding in CoreApiServerModule
+        return new StartProcessorOnRunner("meshApi", meshApiServer::start);
+      }
+    };
+  }
+
+  public ApiClient client() {
+    return this.apiClient;
+  }
+
+  public MempoolApi mempoolApi() {
+    return new MempoolApi(client());
   }
 
   public <Response> Response assertErrorResponseOfType(
-      ThrowableAssert.ThrowingCallable apiCall, Class<Response> responseClass)
-      throws JsonProcessingException {
-    return coreApiHelper.assertErrorResponseOfType(apiCall, responseClass);
-  }
-
-  public MempoolApi getMempoolApi() {
-    return coreApiHelper.mempoolApi();
-  }
-
-  protected StatusApi getStatusApi() {
-    return coreApiHelper.statusApi();
-  }
-
-  protected TransactionApi getTransactionApi() {
-    return coreApiHelper.transactionApi();
-  }
-
-  protected StreamApi getStreamApi() {
-    return coreApiHelper.streamApi();
-  }
-
-  protected StateApi getStateApi() {
-    return coreApiHelper.stateApi();
-  }
-
-  protected LtsApi getLtsApi() {
-    return coreApiHelper.ltsApi();
-  }
-
-  protected CoreApiHelper getCoreApiHelper() {
-    return coreApiHelper;
-  }
-
-  public ResourceAddress createFreeMintBurnNonFungibleResource(DeterministicTest test)
-      throws Exception {
-    var committedNewResourceTxn =
-        getCoreApiHelper()
-            .submitAndWaitForSuccess(test, Manifest.createAllowAllNonFungibleResource(), List.of());
-
-    final var receipt =
-        getTransactionApi()
-            .transactionReceiptPost(
-                new TransactionReceiptRequest()
-                    .network(networkLogicalName)
-                    .intentHash(committedNewResourceTxn.transactionIntentHash().hex()));
-
-    final var newResourceAddressStr =
-        receipt
-            .getCommitted()
-            .getReceipt()
-            .getStateUpdates()
-            .getNewGlobalEntities()
-            .get(0)
-            .getEntityAddress();
-
-    return addressing.decodeResourceAddress(newResourceAddressStr);
+      ThrowableAssert.ThrowingCallable apiCall, Class<Response> responseClass) {
+    var apiException = catchThrowableOfType(apiCall, ApiException.class);
+    try {
+      return apiClient.getObjectMapper().readValue(apiException.getResponseBody(), responseClass);
+    } catch (JsonProcessingException ex) {
+      throw new RuntimeException(ex);
+    }
   }
 }

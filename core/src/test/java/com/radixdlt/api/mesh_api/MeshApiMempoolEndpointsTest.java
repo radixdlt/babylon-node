@@ -62,45 +62,95 @@
  * permissions under this License.
  */
 
-package com.radixdlt.api.core;
+package com.radixdlt.api.mesh_api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.api.DeterministicCoreApiTestBase;
-import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.identifiers.Address;
-import com.radixdlt.rev2.Manifest;
-import com.radixdlt.rev2.ScryptoConstants;
-import java.util.List;
+import com.radixdlt.api.DeterministicMeshApiTestBase;
+import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
+import com.radixdlt.api.mesh.generated.models.*;
+import com.radixdlt.rev2.TransactionBuilder;
+import java.util.ArrayList;
 import org.junit.Test;
 
-public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTestBase {
+public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
+
   @Test
-  public void test_lts_account_xrd_balance() throws Exception {
-    final var config =
-        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
-    try (final var test = buildRunningServerTest(config)) {
+  public void test_mempool_endpoint() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
-      var accountKeyPair = ECKeyPair.generateNew();
-      var accountAddress = Address.virtualAccountAddress(accountKeyPair.getPublicKey());
-      var accountAddressStr = addressing.encode(accountAddress);
+      // Arrange
+      var network_identifier =
+          new NetworkIdentifier().blockchain("radix").network(networkLogicalName);
+      var expected_transaction_identifiers = new ArrayList<TransactionIdentifier>();
 
-      getCoreApiHelper()
-          .submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
+      for (int i = 0; i < 2; i++) {
+        var transaction = TransactionBuilder.forTests().prepare();
 
-      final var result =
-          getLtsApi()
-              .ltsStateAccountFungibleResourceBalancePost(
-                  new LtsStateAccountFungibleResourceBalanceRequest()
+        expected_transaction_identifiers.add(
+            new TransactionIdentifier()
+                .hash(addressing.encode(transaction.transactionIntentHash())));
+
+        // Submit transaction to the CoreAPI
+        var response =
+            getCoreTransactionApi()
+                .transactionSubmitPost(
+                    new TransactionSubmitRequest()
+                        .network(networkLogicalName)
+                        .notarizedTransactionHex(transaction.hexPayloadBytes()));
+
+        assertThat(response.getDuplicate()).isFalse();
+      }
+
+      // Act
+      // Get mempool from the MeshAPI
+      var mempool_response =
+          getMempoolApi()
+              .mempool(new NetworkRequest().networkIdentifier(network_identifier))
+              .getTransactionIdentifiers();
+
+      // Assert that both transactions are in the mempool  list
+      assertThat(mempool_response).isEqualTo(expected_transaction_identifiers);
+    }
+  }
+
+  @Test
+  public void test_mempool_transaction_endpoint() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      // Arrange
+      var network_identifier =
+          new NetworkIdentifier().blockchain("radix").network(networkLogicalName);
+
+      var transaction = TransactionBuilder.forTests().prepare();
+      var transaction_identifier =
+          new TransactionIdentifier().hash(addressing.encode(transaction.transactionIntentHash()));
+
+      // Submit transaction to the CoreAPI
+      var response =
+          getCoreTransactionApi()
+              .transactionSubmitPost(
+                  new TransactionSubmitRequest()
                       .network(networkLogicalName)
-                      .accountAddress(accountAddressStr)
-                      .resourceAddress(addressing.encode(ScryptoConstants.XRD_RESOURCE_ADDRESS)));
+                      .notarizedTransactionHex(transaction.hexPayloadBytes()));
 
-      assertThat(result.getFungibleResourceBalance().getAmount())
-          .isEqualTo(ScryptoConstants.FREE_AMOUNT_FROM_FAUCET.toString());
+      assertThat(response.getDuplicate()).isFalse();
+
+      // Act
+      // Get mempool transaction from the MeshAPI
+      var mempool_transaction_response =
+          getMempoolApi()
+              .mempoolTransaction(
+                  new MempoolTransactionRequest()
+                      .networkIdentifier(network_identifier)
+                      .transactionIdentifier(transaction_identifier))
+              .getTransaction();
+
+      // Assert that transaction1 is in the mempool transaction list
+      assertThat(mempool_transaction_response)
+          .isEqualTo(new Transaction().transactionIdentifier(transaction_identifier));
     }
   }
 }

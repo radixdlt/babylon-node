@@ -123,9 +123,8 @@ pub async fn create_server<F>(
         // account/coins - not needed as we're not UTXO
         .route("/block", post(handle_block))
         .route("/block/transaction", post(handle_block_transaction))
-        // TODO:MESH mempool
-        .route("/mempool", post(handle_endpoint_todo))
-        .route("/mempool/transaction", post(handle_endpoint_todo))
+        .route("/mempool", post(handle_mempool))
+        .route("/mempool/transaction", post(handle_mempool_transaction))
         .route("/construction/derive", post(handle_construction_derive))
         .route(
             "/construction/preprocess",
