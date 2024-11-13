@@ -141,7 +141,17 @@ pub fn parse_instructions(
                                 to_mesh_api_currency_from_resource_address(
                                     mapping_context,
                                     database,
-                                    &input.resource_address,
+                                    &match input.resource_address {
+                                        ManifestResourceAddress::Static(resource_address) => {
+                                            resource_address
+                                        }
+                                        ManifestResourceAddress::Named(_) => {
+                                            return Err(client_error(
+                                                "Named address is not supported",
+                                                false,
+                                            ))
+                                        }
+                                    },
                                 )?,
                             )?)),
                             coin_change: None,

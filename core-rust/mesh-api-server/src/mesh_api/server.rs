@@ -171,14 +171,6 @@ async fn handle_endpoint_not_supported(
     Err(ResponseError::from(ApiError::EndpointNotSupported))
 }
 
-// TODO:MESH remove it when no longer needed
-async fn handle_endpoint_todo(
-    _state: State<MeshApiState>,
-    Json(_request): Json<models::MetadataRequest>,
-) -> Result<Json<()>, ResponseError> {
-    todo!()
-}
-
 #[tracing::instrument]
 pub(crate) async fn handle_missing_mesh_path() -> Result<(), ResponseError> {
     Err(ResponseError::from(ApiError::EndpointNotFound).with_details("Try /mesh"))

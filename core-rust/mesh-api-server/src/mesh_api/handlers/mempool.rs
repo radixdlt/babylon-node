@@ -7,14 +7,15 @@ pub(crate) async fn handle_mempool(
     assert_matching_network(&request.network_identifier, &state.network)?;
 
     let mapping_context = MappingContext::new(&state.network);
-    let mempool = state.state_manager.mempool.read();
+    let mempool = &state.state_manager.mempool_manager;
 
     Ok(Json(models::MempoolResponse::new(
         mempool
-            .all_hashes_iter()
+            .get_mempool_all_hashes()
+            .into_iter()
             .map(|(intent_hash, _)| {
                 Ok(models::TransactionIdentifier {
-                    hash: to_api_transaction_hash_bech32m(&mapping_context, intent_hash)?,
+                    hash: to_api_transaction_hash_bech32m(&mapping_context, &intent_hash)?,
                 })
             })
             .collect::<Result<Vec<_>, MappingError>>()?,
@@ -29,7 +30,7 @@ pub(crate) async fn handle_mempool_transaction(
 
     let extraction_context = ExtractionContext::new(&state.network);
     let mapping_context = MappingContext::new(&state.network);
-    let mempool = state.state_manager.mempool.read();
+    let mempool = &state.state_manager.mempool_manager;
 
     let intent_hash = extract_transaction_intent_hash(
         &extraction_context,
@@ -38,7 +39,7 @@ pub(crate) async fn handle_mempool_transaction(
     .map_err(|err| err.into_response_error("intent_hash"))?;
 
     if mempool
-        .get_notarized_transaction_hashes_for_intent(&intent_hash)
+        .get_mempool_payload_hashes_for_intent(&intent_hash)
         .is_empty()
     {
         return Err(

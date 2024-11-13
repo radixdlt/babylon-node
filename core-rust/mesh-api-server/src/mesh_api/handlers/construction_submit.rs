@@ -32,17 +32,16 @@ pub(crate) async fn handle_construction_submit(
         Err(e) => match e {
             e @ MempoolAddError::PriorityThresholdNotMet { .. } => Err(format!("{:?}", e)),
             MempoolAddError::Duplicate(_) => Ok(()),
-            MempoolAddError::Rejected(mempool_add_rejection) => {
-                match mempool_add_rejection.reason {
-                    MempoolRejectionReason::TransactionIntentAlreadyCommitted(_) => Ok(()),
-                    MempoolRejectionReason::FromExecution(rejection_reason) => {
-                        Err(format!("{:?}", rejection_reason))
-                    }
-                    MempoolRejectionReason::ValidationError(transaction_validation_error) => {
-                        Err(format!("{:?}", transaction_validation_error))
-                    }
+            MempoolAddError::Rejected(rejection, _) => match rejection.reason {
+                MempoolRejectionReason::SubintentAlreadyFinalized(_)
+                | MempoolRejectionReason::TransactionIntentAlreadyCommitted(_) => Ok(()),
+                MempoolRejectionReason::FromExecution(rejection_reason) => {
+                    Err(format!("Execution failure: {:?}", rejection_reason))
                 }
-            }
+                MempoolRejectionReason::ValidationError(validation_error) => {
+                    Err(format!("Validation failure: {:?}", validation_error))
+                }
+            },
         },
     };
 
