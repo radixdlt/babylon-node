@@ -44,9 +44,13 @@ impl From<FeePaymentBalanceChangeType> for MeshApiOperationTypes {
     fn from(value: FeePaymentBalanceChangeType) -> Self {
         match value {
             FeePaymentBalanceChangeType::FeePayment => Self::LockFee,
-            FeePaymentBalanceChangeType::FeeDistributed => Self::FeeDistributed,
-            FeePaymentBalanceChangeType::TipDistributed => Self::TipDistributed,
-            FeePaymentBalanceChangeType::RoyaltyDistributed => Self::RoyaltyDistributed,
+            // FeePaymentBalanceChangeType::FeeDistributed => Self::FeeDistributed,
+            // FeePaymentBalanceChangeType::TipDistributed => Self::TipDistributed,
+            // FeePaymentBalanceChangeType::RoyaltyDistributed => Self::RoyaltyDistributed,
+            // FeePaymentBalanceChangeType::FeePayment => todo!(),
+            FeePaymentBalanceChangeType::FeeDistributed => todo!(),
+            FeePaymentBalanceChangeType::TipDistributed => todo!(),
+            FeePaymentBalanceChangeType::RoyaltyDistributed => todo!(),
         }
     }
 }
