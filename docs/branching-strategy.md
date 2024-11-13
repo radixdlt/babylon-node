@@ -4,12 +4,10 @@
 Once you have read the [contributing guide](../CONTRIBUTING.md), if you want to start development, you will need to know which branches to use.
 
 > [!NOTE]
->
-> As of 2024-05-15, the strictly ordered list of supported base branches, starting from earliest/furthest upstream, is:
-> 
-> * `release/bottlenose` - This is currently running on mainnet.
-> * `main`
-> * `develop`
+> Supported base branches:
+> * `develop` - The primary development branch for upcoming features and enhancements
+> * `release/*` - Various past and future releases
+> * `main` - A mirror of the latest release
 > 
 > When clicking merge on a PR to one of these branches, it is your duty to ensure that PRs are raised to merge that branch into all later/downstream supported base branches.
 
