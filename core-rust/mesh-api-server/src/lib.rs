@@ -96,7 +96,6 @@ pub(crate) mod jni_prelude {
 pub(crate) mod engine_prelude {
     pub use radix_common::prelude::*;
     pub use radix_engine::system::system_substates::*;
-    pub use radix_engine::transaction::*;
     pub use radix_engine_interface::prelude::*;
     pub use radix_substate_store_interface::interface::*;
     pub use radix_substate_store_queries::typed_substate_layout::*;

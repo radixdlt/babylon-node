@@ -97,29 +97,29 @@ pub fn parse_instructions(
                     "lock_fee" => {
                         let input = manifest_decode::<AccountLockFeeManifestInput>(&args_bytes)
                             .map_err(|_| client_error("Invalid lock_fee instruction", false))?;
-                        operations.push(Operation {
-                            operation_identifier: Box::new(OperationIdentifier {
-                                index: operations.len() as i64,
-                                network_index: None,
-                            }),
-                            related_operations: None,
-                            _type: "LockFee".to_owned(),
-                            status: None,
-                            account: Some(Box::new(to_mesh_api_account_from_address(
-                                mapping_context,
-                                global_address,
-                            )?)),
-                            amount: Some(Box::new(to_mesh_api_amount(
-                                input.amount.clone(),
-                                to_mesh_api_currency_from_resource_address(
-                                    mapping_context,
-                                    database,
-                                    &XRD,
-                                )?,
-                            )?)),
-                            coin_change: None,
-                            metadata: None,
-                        });
+                        // operations.push(Operation {
+                        //     operation_identifier: Box::new(OperationIdentifier {
+                        //         index: operations.len() as i64,
+                        //         network_index: None,
+                        //     }),
+                        //     related_operations: None,
+                        //     _type: "LockFee".to_owned(),
+                        //     status: None,
+                        //     account: Some(Box::new(to_mesh_api_account_from_address(
+                        //         mapping_context,
+                        //         global_address,
+                        //     )?)),
+                        //     amount: Some(Box::new(to_mesh_api_amount(
+                        //         input.amount.clone(),
+                        //         to_mesh_api_currency_from_resource_address(
+                        //             mapping_context,
+                        //             database,
+                        //             &XRD,
+                        //         )?,
+                        //     )?)),
+                        //     coin_change: None,
+                        //     metadata: None,
+                        // });
                     }
                     "withdraw" => {
                         let input = manifest_decode::<AccountWithdrawManifestInput>(&args_bytes)

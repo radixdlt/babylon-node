@@ -111,24 +111,24 @@ pub fn to_mesh_api_operations(
     let mut output = Vec::with_capacity(fee_payment_computation.relevant_entities.len());
     for entity in &fee_payment_computation.relevant_entities {
         if entity.is_account() {
-            if let Some(fee_balance_changes) =
-                fee_payment_computation.fee_balance_changes.get(&entity)
-            {
-                for (fee_payment_type, amount) in fee_balance_changes {
-                    let operation = to_mesh_api_operation_fee(
-                        mapping_context,
-                        database,
-                        output.len() as i64,
-                        &status,
-                        entity,
-                        &XRD,
-                        *amount,
-                        *fee_payment_type,
-                    )?;
+            // if let Some(fee_balance_changes) =
+            //     fee_payment_computation.fee_balance_changes.get(&entity)
+            // {
+            //     for (fee_payment_type, amount) in fee_balance_changes {
+            //         let operation = to_mesh_api_operation_fee(
+            //             mapping_context,
+            //             database,
+            //             output.len() as i64,
+            //             &status,
+            //             entity,
+            //             &XRD,
+            //             *amount,
+            //             *fee_payment_type,
+            //         )?;
 
-                    output.push(operation)
-                }
-            }
+            //         output.push(operation)
+            //     }
+            // }
 
             if let Some(non_fee_balance_changes) =
                 fee_payment_computation.non_fee_balance_changes.get(&entity)

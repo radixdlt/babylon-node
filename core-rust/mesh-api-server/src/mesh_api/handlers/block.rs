@@ -1,5 +1,3 @@
-use models::transaction_identifier;
-
 use crate::prelude::*;
 
 pub(crate) async fn handle_block(
