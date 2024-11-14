@@ -99,7 +99,7 @@ pub(crate) async fn handle_block_transaction(
         .eq(&transaction_identifier)
     {
         return Err(MappingError::InvalidTransactionIdentifier {
-            message: format!("transaction_identifier does not match with block_identifier"),
+            message: format!("transaction_identifier mismatch"),
         }
         .into());
     }
