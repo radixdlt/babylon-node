@@ -1,8 +1,8 @@
 use crate::engine_prelude::*;
 use crate::mesh_api::*;
 
-/// Should be used when there's an error mapping to an API response
 #[derive(Debug, Clone)]
+#[allow(unused)] // Debug is ignored for dead code analysis, but is used in the error messages
 pub enum MappingError {
     InvalidTransactionHash {
         encode_error: TransactionHashBech32EncodeError,
