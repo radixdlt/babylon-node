@@ -5,11 +5,6 @@ use crate::prelude::*;
 pub(crate) enum MeshApiOperationTypes {
     Withdraw,
     Deposit,
-    FeeDistributed,
-    TipDistributed,
-    RoyaltyDistributed,
-    // Mint,
-    // Burn,
 }
 
 #[derive(Debug, Clone, EnumIter, Display)]
@@ -36,20 +31,5 @@ impl From<MeshApiOperationStatus> for models::OperationStatus {
             MeshApiOperationStatus::Success => true,
         };
         Self::new(value.to_string(), successful)
-    }
-}
-
-impl From<FeePaymentBalanceChangeType> for MeshApiOperationTypes {
-    fn from(value: FeePaymentBalanceChangeType) -> Self {
-        match value {
-            FeePaymentBalanceChangeType::FeePayment => todo!(),
-            // FeePaymentBalanceChangeType::FeeDistributed => Self::FeeDistributed,
-            // FeePaymentBalanceChangeType::TipDistributed => Self::TipDistributed,
-            // FeePaymentBalanceChangeType::RoyaltyDistributed => Self::RoyaltyDistributed,
-            // FeePaymentBalanceChangeType::FeePayment => todo!(),
-            FeePaymentBalanceChangeType::FeeDistributed => todo!(),
-            FeePaymentBalanceChangeType::TipDistributed => todo!(),
-            FeePaymentBalanceChangeType::RoyaltyDistributed => todo!(),
-        }
     }
 }

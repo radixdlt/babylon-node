@@ -36,35 +36,6 @@ pub fn to_mesh_api_operation_no_fee(
     })
 }
 
-pub fn to_mesh_api_operation_fee(
-    mapping_context: &MappingContext,
-    database: &StateManagerDatabase<impl ReadableRocks>,
-    index: i64,
-    status: &MeshApiOperationStatus,
-    account_address: &GlobalAddress,
-    resource_address: &ResourceAddress,
-    amount: Decimal,
-    fee_payment_type: FeePaymentBalanceChangeType,
-) -> Result<models::Operation, MappingError> {
-    // TODO:MESH what about fee locking, burning, minting?
-    let op_type = MeshApiOperationTypes::from(fee_payment_type);
-    let currency =
-        to_mesh_api_currency_from_resource_address(mapping_context, database, resource_address)?;
-    let account = to_mesh_api_account_from_address(mapping_context, account_address)?;
-
-    // see https://docs.cdp.coinbase.com/mesh/docs/models#operation
-    Ok(models::Operation {
-        operation_identifier: Box::new(models::OperationIdentifier::new(index)),
-        related_operations: None,
-        _type: op_type.to_string(),
-        status: Some(status.to_string()),
-        account: Some(Box::new(account)),
-        amount: Some(Box::new(to_mesh_api_amount(amount, currency)?)),
-        coin_change: None,
-        metadata: None,
-    })
-}
-
 pub fn to_mesh_api_transaction_identifier(
     mapping_context: &MappingContext,
     transaction_identifiers: &CommittedTransactionIdentifiers,
@@ -111,25 +82,6 @@ pub fn to_mesh_api_operations(
     let mut output = Vec::with_capacity(fee_payment_computation.relevant_entities.len());
     for entity in &fee_payment_computation.relevant_entities {
         if entity.is_account() {
-            // if let Some(fee_balance_changes) =
-            //     fee_payment_computation.fee_balance_changes.get(&entity)
-            // {
-            //     for (fee_payment_type, amount) in fee_balance_changes {
-            //         let operation = to_mesh_api_operation_fee(
-            //             mapping_context,
-            //             database,
-            //             output.len() as i64,
-            //             &status,
-            //             entity,
-            //             &XRD,
-            //             *amount,
-            //             *fee_payment_type,
-            //         )?;
-
-            //         output.push(operation)
-            //     }
-            // }
-
             if let Some(non_fee_balance_changes) =
                 fee_payment_computation.non_fee_balance_changes.get(&entity)
             {
