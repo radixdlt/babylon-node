@@ -16,6 +16,7 @@ pub enum MappingError {
     IntegerError {
         message: String,
     },
+    KeyValueStoreEntryUnexpectedlyAbsent,
     ProofNotFound,
     InvalidResource {
         message: String,
