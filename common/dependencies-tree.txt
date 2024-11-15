@@ -43,7 +43,7 @@ compileClasspath - Compile classpath for source set 'main'.
 |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-+--- org.json:json -> 20230227
++--- org.json:json -> 20240303
 +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
 |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
 |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
@@ -62,7 +62,7 @@ compileClasspath - Compile classpath for source set 'main'.
 |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
 |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
-|    +--- org.json:json:20231013 -> 20230227
+|    +--- org.json:json:20231013 -> 20240303
 |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
 |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
 |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
@@ -209,7 +209,7 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-+--- org.json:json -> 20230227
++--- org.json:json -> 20240303
 +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
 |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
 |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
@@ -228,7 +228,7 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
 |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
-|    +--- org.json:json:20231013 -> 20230227
+|    +--- org.json:json:20231013 -> 20240303
 |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
 |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
 |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
@@ -375,7 +375,7 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-+--- org.json:json -> 20230227
++--- org.json:json -> 20240303
 +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
 |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
 |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
@@ -394,7 +394,7 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
 |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
-|    +--- org.json:json:20231013 -> 20230227
+|    +--- org.json:json:20231013 -> 20240303
 |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
 |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
 |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
@@ -531,7 +531,7 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-+--- org.json:json -> 20230227
++--- org.json:json -> 20240303
 +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
 |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
 |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
@@ -550,7 +550,7 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
 |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
-|    +--- org.json:json:20231013 -> 20230227
+|    +--- org.json:json:20231013 -> 20240303
 |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
 |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
 |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)

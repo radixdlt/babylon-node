@@ -74,6 +74,7 @@ pub struct Committer {
     execution_cache_manager: Arc<ExecutionCacheManager>,
     protocol_manager: Arc<ProtocolManager>,
     ledger_metrics: Arc<LedgerMetrics>,
+    formatter: Arc<Formatter>,
 }
 
 impl Committer {
@@ -86,6 +87,7 @@ impl Committer {
         execution_cache_manager: Arc<ExecutionCacheManager>,
         protocol_manager: Arc<ProtocolManager>,
         ledger_metrics: Arc<LedgerMetrics>,
+        formatter: Arc<Formatter>,
     ) -> Self {
         Self {
             database,
@@ -95,6 +97,7 @@ impl Committer {
             execution_cache_manager,
             protocol_manager,
             ledger_metrics,
+            formatter,
         }
     }
 }
@@ -171,6 +174,12 @@ impl Committer {
             .start_series_execution(database.deref());
         self.verify_pre_commit_invariants(&series_executor, transactions.len(), &proof);
 
+        debug!(
+            "Starting commit of normal transaction batch on top of existing state version {} until state version {}",
+            series_executor.latest_state_version(),
+            commit_state_version,
+        );
+
         // Naively, the below could be a part of pre-commit invariants (see above); however, we do
         // not want to panic, but rather return an `Err` for the consensus layer, since a
         // transaction root mismatch may mean a malicious peer (and not our inconsistent state).
@@ -220,6 +229,16 @@ impl Committer {
 
             let hashes = validated.create_hashes();
             let executable = validated.create_ledger_executable();
+
+            if let Some(user_hashes) = hashes.as_user() {
+                debug!(
+                    "Starting commit execution of {} for {:?}",
+                    user_hashes
+                        .transaction_intent_hash
+                        .display(&*self.formatter),
+                    series_executor.latest_state_version().next().unwrap(),
+                );
+            }
 
             let commit = series_executor
                 .execute_and_update_state(&executable, &hashes, "prepared")
@@ -304,6 +323,12 @@ impl Committer {
             .start_series_execution(database.deref());
         self.verify_pre_commit_invariants(&series_executor, transactions.len(), &proof);
 
+        debug!(
+            "Starting commit of system transaction batch on top of existing state version {} until state version {}",
+            series_executor.latest_state_version(),
+            proof.ledger_header.state_version,
+        );
+
         let mut commit_bundle_builder = series_executor.start_commit_builder();
         let mut transactions_metrics_data = Vec::new();
         for ProcessedLedgerTransaction {
@@ -312,6 +337,15 @@ impl Committer {
             hashes,
         } in transactions
         {
+            if let Some(user_hashes) = hashes.as_user() {
+                debug!(
+                    "Starting commit execution of {} for {:?}",
+                    user_hashes
+                        .transaction_intent_hash
+                        .display(&*self.formatter),
+                    series_executor.latest_state_version().next().unwrap(),
+                );
+            }
             let mut commit = series_executor
                 .execute_and_update_state(&executable, &hashes, "system transaction")
                 .expect("cannot execute system transaction");
