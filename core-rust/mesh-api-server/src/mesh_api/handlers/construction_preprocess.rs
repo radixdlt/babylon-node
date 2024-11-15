@@ -8,8 +8,11 @@ pub(crate) async fn handle_construction_preprocess(
 
     let mut senders = Vec::new();
     for operation in request.operations {
-        let operation_type = MeshApiOperationTypes::from_str(operation._type.as_str())
-            .map_err(|_| client_error(format!("Invalid operation: {}", operation._type), false))?;
+        let operation_type =
+            MeshApiOperationTypes::from_str(operation._type.as_str()).map_err(|_| {
+                ResponseError::from(ApiError::InvalidOperation)
+                    .with_details(format!("Invalid operation: {}", operation._type))
+            })?;
         match operation_type {
             MeshApiOperationTypes::Withdraw => {
                 let account = extract_account_address_from_option(
@@ -24,13 +27,12 @@ pub(crate) async fn handle_construction_preprocess(
     }
 
     if senders.len() != 1 {
-        return Err(client_error(
-            format!(
+        return Err(
+            ResponseError::from(ApiError::InvalidNumberOfSenders).with_details(format!(
                 "Expected exactly 1 sender (Withdraw operation), but found {}",
                 senders.len()
-            ),
-            false,
-        ));
+            )),
+        );
     }
 
     // See https://docs.cdp.coinbase.com/mesh/docs/models#constructionpreprocessresponse for field

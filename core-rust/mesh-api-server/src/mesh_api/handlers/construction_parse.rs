@@ -14,25 +14,24 @@ pub(crate) async fn handle_construction_parse(
     assert_matching_network(&request.network_identifier, &state.network)?;
 
     let transaction_bytes = hex::decode(&request.transaction).map_err(|_| {
-        client_error(
-            format!("Invalid transaction hex: {}", &request.transaction),
-            false,
-        )
+        ResponseError::from(ApiError::InvalidTransaction)
+            .with_details(format!("Invalid transaction hex: {}", &request.transaction))
     })?;
     let (instructions, signers) = if request.signed {
         let transaction =
             NotarizedTransactionV1::from_raw(&RawNotarizedTransaction::from_vec(transaction_bytes))
                 .map_err(|_| {
-                    client_error(
-                        format!("Invalid transaction: {}", &request.transaction),
-                        false,
-                    )
+                    ResponseError::from(ApiError::InvalidTransaction)
+                        .with_details(format!("Invalid transaction: {}", &request.transaction))
                 })?;
         let validated = transaction
             .prepare_and_validate(&TransactionValidator::new_with_latest_config(
                 &state.network,
             ))
-            .map_err(|e| client_error(format!("Invalid transaction: error = {:?}", e), false))?;
+            .map_err(|e| {
+                ResponseError::from(ApiError::InvalidTransaction)
+                    .with_details(format!("Invalid transaction: error = {:?}", e))
+            })?;
 
         let instructions = transaction.signed_intent.intent.instructions.0;
         let signers = validated.signer_keys;
@@ -96,7 +95,10 @@ pub fn parse_instructions(
                     "lock_fee" => (),
                     "withdraw" => {
                         let input = manifest_decode::<AccountWithdrawManifestInput>(&args_bytes)
-                            .map_err(|_| client_error("Invalid withdraw instruction", false))?;
+                            .map_err(|_| {
+                                ResponseError::from(ApiError::InvalidWithdrawInstruction)
+                                    .with_details("Invalid withdraw instruction")
+                            })?;
                         operations.push(Operation {
                             operation_identifier: Box::new(OperationIdentifier {
                                 index: operations.len() as i64,
@@ -119,10 +121,10 @@ pub fn parse_instructions(
                                             resource_address
                                         }
                                         ManifestResourceAddress::Named(_) => {
-                                            return Err(client_error(
-                                                "Named address is not supported",
-                                                false,
-                                            ))
+                                            return Err(ResponseError::from(
+                                                ApiError::NamedAddressNotSupported,
+                                            )
+                                            .with_details("Named address is not supported"))
                                         }
                                     },
                                 )?,
@@ -132,10 +134,8 @@ pub fn parse_instructions(
                         });
                     }
                     _ => {
-                        return Err(client_error(
-                            format!("Unrecognized instruction: {:?}", instruction),
-                            false,
-                        ));
+                        return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                            .with_details(format!("Unrecognized instruction: {:?}", instruction)));
                     }
                 }
             }
@@ -183,16 +183,12 @@ pub fn parse_instructions(
                     }
                 }
 
-                return Err(client_error(
-                    format!("Unrecognized instruction: {:?}", instruction),
-                    false,
-                ));
+                return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                    .with_details(format!("Unrecognized instruction: {:?}", instruction)));
             }
             _ => {
-                return Err(client_error(
-                    format!("Unrecognized instruction: {:?}", instruction),
-                    false,
-                ));
+                return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                    .with_details(format!("Unrecognized instruction: {:?}", instruction)));
             }
         }
     }

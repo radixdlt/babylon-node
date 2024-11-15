@@ -15,13 +15,12 @@ pub(crate) async fn handle_construction_submit(
                 .ok()
                 .map(|x| (raw, x.transaction_intent_hash()))
         })
-        .ok_or(client_error(
-            format!(
+        .ok_or(
+            ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
                 "Invalid signed transaction: {}",
                 &request.signed_transaction
-            ),
-            false,
-        ))?;
+            )),
+        )?;
 
     let mempool_add_result = match state.state_manager.mempool_manager.add_and_trigger_relay(
         MempoolAddSource::CoreApi,

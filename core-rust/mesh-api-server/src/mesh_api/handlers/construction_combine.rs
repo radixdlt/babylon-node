@@ -10,25 +10,23 @@ pub(crate) async fn handle_construction_combine(
         extract_signature(&request.signatures[0])
             .map_err(|e| e.into_response_error("signatures"))?
     } else {
-        return Err(client_error(
-            format!(
+        return Err(
+            ResponseError::from(ApiError::InvalidNumberOfSignatures).with_details(format!(
                 "Expected 1 signature, but received {}",
                 request.signatures.len()
-            ),
-            false,
-        ));
+            )),
+        );
     };
 
     let intent = RawTransactionIntent::from_hex(&request.unsigned_transaction)
         .ok()
         .and_then(|x| IntentV1::from_raw(&x).ok())
-        .ok_or(client_error(
-            format!(
+        .ok_or(
+            ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
                 "Invalid unsigned transaction: {}",
                 &request.unsigned_transaction
-            ),
-            false,
-        ))?;
+            )),
+        )?;
     let tx = NotarizedTransactionV1 {
         signed_intent: SignedIntentV1 {
             intent,

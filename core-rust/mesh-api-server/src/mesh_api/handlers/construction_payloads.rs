@@ -9,17 +9,16 @@ pub(crate) async fn handle_construction_payloads(
 ) -> Result<Json<models::ConstructionPayloadsResponse>, ResponseError> {
     assert_matching_network(&request.network_identifier, &state.network)?;
 
-    let public_key = if let Some(public_keys) = request.public_keys {
-        if public_keys.len() == 1 {
-            extract_public_key(&public_keys[0]).map_err(|e| e.into_response_error("public_key"))?
-        } else {
-            return Err(client_error(
-                format!("Expected 1 public key, but received {}", public_keys.len()),
-                false,
-            ));
-        }
+    let public_keys = request.public_keys.unwrap_or_default();
+    let public_key = if public_keys.len() == 1 {
+        extract_public_key(&public_keys[0]).map_err(|e| e.into_response_error("public_key"))?
     } else {
-        return Err(client_error("Missing public_keys", false));
+        return Err(
+            ResponseError::from(ApiError::InvalidNumberOfPublicKeys).with_details(format!(
+                "Expected 1 public key, but received {}",
+                public_keys.len()
+            )),
+        );
     };
     let signature_type = match &public_key {
         PublicKey::Secp256k1(_) => SignatureType::EcdsaRecovery,
@@ -28,18 +27,23 @@ pub(crate) async fn handle_construction_payloads(
     let account_address = ComponentAddress::preallocated_account_from_public_key(&public_key);
     let account_address_str = state.public_key_to_address_string(public_key);
 
-    let metadata: ConstructionMetadata = serde_json::from_value(
-        request
-            .metadata
-            .ok_or(client_error("Missing metadata", false))?,
-    )
-    .map_err(|_| client_error("Invalid metadata", false))?;
+    let metadata: ConstructionMetadata = request
+        .metadata
+        .clone()
+        .and_then(|m| serde_json::from_value(m).ok())
+        .ok_or(
+            ResponseError::from(ApiError::InvalidMetadata)
+                .with_details(format!("Invalid metadata: {:?}", request.metadata)),
+        )?;
 
     let extraction_context = ExtractionContext::new(&state.network);
     let mut builder = ManifestBuilder::new().lock_fee(account_address, dec!(10));
     for operation in request.operations {
-        let operation_type = MeshApiOperationTypes::from_str(operation._type.as_str())
-            .map_err(|_| client_error(format!("Invalid operation: {}", operation._type), false))?;
+        let operation_type =
+            MeshApiOperationTypes::from_str(operation._type.as_str()).map_err(|_| {
+                ResponseError::from(ApiError::InvalidOperation)
+                    .with_details(format!("Invalid operation: {}", operation._type))
+            })?;
         match operation_type {
             MeshApiOperationTypes::Withdraw => {
                 let account =

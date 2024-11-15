@@ -27,6 +27,24 @@ pub(crate) enum ApiError {
     InvalidResource,
     #[strum(serialize = "Transaction not found")]
     TransactionNotFound,
+    #[strum(serialize = "Invalid number of signatures")]
+    InvalidNumberOfSignatures,
+    #[strum(serialize = "Invalid transaction")]
+    InvalidTransaction,
+    #[strum(serialize = "Invalid Withdraw instruction")]
+    InvalidWithdrawInstruction,
+    #[strum(serialize = "Named address not supported")]
+    NamedAddressNotSupported,
+    #[strum(serialize = "Instruction is not recognized")]
+    UnrecognizedInstruction,
+    #[strum(serialize = "Invalid number of public keys")]
+    InvalidNumberOfPublicKeys,
+    #[strum(serialize = "Invalid metadata")]
+    InvalidMetadata,
+    #[strum(serialize = "Invalid operation")]
+    InvalidOperation,
+    #[strum(serialize = "Invalid number of senders")]
+    InvalidNumberOfSenders,
 }
 
 impl From<ApiError> for ResponseError {
@@ -75,6 +93,7 @@ impl ResponseError {
         }
     }
 
+    #[allow(unused)]
     pub fn retriable(self, retriable: bool) -> Self {
         Self {
             error: models::Error {
@@ -199,11 +218,4 @@ pub(crate) fn assert_matching_network(
             .with_details(format!("Invalid network - subnetworks not supported",)));
     }
     Ok(())
-}
-
-// TODO:MESH - Add logging, metrics and tracing for all of these errors - require the error is passed in here
-pub(crate) fn client_error(message: impl Into<String>, retriable: bool) -> ResponseError {
-    ResponseError::from(ApiError::InvalidRequest)
-        .retriable(retriable)
-        .with_details(message)
 }

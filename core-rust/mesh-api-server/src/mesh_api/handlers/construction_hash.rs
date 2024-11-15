@@ -18,10 +18,12 @@ pub(crate) async fn handle_construction_hash(
             ))
             .ok()
         })
-        .ok_or(client_error(
-            format!("Invalid transaction: {}", request.signed_transaction),
-            false,
-        ))?;
+        .ok_or(
+            ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
+                "Invalid transaction: {}",
+                request.signed_transaction
+            )),
+        )?;
 
     // See https://docs.cdp.coinbase.com/mesh/docs/models#constructionhashresponse for field
     // definitions
