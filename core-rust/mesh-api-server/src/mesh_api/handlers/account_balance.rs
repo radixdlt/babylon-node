@@ -1,5 +1,86 @@
 use crate::prelude::*;
 
+// Method `dump_component_state()` might be slow on large accounts,
+// therefore we use it only when user didn't specify which balances
+// to get.
+fn get_all_balances(
+    mapping_context: &MappingContext,
+    database: &StateManagerDatabase<impl ReadableRocks>,
+    component_address: &ComponentAddress,
+) -> Result<Vec<models::Amount>, MappingError> {
+    let component_dump = dump_component_state(database, *component_address);
+    component_dump
+        .vaults
+        .into_iter()
+        .filter_map(|(_node_id, vault_data)| match vault_data {
+            VaultData::NonFungible { .. } => None,
+            VaultData::Fungible {
+                resource_address,
+                amount,
+            } => Some((resource_address, amount)),
+        })
+        .fold(IndexMap::new(), |mut index, (resource_address, balance)| {
+            let sum = index.entry(resource_address).or_insert(Decimal::zero());
+            *sum = sum.checked_add(balance).expect("Decimal overflow");
+
+            index
+        })
+        .into_iter()
+        .map(|(resource_address, balance)| {
+            let currency = to_mesh_api_currency_from_resource_address(
+                &mapping_context,
+                database,
+                &resource_address,
+            )?;
+            Ok(to_mesh_api_amount(balance, currency)?)
+        })
+        .collect::<Result<Vec<_>, MappingError>>()
+}
+
+fn get_requested_balances(
+    mapping_context: &MappingContext,
+    database: &StateManagerDatabase<impl ReadableRocks>,
+    component_address: &ComponentAddress,
+    resource_addresses: &[ResourceAddress],
+) -> Result<Vec<models::Amount>, ResponseError> {
+    resource_addresses.into_iter().map(|resource_address| {
+        let balance = {
+            let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
+            let substate = read_optional_collection_substate::<AccountResourceVaultEntryPayload>(
+                database,
+                component_address.as_node_id(),
+                AccountCollection::ResourceVaultKeyValue.collection_index(),
+                &SubstateKey::Map(encoded_key),
+            );
+            match substate {
+                Some(substate) => {
+                    let vault = substate
+                        .into_value()
+                        .ok_or(MappingError::KeyValueStoreEntryUnexpectedlyAbsent)?
+                        .fully_update_and_into_latest_version();
+                    read_mandatory_main_field_substate::<FungibleVaultBalanceFieldPayload>(
+                        database,
+                        vault.0.as_node_id(),
+                        &FungibleVaultField::Balance.into(),
+                    )?
+                    .into_payload()
+                    .fully_update_and_into_latest_version()
+                    .amount()
+                }
+                _ => Decimal::ZERO,
+            }
+        };
+
+        let currency = to_mesh_api_currency_from_resource_address(
+            &mapping_context,
+            database,
+            &resource_address,
+        )?;
+        Ok(to_mesh_api_amount(balance, currency)?)
+    })
+    .collect::<Result<Vec<_>, ResponseError>>()
+}
+
 pub(crate) async fn handle_account_balance(
     state: State<MeshApiState>,
     Json(request): Json<models::AccountBalanceRequest>,
@@ -39,63 +120,29 @@ pub(crate) async fn handle_account_balance(
         }));
     }
 
-    // TODO:MESH - For performance, we should not use this unless the user provides
-    // no request.currencies - as it can be a lot slower on large accounts
-    let component_dump = dump_component_state(database.deref(), component_address);
-    // TODO:MESH - refactor as per comments:
-    // https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830887100
-    // https://github.com/radixdlt/babylon-node/pull/1013#discussion_r1830892623
-    let mut resources_set: HashSet<ResourceAddress> = hashset![];
-    if let Some(currencies) = request.currencies {
-        for currency in currencies.into_iter() {
-            let resource_address = extract_resource_address_from_mesh_api_currency(
-                &extraction_context,
-                database.deref(),
-                &currency,
-            )
-            .map_err(|err| err.into_response_error("resource_address"))?;
+    let balances = match request.currencies {
+        Some(currencies) => {
+            let resources = currencies
+                .into_iter()
+                .map(|c| {
+                    extract_resource_address_from_mesh_api_currency(
+                        &extraction_context,
+                        database.deref(),
+                        &c,
+                    )
+                })
+                .collect::<Result<Vec<_>, ExtractionError>>()
+                .map_err(|err| err.into_response_error("resource_address"))?;
 
-            resources_set.insert(resource_address);
-        }
-    };
-
-    let balances = component_dump
-        .vaults
-        .into_iter()
-        .filter_map(|(_node_id, vault_data)| match vault_data {
-            VaultData::NonFungible { .. } => None,
-            VaultData::Fungible {
-                resource_address,
-                amount,
-            } => {
-                if resources_set.is_empty() || resources_set.get(&resource_address).is_some() {
-                    Some((resource_address, amount))
-                } else {
-                    None
-                }
-            }
-        })
-        .fold(
-            IndexMap::new(),
-            |mut index, (fungible_resource_address, amount)| {
-                let sum = index
-                    .entry(fungible_resource_address)
-                    .or_insert(Decimal::zero());
-                *sum = sum.checked_add(amount).expect("Decimal overflow");
-
-                index
-            },
-        )
-        .into_iter()
-        .map(|(fungible_resource_address, amount)| {
-            let currency = to_mesh_api_currency_from_resource_address(
+            get_requested_balances(
                 &mapping_context,
                 database.deref(),
-                &fungible_resource_address,
-            )?;
-            Ok(to_mesh_api_amount(amount, currency)?)
-        })
-        .collect::<Result<Vec<_>, MappingError>>()?;
+                &component_address,
+                &resources,
+            )?
+        }
+        None => get_all_balances(&mapping_context, database.deref(), &component_address)?,
+    };
 
     // see https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field
     // definitions
