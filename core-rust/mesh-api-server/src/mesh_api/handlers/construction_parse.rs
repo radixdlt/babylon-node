@@ -65,7 +65,7 @@ pub(crate) async fn handle_construction_parse(
             signers
                 .into_iter()
                 .map(|x| AccountIdentifier {
-                    address: state.public_key_to_address(x),
+                    address: state.public_key_to_address_string(x),
                     sub_account: None,
                     metadata: None,
                 })

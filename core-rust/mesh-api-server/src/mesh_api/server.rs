@@ -100,9 +100,13 @@ impl MeshApiState {
         TransactionHashBech32Encoder::new(&self.network)
     }
 
-    pub fn public_key_to_address(&self, public_key: PublicKey) -> String {
+    pub fn public_key_to_address(&self, public_key: PublicKey) -> ComponentAddress {
+        ComponentAddress::preallocated_account_from_public_key(&public_key)
+    }
+
+    pub fn public_key_to_address_string(&self, public_key: PublicKey) -> String {
         self.address_encoder()
-            .encode(ComponentAddress::preallocated_account_from_public_key(&public_key).as_bytes())
+            .encode(self.public_key_to_address(public_key).as_bytes())
             .expect("Failed to encode account address")
     }
 }

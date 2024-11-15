@@ -12,10 +12,11 @@ pub(crate) async fn handle_construction_preprocess(
             .map_err(|_| client_error(format!("Invalid operation: {}", operation._type), false))?;
         match operation_type {
             MeshApiOperationTypes::Withdraw => {
-                let account = extract_account_from_option(
+                let account = extract_account_address_from_option(
                     &ExtractionContext::new(&state.network),
                     operation.account,
-                )?;
+                )
+                .map_err(|e| e.into_response_error("account"))?;
                 senders.push(account);
             }
             _ => {}

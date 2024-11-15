@@ -73,6 +73,14 @@ pub enum ExtractionError {
     InvalidCurrency {
         message: String,
     },
+    NotFound,
+    InvalidCurveType(models::CurveType),
+    InvalidSecp256k1PublicKey(String),
+    InvalidEd25519PublicKey(String),
+    InvalidSignatureType(models::SignatureType),
+    InvalidSecp256k1Signature(String),
+    InvalidEd25519Signature(String),
+    InvalidAmount(models::Amount),
 }
 
 impl ExtractionError {

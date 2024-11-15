@@ -1,20 +1,10 @@
 use crate::prelude::*;
 
-pub fn to_api_transaction_hash_bech32m<T: IsTransactionHash>(
-    context: &MappingContext,
-    hash: &T,
-) -> Result<String, MappingError> {
-    context
-        .transaction_hash_encoder
-        .encode(hash)
-        .map_err(|err| MappingError::InvalidTransactionHash { encode_error: err })
-}
-
 pub fn extract_transaction_intent_hash(
     context: &ExtractionContext,
     hash_str: String,
 ) -> Result<TransactionIntentHash, ExtractionError> {
-    from_hex(&hash_str)
+    hex::decode(&hash_str)
         .ok()
         .and_then(|bytes| Hash::try_from(bytes.as_slice()).ok())
         .map(TransactionIntentHash::from_hash)
@@ -25,4 +15,14 @@ pub fn extract_transaction_intent_hash(
                 .ok()
         })
         .ok_or(ExtractionError::InvalidHash)
+}
+
+pub fn to_api_transaction_hash_bech32m<T: IsTransactionHash>(
+    context: &MappingContext,
+    hash: &T,
+) -> Result<String, MappingError> {
+    context
+        .transaction_hash_encoder
+        .encode(hash)
+        .map_err(|err| MappingError::InvalidTransactionHash { encode_error: err })
 }

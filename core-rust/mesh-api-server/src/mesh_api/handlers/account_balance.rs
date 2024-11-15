@@ -125,7 +125,7 @@ pub(crate) async fn handle_account_balance(
             let resources = currencies
                 .into_iter()
                 .map(|c| {
-                    extract_resource_address_from_mesh_api_currency(
+                    extract_resource_address_from_currency(
                         &extraction_context,
                         database.deref(),
                         &c,

@@ -1,5 +1,70 @@
 use crate::prelude::*;
 
+pub fn extract_resource_address(
+    extraction_context: &ExtractionContext,
+    resource_address: &str,
+) -> Result<ResourceAddress, ExtractionError> {
+    ResourceAddress::try_from_bech32(&extraction_context.address_decoder, resource_address)
+        .ok_or(ExtractionError::InvalidAddress)
+}
+
+pub fn extract_component_address(
+    extraction_context: &ExtractionContext,
+    component_address: &str,
+) -> Result<ComponentAddress, ExtractionError> {
+    ComponentAddress::try_from_bech32(&extraction_context.address_decoder, component_address)
+        .ok_or(ExtractionError::InvalidAddress)
+}
+
+pub fn extract_account_address_from_option(
+    extraction_context: &ExtractionContext,
+    account_identifier: Option<Box<crate::mesh_api::generated::models::AccountIdentifier>>,
+) -> Result<ComponentAddress, ExtractionError> {
+    extract_account(
+        extraction_context,
+        account_identifier
+            .ok_or(ExtractionError::NotFound)?
+            .borrow(),
+    )
+}
+
+pub(crate) fn extract_resource_address_from_currency(
+    extraction_context: &ExtractionContext,
+    database: &StateManagerDatabase<impl ReadableRocks>,
+    currency: &models::Currency,
+) -> Result<ResourceAddress, ExtractionError> {
+    // currency.symbol field keeps bech32-encoded resource address
+    let resource_address = extract_resource_address(extraction_context, &currency.symbol)?;
+    let resource_node_id = resource_address.as_node_id();
+
+    if resource_node_id.entity_type() != Some(EntityType::GlobalFungibleResourceManager) {
+        return Err(ExtractionError::InvalidCurrency {
+            message: format!("currency {} is not fungible type", currency.symbol),
+        });
+    }
+
+    let divisibility: FungibleResourceManagerDivisibilityFieldSubstate =
+        read_optional_main_field_substate(
+            database,
+            resource_node_id,
+            &FungibleResourceManagerField::Divisibility.into(),
+        )
+        .ok_or_else(|| ExtractionError::InvalidCurrency {
+            message: format!("currency {} not found", currency.symbol),
+        })?;
+    let divisibility = *divisibility.payload().as_unique_version() as i32;
+
+    if divisibility != currency.decimals {
+        return Err(ExtractionError::InvalidCurrency {
+            message: format!(
+                "currency {} decimals mismatch, specified: {}, current: {}",
+                &currency.symbol, &currency.decimals, divisibility
+            ),
+        });
+    }
+    Ok(resource_address)
+}
+
 pub fn to_api_resource_address(
     context: &MappingContext,
     resource_address: &ResourceAddress,
@@ -15,22 +80,6 @@ pub fn to_api_entity_address(
         .address_encoder
         .encode(node_id.as_ref())
         .map_err(|err| MappingError::InvalidEntityAddress { encode_error: err })
-}
-
-pub fn extract_resource_address(
-    extraction_context: &ExtractionContext,
-    resource_address: &str,
-) -> Result<ResourceAddress, ExtractionError> {
-    ResourceAddress::try_from_bech32(&extraction_context.address_decoder, resource_address)
-        .ok_or(ExtractionError::InvalidAddress)
-}
-
-pub fn extract_component_address(
-    extraction_context: &ExtractionContext,
-    component_address: &str,
-) -> Result<ComponentAddress, ExtractionError> {
-    ComponentAddress::try_from_bech32(&extraction_context.address_decoder, component_address)
-        .ok_or(ExtractionError::InvalidAddress)
 }
 
 pub fn to_mesh_api_account_from_address(
@@ -76,19 +125,6 @@ pub fn extract_account(
     }
 }
 
-pub fn extract_account_from_option(
-    extraction_context: &ExtractionContext,
-    account_identifier: Option<Box<crate::mesh_api::generated::models::AccountIdentifier>>,
-) -> Result<ComponentAddress, ResponseError> {
-    extract_account(
-        extraction_context,
-        account_identifier
-            .ok_or(client_error("Missing account", false))?
-            .borrow(),
-    )
-    .map_err(|e| client_error(format!("Failed to extract account: {e:?}"), false))
-}
-
 pub fn to_mesh_api_currency_from_resource_address(
     mapping_context: &MappingContext,
     database: &StateManagerDatabase<impl ReadableRocks>,
@@ -122,41 +158,4 @@ pub fn to_mesh_api_currency_from_resource_address(
         decimals,
         metadata: None,
     })
-}
-
-pub(crate) fn extract_resource_address_from_mesh_api_currency(
-    extraction_context: &ExtractionContext,
-    database: &StateManagerDatabase<impl ReadableRocks>,
-    currency: &models::Currency,
-) -> Result<ResourceAddress, ExtractionError> {
-    // currency.symbol field keeps bech32-encoded resource address
-    let resource_address = extract_resource_address(extraction_context, &currency.symbol)?;
-    let resource_node_id = resource_address.as_node_id();
-
-    if resource_node_id.entity_type() != Some(EntityType::GlobalFungibleResourceManager) {
-        return Err(ExtractionError::InvalidCurrency {
-            message: format!("currency {} is not fungible type", currency.symbol),
-        });
-    }
-
-    let divisibility: FungibleResourceManagerDivisibilityFieldSubstate =
-        read_optional_main_field_substate(
-            database,
-            resource_node_id,
-            &FungibleResourceManagerField::Divisibility.into(),
-        )
-        .ok_or_else(|| ExtractionError::InvalidCurrency {
-            message: format!("currency {} not found", currency.symbol),
-        })?;
-    let divisibility = *divisibility.payload().as_unique_version() as i32;
-
-    if divisibility != currency.decimals {
-        return Err(ExtractionError::InvalidCurrency {
-            message: format!(
-                "currency {} decimals mismatch, specified: {}, current: {}",
-                &currency.symbol, &currency.decimals, divisibility
-            ),
-        });
-    }
-    Ok(resource_address)
 }

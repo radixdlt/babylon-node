@@ -11,7 +11,7 @@ pub(crate) async fn handle_construction_payloads(
 
     let public_key = if let Some(public_keys) = request.public_keys {
         if public_keys.len() == 1 {
-            extract_public_key(&public_keys[0])?
+            extract_public_key(&public_keys[0]).map_err(|e| e.into_response_error("public_key"))?
         } else {
             return Err(client_error(
                 format!("Expected 1 public key, but received {}", public_keys.len()),
@@ -26,7 +26,7 @@ pub(crate) async fn handle_construction_payloads(
         PublicKey::Ed25519(_) => SignatureType::Ed25519,
     };
     let account_address = ComponentAddress::preallocated_account_from_public_key(&public_key);
-    let account_address_str = state.public_key_to_address(public_key);
+    let account_address_str = state.public_key_to_address_string(public_key);
 
     let metadata: ConstructionMetadata = serde_json::from_value(
         request
@@ -42,15 +42,21 @@ pub(crate) async fn handle_construction_payloads(
             .map_err(|_| client_error(format!("Invalid operation: {}", operation._type), false))?;
         match operation_type {
             MeshApiOperationTypes::Withdraw => {
-                let account = extract_account_from_option(&extraction_context, operation.account)?;
+                let account =
+                    extract_account_address_from_option(&extraction_context, operation.account)
+                        .map_err(|e| e.into_response_error("account"))?;
                 let (address, quantity) =
-                    extract_amount_from_option(&extraction_context, operation.amount)?;
+                    extract_amount_from_option(&extraction_context, operation.amount)
+                        .map_err(|e| e.into_response_error("amount"))?;
                 builder = builder.withdraw_from_account(account, address, -quantity);
             }
             MeshApiOperationTypes::Deposit => {
-                let account = extract_account_from_option(&extraction_context, operation.account)?;
+                let account =
+                    extract_account_address_from_option(&extraction_context, operation.account)
+                        .map_err(|e| e.into_response_error("account"))?;
                 let (address, quantity) =
-                    extract_amount_from_option(&extraction_context, operation.amount)?;
+                    extract_amount_from_option(&extraction_context, operation.amount)
+                        .map_err(|e| e.into_response_error("amount"))?;
                 let bucket = builder.generate_bucket_name("bucket");
                 builder = builder.take_from_worktop(address, quantity, &bucket);
                 builder = builder.try_deposit_or_abort(account, None, bucket);
