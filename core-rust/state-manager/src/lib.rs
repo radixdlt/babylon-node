@@ -117,8 +117,10 @@ pub mod jni_prelude {
     pub use node_common::jni_prelude::*;
 }
 
+// We have made this public because the ledger-tools relies on it to ensure that it's using the same
+// engine dependencies.
 #[allow(unused_imports)]
-mod engine_prelude {
+pub mod engine_prelude {
     pub use radix_common::prelude::*;
 
     pub use radix_engine::errors::*;
