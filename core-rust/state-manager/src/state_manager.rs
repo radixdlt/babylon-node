@@ -180,6 +180,7 @@ pub struct StateManager {
     pub protocol_manager: Arc<ProtocolManager>,
     pub protocol_update_executor: Arc<NodeProtocolUpdateExecutor>,
     pub ledger_metrics: Arc<LedgerMetrics>,
+    pub formatter: Arc<Formatter>,
 }
 
 impl StateManager {
@@ -221,6 +222,8 @@ impl StateManager {
         };
 
         let database = Arc::new(lock_factory.named("database").new_db_lock(raw_db));
+
+        let formatter = Arc::new(Formatter::new(&network_definition));
 
         let transaction_validator = Arc::new(lock_factory.named("validator").new_rwlock(
             TransactionValidator::new(database.access_direct().deref(), &network_definition),
@@ -266,6 +269,7 @@ impl StateManager {
                     database.clone(),
                     execution_configurator.clone(),
                     transaction_validator.clone(),
+                    formatter.clone(),
                 ),
             ));
         let cached_committability_validator = CachedCommittabilityValidator::new(
@@ -307,6 +311,7 @@ impl StateManager {
             transaction_validator.clone(),
             vertex_limits_config.unwrap_or_default(),
             metrics_registry,
+            formatter.clone(),
         ));
 
         let ledger_metrics = Arc::new(LedgerMetrics::new(
@@ -325,6 +330,7 @@ impl StateManager {
             execution_cache_manager.clone(),
             protocol_manager.clone(),
             ledger_metrics.clone(),
+            formatter.clone(),
         ));
 
         let system_executor = Arc::new(SystemExecutor::new(
@@ -387,6 +393,7 @@ impl StateManager {
             protocol_manager,
             protocol_update_executor,
             ledger_metrics,
+            formatter,
         };
 
         state_manager.resume_protocol_updates_if_any();

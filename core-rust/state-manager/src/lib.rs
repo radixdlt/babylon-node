@@ -67,6 +67,7 @@ extern crate core;
 mod accumulator_tree;
 mod commit_bundle;
 mod committer;
+mod formatter;
 pub mod jni;
 mod limits;
 mod mempool;
@@ -91,6 +92,7 @@ pub mod prelude {
     pub(crate) use node_common::prelude::*;
 
     // Public prelude
+    pub use crate::formatter::*;
     pub use crate::mempool::*;
     pub use crate::protocol::*;
     pub use crate::query::*;
@@ -117,8 +119,10 @@ pub mod jni_prelude {
     pub use node_common::jni_prelude::*;
 }
 
+// We have made this public because the ledger-tools relies on it to ensure that it's using the same
+// engine dependencies.
 #[allow(unused_imports)]
-mod engine_prelude {
+pub mod engine_prelude {
     pub use radix_common::prelude::*;
 
     pub use radix_engine::errors::*;

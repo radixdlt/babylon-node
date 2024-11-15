@@ -247,7 +247,11 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
-    install(new SyncServiceModule(SyncRelayConfig.of(syncPatience, 10, 3000L)));
+    final int syncStatusCheckMaxPeers = properties.get("sync.status_check.max_peers", 10);
+    final long syncStatusInterval = properties.get("sync.status_check.interval_ms", 3000L);
+    install(
+        new SyncServiceModule(
+            SyncRelayConfig.of(syncPatience, syncStatusCheckMaxPeers, syncStatusInterval)));
 
     // Epochs - Consensus
     install(new EpochsConsensusModule());

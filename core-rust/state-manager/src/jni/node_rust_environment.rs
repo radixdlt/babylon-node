@@ -214,9 +214,9 @@ impl JNINodeRustEnvironment {
             .clone()
     }
 
-    pub fn get_address_encoder(env: &JNIEnv, j_node_rust_env: JObject) -> AddressBech32Encoder {
+    pub fn get_formatter(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<Formatter> {
         let env = Self::get(env, j_node_rust_env);
-        AddressBech32Encoder::new(&env.state_manager.network_definition)
+        env.state_manager.formatter.clone()
     }
 
     pub fn get_database(
