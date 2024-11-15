@@ -71,6 +71,7 @@ pub struct Preparator {
     transaction_validator: Arc<RwLock<TransactionValidator>>,
     vertex_prepare_metrics: VertexPrepareMetrics,
     vertex_limits_config: VertexLimitsConfig,
+    formatter: Arc<Formatter>,
 }
 
 impl Preparator {
@@ -81,6 +82,7 @@ impl Preparator {
         transaction_validator: Arc<RwLock<TransactionValidator>>,
         vertex_limits_config: VertexLimitsConfig,
         metrics_registry: &MetricRegistry,
+        formatter: Arc<Formatter>,
     ) -> Self {
         Self {
             database,
@@ -89,6 +91,7 @@ impl Preparator {
             transaction_validator,
             vertex_prepare_metrics: VertexPrepareMetrics::new(metrics_registry),
             vertex_limits_config,
+            formatter,
         }
     }
 
@@ -453,6 +456,14 @@ impl Preparator {
             let user_hashes = prepared_details.hashes.as_user().unwrap().clone();
             let ledger_transaction_hash = prepared_details.hashes.ledger_transaction_hash;
             let invalid_at_epoch = prepared_details.end_epoch_exclusive;
+
+            debug!(
+                "Starting prepare execution of {} for {:?}",
+                user_hashes
+                    .transaction_intent_hash
+                    .display(&*self.formatter),
+                series_executor.latest_state_version().next().unwrap(),
+            );
 
             // Note that we're using a "_no_state_update" variant here, because
             // we may still reject some *committable* transactions if they exceed

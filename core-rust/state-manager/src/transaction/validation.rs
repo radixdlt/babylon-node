@@ -26,6 +26,7 @@ pub struct CommittabilityValidator {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     execution_configurator: Arc<ExecutionConfigurator>,
     transaction_validator: Arc<RwLock<TransactionValidator>>,
+    formatter: Arc<Formatter>,
 }
 
 impl CommittabilityValidator {
@@ -33,11 +34,13 @@ impl CommittabilityValidator {
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         execution_configurator: Arc<ExecutionConfigurator>,
         transaction_validator: Arc<RwLock<TransactionValidator>>,
+        formatter: Arc<Formatter>,
     ) -> Self {
         Self {
             database,
             execution_configurator,
             transaction_validator,
+            formatter,
         }
     }
 
@@ -92,6 +95,13 @@ impl CommittabilityValidator {
                 timestamp,
             };
         }
+
+        trace!(
+            "Starting mempool execution of {}",
+            user_hashes
+                .transaction_intent_hash
+                .display(&*self.formatter),
+        );
 
         let receipt = self
             .execution_configurator

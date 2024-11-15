@@ -117,7 +117,7 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
             let local_transaction_execution =
                 database.get_committed_local_transaction_execution(state_version)?;
 
-            let encoder = JNINodeRustEnvironment::get_address_encoder(&env, j_rust_global_context);
+            let formatter = JNINodeRustEnvironment::get_formatter(&env, j_rust_global_context);
 
             Some(ExecutedTransaction {
                 ledger_transaction_hash: committed_identifiers
@@ -129,7 +129,9 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
                 },
                 error_message: match local_transaction_execution.outcome {
                     DetailedTransactionOutcome::Success(_) => None,
-                    DetailedTransactionOutcome::Failure(error) => Some(error.to_string(&encoder)),
+                    DetailedTransactionOutcome::Failure(error) => {
+                        Some(error.to_string(&*formatter))
+                    }
                 },
                 consensus_receipt_bytes: scrypto_encode(
                     &committed_ledger_transaction_receipt.get_consensus_receipt(),
