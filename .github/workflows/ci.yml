@@ -264,6 +264,8 @@ jobs:
         run: ./bin/rosetta-cli check:data --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
       - name: Run Construction API tests
         run: ./bin/rosetta-cli check:construction --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
+      - name: Run Coinbase-spec tests
+        run: ./bin/rosetta-cli check:spec --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
   cross-xwin:
     name: Cross compile to Windows
     runs-on: ubuntu-latest

@@ -46,7 +46,7 @@
         }
     },
     "construction": {
-        "offline_url": "http://127.0.0.1:3337/mesh",
+        "offline_url": "http://localhost:3337/mesh",
         "constructor_dsl_file": "workflows.ros",
         "prefunded_accounts": [
             {
