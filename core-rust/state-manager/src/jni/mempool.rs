@@ -84,9 +84,8 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
             JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
                 .add_if_committable(MempoolAddSource::MempoolSync, transaction, false)
                 .map_err(|err| {
-                    let encoder =
-                        JNINodeRustEnvironment::get_address_encoder(&env, j_node_rust_env);
-                    MempoolAddErrorJava::new_from(err, (&encoder).into())
+                    let formatter = JNINodeRustEnvironment::get_formatter(&env, j_node_rust_env);
+                    MempoolAddErrorJava::new_from(err, &formatter)
                 })?;
             Ok(())
         },
@@ -203,7 +202,7 @@ enum MempoolAddErrorJava {
 }
 
 impl MempoolAddErrorJava {
-    fn new_from(err: MempoolAddError, display_context: ScryptoValueDisplayContext) -> Self {
+    fn new_from(err: MempoolAddError, formatter: &Formatter) -> Self {
         match err {
             MempoolAddError::PriorityThresholdNotMet {
                 min_tip_basis_points_required: min_tip_percentage_required,
@@ -214,7 +213,7 @@ impl MempoolAddErrorJava {
             },
             MempoolAddError::Duplicate(hash) => MempoolAddErrorJava::Duplicate(hash),
             MempoolAddError::Rejected(rejection, _) => {
-                MempoolAddErrorJava::Rejected(rejection.reason.to_string(display_context))
+                MempoolAddErrorJava::Rejected(rejection.reason.to_string(formatter))
             }
         }
     }

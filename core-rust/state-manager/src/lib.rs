@@ -67,6 +67,7 @@ extern crate core;
 mod accumulator_tree;
 mod commit_bundle;
 mod committer;
+mod formatter;
 pub mod jni;
 mod limits;
 mod mempool;
@@ -91,6 +92,7 @@ pub mod prelude {
     pub(crate) use node_common::prelude::*;
 
     // Public prelude
+    pub use crate::formatter::*;
     pub use crate::mempool::*;
     pub use crate::protocol::*;
     pub use crate::query::*;
