@@ -5,9 +5,6 @@ use crate::prelude::*;
 pub(crate) enum MeshApiOperationTypes {
     Withdraw,
     Deposit,
-    LockFee,
-    // Mint,
-    // Burn,
 }
 
 #[derive(Debug, Clone, EnumIter, Display)]

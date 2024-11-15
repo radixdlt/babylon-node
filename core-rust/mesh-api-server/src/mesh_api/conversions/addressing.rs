@@ -1,31 +1,10 @@
 use crate::prelude::*;
 
-pub fn to_api_global_address(
-    context: &MappingContext,
-    global_address: &GlobalAddress,
-) -> Result<String, MappingError> {
-    to_api_entity_address(context, global_address.as_node_id())
-}
-
-pub fn to_api_component_address(
-    context: &MappingContext,
-    component_address: &ComponentAddress,
-) -> Result<String, MappingError> {
-    to_api_entity_address(context, component_address.as_node_id())
-}
-
 pub fn to_api_resource_address(
     context: &MappingContext,
     resource_address: &ResourceAddress,
 ) -> Result<String, MappingError> {
     to_api_entity_address(context, resource_address.as_node_id())
-}
-
-pub fn to_api_package_address(
-    context: &MappingContext,
-    package_address: &PackageAddress,
-) -> Result<String, MappingError> {
-    to_api_entity_address(context, package_address.as_node_id())
 }
 
 pub fn to_api_entity_address(

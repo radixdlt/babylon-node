@@ -27,35 +27,27 @@ radix_workflow(1){
     print_message({{sender}});
 
     fee_amount = "22000000000000000000";
-    transfer_amount = "33000000000000000000";
+    withdraw_amount = "-33000000000000000000";
+    deposit_amount = "33000000000000000000";
 
     transfer.confirmation_depth = "1";
     transfer.network = {{network}};
     transfer.operations = [
       {
         "operation_identifier":{"index":0},
-        "type":"LockFee",
+        "type":"Withdraw",
         "account":{{sender.account_identifier}},
         "amount":{
-          "value":{{fee_amount}},
+          "value":{{withdraw_amount}},
           "currency":{{currency}}
         }
       },
       {
         "operation_identifier":{"index":1},
-        "type":"Withdraw",
-        "account":{{sender.account_identifier}},
-        "amount":{
-          "value":{{transfer_amount}},
-          "currency":{{currency}}
-        }
-      },
-      {
-        "operation_identifier":{"index":2},
         "type":"Deposit",
         "account":{{recipient.account_identifier}},
         "amount":{
-          "value":{{transfer_amount}},
+          "value":{{deposit_amount}},
           "currency":{{currency}}
         }
       }

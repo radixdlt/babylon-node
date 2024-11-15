@@ -70,7 +70,7 @@ import com.radixdlt.api.DeterministicMeshApiTestBase;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
 import com.radixdlt.api.mesh.generated.models.*;
 import com.radixdlt.rev2.TransactionBuilder;
-import java.util.ArrayList;
+import java.util.HashSet;
 import org.junit.Test;
 
 public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
@@ -83,7 +83,7 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
       // Arrange
       var network_identifier =
           new NetworkIdentifier().blockchain("radix").network(networkLogicalName);
-      var expected_transaction_identifiers = new ArrayList<TransactionIdentifier>();
+      var expected_transaction_identifiers = new HashSet<TransactionIdentifier>();
 
       for (int i = 0; i < 2; i++) {
         var transaction = TransactionBuilder.forTests().prepare();
@@ -106,12 +106,13 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
       // Act
       // Get mempool from the MeshAPI
       var mempool_response =
-          getMempoolApi()
-              .mempool(new NetworkRequest().networkIdentifier(network_identifier))
-              .getTransactionIdentifiers();
+          new HashSet<>(
+              getMempoolApi()
+                  .mempool(new NetworkRequest().networkIdentifier(network_identifier))
+                  .getTransactionIdentifiers());
 
       // Assert that both transactions are in the mempool  list
-      assertThat(mempool_response).isEqualTo(expected_transaction_identifiers);
+      assertThat(mempool_response.equals(expected_transaction_identifiers));
     }
   }
 

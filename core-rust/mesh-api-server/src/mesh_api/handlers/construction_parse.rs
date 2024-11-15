@@ -2,8 +2,7 @@ use crate::prelude::*;
 use models::AccountIdentifier;
 use models::{Operation, OperationIdentifier};
 use radix_engine_interface::blueprints::account::{
-    AccountLockFeeManifestInput, AccountTryDepositOrAbortManifestInput,
-    AccountWithdrawManifestInput,
+    AccountTryDepositOrAbortManifestInput, AccountWithdrawManifestInput,
 };
 use radix_transactions::manifest::{CallMethod, TakeFromWorktop};
 use radix_transactions::validation::TransactionValidator;
@@ -94,33 +93,7 @@ pub fn parse_instructions(
             }) => {
                 let args_bytes = manifest_encode(&args).unwrap();
                 match method_name.as_str() {
-                    "lock_fee" => {
-                        let input = manifest_decode::<AccountLockFeeManifestInput>(&args_bytes)
-                            .map_err(|_| client_error("Invalid lock_fee instruction", false))?;
-                        operations.push(Operation {
-                            operation_identifier: Box::new(OperationIdentifier {
-                                index: operations.len() as i64,
-                                network_index: None,
-                            }),
-                            related_operations: None,
-                            _type: "LockFee".to_owned(),
-                            status: None,
-                            account: Some(Box::new(to_mesh_api_account_from_address(
-                                mapping_context,
-                                global_address,
-                            )?)),
-                            amount: Some(Box::new(to_mesh_api_amount(
-                                input.amount.clone(),
-                                to_mesh_api_currency_from_resource_address(
-                                    mapping_context,
-                                    database,
-                                    &XRD,
-                                )?,
-                            )?)),
-                            coin_change: None,
-                            metadata: None,
-                        });
-                    }
+                    "lock_fee" => (),
                     "withdraw" => {
                         let input = manifest_decode::<AccountWithdrawManifestInput>(&args_bytes)
                             .map_err(|_| client_error("Invalid withdraw instruction", false))?;
@@ -137,7 +110,7 @@ pub fn parse_instructions(
                                 global_address,
                             )?)),
                             amount: Some(Box::new(to_mesh_api_amount(
-                                input.amount.clone(),
+                                -input.amount.clone(),
                                 to_mesh_api_currency_from_resource_address(
                                     mapping_context,
                                     database,

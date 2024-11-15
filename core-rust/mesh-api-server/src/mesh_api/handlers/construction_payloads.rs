@@ -25,7 +25,8 @@ pub(crate) async fn handle_construction_payloads(
         PublicKey::Secp256k1(_) => SignatureType::EcdsaRecovery,
         PublicKey::Ed25519(_) => SignatureType::Ed25519,
     };
-    let address = state.public_key_to_address(public_key);
+    let account_address = ComponentAddress::preallocated_account_from_public_key(&public_key);
+    let account_address_str = state.public_key_to_address(public_key);
 
     let metadata: ConstructionMetadata = serde_json::from_value(
         request
@@ -35,28 +36,16 @@ pub(crate) async fn handle_construction_payloads(
     .map_err(|_| client_error("Invalid metadata", false))?;
 
     let extraction_context = ExtractionContext::new(&state.network);
-    let mut builder = ManifestBuilder::new();
+    let mut builder = ManifestBuilder::new().lock_fee(account_address, dec!(10));
     for operation in request.operations {
         let operation_type = MeshApiOperationTypes::from_str(operation._type.as_str())
             .map_err(|_| client_error(format!("Invalid operation: {}", operation._type), false))?;
         match operation_type {
-            MeshApiOperationTypes::LockFee => {
-                let account = extract_account_from_option(&extraction_context, operation.account)?;
-                let (address, quantity) =
-                    extract_amount_from_option(&extraction_context, operation.amount.clone())?;
-                if address != XRD {
-                    return Err(client_error(
-                        format!("LockFee only supports XRD: actual = {:?}", operation.amount),
-                        false,
-                    ));
-                }
-                builder = builder.lock_fee(account, quantity);
-            }
             MeshApiOperationTypes::Withdraw => {
                 let account = extract_account_from_option(&extraction_context, operation.account)?;
                 let (address, quantity) =
                     extract_amount_from_option(&extraction_context, operation.amount)?;
-                builder = builder.withdraw_from_account(account, address, quantity);
+                builder = builder.withdraw_from_account(account, address, -quantity);
             }
             MeshApiOperationTypes::Deposit => {
                 let account = extract_account_from_option(&extraction_context, operation.account)?;
@@ -114,7 +103,7 @@ pub(crate) async fn handle_construction_payloads(
         payloads: vec![SigningPayload {
             address: None, // deprecated
             account_identifier: Some(Box::new(AccountIdentifier {
-                address,
+                address: account_address_str,
                 sub_account: None,
                 metadata: None,
             })),
