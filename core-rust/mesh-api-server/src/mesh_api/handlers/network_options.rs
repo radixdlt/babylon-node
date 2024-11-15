@@ -39,7 +39,6 @@ pub(crate) async fn handle_network_options(
             }),
             // This is for native RPC calls. Not needed for now.
             call_methods: vec![],
-            // TODO:MESH
             balance_exemptions: vec![],
             mempool_coins: false,
             block_hash_case: None,
