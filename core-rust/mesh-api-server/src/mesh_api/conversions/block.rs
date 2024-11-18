@@ -7,7 +7,7 @@ pub fn extract_state_version_from_mesh_api_partial_block_identifier(
         Some(hash) => {
             let index_from_hash =
                 hash.parse::<i64>()
-                    .map_err(|_| ExtractionError::InvalidInteger {
+                    .map_err(|_| ExtractionError::InvalidBlockIdentifier {
                         message: "Error converting hash to integer".to_string(),
                     })?;
 
@@ -34,13 +34,11 @@ pub fn extract_state_version_from_mesh_api_partial_block_identifier(
 pub fn extract_state_version_from_mesh_api_block_identifier(
     block_identifier: &models::BlockIdentifier,
 ) -> Result<StateVersion, ExtractionError> {
-    let index_from_hash =
-        block_identifier
-            .hash
-            .parse::<i64>()
-            .map_err(|_| ExtractionError::InvalidInteger {
-                message: "Error converting hash to integer".to_string(),
-            })?;
+    let index_from_hash = block_identifier.hash.parse::<i64>().map_err(|_| {
+        ExtractionError::InvalidBlockIdentifier {
+            message: "Error converting hash to integer".to_string(),
+        }
+    })?;
     if block_identifier.index != index_from_hash {
         Err(ExtractionError::InvalidBlockIdentifier {
             message: format!(

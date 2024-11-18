@@ -14,12 +14,12 @@ pub(crate) async fn handle_block(
             .map_err(|err| err.into_response_error("block_identifier"))?
             .unwrap_or_else(|| database.max_state_version());
 
-    let previous_state_version =
-        state_version
-            .previous()
-            .map_err(|_| MappingError::IntegerError {
-                message: "Error getting parent block".to_string(),
-            })?;
+    let previous_state_version = state_version.previous().map_err(|_| {
+        ResponseError::from(ApiError::ParentBlockNotAvailable).with_details(format!(
+            "Parent block not found for state version {}",
+            state_version.number()
+        ))
+    })?;
 
     let transaction_identifiers = database
         .get_committed_transaction_identifiers(state_version)
@@ -98,10 +98,12 @@ pub(crate) async fn handle_block_transaction(
         .as_ref()
         .eq(&transaction_identifier)
     {
-        return Err(MappingError::InvalidTransactionIdentifier {
-            message: format!("transaction_identifier mismatch"),
-        }
-        .into());
+        return Err(
+            ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
+                "transaction_identifier {} not available in given block",
+                request.transaction_identifier.hash
+            )),
+        );
     }
 
     let operations = to_mesh_api_operations(&mapping_context, database.deref(), state_version)?;

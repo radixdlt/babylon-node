@@ -85,12 +85,21 @@ pub enum ExtractionError {
 
 impl ExtractionError {
     pub(crate) fn into_response_error(self, field_name: &str) -> ResponseError {
-        // TODO make sure ExtractionError map to more adequate ApiError
-        // variant than ApiError::InvalidRequest
-        ResponseError::from(ApiError::InvalidRequest).with_details(format!(
-            "Could not extract {field_name} from request, {:?}",
-            self
-        ))
+        match self {
+            ExtractionError::InvalidBlockIdentifier { message } => {
+                ResponseError::from(ApiError::InvalidBlockIdentifier).with_details(message)
+            }
+            ExtractionError::InvalidAccount { message } => {
+                ResponseError::from(ApiError::InvalidAccount).with_details(message)
+            }
+            ExtractionError::InvalidCurrency { message } => {
+                ResponseError::from(ApiError::InvalidCurrency).with_details(message)
+            }
+            _ => ResponseError::from(ApiError::InvalidRequest).with_details(format!(
+                "Could not extract {field_name} from request, {:?}",
+                self
+            )),
+        }
     }
 }
 

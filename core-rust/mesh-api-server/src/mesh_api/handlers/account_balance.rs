@@ -91,7 +91,6 @@ pub(crate) async fn handle_account_balance(
     let extraction_context = ExtractionContext::new(&state.network);
 
     let component_address = extract_account(&extraction_context, &request.account_identifier)
-        // TODO:MESH Return something more precise than InvalidRequest
         .map_err(|err| err.into_response_error("account_identifier"))?;
 
     let database = state.state_manager.database.snapshot();
@@ -132,7 +131,7 @@ pub(crate) async fn handle_account_balance(
                     )
                 })
                 .collect::<Result<Vec<_>, ExtractionError>>()
-                .map_err(|err| err.into_response_error("resource_address"))?;
+                .map_err(|err| err.into_response_error("currency"))?;
 
             get_requested_balances(
                 &mapping_context,

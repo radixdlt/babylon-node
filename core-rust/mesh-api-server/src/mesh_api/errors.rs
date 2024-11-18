@@ -21,10 +21,10 @@ pub(crate) enum ApiError {
     InvalidRequest,
     #[strum(serialize = "Could not render response")]
     ResponseRenderingError,
-    #[strum(serialize = "Account not found")]
-    AccountNotFound,
-    #[strum(serialize = "Invalid resource")]
-    InvalidResource,
+    #[strum(serialize = "Invalid account")]
+    InvalidAccount,
+    #[strum(serialize = "Invalid currency")]
+    InvalidCurrency,
     #[strum(serialize = "Transaction not found")]
     TransactionNotFound,
     #[strum(serialize = "Invalid number of signatures")]
@@ -45,6 +45,10 @@ pub(crate) enum ApiError {
     InvalidOperation,
     #[strum(serialize = "Invalid number of senders")]
     InvalidNumberOfSenders,
+    #[strum(serialize = "Parent block not available")]
+    ParentBlockNotAvailable,
+    #[strum(serialize = "Invalid block identifier")]
+    InvalidBlockIdentifier,
 }
 
 impl From<ApiError> for ResponseError {
