@@ -101,6 +101,5 @@ pub(crate) mod engine_prelude {
     pub use radix_engine_interface::prelude::*;
     pub use radix_substate_store_interface::interface::*;
     pub use radix_substate_store_queries::typed_substate_layout::*;
-    pub use radix_transactions::errors::*;
     pub use radix_transactions::model::*;
 }

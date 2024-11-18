@@ -46,33 +46,12 @@ impl From<MappingError> for ResponseError {
 #[allow(clippy::enum_variant_names)]
 #[allow(unused)] // Fields are used in Debug implementations, but it's not enough to satisfy the lint
 pub enum ExtractionError {
-    InvalidInteger {
-        message: String,
-    },
-    InvalidHex,
+    InvalidInteger { message: String },
     InvalidHash,
-    InvalidSbor(DecodeError),
-    InvalidTransaction(TransactionValidationError),
     InvalidAddress,
-    InvalidNonFungibleId(ParseNonFungibleLocalIdError),
-    InvalidFieldAlternativesUsage {
-        alternatives: Vec<String>,
-        present_count: usize,
-    },
-    InvalidSemverString,
-    InvalidProgrammaticJson {
-        message: String,
-    },
-    DifferentFilterAcrossPages,
-    InvalidAccount {
-        message: String,
-    },
-    InvalidBlockIdentifier {
-        message: String,
-    },
-    InvalidCurrency {
-        message: String,
-    },
+    InvalidAccount { message: String },
+    InvalidBlockIdentifier { message: String },
+    InvalidCurrency { message: String },
     NotFound,
     InvalidCurveType(models::CurveType),
     InvalidSecp256k1PublicKey(String),
@@ -100,17 +79,5 @@ impl ExtractionError {
                 self
             )),
         }
-    }
-}
-
-impl From<TransactionValidationError> for ExtractionError {
-    fn from(err: TransactionValidationError) -> Self {
-        ExtractionError::InvalidTransaction(err)
-    }
-}
-
-impl From<ParseNonFungibleLocalIdError> for ExtractionError {
-    fn from(err: ParseNonFungibleLocalIdError) -> Self {
-        ExtractionError::InvalidNonFungibleId(err)
     }
 }
