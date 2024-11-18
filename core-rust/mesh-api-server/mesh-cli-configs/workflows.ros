@@ -1,16 +1,6 @@
 radix_workflow(1){
-  // Setup some variables in separate step to workaround below error,
-  // which occasionally occurs:
-  // CONSTRUCTION FILE PARSING FAILED!
-  //   Message: failed to parse action: the number of missing variables [deposit_amount] > 0: variable undefined
-  setup_test{
-    network = {"network":"localnet", "blockchain":"radix"};
-    currency = {"symbol":"resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv", "decimals":18};
-    min_balance = "1111000000000000000000";
-    withdraw_amount = "-33000000000000000000";
-    deposit_amount = "33000000000000000000";
-  },
   create_account{
+    network = {"network":"localnet", "blockchain":"radix"};
     key = generate_key({"curve_type":"secp256k1"});
     recipient = derive({
       "network_identifier": {{network}},
@@ -24,6 +14,9 @@ radix_workflow(1){
     print_message({{recipient}});
   },
   transfer{
+    currency = {"symbol":"resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv", "decimals":18};
+    min_balance = "1111000000000000000000";
+
     sender = find_balance({
       "minimum_balance":{
         "value": {{min_balance}},
@@ -32,6 +25,10 @@ radix_workflow(1){
     });
     print_message("sender:");
     print_message({{sender}});
+
+    fee_amount = "22000000000000000000";
+    withdraw_amount = "-33000000000000000000";
+    deposit_amount = "33000000000000000000";
 
     transfer.confirmation_depth = "1";
     transfer.network = {{network}};
