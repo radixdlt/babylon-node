@@ -80,6 +80,10 @@ pub(crate) async fn handle_construction_payloads(
                 builder = builder.take_from_worktop(address, quantity, &bucket);
                 builder = builder.try_deposit_or_abort(account, None, bucket);
             }
+            MeshApiOperationType::LockFee => {}
+            MeshApiOperationType::FeeDistributed => {}
+            MeshApiOperationType::TipDistributed => {}
+            MeshApiOperationType::RoyaltyDistributed => {}
         }
     }
     let manifest = builder.build();
