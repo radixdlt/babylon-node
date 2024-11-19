@@ -40,6 +40,7 @@
         "pruning_block_disabled": false,
         "pruning_balance_disabled": false,
         "initial_balance_fetch_disabled": false,
+        "historical_balance_disabled": false,
         "end_conditions": {
             "tip": true,
             "index": 10000

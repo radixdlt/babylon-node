@@ -16,13 +16,17 @@ pub(crate) async fn handle_account_balance(
     .map_err(|err| err.into_response_error("account_identifier"))?;
 
     let database = state.state_manager.database.snapshot();
-
-    let header = if request.block_identifier.is_some() {
-        return Err(ResponseError::from(ApiError::InvalidRequest)
-            .with_details("Historical balance not supported"));
+    let state_version = if let Some(block_identifier) = request.block_identifier {
+        extract_state_version_from_mesh_api_partial_block_identifier(
+            database.deref(),
+            &block_identifier,
+        )
+        .map_err(|err| err.into_response_error("block_identifier"))?
     } else {
-        read_current_ledger_header(database.deref())
+        None
     };
+
+    let scoped_database = database.scoped_at(state_version).unwrap();
 
     let balances = match request.currencies {
         Some(currencies) => {
@@ -31,7 +35,7 @@ pub(crate) async fn handle_account_balance(
                 .map(|c| {
                     extract_resource_address_from_currency(
                         &extraction_context,
-                        database.deref(),
+                        &scoped_database,
                         &c,
                     )
                 })
@@ -40,7 +44,7 @@ pub(crate) async fn handle_account_balance(
 
             get_requested_balances(
                 &mapping_context,
-                database.deref(),
+                &scoped_database,
                 &component_address,
                 &resources,
             )?
@@ -48,28 +52,29 @@ pub(crate) async fn handle_account_balance(
         None => {
             // Check if account is instantiated
             let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
-                database.deref(),
+                &scoped_database,
                 component_address.as_node_id(),
                 TYPE_INFO_FIELD_PARTITION,
                 &TypeInfoField::TypeInfo.into(),
             );
 
             if type_info.is_some() {
-                get_all_balances(&mapping_context, database.deref(), &component_address)?
+                get_all_balances(&mapping_context, &scoped_database, &component_address)?
             } else {
                 // We expect empty balances vector here, but let the `get_requested_balances()`
                 // deal with this.
-                get_requested_balances(&mapping_context, database.deref(), &component_address, &[])?
+                get_requested_balances(&mapping_context, &scoped_database, &component_address, &[])?
             }
         }
     };
+
+    let ledger_state = scoped_database.at_ledger_state();
 
     // see https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field
     // definitions
     Ok(Json(models::AccountBalanceResponse {
         block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
-            database.deref(),
-            &header.into(),
+            &ledger_state,
         )?),
         balances,
         metadata: None,
@@ -78,9 +83,12 @@ pub(crate) async fn handle_account_balance(
 // Method `dump_component_state()` might be slow on large accounts,
 // therefore we use it only when user didn't specify which balances
 // to get.
-fn get_all_balances(
+fn get_all_balances<'a>(
     mapping_context: &MappingContext,
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &VersionScopedDatabase<
+        'a,
+        impl Deref<Target = <StateManagerDatabase<DirectRocks> as Snapshottable<'a>>::Snapshot>,
+    >,
     component_address: &ComponentAddress,
 ) -> Result<Vec<models::Amount>, MappingError> {
     let component_dump = dump_component_state(database, *component_address);
@@ -114,44 +122,47 @@ fn get_all_balances(
 
 fn get_requested_balances(
     mapping_context: &MappingContext,
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &dyn SubstateDatabase,
     component_address: &ComponentAddress,
     resource_addresses: &[ResourceAddress],
 ) -> Result<Vec<models::Amount>, ResponseError> {
-    resource_addresses.into_iter().map(|resource_address| {
-        let balance = {
-            let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
-            let substate = read_optional_collection_substate::<AccountResourceVaultEntryPayload>(
-                database,
-                component_address.as_node_id(),
-                AccountCollection::ResourceVaultKeyValue.collection_index(),
-                &SubstateKey::Map(encoded_key),
-            );
-            match substate {
-                Some(substate) => {
-                    let vault = substate
-                        .into_value()
-                        .ok_or(MappingError::KeyValueStoreEntryUnexpectedlyAbsent)?
-                        .fully_update_and_into_latest_version();
-                    read_mandatory_main_field_substate::<FungibleVaultBalanceFieldPayload>(
+    resource_addresses
+        .into_iter()
+        .map(|resource_address| {
+            let balance = {
+                let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
+                let substate =
+                    read_optional_collection_substate::<AccountResourceVaultEntryPayload>(
                         database,
-                        vault.0.as_node_id(),
-                        &FungibleVaultField::Balance.into(),
-                    )?
-                    .into_payload()
-                    .fully_update_and_into_latest_version()
-                    .amount()
+                        component_address.as_node_id(),
+                        AccountCollection::ResourceVaultKeyValue.collection_index(),
+                        &SubstateKey::Map(encoded_key),
+                    );
+                match substate {
+                    Some(substate) => {
+                        let vault = substate
+                            .into_value()
+                            .ok_or(MappingError::KeyValueStoreEntryUnexpectedlyAbsent)?
+                            .fully_update_and_into_latest_version();
+                        read_mandatory_main_field_substate::<FungibleVaultBalanceFieldPayload>(
+                            database,
+                            vault.0.as_node_id(),
+                            &FungibleVaultField::Balance.into(),
+                        )?
+                        .into_payload()
+                        .fully_update_and_into_latest_version()
+                        .amount()
+                    }
+                    _ => Decimal::ZERO,
                 }
-                _ => Decimal::ZERO,
-            }
-        };
+            };
 
-        let currency = to_mesh_api_currency_from_resource_address(
-            &mapping_context,
-            database,
-            &resource_address,
-        )?;
-        Ok(to_mesh_api_amount(balance, currency)?)
-    })
-    .collect::<Result<Vec<_>, ResponseError>>()
+            let currency = to_mesh_api_currency_from_resource_address(
+                &mapping_context,
+                database,
+                &resource_address,
+            )?;
+            Ok(to_mesh_api_amount(balance, currency)?)
+        })
+        .collect::<Result<Vec<_>, ResponseError>>()
 }

@@ -25,7 +25,7 @@ pub(crate) async fn handle_network_options(
                 .map(|o| o.to_string())
                 .collect(),
             errors: list_available_api_errors(),
-            historical_balance_lookup: false,
+            historical_balance_lookup: true,
             timestamp_start_index: proof_iter.find_map(|p| {
                 // Observed that some timestamp are 0 or 1
                 if p.ledger_header.proposer_timestamp_ms > 1 {

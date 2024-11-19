@@ -18,7 +18,7 @@ pub fn extract_component_address(
 
 pub(crate) fn extract_resource_address_from_currency(
     extraction_context: &ExtractionContext,
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &dyn SubstateDatabase,
     currency: &models::Currency,
 ) -> Result<ResourceAddress, ExtractionError> {
     // currency.symbol field keeps bech32-encoded resource address
@@ -30,7 +30,6 @@ pub(crate) fn extract_resource_address_from_currency(
             message: format!("currency {} is not fungible type", currency.symbol),
         });
     }
-
     let divisibility: FungibleResourceManagerDivisibilityFieldSubstate =
         read_optional_main_field_substate(
             database,
