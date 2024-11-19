@@ -27,7 +27,12 @@ radix_workflow(1){
     print_message({{sender}});
 
     fee_amount = "22000000000000000000";
-    withdraw_amount = "-33000000000000000000";
+    // Negative values are badly interpreted by mesh-cli DSL parser,
+    // which might lead to errors such as:
+    //   CONSTRUCTION FILE PARSING FAILED!
+    //   Message: failed to parse action: the number of missing variables [deposit_amount] > 0: variable undefined
+    // Therefore workaround use below approach to specify negative value.
+    withdraw_amount = "0" - "33000000000000000000";
     deposit_amount = "33000000000000000000";
 
     transfer.confirmation_depth = "1";
