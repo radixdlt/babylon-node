@@ -71,7 +71,6 @@ import com.google.common.reflect.ClassPath;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.mesh.generated.api.*;
 import com.radixdlt.api.mesh.generated.client.ApiClient;
 import com.radixdlt.api.mesh.generated.client.ApiException;
@@ -79,7 +78,6 @@ import com.radixdlt.api.mesh.generated.models.*;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.monitoring.ApplicationVersion;
 import com.radixdlt.networks.Network;
-import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.utils.FreePortFinder;
 import java.net.http.HttpClient;
 import org.assertj.core.api.ThrowableAssert;
@@ -88,8 +86,6 @@ public class MeshApiHelper {
 
   private final int meshApiPort;
   private final Network network;
-  private final NetworkDefinition networkDefinition;
-  private final Addressing addressing;
   private final ApiClient apiClient;
 
   static {
@@ -102,9 +98,7 @@ public class MeshApiHelper {
 
   public MeshApiHelper(Network network) {
     this.meshApiPort = FreePortFinder.findFreeLocalPort();
-    this.addressing = Addressing.ofNetwork(network);
     this.network = network;
-    this.networkDefinition = NetworkDefinition.from(network);
     final var apiClient = new ApiClient();
     apiClient.updateBaseUri("http://127.0.0.1:" + meshApiPort + "/mesh");
     apiClient.setHttpClientBuilder(
@@ -159,6 +153,10 @@ public class MeshApiHelper {
 
   public MempoolApi mempoolApi() {
     return new MempoolApi(client());
+  }
+
+  public NetworkIdentifier networkIdentifier() {
+    return new NetworkIdentifier().blockchain("radix").network(this.network.getLogicalName());
   }
 
   public <Response> Response assertErrorResponseOfType(

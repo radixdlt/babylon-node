@@ -70,6 +70,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.core.generated.api.TransactionApi;
 import com.radixdlt.api.mesh.generated.api.MempoolApi;
+import com.radixdlt.api.mesh.generated.models.NetworkIdentifier;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -88,9 +89,10 @@ import org.junit.rules.TemporaryFolder;
 public abstract class DeterministicMeshApiTestBase {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
-  public static NetworkDefinition networkDefinition = NetworkDefinition.INT_TEST_NET;
-  public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.INT_TEST_NET);
+  public static Network network = Network.INTEGRATIONTESTNET;
+  public static NetworkDefinition networkDefinition = NetworkDefinition.from(network);
   public static String networkLogicalName = networkDefinition.logical_name();
+  public static Addressing addressing = Addressing.ofNetwork(NetworkDefinition.from(network));
 
   /** For now, we use CoreAPI for e.g. submitting transactions */
   private final CoreApiHelper coreApiHelper;
@@ -98,8 +100,8 @@ public abstract class DeterministicMeshApiTestBase {
   private final MeshApiHelper meshApiHelper;
 
   protected DeterministicMeshApiTestBase() {
-    this.coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
-    this.meshApiHelper = new MeshApiHelper(Network.INTEGRATIONTESTNET);
+    this.coreApiHelper = new CoreApiHelper(network);
+    this.meshApiHelper = new MeshApiHelper(network);
   }
 
   protected StateComputerConfig.REv2StateComputerConfig defaultConfig() {
@@ -149,5 +151,9 @@ public abstract class DeterministicMeshApiTestBase {
 
   public MempoolApi getMempoolApi() {
     return meshApiHelper.mempoolApi();
+  }
+
+  public NetworkIdentifier getNetworkIdentifier() {
+    return meshApiHelper.networkIdentifier();
   }
 }

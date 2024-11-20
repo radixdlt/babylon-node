@@ -81,8 +81,6 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
       test.suppressUnusedWarning();
 
       // Arrange
-      var network_identifier =
-          new NetworkIdentifier().blockchain("radix").network(networkLogicalName);
       var expected_transaction_identifiers = new HashSet<TransactionIdentifier>();
 
       for (int i = 0; i < 2; i++) {
@@ -108,7 +106,7 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
       var mempool_response =
           new HashSet<>(
               getMempoolApi()
-                  .mempool(new NetworkRequest().networkIdentifier(network_identifier))
+                  .mempool(new NetworkRequest().networkIdentifier(getNetworkIdentifier()))
                   .getTransactionIdentifiers());
 
       // Assert that both transactions are in the mempool  list
@@ -122,9 +120,6 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
       test.suppressUnusedWarning();
 
       // Arrange
-      var network_identifier =
-          new NetworkIdentifier().blockchain("radix").network(networkLogicalName);
-
       var transaction = TransactionBuilder.forTests().prepare();
       var transaction_identifier =
           new TransactionIdentifier().hash(addressing.encode(transaction.transactionIntentHash()));
@@ -145,7 +140,7 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
           getMempoolApi()
               .mempoolTransaction(
                   new MempoolTransactionRequest()
-                      .networkIdentifier(network_identifier)
+                      .networkIdentifier(getNetworkIdentifier())
                       .transactionIdentifier(transaction_identifier))
               .getTransaction();
 
