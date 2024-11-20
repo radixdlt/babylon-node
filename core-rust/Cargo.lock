@@ -18,6 +18,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "ahash"
+version = "0.8.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e89da841a80418a9b391ebaea17f5c112ffaaa96f621d2c285b5174da76b9011"
+dependencies = [
+ "cfg-if",
+ "once_cell",
+ "version_check",
+ "zerocopy",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -62,6 +74,12 @@ name = "anyhow"
 version = "1.0.82"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f538837af36e6f6a9be0faa67f9a314f8119e4e4b5867c6ab40ed60360142519"
+
+[[package]]
+name = "arrayvec"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
 
 [[package]]
 name = "async-trait"
@@ -924,6 +942,9 @@ name = "hashbrown"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
+dependencies = [
+ "ahash",
+]
 
 [[package]]
 name = "heck"
@@ -1361,6 +1382,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "multi-stash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "685a9ac4b61f4e728e1d2c6a7844609c16527aeb5e6c865915c08e619c16410f"
+
+[[package]]
 name = "node-common"
 version = "0.1.0"
 dependencies = [
@@ -1726,7 +1753,7 @@ dependencies = [
 [[package]]
 name = "radix-blueprint-schema-init"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "bitflags 1.3.2",
  "radix-common",
@@ -1737,7 +1764,7 @@ dependencies = [
 [[package]]
 name = "radix-common"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "bech32",
  "blake2",
@@ -1763,7 +1790,7 @@ dependencies = [
 [[package]]
 name = "radix-common-derive"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -1775,7 +1802,7 @@ dependencies = [
 [[package]]
 name = "radix-engine"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "bitflags 1.3.2",
  "colored",
@@ -1795,18 +1822,18 @@ dependencies = [
  "radix-substate-store-interface",
  "radix-transactions",
  "radix-wasm-instrument",
- "radix-wasmi",
  "sbor",
  "strum",
  "syn 1.0.109",
  "tempfile",
+ "wasmi",
  "wasmparser 0.107.0",
 ]
 
 [[package]]
 name = "radix-engine-interface"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "bitflags 1.3.2",
  "const-sha1",
@@ -1827,7 +1854,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-profiling"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "fixedstr",
 ]
@@ -1835,7 +1862,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-profiling-derive"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1846,7 +1873,7 @@ dependencies = [
 [[package]]
 name = "radix-engine-toolkit-common"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "radix-common",
  "radix-engine",
@@ -1860,7 +1887,7 @@ dependencies = [
 [[package]]
 name = "radix-native-sdk"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "radix-common",
  "radix-engine-interface",
@@ -1871,7 +1898,7 @@ dependencies = [
 [[package]]
 name = "radix-rust"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "indexmap 2.2.6",
  "serde",
@@ -1880,7 +1907,7 @@ dependencies = [
 [[package]]
 name = "radix-sbor-derive"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1891,7 +1918,7 @@ dependencies = [
 [[package]]
 name = "radix-substate-store-impls"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "hex",
  "itertools",
@@ -1905,7 +1932,7 @@ dependencies = [
 [[package]]
 name = "radix-substate-store-interface"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "hex",
  "itertools",
@@ -1917,7 +1944,7 @@ dependencies = [
 [[package]]
 name = "radix-substate-store-queries"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "hex",
  "itertools",
@@ -1934,7 +1961,7 @@ dependencies = [
 [[package]]
 name = "radix-transaction-scenarios"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "hex",
  "itertools",
@@ -1954,7 +1981,7 @@ dependencies = [
 [[package]]
 name = "radix-transactions"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "annotate-snippets",
  "bech32",
@@ -1981,24 +2008,6 @@ dependencies = [
  "wasmparser 0.107.0",
  "wasmprinter",
 ]
-
-[[package]]
-name = "radix-wasmi"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59bf4a0498ed223122e726f9360e9889c2bb6eb6898069f4b6f9960b067a742d"
-dependencies = [
- "radix-wasmi-arena",
- "spin",
- "wasmi_core",
- "wasmparser-nostd",
-]
-
-[[package]]
-name = "radix-wasmi-arena"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a03d7e7816ade40c6ecedff7515198906d644527771bd8fb5a335094353a15a"
 
 [[package]]
 name = "rand"
@@ -2145,7 +2154,7 @@ dependencies = [
 [[package]]
 name = "sbor"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "const-sha1",
  "hex",
@@ -2159,7 +2168,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -2169,7 +2178,7 @@ dependencies = [
 [[package]]
 name = "sbor-derive-common"
 version = "1.3.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-ba329d35#ba329d35e3a150344198c4ac48687bd0d2e158b3"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=cuttlefish-75118062#75118062bdc0c8eda4829e17fd5278803fa3100b"
 dependencies = [
  "const-sha1",
  "indexmap 2.2.6",
@@ -2501,6 +2510,17 @@ dependencies = [
  "tempfile",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "string-interner"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c6a0d765f5807e98a091107bae0a56ea3799f66a5de47b2c84c94a39c09974e"
+dependencies = [
+ "cfg-if",
+ "hashbrown 0.14.3",
+ "serde",
 ]
 
 [[package]]
@@ -3008,15 +3028,47 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasmi_core"
-version = "0.8.0"
+name = "wasmi"
+version = "0.39.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d21fc8d8dafc2df566ebcba7d48a2df7b37386d6afa64237cdf9415c8d7d98ec"
+checksum = "fc7a1acc721dd73e4fff2dc3796cc3efda6e008369e859a20fdbe058bddeebc3"
+dependencies = [
+ "arrayvec",
+ "multi-stash",
+ "smallvec",
+ "spin",
+ "wasmi_collections",
+ "wasmi_core",
+ "wasmi_ir",
+ "wasmparser-nostd",
+]
+
+[[package]]
+name = "wasmi_collections"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "142fda775f9cda587681ff0ec63c7a7e5679dc95da75f3f9b7e3979ce3506a5b"
+dependencies = [
+ "string-interner",
+]
+
+[[package]]
+name = "wasmi_core"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "281a49ca3c12c8efa052cb67758454fc861d80ab5a03def352e04eb08c20beb2"
 dependencies = [
  "downcast-rs",
  "libm",
- "num-traits",
- "paste",
+]
+
+[[package]]
+name = "wasmi_ir"
+version = "0.39.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bbadcf529808086a74bacd3ce8aedece444a847292198a56dcde920d1fb213c"
+dependencies = [
+ "wasmi_core",
 ]
 
 [[package]]
@@ -3041,9 +3093,9 @@ dependencies = [
 
 [[package]]
 name = "wasmparser-nostd"
-version = "0.91.0"
+version = "0.100.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c37f310b5a62bfd5ae7c0f1d8e6f98af16a5d6d84ba764e9c36439ec14e318b"
+checksum = "d5a015fe95f3504a94bb1462c717aae75253e39b9dd6c3fb1062c934535c64aa"
 dependencies = [
  "indexmap-nostd",
 ]
@@ -3227,6 +3279,26 @@ name = "windows_x86_64_msvc"
 version = "0.52.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bec47e5bfd1bff0eeaf6d8b485cc1074891a197ab4225d504cb7a1ab88b02bf0"
+
+[[package]]
+name = "zerocopy"
+version = "0.7.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.7.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.32",
+]
 
 [[package]]
 name = "zeroize"

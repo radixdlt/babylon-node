@@ -10,13 +10,15 @@ const MAX_PROTOCOL_VERSION_NAME_LEN: usize = 16;
 const GENESIS_PROTOCOL_VERSION: &str = "babylon-genesis";
 const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
 const BOTTLENOSE_PROTOCOL_VERSION: &str = "bottlenose";
-const CUTTLEFISH_PROTOCOL_VERSION: &str = "cuttlefish";
+const CUTTLEFISH_PART1_PROTOCOL_VERSION: &str = "cuttlefish";
+const CUTTLEFISH_PART2_PROTOCOL_VERSION: &str = "cuttlefish-part2";
 
 pub enum ResolvedProtocolVersion {
     Babylon,
     Anemone,
     Bottlenose,
-    Cuttlefish,
+    CuttlefishPart1,
+    CuttlefishPart2,
     Custom(ProtocolVersionName),
     Test(ProtocolVersionName),
 }
@@ -27,7 +29,8 @@ impl ResolvedProtocolVersion {
             GENESIS_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Babylon),
             ANEMONE_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Anemone),
             BOTTLENOSE_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Bottlenose),
-            CUTTLEFISH_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Cuttlefish),
+            CUTTLEFISH_PART1_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::CuttlefishPart1),
+            CUTTLEFISH_PART2_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::CuttlefishPart2),
             // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
             name_string if CustomProtocolUpdateDefinition::matches(name_string) => Some(
                 ResolvedProtocolVersion::Custom(protocol_version_name.clone()),
@@ -45,7 +48,8 @@ impl ResolvedProtocolVersion {
             ResolvedProtocolVersion::Babylon => Some(ProtocolVersion::Babylon),
             ResolvedProtocolVersion::Anemone => Some(ProtocolVersion::Anemone),
             ResolvedProtocolVersion::Bottlenose => Some(ProtocolVersion::Bottlenose),
-            ResolvedProtocolVersion::Cuttlefish => Some(ProtocolVersion::Cuttlefish),
+            ResolvedProtocolVersion::CuttlefishPart1 => Some(ProtocolVersion::CuttlefishPart1),
+            ResolvedProtocolVersion::CuttlefishPart2 => Some(ProtocolVersion::CuttlefishPart2),
             ResolvedProtocolVersion::Custom { .. } => None,
             ResolvedProtocolVersion::Test { .. } => None,
         }
@@ -56,7 +60,12 @@ impl ResolvedProtocolVersion {
             ResolvedProtocolVersion::Babylon => Box::new(BabylonProtocolUpdateDefinition),
             ResolvedProtocolVersion::Anemone => Box::new(AnemoneProtocolUpdateDefinition),
             ResolvedProtocolVersion::Bottlenose => Box::new(BottlenoseProtocolUpdateDefinition),
-            ResolvedProtocolVersion::Cuttlefish => Box::new(CuttlefishProtocolUpdateDefinition),
+            ResolvedProtocolVersion::CuttlefishPart1 => {
+                Box::new(CuttlefishPart1ProtocolUpdateDefinition)
+            }
+            ResolvedProtocolVersion::CuttlefishPart2 => {
+                Box::new(CuttlefishPart2ProtocolUpdateDefinition)
+            }
             ResolvedProtocolVersion::Custom(..) => Box::new(CustomProtocolUpdateDefinition),
             ResolvedProtocolVersion::Test(name) => {
                 Box::new(TestProtocolUpdateDefinition::new(name.clone()))
@@ -179,8 +188,12 @@ impl ProtocolVersionName {
         Self::of(BOTTLENOSE_PROTOCOL_VERSION).unwrap()
     }
 
-    pub fn cuttlefish() -> Self {
-        Self::of(CUTTLEFISH_PROTOCOL_VERSION).unwrap()
+    pub fn cuttlefish_part1() -> Self {
+        Self::of(CUTTLEFISH_PART1_PROTOCOL_VERSION).unwrap()
+    }
+
+    pub fn cuttlefish_part2() -> Self {
+        Self::of(CUTTLEFISH_PART2_PROTOCOL_VERSION).unwrap()
     }
 
     pub fn for_engine(version: ProtocolVersion) -> Self {
@@ -189,7 +202,8 @@ impl ProtocolVersionName {
             ProtocolVersion::Babylon => Self::babylon(),
             ProtocolVersion::Anemone => Self::anemone(),
             ProtocolVersion::Bottlenose => Self::bottlenose(),
-            ProtocolVersion::Cuttlefish => Self::cuttlefish(),
+            ProtocolVersion::CuttlefishPart1 => Self::cuttlefish_part1(),
+            ProtocolVersion::CuttlefishPart2 => Self::cuttlefish_part2(),
         }
     }
 
