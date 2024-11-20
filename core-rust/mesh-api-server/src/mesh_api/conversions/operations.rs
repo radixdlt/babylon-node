@@ -5,10 +5,7 @@ use crate::prelude::*;
 pub(crate) enum MeshApiOperationType {
     Withdraw,
     Deposit,
-    LockFee,
-    FeeDistributed,
-    TipDistributed,
-    RoyaltyDistributed,
+    FeePayment,
 }
 
 #[derive(Debug, Clone, Copy, EnumIter, Display)]
@@ -37,17 +34,6 @@ impl From<MeshApiOperationStatus> for models::OperationStatus {
             MeshApiOperationStatus::Success => true,
         };
         Self::new(value.to_string(), successful)
-    }
-}
-
-impl From<FeePaymentBalanceChangeType> for MeshApiOperationType {
-    fn from(value: FeePaymentBalanceChangeType) -> Self {
-        match value {
-            FeePaymentBalanceChangeType::FeePayment => Self::LockFee,
-            FeePaymentBalanceChangeType::FeeDistributed => Self::FeeDistributed,
-            FeePaymentBalanceChangeType::TipDistributed => Self::TipDistributed,
-            FeePaymentBalanceChangeType::RoyaltyDistributed => Self::RoyaltyDistributed,
-        }
     }
 }
 
@@ -83,27 +69,23 @@ pub fn to_mesh_api_operation_no_fee(
     })
 }
 
-pub fn to_mesh_api_operation_fee(
+pub fn to_mesh_api_operation_fee_payment(
     mapping_context: &MappingContext,
     database: &StateManagerDatabase<impl ReadableRocks>,
     index: i64,
-    status: &MeshApiOperationStatus,
     account_address: &GlobalAddress,
-    resource_address: &ResourceAddress,
     amount: Decimal,
-    fee_payment_type: FeePaymentBalanceChangeType,
 ) -> Result<models::Operation, MappingError> {
-    let op_type = MeshApiOperationType::from(fee_payment_type);
-    let currency =
-        to_mesh_api_currency_from_resource_address(mapping_context, database, resource_address)?;
+    let currency = to_mesh_api_currency_from_resource_address(mapping_context, database, &XRD)?;
     let account = to_api_account_identifier_from_global_address(mapping_context, account_address)?;
 
     // see https://docs.cdp.coinbase.com/mesh/docs/models#operation
     Ok(models::Operation {
         operation_identifier: Box::new(models::OperationIdentifier::new(index)),
         related_operations: None,
-        _type: op_type.to_string(),
-        status: Some(status.to_string()),
+        _type: MeshApiOperationType::FeePayment.to_string(),
+        // Fee payment is always success, even if transaction failed
+        status: Some(MeshApiOperationStatus::Success.to_string()),
         account: Some(Box::new(account)),
         amount: Some(Box::new(to_mesh_api_amount(amount, currency)?)),
         coin_change: None,
@@ -143,19 +125,23 @@ pub fn to_mesh_api_operations(
             if let Some(fee_balance_changes) =
                 fee_payment_computation.fee_balance_changes.get(&entity)
             {
-                for (fee_payment_type, amount) in fee_balance_changes {
-                    let operation = to_mesh_api_operation_fee(
+                for amount in fee_balance_changes
+                    .iter()
+                    .filter_map(|(fee_payment_type, amount)| {
+                        if *fee_payment_type == FeePaymentBalanceChangeType::FeePayment {
+                            Some(amount)
+                        } else {
+                            None
+                        }
+                    })
+                {
+                    let operation = to_mesh_api_operation_fee_payment(
                         mapping_context,
                         database,
                         output.len() as i64,
-                        // Fee payment is always success, even if transaction failed
-                        &MeshApiOperationStatus::Success,
                         entity,
-                        &XRD,
                         *amount,
-                        *fee_payment_type,
                     )?;
-
                     output.push(operation)
                 }
             }
