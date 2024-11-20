@@ -30,7 +30,7 @@ pub fn dumunet_protocol_config() -> ProtocolConfig {
                 required_consecutive_completed_epochs_of_support: 10,
             }],
         },
-        ProtocolVersionName::cuttlefish() => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::cuttlefish_part1() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "cuttlefish"
             // READINESS_SIGNAL: "034d3327f58995c6000000cuttlefish"
@@ -43,6 +43,9 @@ pub fn dumunet_protocol_config() -> ProtocolConfig {
                     required_consecutive_completed_epochs_of_support: 10,
                 },
             ],
+        },
+        ProtocolVersionName::cuttlefish_part2() => EnactImmediatelyAfterEndOfProtocolUpdate {
+            trigger_after: ProtocolVersionName::cuttlefish_part1(),
         },
     })
 }

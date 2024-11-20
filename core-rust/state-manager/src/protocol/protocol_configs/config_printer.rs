@@ -19,7 +19,7 @@ use super::*;
 #[test]
 fn print_fixed_config_code() {
     // This is used for stokenet and dumunet
-    let version = ProtocolVersionName::cuttlefish();
+    let version = ProtocolVersionName::cuttlefish_part2();
     let start_epoch = Epoch::of(1);
     let end_epoch = Epoch::of(10000000);
     let thresholds = vec![SignalledReadinessThreshold {
@@ -43,7 +43,7 @@ fn print_calculated_protocol_config_code() {
 
     // See https://learn.radixdlt.com/article/radix-foundation-protocol-update-candidate-policies
     // For guidance on how to set these paramaters
-    let version = ProtocolVersionName::cuttlefish();
+    let version = ProtocolVersionName::cuttlefish_part1();
     let target_start = DateTime::<Utc>::from_str("2024-12-10T16:00:00.000Z").unwrap();
     let enactment_window = Duration::days(10); // Normally set to 28 days, but shorter due to christmas
     let proposed_thresholds = [(dec!(0.75), Duration::days(14))];

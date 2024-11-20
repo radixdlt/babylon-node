@@ -13,8 +13,11 @@ pub fn testnet_protocol_config() -> ProtocolConfig {
         ProtocolVersionName::bottlenose() => EnactImmediatelyAfterEndOfProtocolUpdate {
             trigger_after: ProtocolVersionName::anemone(),
         },
-        ProtocolVersionName::cuttlefish() => EnactImmediatelyAfterEndOfProtocolUpdate {
+        ProtocolVersionName::cuttlefish_part1() => EnactImmediatelyAfterEndOfProtocolUpdate {
             trigger_after: ProtocolVersionName::bottlenose(),
+        },
+        ProtocolVersionName::cuttlefish_part2() => EnactImmediatelyAfterEndOfProtocolUpdate {
+            trigger_after: ProtocolVersionName::cuttlefish_part1(),
         },
     })
 }

@@ -10,7 +10,8 @@ pub struct ProtocolUpdateContentOverrides {
     babylon: Option<Overrides<BabylonProtocolUpdateDefinition>>,
     anemone: Option<Overrides<AnemoneProtocolUpdateDefinition>>,
     bottlenose: Option<Overrides<BottlenoseProtocolUpdateDefinition>>,
-    cuttlefish: Option<Overrides<CuttlefishProtocolUpdateDefinition>>,
+    cuttlefish_part1: Option<Overrides<CuttlefishPart1ProtocolUpdateDefinition>>,
+    cuttlefish_part2: Option<Overrides<CuttlefishPart2ProtocolUpdateDefinition>>,
     custom: HashMap<ProtocolVersionName, Overrides<CustomProtocolUpdateDefinition>>,
 }
 
@@ -37,11 +38,19 @@ impl ProtocolUpdateContentOverrides {
         self
     }
 
-    pub fn with_cuttlefish(
+    pub fn with_cuttlefish_part1(
         mut self,
-        config: Overrides<CuttlefishProtocolUpdateDefinition>,
+        config: Overrides<CuttlefishPart1ProtocolUpdateDefinition>,
     ) -> Self {
-        self.cuttlefish = Some(config);
+        self.cuttlefish_part1 = Some(config);
+        self
+    }
+
+    pub fn with_cuttlefish_part2(
+        mut self,
+        config: Overrides<CuttlefishPart2ProtocolUpdateDefinition>,
+    ) -> Self {
+        self.cuttlefish_part2 = Some(config);
         self
     }
 
@@ -83,9 +92,15 @@ impl From<ProtocolUpdateContentOverrides> for RawProtocolUpdateContentOverrides 
                 scrypto_encode(&config).unwrap(),
             );
         }
-        if let Some(config) = value.cuttlefish {
+        if let Some(config) = value.cuttlefish_part1 {
             map.insert(
-                ProtocolVersionName::cuttlefish(),
+                ProtocolVersionName::cuttlefish_part1(),
+                scrypto_encode(&config).unwrap(),
+            );
+        }
+        if let Some(config) = value.cuttlefish_part2 {
+            map.insert(
+                ProtocolVersionName::cuttlefish_part2(),
                 scrypto_encode(&config).unwrap(),
             );
         }
