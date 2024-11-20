@@ -99,16 +99,6 @@ impl MeshApiState {
     pub fn hash_encoder(&self) -> TransactionHashBech32Encoder {
         TransactionHashBech32Encoder::new(&self.network)
     }
-
-    pub fn public_key_to_address(&self, public_key: PublicKey) -> ComponentAddress {
-        ComponentAddress::preallocated_account_from_public_key(&public_key)
-    }
-
-    pub fn public_key_to_address_string(&self, public_key: PublicKey) -> String {
-        self.address_encoder()
-            .encode(self.public_key_to_address(public_key).as_bytes())
-            .expect("Failed to encode account address")
-    }
 }
 
 pub async fn create_server<F>(
@@ -124,7 +114,6 @@ pub async fn create_server<F>(
         .route("/network/list", post(handle_network_list))
         .route("/network/options", post(handle_network_options))
         .route("/account/balance", post(handle_account_balance))
-        // account/coins - not needed as we're not UTXO
         .route("/block", post(handle_block))
         .route("/block/transaction", post(handle_block_transaction))
         .route("/mempool", post(handle_mempool))
@@ -141,6 +130,8 @@ pub async fn create_server<F>(
         .route("/construction/hash", post(handle_construction_hash))
         .route("/construction/submit", post(handle_construction_submit))
         // Below endpoints are optional
+        // account/coins not needed as we're not UTXO
+        .route("/account/coins", post(handle_endpoint_not_supported))
         .route("/call", post(handle_endpoint_not_supported))
         .route("/search/transaction", post(handle_endpoint_not_supported))
         .route("/events/blocks", post(handle_endpoint_not_supported))

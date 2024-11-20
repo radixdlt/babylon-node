@@ -1,6 +1,6 @@
 use super::ConstructionMetadata;
 use crate::prelude::*;
-use models::{AccountIdentifier, SignatureType, SigningPayload};
+use models::{SignatureType, SigningPayload};
 use radix_transactions::prelude::ManifestBuilder;
 
 pub(crate) async fn handle_construction_payloads(
@@ -25,7 +25,10 @@ pub(crate) async fn handle_construction_payloads(
         PublicKey::Ed25519(_) => SignatureType::Ed25519,
     };
     let account_address = ComponentAddress::preallocated_account_from_public_key(&public_key);
-    let account_address_str = state.public_key_to_address_string(public_key);
+    let account_identifier = to_api_account_identifier_from_public_key(
+        &MappingContext::new(&state.network),
+        public_key,
+    )?;
 
     let metadata: ConstructionMetadata = request
         .metadata
@@ -40,24 +43,35 @@ pub(crate) async fn handle_construction_payloads(
     let mut builder = ManifestBuilder::new().lock_fee(account_address, dec!(10));
     for operation in request.operations {
         let operation_type =
-            MeshApiOperationTypes::from_str(operation._type.as_str()).map_err(|_| {
+            MeshApiOperationType::from_str(operation._type.as_str()).map_err(|_| {
                 ResponseError::from(ApiError::InvalidOperation)
                     .with_details(format!("Invalid operation: {}", operation._type))
             })?;
         match operation_type {
-            MeshApiOperationTypes::Withdraw => {
-                let account =
-                    extract_account_address_from_option(&extraction_context, operation.account)
-                        .map_err(|e| e.into_response_error("account"))?;
+            MeshApiOperationType::Withdraw => {
+                let account = match operation.account {
+                    None => Err(ExtractionError::NotFound),
+                    Some(account) => extract_radix_account_address_from_account_identifier(
+                        &extraction_context,
+                        &account,
+                    ),
+                }
+                .map_err(|e| e.into_response_error("account"))?;
+
                 let (address, quantity) =
                     extract_amount_from_option(&extraction_context, operation.amount)
                         .map_err(|e| e.into_response_error("amount"))?;
                 builder = builder.withdraw_from_account(account, address, -quantity);
             }
-            MeshApiOperationTypes::Deposit => {
-                let account =
-                    extract_account_address_from_option(&extraction_context, operation.account)
-                        .map_err(|e| e.into_response_error("account"))?;
+            MeshApiOperationType::Deposit => {
+                let account = match operation.account {
+                    None => Err(ExtractionError::NotFound),
+                    Some(account) => extract_radix_account_address_from_account_identifier(
+                        &extraction_context,
+                        &account,
+                    ),
+                }
+                .map_err(|e| e.into_response_error("account"))?;
                 let (address, quantity) =
                     extract_amount_from_option(&extraction_context, operation.amount)
                         .map_err(|e| e.into_response_error("amount"))?;
@@ -74,7 +88,7 @@ pub(crate) async fn handle_construction_payloads(
             network_id: state.network.id,
             start_epoch_inclusive: Epoch::of(metadata.start_epoch_inclusive),
             end_epoch_exclusive: Epoch::of(metadata.end_epoch_exclusive),
-            nonce: metadata.nonce,
+            nonce: metadata.intent_discriminator,
             notary_public_key: public_key,
             notary_is_signatory: true,
             tip_percentage: metadata.tip_percentage,
@@ -112,11 +126,7 @@ pub(crate) async fn handle_construction_payloads(
         unsigned_transaction: intent_bytes.to_hex(),
         payloads: vec![SigningPayload {
             address: None, // deprecated
-            account_identifier: Some(Box::new(AccountIdentifier {
-                address: account_address_str,
-                sub_account: None,
-                metadata: None,
-            })),
+            account_identifier: Some(Box::new(account_identifier)),
             hex_bytes: hex::encode(signed_intent_hash.as_bytes()),
             signature_type: Some(signature_type),
         }],

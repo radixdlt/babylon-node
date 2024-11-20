@@ -49,6 +49,8 @@ pub(crate) enum ApiError {
     ParentBlockNotAvailable,
     #[strum(serialize = "Invalid block identifier")]
     InvalidBlockIdentifier,
+    #[strum(serialize = "Submit transaction error")]
+    SubmitTransactionError,
 }
 
 impl From<ApiError> for ResponseError {
@@ -89,19 +91,19 @@ pub(crate) struct ResponseError {
 }
 
 impl ResponseError {
-    pub fn new(code: i32, error_message: impl Into<String>, retriable: bool) -> Self {
+    pub fn new(code: i32, error_message: impl Into<String>, retryable: bool) -> Self {
         Self {
             // "500" should be returned in case of unexpected error
             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-            error: models::Error::new(code, error_message.into(), retriable),
+            error: models::Error::new(code, error_message.into(), retryable),
         }
     }
 
     #[allow(unused)]
-    pub fn retriable(self, retriable: bool) -> Self {
+    pub fn retryable(self, retryable: bool) -> Self {
         Self {
             error: models::Error {
-                retriable,
+                retriable: retryable,
                 ..self.error
             },
             ..self

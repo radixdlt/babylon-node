@@ -1,3 +1,5 @@
+api.mesh.enabled=$RADIXDLT_MESH_API_ENABLED
+
 network.id=$RADIXDLT_NETWORK_ID
 network.genesis_data=$RADIXDLT_GENESIS_DATA
 network.genesis_data_file=$RADIXDLT_GENESIS_DATA_FILE

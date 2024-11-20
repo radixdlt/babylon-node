@@ -23,7 +23,7 @@ pub(crate) async fn handle_construction_metadata(
         metadata: serde_json::to_value(&ConstructionMetadata {
             start_epoch_inclusive: current_epoch.number(),
             end_epoch_exclusive: current_epoch.number() + 100,
-            nonce,
+            intent_discriminator: nonce,
             tip_percentage: 0,
         })
         .unwrap(),
@@ -35,6 +35,6 @@ pub(crate) async fn handle_construction_metadata(
 pub struct ConstructionMetadata {
     pub start_epoch_inclusive: u64,
     pub end_epoch_exclusive: u64,
-    pub nonce: u32,
+    pub intent_discriminator: u32,
     pub tip_percentage: u16,
 }

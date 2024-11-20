@@ -1,52 +1,71 @@
+use crate::engine_prelude::*;
 use crate::prelude::*;
+
+#[derive(Debug, Clone, Copy, EnumIter, Display, EnumString)]
+pub(crate) enum MeshApiOperationType {
+    Withdraw,
+    Deposit,
+}
+
+#[derive(Debug, Clone, Copy, EnumIter, Display)]
+pub(crate) enum MeshApiOperationStatus {
+    #[strum(serialize = "Success")]
+    Success,
+    #[strum(serialize = "Failure")]
+    Failure,
+}
+
+// TODO:MESH This one might be confusing. Failed transaction will still have successful FeePayment
+// operation
+impl From<DetailedTransactionOutcome> for MeshApiOperationStatus {
+    fn from(value: DetailedTransactionOutcome) -> Self {
+        match value {
+            DetailedTransactionOutcome::Success(..) => Self::Success,
+            DetailedTransactionOutcome::Failure(..) => Self::Failure,
+        }
+    }
+}
+
+impl From<MeshApiOperationStatus> for models::OperationStatus {
+    fn from(value: MeshApiOperationStatus) -> Self {
+        let successful = match value {
+            MeshApiOperationStatus::Failure => false,
+            MeshApiOperationStatus::Success => true,
+        };
+        Self::new(value.to_string(), successful)
+    }
+}
 
 pub fn to_mesh_api_operation_no_fee(
     mapping_context: &MappingContext,
     database: &StateManagerDatabase<impl ReadableRocks>,
     index: i64,
-    status: &MeshApiOperationStatus,
+    status: Option<MeshApiOperationStatus>,
     account_address: &GlobalAddress,
     resource_address: &ResourceAddress,
     amount: Decimal,
 ) -> Result<models::Operation, MappingError> {
     // TODO:MESH what about fee locking, burning, minting?
     let op_type = if amount.is_positive() {
-        MeshApiOperationTypes::Deposit
+        MeshApiOperationType::Deposit
     } else {
-        MeshApiOperationTypes::Withdraw
+        MeshApiOperationType::Withdraw
     };
     let currency =
         to_mesh_api_currency_from_resource_address(mapping_context, database, resource_address)?;
-    let account = to_mesh_api_account_from_address(mapping_context, account_address)?;
+    let account = to_api_account_identifier_from_global_address(mapping_context, account_address)?;
 
     // see https://docs.cdp.coinbase.com/mesh/docs/models#operation
     Ok(models::Operation {
         operation_identifier: Box::new(models::OperationIdentifier::new(index)),
         related_operations: None,
         _type: op_type.to_string(),
-        status: Some(status.to_string()),
+        status: status.map(|s| s.to_string()),
         account: Some(Box::new(account)),
         amount: Some(Box::new(to_mesh_api_amount(amount, currency)?)),
         coin_change: None,
         metadata: None,
     })
-}
-
-pub fn to_mesh_api_transaction_identifier(
-    mapping_context: &MappingContext,
-    transaction_identifiers: &CommittedTransactionIdentifiers,
-    state_version: StateVersion,
-) -> Result<models::TransactionIdentifier, MappingError> {
-    let transaction_identifier = match transaction_identifiers.transaction_hashes.as_user() {
-        // Unfortunately non-user transactions don't have txid, let's use state_version as
-        // transaction_identifier.
-        None => format!("state_version_{}", state_version),
-        Some(user_hashes) => {
-            to_api_transaction_hash_bech32m(mapping_context, &user_hashes.transaction_intent_hash)?
-        }
-    };
-
-    Ok(models::TransactionIdentifier::new(transaction_identifier))
 }
 
 pub fn to_mesh_api_operations(
@@ -86,7 +105,7 @@ pub fn to_mesh_api_operations(
                         mapping_context,
                         database,
                         output.len() as i64,
-                        &status,
+                        Some(status),
                         entity,
                         resource_address,
                         *amount,

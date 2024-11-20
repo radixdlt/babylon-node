@@ -16,18 +16,6 @@ pub fn extract_component_address(
         .ok_or(ExtractionError::InvalidAddress)
 }
 
-pub fn extract_account_address_from_option(
-    extraction_context: &ExtractionContext,
-    account_identifier: Option<Box<crate::mesh_api::generated::models::AccountIdentifier>>,
-) -> Result<ComponentAddress, ExtractionError> {
-    extract_account(
-        extraction_context,
-        account_identifier
-            .ok_or(ExtractionError::NotFound)?
-            .borrow(),
-    )
-}
-
 pub(crate) fn extract_resource_address_from_currency(
     extraction_context: &ExtractionContext,
     database: &StateManagerDatabase<impl ReadableRocks>,
@@ -82,13 +70,14 @@ pub fn to_api_entity_address(
         .map_err(|err| MappingError::InvalidEntityAddress { encode_error: err })
 }
 
-pub fn to_mesh_api_account_from_address(
+pub fn to_api_account_identifier_from_global_address(
     mapping_context: &MappingContext,
     address: impl AsRef<NodeId>,
 ) -> Result<models::AccountIdentifier, MappingError> {
     let node_id: &NodeId = address.as_ref();
     let address = to_api_entity_address(mapping_context, node_id)?;
 
+    // TODO:MESH remove account filtering
     if !node_id.is_global_account() {
         return Err(MappingError::InvalidAccount {
             message: format!("address {} is not an account", address),
@@ -104,7 +93,24 @@ pub fn to_mesh_api_account_from_address(
     })
 }
 
-pub fn extract_account(
+pub fn to_api_account_identifier_from_public_key(
+    mapping_context: &MappingContext,
+    public_key: PublicKey,
+) -> Result<models::AccountIdentifier, MappingError> {
+    let address = mapping_context
+        .address_encoder
+        .encode(ComponentAddress::preallocated_account_from_public_key(&public_key).as_bytes())
+        .map_err(|err| MappingError::InvalidEntityAddress { encode_error: err })?;
+
+    // See https://docs.cdp.coinbase.com/mesh/docs/models#accountidentifier for field
+    // definitions
+    Ok(models::AccountIdentifier {
+        address,
+        sub_account: None,
+        metadata: None,
+    })
+}
+pub fn extract_radix_account_address_from_account_identifier(
     extraction_context: &ExtractionContext,
     account_identifier: &models::AccountIdentifier,
 ) -> Result<ComponentAddress, ExtractionError> {
@@ -123,39 +129,4 @@ pub fn extract_account(
             message: format!("address {} is not an account", account_identifier.address),
         })
     }
-}
-
-pub fn to_mesh_api_currency_from_resource_address(
-    mapping_context: &MappingContext,
-    database: &StateManagerDatabase<impl ReadableRocks>,
-    resource_address: &ResourceAddress,
-) -> Result<models::Currency, MappingError> {
-    let resource_node_id = resource_address.as_node_id();
-    // currency.symbol field keeps bech32-encoded resource address
-    let symbol = to_api_resource_address(mapping_context, resource_address)?;
-
-    if resource_node_id.entity_type() != Some(EntityType::GlobalFungibleResourceManager) {
-        return Err(MappingError::InvalidResource {
-            message: format!("resource {} is not fungible type", symbol),
-        });
-    }
-
-    let divisibility: FungibleResourceManagerDivisibilityFieldSubstate =
-        read_optional_main_field_substate(
-            database,
-            resource_node_id,
-            &FungibleResourceManagerField::Divisibility.into(),
-        )
-        .ok_or_else(|| MappingError::InvalidResource {
-            message: format!("currency {} not found", symbol),
-        })?;
-    let decimals = *divisibility.payload().as_unique_version() as i32;
-
-    // See https://docs.cdp.coinbase.com/mesh/docs/models#currency for field
-    // definitions
-    Ok(models::Currency {
-        symbol,
-        decimals,
-        metadata: None,
-    })
 }

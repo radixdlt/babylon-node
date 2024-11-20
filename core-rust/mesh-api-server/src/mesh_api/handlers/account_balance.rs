@@ -1,5 +1,80 @@
 use crate::prelude::*;
 
+pub(crate) async fn handle_account_balance(
+    state: State<MeshApiState>,
+    Json(request): Json<models::AccountBalanceRequest>,
+) -> Result<Json<models::AccountBalanceResponse>, ResponseError> {
+    assert_matching_network(&request.network_identifier, &state.network)?;
+
+    let mapping_context = MappingContext::new(&state.network);
+    let extraction_context = ExtractionContext::new(&state.network);
+
+    let component_address = extract_radix_account_address_from_account_identifier(
+        &extraction_context,
+        &request.account_identifier,
+    )
+    .map_err(|err| err.into_response_error("account_identifier"))?;
+
+    let database = state.state_manager.database.snapshot();
+
+    let header = if request.block_identifier.is_some() {
+        return Err(ResponseError::from(ApiError::InvalidRequest)
+            .with_details("Historical balance not supported"));
+    } else {
+        read_current_ledger_header(database.deref())
+    };
+
+    let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
+        database.deref(),
+        component_address.as_node_id(),
+        TYPE_INFO_FIELD_PARTITION,
+        &TypeInfoField::TypeInfo.into(),
+    );
+
+    if type_info.is_none() {
+        return Ok(Json(models::AccountBalanceResponse {
+            block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
+                &header.into(),
+            )?),
+            balances: vec![],
+            metadata: None,
+        }));
+    }
+
+    let balances = match request.currencies {
+        Some(currencies) => {
+            let resources = currencies
+                .into_iter()
+                .map(|c| {
+                    extract_resource_address_from_currency(
+                        &extraction_context,
+                        database.deref(),
+                        &c,
+                    )
+                })
+                .collect::<Result<Vec<_>, ExtractionError>>()
+                .map_err(|err| err.into_response_error("currency"))?;
+
+            get_requested_balances(
+                &mapping_context,
+                database.deref(),
+                &component_address,
+                &resources,
+            )?
+        }
+        None => get_all_balances(&mapping_context, database.deref(), &component_address)?,
+    };
+
+    // see https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field
+    // definitions
+    Ok(Json(models::AccountBalanceResponse {
+        block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
+            &header.into(),
+        )?),
+        balances,
+        metadata: None,
+    }))
+}
 // Method `dump_component_state()` might be slow on large accounts,
 // therefore we use it only when user didn't specify which balances
 // to get.
@@ -79,77 +154,4 @@ fn get_requested_balances(
         Ok(to_mesh_api_amount(balance, currency)?)
     })
     .collect::<Result<Vec<_>, ResponseError>>()
-}
-
-pub(crate) async fn handle_account_balance(
-    state: State<MeshApiState>,
-    Json(request): Json<models::AccountBalanceRequest>,
-) -> Result<Json<models::AccountBalanceResponse>, ResponseError> {
-    assert_matching_network(&request.network_identifier, &state.network)?;
-
-    let mapping_context = MappingContext::new(&state.network);
-    let extraction_context = ExtractionContext::new(&state.network);
-
-    let component_address = extract_account(&extraction_context, &request.account_identifier)
-        .map_err(|err| err.into_response_error("account_identifier"))?;
-
-    let database = state.state_manager.database.snapshot();
-
-    let header = if request.block_identifier.is_some() {
-        return Err(ResponseError::from(ApiError::InvalidRequest)
-            .with_details("Historical balance not supported"));
-    } else {
-        read_current_ledger_header(database.deref())
-    };
-
-    let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
-        database.deref(),
-        component_address.as_node_id(),
-        TYPE_INFO_FIELD_PARTITION,
-        &TypeInfoField::TypeInfo.into(),
-    );
-
-    if type_info.is_none() {
-        return Ok(Json(models::AccountBalanceResponse {
-            block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
-                &header.into(),
-            )?),
-            balances: vec![],
-            metadata: None,
-        }));
-    }
-
-    let balances = match request.currencies {
-        Some(currencies) => {
-            let resources = currencies
-                .into_iter()
-                .map(|c| {
-                    extract_resource_address_from_currency(
-                        &extraction_context,
-                        database.deref(),
-                        &c,
-                    )
-                })
-                .collect::<Result<Vec<_>, ExtractionError>>()
-                .map_err(|err| err.into_response_error("currency"))?;
-
-            get_requested_balances(
-                &mapping_context,
-                database.deref(),
-                &component_address,
-                &resources,
-            )?
-        }
-        None => get_all_balances(&mapping_context, database.deref(), &component_address)?,
-    };
-
-    // see https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field
-    // definitions
-    Ok(Json(models::AccountBalanceResponse {
-        block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
-            &header.into(),
-        )?),
-        balances,
-        metadata: None,
-    }))
 }

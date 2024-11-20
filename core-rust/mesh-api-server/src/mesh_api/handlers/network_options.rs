@@ -21,7 +21,7 @@ pub(crate) async fn handle_network_options(
         }),
         allow: Box::new(models::Allow {
             operation_statuses: MeshApiOperationStatus::iter().map(|s| s.into()).collect(),
-            operation_types: MeshApiOperationTypes::iter()
+            operation_types: MeshApiOperationType::iter()
                 .map(|o| o.to_string())
                 .collect(),
             errors: list_available_api_errors(),
@@ -41,7 +41,7 @@ pub(crate) async fn handle_network_options(
             call_methods: vec![],
             balance_exemptions: vec![],
             mempool_coins: false,
-            block_hash_case: None,
+            block_hash_case: Some(models::Case::LowerCase),
             transaction_hash_case: Some(models::Case::LowerCase),
         }),
     }))

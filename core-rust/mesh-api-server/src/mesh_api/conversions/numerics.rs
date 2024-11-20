@@ -1,7 +1,5 @@
 use crate::prelude::*;
 
-const MAX_API_STATE_VERSION: u64 = 100000000000000;
-
 pub(crate) fn extract_amount(
     extraction_context: &ExtractionContext,
     amount: &models::Amount,
@@ -36,20 +34,6 @@ pub(crate) fn extract_amount_from_option(
         extraction_context,
         amount.ok_or(ExtractionError::NotFound)?.borrow(),
     )
-}
-
-pub fn to_mesh_api_block_index_from_state_version(
-    state_version: StateVersion,
-) -> Result<i64, MappingError> {
-    let state_version_number = state_version.number();
-    if state_version_number > MAX_API_STATE_VERSION {
-        return Err(MappingError::IntegerError {
-            message: "State version larger than max api state version".to_owned(),
-        });
-    }
-    Ok(state_version_number
-        .try_into()
-        .expect("State version too large somehow"))
 }
 
 pub fn to_mesh_api_amount(

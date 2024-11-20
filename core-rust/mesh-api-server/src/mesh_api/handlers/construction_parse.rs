@@ -1,12 +1,14 @@
 use crate::prelude::*;
-use models::AccountIdentifier;
-use models::{Operation, OperationIdentifier};
 use radix_engine_interface::blueprints::account::{
     AccountTryDepositOrAbortManifestInput, AccountWithdrawManifestInput,
 };
 use radix_transactions::manifest::{CallMethod, TakeFromWorktop};
 use radix_transactions::validation::TransactionValidator;
 
+// This method only accepts transactions constructed with the Mesh API,
+// which are V1 at the moment.
+// Also the number of supported V1 instructions is limited to some basic ones.
+// (see `construction_payloads.rs` and parse_instructions() below for more details).
 pub(crate) async fn handle_construction_parse(
     state: State<MeshApiState>,
     Json(request): Json<models::ConstructionParseRequest>,
@@ -17,6 +19,7 @@ pub(crate) async fn handle_construction_parse(
         ResponseError::from(ApiError::InvalidTransaction)
             .with_details(format!("Invalid transaction hex: {}", &request.transaction))
     })?;
+
     let (instructions, signers) = if request.signed {
         let transaction =
             NotarizedTransactionV1::from_raw(&RawNotarizedTransaction::from_vec(transaction_bytes))
@@ -48,12 +51,9 @@ pub(crate) async fn handle_construction_parse(
         (instructions, signers)
     };
 
+    let mapping_context = MappingContext::new(&state.network);
     let database = state.state_manager.database.snapshot();
-    let operations = parse_instructions(
-        &instructions,
-        &MappingContext::new(&state.network),
-        database.deref(),
-    )?;
+    let operations = parse_instructions(&instructions, &mapping_context, database.deref())?;
 
     // See https://docs.cdp.coinbase.com/mesh/docs/models#constructionparseresponse for field
     // definitions
@@ -63,12 +63,10 @@ pub(crate) async fn handle_construction_parse(
         account_identifier_signers: Some(
             signers
                 .into_iter()
-                .map(|x| AccountIdentifier {
-                    address: state.public_key_to_address_string(x),
-                    sub_account: None,
-                    metadata: None,
+                .map(|x| -> Result<models::AccountIdentifier, MappingError> {
+                    to_api_account_identifier_from_public_key(&mapping_context, x)
                 })
-                .collect(),
+                .collect::<Result<Vec<_>, MappingError>>()?,
         ),
         metadata: None,
     }))
@@ -78,7 +76,7 @@ pub fn parse_instructions(
     instructions: &[InstructionV1],
     mapping_context: &MappingContext,
     database: &StateManagerDatabase<impl ReadableRocks>,
-) -> Result<Vec<Operation>, ResponseError> {
+) -> Result<Vec<models::Operation>, ResponseError> {
     let mut operations = Vec::new();
     let mut next_index = 0;
     while next_index < instructions.len() {
@@ -89,7 +87,7 @@ pub fn parse_instructions(
                 address: DynamicGlobalAddress::Static(global_address),
                 method_name,
                 args,
-            }) => {
+            }) if global_address.is_account() => {
                 let args_bytes = manifest_encode(&args).unwrap();
                 match method_name.as_str() {
                     "lock_fee" => (),
@@ -99,39 +97,25 @@ pub fn parse_instructions(
                                 ResponseError::from(ApiError::InvalidWithdrawInstruction)
                                     .with_details("Invalid withdraw instruction")
                             })?;
-                        operations.push(Operation {
-                            operation_identifier: Box::new(OperationIdentifier {
-                                index: operations.len() as i64,
-                                network_index: None,
-                            }),
-                            related_operations: None,
-                            _type: "Withdraw".to_owned(),
-                            status: None,
-                            account: Some(Box::new(to_mesh_api_account_from_address(
-                                mapping_context,
-                                global_address,
-                            )?)),
-                            amount: Some(Box::new(to_mesh_api_amount(
-                                -input.amount.clone(),
-                                to_mesh_api_currency_from_resource_address(
-                                    mapping_context,
-                                    database,
-                                    &match input.resource_address {
-                                        ManifestResourceAddress::Static(resource_address) => {
-                                            resource_address
-                                        }
-                                        ManifestResourceAddress::Named(_) => {
-                                            return Err(ResponseError::from(
-                                                ApiError::NamedAddressNotSupported,
-                                            )
-                                            .with_details("Named address is not supported"))
-                                        }
-                                    },
-                                )?,
-                            )?)),
-                            coin_change: None,
-                            metadata: None,
-                        });
+                        operations.push(to_mesh_api_operation_no_fee(
+                            mapping_context,
+                            database,
+                            operations.len() as i64,
+                            None,
+                            global_address,
+                            &match input.resource_address {
+                                ManifestResourceAddress::Static(resource_address) => {
+                                    resource_address
+                                }
+                                ManifestResourceAddress::Named(_) => {
+                                    return Err(ResponseError::from(
+                                        ApiError::NamedAddressNotSupported,
+                                    )
+                                    .with_details("Named address is not supported"))
+                                }
+                            },
+                            -input.amount.clone(),
+                        )?);
                     }
                     _ => {
                         return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
@@ -145,46 +129,32 @@ pub fn parse_instructions(
             }) if next_index < instructions.len() => {
                 instruction = &instructions[next_index];
                 next_index = next_index + 1;
-                if let InstructionV1::CallMethod(CallMethod {
-                    address: DynamicGlobalAddress::Static(global_address),
-                    method_name,
-                    args,
-                }) = instruction
-                {
-                    if method_name.eq("try_deposit_or_abort") {
+
+                match instruction {
+                    InstructionV1::CallMethod(CallMethod {
+                        address: DynamicGlobalAddress::Static(global_address),
+                        method_name,
+                        args,
+                    }) if method_name.eq("try_deposit_or_abort") && global_address.is_account() => {
                         if let Ok(_input) = manifest_decode::<AccountTryDepositOrAbortManifestInput>(
                             &manifest_encode(&args).unwrap(),
                         ) {
-                            operations.push(Operation {
-                                operation_identifier: Box::new(OperationIdentifier {
-                                    index: operations.len() as i64,
-                                    network_index: None,
-                                }),
-                                related_operations: None,
-                                _type: "Deposit".to_owned(),
-                                status: None,
-                                account: Some(Box::new(to_mesh_api_account_from_address(
-                                    mapping_context,
-                                    global_address,
-                                )?)),
-                                amount: Some(Box::new(to_mesh_api_amount(
-                                    *amount,
-                                    to_mesh_api_currency_from_resource_address(
-                                        mapping_context,
-                                        database,
-                                        resource_address,
-                                    )?,
-                                )?)),
-                                coin_change: None,
-                                metadata: None,
-                            });
-                            continue;
+                            operations.push(to_mesh_api_operation_no_fee(
+                                mapping_context,
+                                database,
+                                operations.len() as i64,
+                                None,
+                                global_address,
+                                resource_address,
+                                *amount,
+                            )?);
                         }
                     }
+                    _ => {
+                        return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                            .with_details(format!("Unrecognized instruction: {:?}", instruction)));
+                    }
                 }
-
-                return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
-                    .with_details(format!("Unrecognized instruction: {:?}", instruction)));
             }
             _ => {
                 return Err(ResponseError::from(ApiError::UnrecognizedInstruction)

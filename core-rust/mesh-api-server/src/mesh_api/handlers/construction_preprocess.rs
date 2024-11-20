@@ -9,20 +9,23 @@ pub(crate) async fn handle_construction_preprocess(
     let mut senders = Vec::new();
     for operation in request.operations {
         let operation_type =
-            MeshApiOperationTypes::from_str(operation._type.as_str()).map_err(|_| {
+            MeshApiOperationType::from_str(operation._type.as_str()).map_err(|_| {
                 ResponseError::from(ApiError::InvalidOperation)
                     .with_details(format!("Invalid operation: {}", operation._type))
             })?;
         match operation_type {
-            MeshApiOperationTypes::Withdraw => {
-                let account = extract_account_address_from_option(
-                    &ExtractionContext::new(&state.network),
-                    operation.account,
-                )
+            MeshApiOperationType::Withdraw => {
+                let account = match operation.account {
+                    None => Err(ExtractionError::NotFound),
+                    Some(account) => extract_radix_account_address_from_account_identifier(
+                        &ExtractionContext::new(&state.network),
+                        &account,
+                    ),
+                }
                 .map_err(|e| e.into_response_error("account"))?;
                 senders.push(account);
             }
-            _ => {}
+            MeshApiOperationType::Deposit => {}
         }
     }
 
@@ -39,7 +42,7 @@ pub(crate) async fn handle_construction_preprocess(
     // definitions
     Ok(Json(models::ConstructionPreprocessResponse {
         options: None,
-        required_public_keys: Some(vec![to_mesh_api_account_from_address(
+        required_public_keys: Some(vec![to_api_account_identifier_from_global_address(
             &MappingContext::new(&state.network),
             senders[0],
         )?]),
