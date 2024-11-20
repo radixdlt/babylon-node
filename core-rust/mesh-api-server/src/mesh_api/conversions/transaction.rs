@@ -39,6 +39,10 @@ pub fn to_mesh_api_transaction_identifier(
     let transaction_identifier = match transaction_identifiers.transaction_hashes.as_user() {
         // Unfortunately non-user transactions don't have txid, let's use state_version as
         // transaction_identifier.
+        // TODO:MESH Perhaps we should use ledger_transaction_hash in this case?
+        // I believe it can also be bech32 encoded; and we have an index for
+        // ledger hash => state version which can be used to resolve the
+        // state version if we need to do an arbitrary transaction read in any endpoint.
         None => format!("state_version_{}", state_version),
         Some(user_hashes) => {
             to_api_transaction_hash_bech32m(mapping_context, &user_hashes.transaction_intent_hash)?

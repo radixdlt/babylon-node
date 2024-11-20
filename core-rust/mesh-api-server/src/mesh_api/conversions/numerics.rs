@@ -1,5 +1,8 @@
 use crate::prelude::*;
 
+// TODO:MESH Might be nice to have a few mini unit tests here to verify
+// that extract_amount and to_mesh_api_amount are opposites and can work
+// with e.g. a currency at different number of decimals.
 pub(crate) fn extract_amount(
     extraction_context: &ExtractionContext,
     amount: &models::Amount,
