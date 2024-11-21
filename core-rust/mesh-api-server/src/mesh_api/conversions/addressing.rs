@@ -126,7 +126,7 @@ pub fn extract_radix_account_address_from_account_identifier(
         Ok(component_address)
     } else {
         Err(ExtractionError::InvalidAccount {
-            message: format!("address {} is not an account", account_identifier.address),
+            message: format!("Whilst this API returns balance changes with an `AccountIdentifier` representing any global entity to allow full reconciliation, only Radix account addresses starting `account_` are accepted for the construction and account balance endpoints. {} is not a Radix account.", account_identifier.address),
         })
     }
 }

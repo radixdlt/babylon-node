@@ -17,6 +17,7 @@ radix_workflow(1){
     currency = {"symbol":"resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv", "decimals":18};
     min_balance = "1111000000000000000000";
 
+    // sender account is the one of the prefunded_accounts
     sender = find_balance({
       "minimum_balance":{
         "value": {{min_balance}},

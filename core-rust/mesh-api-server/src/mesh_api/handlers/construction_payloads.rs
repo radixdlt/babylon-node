@@ -10,7 +10,7 @@ pub(crate) async fn handle_construction_payloads(
     assert_matching_network(&request.network_identifier, &state.network)?;
 
     let public_keys = request.public_keys.unwrap_or_default();
-    let public_key = if public_keys.len() == 1 {
+    let signer_public_key = if public_keys.len() == 1 {
         extract_public_key(&public_keys[0]).map_err(|e| e.into_response_error("public_key"))?
     } else {
         return Err(
@@ -20,14 +20,15 @@ pub(crate) async fn handle_construction_payloads(
             )),
         );
     };
-    let signature_type = match &public_key {
+    let signature_type = match &signer_public_key {
         PublicKey::Secp256k1(_) => SignatureType::EcdsaRecovery,
         PublicKey::Ed25519(_) => SignatureType::Ed25519,
     };
-    let account_address = ComponentAddress::preallocated_account_from_public_key(&public_key);
-    let account_identifier = to_api_account_identifier_from_public_key(
+    let signer_account_address =
+        ComponentAddress::preallocated_account_from_public_key(&signer_public_key);
+    let signer_account_identifier = to_api_account_identifier_from_public_key(
         &MappingContext::new(&state.network),
-        public_key,
+        signer_public_key,
     )?;
 
     let metadata: ConstructionMetadata = request
@@ -40,7 +41,7 @@ pub(crate) async fn handle_construction_payloads(
         )?;
 
     let extraction_context = ExtractionContext::new(&state.network);
-    let mut builder = ManifestBuilder::new().lock_fee(account_address, dec!(10));
+    let mut builder = ManifestBuilder::new().lock_fee(signer_account_address, dec!(10));
     for operation in request.operations {
         let operation_type =
             MeshApiOperationType::from_str(operation._type.as_str()).map_err(|_| {
@@ -82,43 +83,34 @@ pub(crate) async fn handle_construction_payloads(
         }
     }
     let manifest = builder.build();
-
-    let intent = IntentV1 {
-        header: TransactionHeaderV1 {
-            network_id: state.network.id,
-            start_epoch_inclusive: Epoch::of(metadata.start_epoch_inclusive),
-            end_epoch_exclusive: Epoch::of(metadata.end_epoch_exclusive),
-            nonce: metadata.intent_discriminator,
-            notary_public_key: public_key,
-            notary_is_signatory: true,
-            tip_percentage: metadata.tip_percentage,
+    let signed_intent = SignedIntentV1 {
+        intent: IntentV1 {
+            header: TransactionHeaderV1 {
+                network_id: state.network.id,
+                start_epoch_inclusive: Epoch::of(metadata.start_epoch_inclusive),
+                end_epoch_exclusive: Epoch::of(metadata.end_epoch_exclusive),
+                nonce: metadata.intent_discriminator,
+                notary_public_key: signer_public_key,
+                notary_is_signatory: true,
+                tip_percentage: metadata.tip_percentage,
+            },
+            instructions: InstructionsV1(manifest.instructions),
+            blobs: BlobsV1 {
+                blobs: Default::default(),
+            },
+            message: MessageV1::None,
         },
-        instructions: InstructionsV1(manifest.instructions),
-        blobs: BlobsV1 {
-            blobs: Default::default(),
+        intent_signatures: IntentSignaturesV1 {
+            signatures: Default::default(),
         },
-        message: MessageV1::None,
     };
+    let signed_intent_bytes = signed_intent.to_raw().unwrap();
 
-    let intent_bytes = intent.to_raw().unwrap();
-    let intent_hash = PreparedIntentV1::prepare(&intent_bytes, &PreparationSettings::latest())
-        .unwrap()
-        .transaction_intent_hash();
-    let intent_signatures_hash = hash_encoded_sbor_value(&IntentSignaturesV1 {
-        signatures: Default::default(),
-    });
-    let signed_intent_hash = SignedTransactionIntentHash::from_hash(hash(
-        [
-            [
-                TRANSACTION_HASHABLE_PAYLOAD_PREFIX,
-                TransactionDiscriminator::V1SignedIntent as u8,
-            ]
-            .as_slice(),
-            intent_hash.0.as_slice(),
-            intent_signatures_hash.0.as_slice(),
-        ]
-        .concat(),
-    ));
+    let signed_transaction_intent_hash =
+        PreparedSignedIntentV1::prepare(&signed_intent_bytes, &PreparationSettings::latest())
+            .expect("Signed intent could be prepared")
+            .signed_transaction_intent_hash();
+    let intent_bytes = signed_intent.intent.to_raw().unwrap();
 
     // See https://docs.cdp.coinbase.com/mesh/docs/models#constructionpayloadsresponse for field
     // definitions
@@ -126,14 +118,9 @@ pub(crate) async fn handle_construction_payloads(
         unsigned_transaction: intent_bytes.to_hex(),
         payloads: vec![SigningPayload {
             address: None, // deprecated
-            account_identifier: Some(Box::new(account_identifier)),
-            hex_bytes: hex::encode(signed_intent_hash.as_bytes()),
+            account_identifier: Some(Box::new(signer_account_identifier)),
+            hex_bytes: hex::encode(signed_transaction_intent_hash.as_bytes()),
             signature_type: Some(signature_type),
         }],
     }))
-}
-
-fn hash_encoded_sbor_value<T: ManifestEncode>(value: T) -> Hash {
-    // Ignore the version byte
-    hash(&manifest_encode(&value).unwrap()[1..])
 }

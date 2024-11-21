@@ -24,23 +24,6 @@ pub(crate) async fn handle_account_balance(
         read_current_ledger_header(database.deref())
     };
 
-    let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
-        database.deref(),
-        component_address.as_node_id(),
-        TYPE_INFO_FIELD_PARTITION,
-        &TypeInfoField::TypeInfo.into(),
-    );
-
-    if type_info.is_none() {
-        return Ok(Json(models::AccountBalanceResponse {
-            block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
-                &header.into(),
-            )?),
-            balances: vec![],
-            metadata: None,
-        }));
-    }
-
     let balances = match request.currencies {
         Some(currencies) => {
             let resources = currencies
@@ -62,7 +45,23 @@ pub(crate) async fn handle_account_balance(
                 &resources,
             )?
         }
-        None => get_all_balances(&mapping_context, database.deref(), &component_address)?,
+        None => {
+            // Check if account is instantiated
+            let type_info: Option<TypeInfoSubstate> = read_optional_substate::<TypeInfoSubstate>(
+                database.deref(),
+                component_address.as_node_id(),
+                TYPE_INFO_FIELD_PARTITION,
+                &TypeInfoField::TypeInfo.into(),
+            );
+
+            if type_info.is_some() {
+                get_all_balances(&mapping_context, database.deref(), &component_address)?
+            } else {
+                // We expect empty balances vector here, but let the `get_requested_balances()`
+                // deal with this.
+                get_requested_balances(&mapping_context, database.deref(), &component_address, &[])?
+            }
+        }
     };
 
     // see https://docs.cdp.coinbase.com/mesh/docs/models#accountbalanceresponse for field

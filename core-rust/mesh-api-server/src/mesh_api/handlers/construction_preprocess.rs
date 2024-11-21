@@ -6,6 +6,10 @@ pub(crate) async fn handle_construction_preprocess(
 ) -> Result<Json<models::ConstructionPreprocessResponse>, ResponseError> {
     assert_matching_network(&request.network_identifier, &state.network)?;
 
+    // We assume that the withdrawing account (sender) will
+    // - cover the transaction fee
+    // - sign the transaction
+    // Add it to the required_public_keys vector.
     let mut senders = Vec::new();
     for operation in request.operations {
         let operation_type =
