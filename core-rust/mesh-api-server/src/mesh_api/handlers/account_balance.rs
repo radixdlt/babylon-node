@@ -68,6 +68,7 @@ pub(crate) async fn handle_account_balance(
     // definitions
     Ok(Json(models::AccountBalanceResponse {
         block_identifier: Box::new(to_mesh_api_block_identifier_from_ledger_header(
+            database.deref(),
             &header.into(),
         )?),
         balances,

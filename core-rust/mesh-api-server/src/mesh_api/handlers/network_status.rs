@@ -21,6 +21,7 @@ pub(crate) async fn handle_network_status(
         .get_post_genesis_epoch_proof()
         .map(|proof| -> Result<_, MappingError> {
             Ok(Box::new(to_mesh_api_block_identifier_from_ledger_header(
+                database.deref(),
                 &proof.ledger_header.into(),
             )?))
         })
@@ -30,6 +31,7 @@ pub(crate) async fn handle_network_status(
         .get_first_proof()
         .map(|proof| -> Result<_, MappingError> {
             Ok(Box::new(to_mesh_api_block_identifier_from_ledger_header(
+                database.deref(),
                 &proof.ledger_header.into(),
             )?))
         })
@@ -42,6 +44,7 @@ pub(crate) async fn handle_network_status(
             .get_latest_proof()
             .map(|proof| -> Result<_, MappingError> {
                 Ok(Box::new(to_mesh_api_block_identifier_from_ledger_header(
+                    database.deref(),
                     &proof.ledger_header.into(),
                 )?))
             })

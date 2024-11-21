@@ -9,9 +9,11 @@ pub(crate) async fn handle_block_transaction(
     let database = state.state_manager.database.snapshot();
     let mapping_context = MappingContext::new(&state.network);
 
-    let state_version =
-        extract_state_version_from_mesh_api_block_identifier(&request.block_identifier)
-            .map_err(|err| err.into_response_error("block_identifier"))?;
+    let state_version = extract_state_version_from_mesh_api_block_identifier(
+        database.deref(),
+        &request.block_identifier,
+    )
+    .map_err(|err| err.into_response_error("block_identifier"))?;
 
     let transaction_identifiers = database
         .get_committed_transaction_identifiers(state_version)

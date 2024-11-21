@@ -32,6 +32,7 @@ pub enum MappingError {
     InternalIndexDataMismatch {
         message: String,
     },
+    TransactionNotFound,
 }
 
 impl From<MappingError> for ResponseError {
