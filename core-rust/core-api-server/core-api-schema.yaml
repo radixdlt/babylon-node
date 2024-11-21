@@ -4384,6 +4384,7 @@ components:
       enum:
         - V1
         - V2
+        - V3
     SystemParameters:
       type: object
       required:

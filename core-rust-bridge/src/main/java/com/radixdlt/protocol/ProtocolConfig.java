@@ -85,14 +85,16 @@ public record ProtocolConfig(
   public static final String GENESIS_PROTOCOL_VERSION_NAME = "babylon-genesis";
   public static final String ANEMONE_PROTOCOL_VERSION_NAME = "anemone";
   public static final String BOTTLENOSE_PROTOCOL_VERSION_NAME = "bottlenose";
-  public static final String CUTTLEFISH_PROTOCOL_VERSION_NAME = "cuttlefish";
+  public static final String CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME = "cuttlefish";
+  public static final String CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME = "cuttlefish-part2";
 
   public static ImmutableList<String> VERSION_NAMES =
       ImmutableList.of(
           GENESIS_PROTOCOL_VERSION_NAME,
           ANEMONE_PROTOCOL_VERSION_NAME,
           BOTTLENOSE_PROTOCOL_VERSION_NAME,
-          CUTTLEFISH_PROTOCOL_VERSION_NAME);
+          CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME,
+          CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME);
 
   public static final String LATEST_PROTOCOL_VERSION_NAME =
       VERSION_NAMES.get(VERSION_NAMES.size() - 1);

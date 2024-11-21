@@ -17,6 +17,8 @@ pub enum SystemVersion {
     V1,
     #[serde(rename = "V2")]
     V2,
+    #[serde(rename = "V3")]
+    V3,
 
 }
 
@@ -25,6 +27,7 @@ impl ToString for SystemVersion {
         match self {
             Self::V1 => String::from("V1"),
             Self::V2 => String::from("V2"),
+            Self::V3 => String::from("V3"),
         }
     }
 }

@@ -19,7 +19,8 @@
  */
 export const SystemVersion = {
     V1: 'V1',
-    V2: 'V2'
+    V2: 'V2',
+    V3: 'V3'
 } as const;
 export type SystemVersion = typeof SystemVersion[keyof typeof SystemVersion];
 
