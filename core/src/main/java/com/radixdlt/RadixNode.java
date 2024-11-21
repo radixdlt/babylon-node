@@ -69,6 +69,7 @@ import com.google.inject.util.Modules;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServer;
 import com.radixdlt.api.EngineStateApiServer;
+import com.radixdlt.api.MeshApiServer;
 import com.radixdlt.api.prometheus.PrometheusApi;
 import com.radixdlt.api.system.SystemApi;
 import com.radixdlt.consensus.bft.SelfValidatorInfo;
@@ -153,6 +154,12 @@ public final class RadixNode {
     // Start the Engine State API server
     final var engineStateApiServer = injector.getInstance(EngineStateApiServer.class);
     engineStateApiServer.start();
+
+    // Start the Mesh API server if it's module has been installed
+    if (injector.getExistingBinding(Key.get(MeshApiServer.class)) != null) {
+      final var meshApiServer = injector.getInstance(MeshApiServer.class);
+      meshApiServer.start();
+    }
 
     return radixNode;
   }

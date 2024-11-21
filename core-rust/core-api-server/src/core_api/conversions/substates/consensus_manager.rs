@@ -2,6 +2,7 @@ use super::super::*;
 use super::*;
 use crate::core_api::models;
 use crate::engine_prelude::*;
+use crate::prelude::*;
 
 pub fn to_api_registered_validators_by_stake_index_entry_substate(
     context: &MappingContext,

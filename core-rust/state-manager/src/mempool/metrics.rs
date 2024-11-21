@@ -132,6 +132,7 @@ impl MetricLabel for MempoolAddSource {
         match *self {
             MempoolAddSource::CoreApi => "CoreApi",
             MempoolAddSource::MempoolSync => "MempoolSync",
+            MempoolAddSource::MeshApi => "MeshApi",
         }
     }
 }
