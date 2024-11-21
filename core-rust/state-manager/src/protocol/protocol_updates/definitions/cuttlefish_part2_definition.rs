@@ -1,9 +1,9 @@
 use crate::prelude::*;
 
-pub struct CuttlefishProtocolUpdateDefinition;
+pub struct CuttlefishPart2ProtocolUpdateDefinition;
 
-impl ProtocolUpdateDefinition for CuttlefishProtocolUpdateDefinition {
-    type Overrides = CuttlefishSettings;
+impl ProtocolUpdateDefinition for CuttlefishPart2ProtocolUpdateDefinition {
+    type Overrides = CuttlefishPart2Settings;
 
     fn create_batch_generator(
         &self,

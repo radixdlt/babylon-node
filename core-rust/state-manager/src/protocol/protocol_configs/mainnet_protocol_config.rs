@@ -44,7 +44,7 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
                 },
             ],
         },
-        ProtocolVersionName::cuttlefish() => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::cuttlefish_part1() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "cuttlefish"
             // READINESS_SIGNAL: "96e00440adafe5e2000000cuttlefish"
@@ -62,6 +62,9 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
                     required_consecutive_completed_epochs_of_support: 4032, // estimated: 2 weeks
                 },
             ],
+        },
+        ProtocolVersionName::cuttlefish_part2() => EnactImmediatelyAfterEndOfProtocolUpdate {
+            trigger_after: ProtocolVersionName::cuttlefish_part1(),
         },
     })
 }

@@ -88,10 +88,11 @@ import org.junit.rules.TemporaryFolder;
 
 public final class CuttlefishProtocolUpdateTest {
   private static final long ENACTMENT_EPOCH = 8;
-  private static final ProtocolConfig IMMEDIATELY_CUTTLEFISH =
-      ProtocolConfig.launchAt(ProtocolConfig.CUTTLEFISH_PROTOCOL_VERSION_NAME);
-  private static final ProtocolConfig CUTTLEFISH_AT_EPOCH =
-      ProtocolConfig.enactAtEpoch(ProtocolConfig.CUTTLEFISH_PROTOCOL_VERSION_NAME, ENACTMENT_EPOCH);
+  private static final ProtocolConfig IMMEDIATELY_CUTTLEFISH_PART2 =
+      ProtocolConfig.launchAt(ProtocolConfig.CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME);
+  private static final ProtocolConfig CUTTLEFISH_PART1_AT_EPOCH =
+      ProtocolConfig.enactAtEpoch(
+          ProtocolConfig.CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME, ENACTMENT_EPOCH);
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
@@ -121,7 +122,7 @@ public final class CuttlefishProtocolUpdateTest {
   @Test
   public void transaction_v2_behaviour_across_cuttlefish() throws ApiException {
     final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
-    try (var test = createTest(CUTTLEFISH_AT_EPOCH, coreApiHelper.module())) {
+    try (var test = createTest(CUTTLEFISH_PART1_AT_EPOCH, coreApiHelper.module())) {
       final var stateComputer = test.getInstance(0, RustStateComputer.class);
       test.runUntilState(allAtOrOverEpoch(ENACTMENT_EPOCH - 1));
 
@@ -148,13 +149,13 @@ public final class CuttlefishProtocolUpdateTest {
 
       // Arrange: Run the protocol update:
       test.runUntilState(
-          allAtExactlyProtocolVersion(ProtocolConfig.CUTTLEFISH_PROTOCOL_VERSION_NAME));
+          allAtExactlyProtocolVersion(ProtocolConfig.CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME));
 
       assertEquals(
-          ProtocolConfig.CUTTLEFISH_PROTOCOL_VERSION_NAME,
+          ProtocolConfig.CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME,
           stateComputer.protocolState().currentProtocolVersion());
       assertEquals(
-          ProtocolConfig.CUTTLEFISH_PROTOCOL_VERSION_NAME,
+          ProtocolConfig.CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME,
           coreApiHelper.getNetworkStatus().getCurrentProtocolVersion());
 
       // Act: Can now submit a new TransactionV2
@@ -189,7 +190,7 @@ public final class CuttlefishProtocolUpdateTest {
   @Test
   public void protocol_update_process_updates_status_summary() throws ApiException {
     final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
-    try (var test = createTest(IMMEDIATELY_CUTTLEFISH, coreApiHelper.module())) {
+    try (var test = createTest(IMMEDIATELY_CUTTLEFISH_PART2, coreApiHelper.module())) {
       test.suppressUnusedWarning();
 
       var latestStateVersion =
@@ -208,7 +209,7 @@ public final class CuttlefishProtocolUpdateTest {
                   .getNewValue()
                   .getSubstateData();
       assertEquals(
-          ProtocolConfig.CUTTLEFISH_PROTOCOL_VERSION_NAME, latestStatus.getProtocolVersion());
+          ProtocolConfig.CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME, latestStatus.getProtocolVersion());
       assertEquals(ProtocolUpdateStatusType.COMPLETE, latestStatus.getUpdateStatus().getType());
     }
   }

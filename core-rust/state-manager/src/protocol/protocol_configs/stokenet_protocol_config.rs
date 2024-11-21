@@ -30,10 +30,24 @@ pub fn stokenet_protocol_config() -> ProtocolConfig {
                 required_consecutive_completed_epochs_of_support: 10,
             }],
         },
-        ProtocolVersionName::cuttlefish() => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::cuttlefish_part1() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "cuttlefish"
             // READINESS_SIGNAL: "034d3327f58995c6000000cuttlefish"
+            // =================================================================
+            lower_bound_inclusive: Epoch::of(1),
+            upper_bound_exclusive: Epoch::of(10000000),
+            readiness_thresholds: vec![
+                SignalledReadinessThreshold {
+                    required_ratio_of_stake_supported: dec!(0.8),
+                    required_consecutive_completed_epochs_of_support: 10,
+                },
+            ],
+        },
+        ProtocolVersionName::cuttlefish_part2() => EnactAtStartOfEpochIfValidatorsReady {
+            // =================================================================
+            // PROTOCOL_VERSION: "cuttlefish-part2"
+            // READINESS_SIGNAL: "c0d928cf271e039ecuttlefish-part2"
             // =================================================================
             lower_bound_inclusive: Epoch::of(1),
             upper_bound_exclusive: Epoch::of(10000000),
