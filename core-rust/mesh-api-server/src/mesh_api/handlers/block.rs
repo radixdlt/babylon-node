@@ -34,11 +34,8 @@ pub(crate) async fn handle_block(
 
     let operations = to_mesh_api_operations(&mapping_context, database.deref(), state_version)?;
 
-    let transaction_identifier = to_mesh_api_transaction_identifier(
-        &mapping_context,
-        &transaction_identifiers,
-        state_version,
-    )?;
+    let transaction_identifier =
+        to_mesh_api_transaction_identifier(&mapping_context, &transaction_identifiers)?;
 
     // see https://docs.cdp.coinbase.com/mesh/docs/models#transaction
     let transaction = models::Transaction {

@@ -24,11 +24,8 @@ pub(crate) async fn handle_block_transaction(
             ))
         })?;
 
-    let transaction_identifier = to_mesh_api_transaction_identifier(
-        &mapping_context,
-        &transaction_identifiers,
-        state_version,
-    )?;
+    let transaction_identifier =
+        to_mesh_api_transaction_identifier(&mapping_context, &transaction_identifiers)?;
     if !request
         .transaction_identifier
         .as_ref()

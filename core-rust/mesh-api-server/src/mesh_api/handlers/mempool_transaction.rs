@@ -10,6 +10,9 @@ pub(crate) async fn handle_mempool_transaction(
     let mapping_context = MappingContext::new(&state.network);
     let mempool = &state.state_manager.mempool_manager;
 
+    // Only user transactions might be present in mempool.
+    // So it is safe to assume that transaction_identifier includes
+    // `transaction intent_hash` and not `ledger_transaction_hash`
     let intent_hash = extract_transaction_intent_hash(
         &extraction_context,
         request.transaction_identifier.hash.clone(),
