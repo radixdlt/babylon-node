@@ -26,21 +26,26 @@ pub(crate) async fn handle_account_balance(
         None
     };
 
-    let scoped_database = database.scoped_at(state_version).unwrap();
+    let scoped_database = database.scoped_at(state_version).map_err(|err| {
+        ResponseError::from(ApiError::StateHistoryNotAvailable)
+            .with_details(format!("Getting state history error: {:?}", err))
+    })?;
 
     let balances = match request.currencies {
         Some(currencies) => {
             let resources = currencies
                 .into_iter()
-                .map(|c| {
+                .filter_map(|c| {
+                    // Filter out resources, which were not possible to extract,
+                    //  eg. not found because they were not existing at given state version
                     extract_resource_address_from_currency(
                         &extraction_context,
                         &scoped_database,
                         &c,
                     )
+                    .ok()
                 })
-                .collect::<Result<Vec<_>, ExtractionError>>()
-                .map_err(|err| err.into_response_error("currency"))?;
+                .collect::<Vec<_>>();
 
             get_requested_balances(
                 &mapping_context,

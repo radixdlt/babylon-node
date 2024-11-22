@@ -51,6 +51,8 @@ pub(crate) enum ApiError {
     InvalidBlockIdentifier,
     #[strum(serialize = "Submit transaction error")]
     SubmitTransactionError,
+    #[strum(serialize = "State history not available")]
+    StateHistoryNotAvailable,
 }
 
 impl From<ApiError> for ResponseError {
