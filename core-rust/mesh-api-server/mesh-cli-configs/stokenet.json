@@ -1,10 +1,10 @@
 {
     "network": {
         "blockchain": "radix",
-        "network": "localnet"
+        "network": "stokenet"
     },
     "online_url": "http://127.0.0.1:3337/mesh",
-    "data_directory": "test-data",
+    "data_directory": "test-data/stokenet",
     "http_timeout": 10,
     "max_retries": 5,
     "retry_elapsed_time": 0,
@@ -42,26 +42,12 @@
         "initial_balance_fetch_disabled": false,
         "historical_balance_disabled": false,
         "end_conditions": {
-            "tip": true,
-            "index": 10000
+            "index": 104281038
         }
     },
     "construction": {
         "offline_url": "http://localhost:3337/mesh",
-        "constructor_dsl_file": "workflows.ros",
-        "prefunded_accounts": [
-            {
-                "account_identifier": {
-                    "address": "account_loc16996e320lnez82q6430eunaz9l3n5fnwk6eh9avrmtmj22e7rd55ln"
-                },
-                "curve_type": "secp256k1",
-                "privkey": "000000000000000000000000000000000000000000000000000000000000821f",
-                "currency": {
-                    "symbol": "resource_loc1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxvq32hv",
-                    "decimals": 18
-                }
-            }
-        ],
+        "constructor_dsl_file": "stokenet.ros",
         "stale_depth": 1000,
         "broadcast_limit": 1000,
         "end_conditions": {
