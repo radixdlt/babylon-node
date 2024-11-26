@@ -7,7 +7,7 @@ pub fn to_api_one_resource_pool_substate(
     context: &MappingContext,
     substate: &OneResourcePoolStateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         OneResourcePoolFieldState,
         OneResourcePoolState {
@@ -28,7 +28,7 @@ pub fn to_api_two_resource_pool_substate(
     context: &MappingContext,
     substate: &TwoResourcePoolStateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         TwoResourcePoolFieldState,
         TwoResourcePoolState {
@@ -56,7 +56,7 @@ pub fn to_api_multi_resource_pool_substate(
     context: &MappingContext,
     substate: &MultiResourcePoolStateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         MultiResourcePoolFieldState,
         MultiResourcePoolState {

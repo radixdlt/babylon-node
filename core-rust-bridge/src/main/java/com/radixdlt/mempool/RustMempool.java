@@ -119,9 +119,9 @@ public class RustMempool
         case MempoolError.PriorityThresholdNotMet
         e -> throw new MempoolPriorityThresholdNotMetException(
             String.format(
-                "Mempool is full and transaction's priority threshold not met, min tip percentage"
+                "Mempool is full and transaction's priority threshold not met, min tip basis points"
                     + " required: %s",
-                e.minTipPercentageRequired()));
+                e.minTipBasisPointsRequired()));
         case MempoolError.Duplicate e -> throw new MempoolDuplicateException(
             String.format(
                 "Mempool already has transaction with notarized hash %s",

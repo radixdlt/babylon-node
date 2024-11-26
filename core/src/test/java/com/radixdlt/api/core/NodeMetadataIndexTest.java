@@ -81,11 +81,11 @@ public class NodeMetadataIndexTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void createdVaultHasItsAccountAsRootInDatabaseIndex() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
       // Set up an account and a vault
       var accountAddress = Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
-      getApiHelper()
+      getCoreApiHelper()
           .submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
 
       // Discover the vault's substate node ID

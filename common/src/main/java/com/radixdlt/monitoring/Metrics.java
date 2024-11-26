@@ -287,8 +287,7 @@ public record Metrics(
 
     public enum UnfulfilledSyncRequestReason {
       NOTHING_TO_SERVE_AT_THE_GIVEN_STATE_VERSION,
-      REFUSED_TO_SERVE_GENESIS,
-      REFUSED_TO_SERVE_PROTOCOL_UPDATE
+      REFUSED_TO_SERVE_PROTOCOL_UPDATE,
     }
   }
 

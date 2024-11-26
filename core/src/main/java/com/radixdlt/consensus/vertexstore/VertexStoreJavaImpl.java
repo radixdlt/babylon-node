@@ -335,7 +335,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
           siblings.add(executedVertex.getVertexHash());
 
           VertexStoreState vertexStoreState = getState();
-          return BFTInsertUpdate.insertedVertex(executedVertex, siblings.size(), vertexStoreState);
+          return new BFTInsertUpdate(executedVertex, siblings.size(), vertexStoreState);
         });
   }
 

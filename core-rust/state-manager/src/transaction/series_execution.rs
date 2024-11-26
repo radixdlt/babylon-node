@@ -62,20 +62,10 @@
  * permissions under this License.
  */
 
-use node_common::utils::CaptureSupport;
+use crate::prelude::*;
 use std::fmt::Formatter;
-use std::ops::Deref;
-use std::sync::Arc;
 
 use crate::commit_bundle::CommitBundleBuilder;
-use crate::protocol::*;
-use crate::query::*;
-use crate::staging::ReadableStore;
-use crate::store::traits::*;
-use crate::transaction::*;
-use crate::*;
-
-use crate::engine_prelude::*;
 
 pub struct TransactionExecutorFactory {
     execution_configurator: Arc<ExecutionConfigurator>,
@@ -96,27 +86,25 @@ impl TransactionExecutorFactory {
         }
     }
 
-    pub fn execute_isolated<S: ReadableStore>(
-        &self,
-        store: &S,
-        transaction: &ValidatedLedgerTransaction,
-        description: &'static str,
-    ) -> TransactionReceipt {
-        self.execution_configurator
-            .wrap_ledger_transaction(transaction, description)
-            .execute_on(store)
-    }
-
     pub fn start_series_execution<'s, S>(&'s self, store: &'s S) -> TransactionSeriesExecutor<'s, S>
     where
         S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader,
     {
-        TransactionSeriesExecutor::new(
+        let epoch_header = store
+            .get_latest_epoch_proof()
+            .map(|epoch_proof| epoch_proof.ledger_header);
+        let (state_version, ledger_hashes) = store.get_top_ledger_hashes();
+        let protocol_state = self
+            .protocol_manager
+            .protocol_state_at_version(state_version);
+        TransactionSeriesExecutor {
             store,
-            &self.execution_cache_manager,
-            self.execution_configurator.deref(),
-            self.protocol_manager.current_protocol_state(),
-        )
+            execution_cache_manager: self.execution_cache_manager.deref(),
+            execution_configurator: self.execution_configurator.deref(),
+            start_of_current_epoch_header: epoch_header,
+            state_tracker: StateTracker::new(state_version, ledger_hashes, protocol_state),
+            engine_receipt_capture: CaptureSupport::default(),
+        }
     }
 }
 
@@ -126,8 +114,7 @@ pub struct TransactionSeriesExecutor<'s, S> {
     store: &'s S,
     execution_cache_manager: &'s ExecutionCacheManager,
     execution_configurator: &'s ExecutionConfigurator,
-    epoch_identifiers: EpochTransactionIdentifiers,
-    epoch_header: Option<LedgerHeader>,
+    start_of_current_epoch_header: Option<LedgerHeader>,
     state_tracker: StateTracker,
     engine_receipt_capture: CaptureSupport<TransactionReceipt>,
 }
@@ -136,34 +123,6 @@ impl<'s, S> TransactionSeriesExecutor<'s, S>
 where
     S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader,
 {
-    /// Creates a new executor for a lifetime of entire transaction batch execution (i.e. for all
-    /// transactions in a prepared vertex, or in a commit request).
-    /// The borrowed `store` should be already locked (i.e. final database writes, if any, should be
-    /// performed under the same lock).
-    /// The locking of the borrowed `execution_cache` will be handled by this executor.
-    pub fn new(
-        store: &'s S,
-        execution_cache_manager: &'s ExecutionCacheManager,
-        execution_configurator: &'s ExecutionConfigurator,
-        protocol_state: ProtocolState,
-    ) -> Self {
-        let epoch_header = store
-            .get_latest_epoch_proof()
-            .map(|epoch_proof| epoch_proof.ledger_header);
-        Self {
-            store,
-            execution_cache_manager,
-            execution_configurator,
-            epoch_identifiers: epoch_header
-                .as_ref()
-                .map(EpochTransactionIdentifiers::from)
-                .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis),
-            epoch_header,
-            state_tracker: StateTracker::new(store.get_top_ledger_hashes(), protocol_state),
-            engine_receipt_capture: CaptureSupport::default(),
-        }
-    }
-
     /// Executes the given already-validated ledger transaction (against the borrowed `store` and
     /// `execution_cache`).
     /// Uses an internal [`StateTracker`] to track the progression of *committable* transactions.
@@ -175,10 +134,11 @@ where
     /// the transaction's ledger hash).
     pub fn execute_and_update_state(
         &mut self,
-        transaction: &ValidatedLedgerTransaction,
+        executable: &LedgerExecutable,
+        hashes: &LedgerTransactionHashes,
         description: &str,
     ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
-        let result = self.execute_no_state_update(transaction, description);
+        let result = self.execute_no_state_update(executable, hashes, description);
         if let Ok(commit) = &result {
             self.update_state(commit);
         }
@@ -193,17 +153,21 @@ where
     /// the transaction's ledger hash).
     pub fn execute_no_state_update(
         &mut self,
-        transaction: &ValidatedLedgerTransaction,
+        executable: &LedgerExecutable,
+        hashes: &LedgerTransactionHashes,
         description: &str,
     ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
         let described_ledger_transaction_hash = DescribedTransactionHash {
-            ledger_hash: transaction.ledger_transaction_hash(),
+            ledger_hash: hashes.ledger_transaction_hash,
             description,
         };
         self.execute_wrapped_no_state_update(
             &described_ledger_transaction_hash,
-            self.execution_configurator
-                .wrap_ledger_transaction(transaction, &described_ledger_transaction_hash),
+            self.execution_configurator.wrap_ledger_transaction(
+                hashes,
+                executable,
+                &described_ledger_transaction_hash,
+            ),
         )
     }
 
@@ -215,7 +179,7 @@ where
         let mut execution_cache = self.execution_cache_manager.access_exclusively();
         let processed = execution_cache.execute_transaction(
             self.store,
-            &self.epoch_identifiers,
+            &self.epoch_identifiers(),
             self.state_tracker.state_version,
             &self.state_tracker.ledger_hashes.transaction_root,
             &described_ledger_transaction_hash.ledger_hash,
@@ -257,7 +221,10 @@ impl<'s, S> TransactionSeriesExecutor<'s, S> {
     /// version reached by this executor.
     pub fn start_commit_builder(&self) -> CommitBundleBuilder {
         CommitBundleBuilder::new(
-            self.epoch_identifiers.state_version,
+            self.start_of_current_epoch_header
+                .as_ref()
+                .map(|epoch_header| epoch_header.state_version)
+                .unwrap_or_else(StateVersion::pre_genesis),
             self.state_tracker.state_version,
         )
     }
@@ -265,13 +232,19 @@ impl<'s, S> TransactionSeriesExecutor<'s, S> {
     /// Returns a ledger header which started the current epoch (i.e. in which the transactions are
     /// being executed), or [`None`] if the ledger state is pre-genesis.
     pub fn epoch_header(&self) -> Option<&LedgerHeader> {
-        self.epoch_header.as_ref()
+        self.start_of_current_epoch_header.as_ref()
     }
 
-    /// Returns transaction identifiers at the beginning of the current epoch (i.e. in which the
-    /// transactions are being executed), or [`EpochTransactionIdentifiers::pre_genesis`].
-    pub fn epoch_identifiers(&self) -> &EpochTransactionIdentifiers {
-        &self.epoch_identifiers
+    /// Returns transaction identifiers of the [`Self::epoch_header()`] (a convenience method).
+    pub fn epoch_identifiers(&self) -> EpochTransactionIdentifiers {
+        self.start_of_current_epoch_header
+            .as_ref()
+            .map(EpochTransactionIdentifiers::from)
+            .unwrap_or_else(EpochTransactionIdentifiers::pre_genesis)
+    }
+
+    pub fn finalize_series(self, batch_situation: BatchSituation) -> StateTrackerEndState {
+        self.state_tracker.finalize(batch_situation)
     }
 
     /// Returns the ledger hashes resulting from the most recent `execute()` call.
@@ -291,16 +264,6 @@ impl<'s, S> TransactionSeriesExecutor<'s, S> {
     pub fn epoch_change(&self) -> Option<EpochChangeEvent> {
         self.state_tracker.epoch_change.clone()
     }
-
-    /// Returns the protocol state resulting from the most recent `execute()` call.
-    pub fn protocol_state(&self) -> ProtocolState {
-        self.state_tracker.protocol_state.clone()
-    }
-
-    /// Returns the next protocol version, if enacted by any of the `execute()` calls.
-    pub fn next_protocol_version(&self) -> Option<ProtocolVersionName> {
-        self.state_tracker.next_protocol_version()
-    }
 }
 
 /// A simple `Display` augmenting the human-readable transaction description with its ledger hash.
@@ -319,6 +282,15 @@ impl<S: Display> Display for DescribedTransactionHash<S> {
     }
 }
 
+#[derive(Clone)]
+pub enum BatchSituation {
+    NonSystem,
+    ProtocolUpdate {
+        update: ProtocolVersionName,
+        is_final_batch: bool,
+    },
+}
+
 /// A low-level tracker of consecutive state version / ledger hashes /
 /// epoch changes / protocol state changes.
 struct StateTracker {
@@ -326,21 +298,20 @@ struct StateTracker {
     ledger_hashes: LedgerHashes,
     epoch_change: Option<EpochChangeEvent>,
     protocol_state: ProtocolState,
-    next_protocol_version: Option<ProtocolVersionName>,
 }
 
 impl StateTracker {
     /// Initializes the tracker to a known state (assuming it is not an end-state of an epoch).
     pub fn new(
-        ledger_hashes_entry: (StateVersion, LedgerHashes),
+        state_version: StateVersion,
+        ledger_hashes: LedgerHashes,
         protocol_state: ProtocolState,
     ) -> Self {
         Self {
-            state_version: ledger_hashes_entry.0,
-            ledger_hashes: ledger_hashes_entry.1,
+            state_version,
+            ledger_hashes,
             epoch_change: None,
             protocol_state,
-            next_protocol_version: None,
         }
     }
 
@@ -348,7 +319,6 @@ impl StateTracker {
     /// This includes:
     /// * bumping the state version
     /// * recording the next ledger hashes (from the given transaction results)
-    /// * updating the protocol state
     ///
     /// This method validates that no further transaction should happen after an epoch change.
     pub fn update(&mut self, result: &ProcessedCommitResult) {
@@ -362,31 +332,37 @@ impl StateTracker {
             );
         }
 
-        if let Some(next_protocol_version) = &self.next_protocol_version {
-            panic!(
-                "the protocol update {:?} has happened at {:?} (version {}) and must not be followed by {:?}",
-                next_protocol_version,
-                self.ledger_hashes,
-                self.state_version,
-                result.hash_structures_diff.ledger_hashes
-            );
-        }
-
         self.state_version = self
             .state_version
             .next()
             .expect("Invalid next state version!");
         self.ledger_hashes = result.hash_structures_diff.ledger_hashes;
         self.epoch_change = result.epoch_change();
+    }
 
-        let (protocol_state, next_protocol_version) = self
+    pub fn finalize(mut self, batch_situation: BatchSituation) -> StateTrackerEndState {
+        let next_protocol_version = self
             .protocol_state
-            .compute_next(&result.local_receipt, self.state_version);
-        self.protocol_state = protocol_state;
-        self.next_protocol_version = next_protocol_version;
-    }
+            .check_for_update_trigger_at_end_of_batch(
+                self.epoch_change.as_ref(),
+                self.state_version,
+                batch_situation,
+            );
 
-    pub fn next_protocol_version(&self) -> Option<ProtocolVersionName> {
-        self.next_protocol_version.clone()
+        StateTrackerEndState {
+            state_version: self.state_version,
+            ledger_hashes: self.ledger_hashes,
+            epoch_change: self.epoch_change,
+            protocol_state: self.protocol_state,
+            next_protocol_version,
+        }
     }
+}
+
+pub struct StateTrackerEndState {
+    pub state_version: StateVersion,
+    pub ledger_hashes: LedgerHashes,
+    pub epoch_change: Option<EpochChangeEvent>,
+    pub protocol_state: ProtocolState,
+    pub next_protocol_version: Option<ProtocolVersionName>,
 }

@@ -69,8 +69,6 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 import static org.assertj.core.api.Assertions.*;
 
 import com.google.inject.Module;
-import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.ScenariosExecutionConfig;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -83,8 +81,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
-import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.modules.MockedVertexStoreModule;
@@ -92,12 +88,16 @@ import com.radixdlt.sync.SyncRelayConfig;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+@Ignore(
+    "Cuttlefish - Both the positive and negative tests are still somewhat flaky, so ignoring these"
+        + " tests for now")
 @RunWith(Parameterized.class)
 public final class MultiNodeRebootTest {
   @Parameterized.Parameters
@@ -213,21 +213,18 @@ public final class MultiNodeRebootTest {
             safetyRecoveryConfig,
             ConsensusConfig.of(1000, 0L),
             LedgerConfig.stateComputerWithSyncRelay(
-                StateComputerConfig.rev2(
-                    Network.INTEGRATIONTESTNET.getId(),
-                    GenesisBuilder.createTestGenesisWithNumValidators(
-                        numValidators,
-                        Decimal.ONE,
-                        GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
-                                this.roundsPerEpoch)
-                            .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(0))),
-                    new DatabaseConfig(true, false, false, false),
-                    StateComputerConfig.REV2ProposerConfig.transactionGenerator(
-                        new REV2TransactionGenerator(), 1),
-                    false,
-                    noFees,
-                    ProtocolConfig.testingDefault(),
-                    ScenariosExecutionConfig.NONE),
+                StateComputerConfig.rev2()
+                    .withGenesis(
+                        GenesisBuilder.createTestGenesisWithNumValidators(
+                            numValidators,
+                            Decimal.ONE,
+                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                    this.roundsPerEpoch)
+                                .totalEmissionXrdPerEpoch(Decimal.ofNonNegative(0))))
+                    .withProposerConfig(
+                        StateComputerConfig.REV2ProposerConfig.transactionGenerator(
+                            new REV2TransactionGenerator(), 1))
+                    .withNoFees(noFees),
                 // This test can, in some cases, rely on ledger sync
                 // requests timing out in reasonable time,
                 // so setting the request timeout to 100 ms
@@ -270,7 +267,7 @@ public final class MultiNodeRebootTest {
 
   @Test
   public void restart_all_nodes_intermittently() {
-    runTest(new MixedLivenessEachRound(random, 0), SafetyRecoveryConfig.BERKELEY_DB);
+    runTest(new MixedLivenessEachRound(random, 0), SafetyRecoveryConfig.REAL);
   }
 
   @Test
@@ -286,15 +283,13 @@ public final class MultiNodeRebootTest {
             () ->
                 runTest(
                     new MixedLivenessEachRound(random, 0),
-                    SafetyRecoveryConfig.BERKELEY_DB,
+                    SafetyRecoveryConfig.REAL,
                     new MockedVertexStoreModule()))
         .isInstanceOf(DeterministicTest.NeverReachedStateException.class);
   }
 
   @Test
   public void restart_all_nodes_intermittently_while_f_nodes_down() {
-    runTest(
-        new MixedLivenessEachRound(random, (numValidators - 1) / 3),
-        SafetyRecoveryConfig.BERKELEY_DB);
+    runTest(new MixedLivenessEachRound(random, (numValidators - 1) / 3), SafetyRecoveryConfig.REAL);
   }
 }

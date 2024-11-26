@@ -94,7 +94,7 @@ public final class ObsoleteEventsFilter implements BFTEventProcessor {
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
     // FIXME: Check is required for now since Deterministic tests can randomize local messages
-    if (roundUpdate.getCurrentRound().gt(currentRound())) {
+    if (roundUpdate.currentRound().gt(currentRound())) {
       this.latestRoundUpdate = roundUpdate;
       forwardTo.processRoundUpdate(roundUpdate);
     } else {
@@ -171,6 +171,6 @@ public final class ObsoleteEventsFilter implements BFTEventProcessor {
   }
 
   private Round currentRound() {
-    return this.latestRoundUpdate.getCurrentRound();
+    return this.latestRoundUpdate.currentRound();
   }
 }

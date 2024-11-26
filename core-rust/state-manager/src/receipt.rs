@@ -1,27 +1,58 @@
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore};
-use crate::accumulator_tree::tree_builder::{AccuTree, Merklizable};
-use crate::transaction::PayloadIdentifiers;
-use crate::{
-    ConsensusReceipt, EventHash, ExecutionFeeData, GlobalBalanceSummary, LedgerHashes,
-    PartitionReference, StateChangeHash, SubstateReference,
-};
-
-define_single_versioned! {
+define_versioned! {
     #[derive(Debug, Clone, Sbor)]
-    pub VersionedCommittedTransactionIdentifiers(CommittedTransactionIdentifiersVersions) => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV1
+    pub VersionedCommittedTransactionIdentifiers(CommittedTransactionIdentifiersVersions) {
+        previous_versions: [
+            1 => CommittedTransactionIdentifiersV1: { updates_to: 2 },
+        ],
+        latest_version: {
+            2 => CommittedTransactionIdentifiers = CommittedTransactionIdentifiersV2,
+        },
+    },
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(
+            backwards_compatible(
+                bottlenose = "FILE:CF_SCHEMA_versioned_committed_transaction_identifiers_bottlenose.bin",
+                cuttlefish = "FILE:CF_SCHEMA_versioned_committed_transaction_identifiers_cuttlefish.bin"
+            ),
+            settings(allow_name_changes),
+        )]
+    ]
 }
 
 #[derive(Debug, Clone, Sbor)]
 pub struct CommittedTransactionIdentifiersV1 {
-    pub payload: PayloadIdentifiers,
+    pub transaction_hashes: LedgerTransactionHashesV1,
     pub resultant_ledger_hashes: LedgerHashes,
     pub proposer_timestamp_ms: i64,
 }
 
+#[derive(Debug, Clone, Sbor)]
+pub struct CommittedTransactionIdentifiersV2 {
+    pub transaction_hashes: LedgerTransactionHashesV2,
+    pub resultant_ledger_hashes: LedgerHashes,
+    pub proposer_timestamp_ms: i64,
+}
+
+impl From<CommittedTransactionIdentifiersV1> for CommittedTransactionIdentifiersV2 {
+    fn from(value: CommittedTransactionIdentifiersV1) -> Self {
+        let CommittedTransactionIdentifiersV1 {
+            transaction_hashes,
+            resultant_ledger_hashes,
+            proposer_timestamp_ms,
+        } = value;
+        CommittedTransactionIdentifiersV2 {
+            transaction_hashes: transaction_hashes.into(),
+            resultant_ledger_hashes,
+            proposer_timestamp_ms,
+        }
+    }
+}
+
 /// A "flat" representation of an entire Partition's change, suitable for merkle hash computation.
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct PartitionChange {
     pub node_id: NodeId,
     pub partition_num: PartitionNumber,
@@ -40,7 +71,7 @@ impl From<(PartitionReference, PartitionChangeAction)> for PartitionChange {
 }
 
 /// A "flat" representation of a single substate's change, suitable for merkle hash computation.
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct SubstateChange {
     pub node_id: NodeId,
     pub partition_num: PartitionNumber,
@@ -61,7 +92,7 @@ impl From<(SubstateReference, SubstateChangeAction)> for SubstateChange {
 }
 
 /// An on-ledger change of an entire partition.
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub enum PartitionChangeAction {
     /// Deletion of an entire Partition.
     /// Note: contrary to [`SubstateChangeAction`]s, the previous contents of the Partition are not
@@ -70,7 +101,7 @@ pub enum PartitionChangeAction {
 }
 
 /// An on-ledger change of an individual substate.
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub enum SubstateChangeAction {
     Create {
         /// A value after the transaction.
@@ -93,7 +124,7 @@ pub enum SubstateChangeAction {
     },
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct ApplicationEvent {
     pub type_id: EventTypeIdentifier,
     pub data: Vec<u8>,
@@ -110,7 +141,7 @@ impl ApplicationEvent {
     }
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub enum LedgerTransactionOutcome {
     Success,
     Failure,
@@ -125,17 +156,43 @@ impl LedgerTransactionOutcome {
     }
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum DetailedTransactionOutcome {
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum DetailedTransactionOutcomeV1 {
     Success(Vec<Vec<u8>>),
     Failure(LenientRuntimeError),
 }
 
+#[derive(Debug, Clone, ScryptoSbor)]
+pub enum DetailedTransactionOutcomeV2 {
+    Success(Vec<Vec<u8>>),
+    Failure(PersistableRuntimeError),
+}
+
+impl From<DetailedTransactionOutcomeV1> for DetailedTransactionOutcomeV2 {
+    fn from(value: DetailedTransactionOutcomeV1) -> Self {
+        match value {
+            DetailedTransactionOutcomeV1::Success(output) => {
+                DetailedTransactionOutcomeV2::Success(output)
+            }
+            DetailedTransactionOutcomeV1::Failure(error) => {
+                DetailedTransactionOutcomeV2::Failure(PersistableRuntimeError {
+                    // All pre-Cuttlefish errors should use the pre-Cuttlefish schema,
+                    // at schema index 0
+                    schema_index: 0,
+                    encoded_error: error.0,
+                })
+            }
+        }
+    }
+}
+
+pub type DetailedTransactionOutcome = DetailedTransactionOutcomeV2;
+
 /// A wrapper for SBOR-encoded [`RuntimeError`] which may turn out to no longer be decodable (due
 /// to differences in historical error enum schema).
-#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode, ScryptoDescribe)]
 #[sbor(transparent)]
-pub struct LenientRuntimeError(ScryptoValue);
+pub struct LenientRuntimeError(ScryptoOwnedRawValue);
 
 impl Categorize<ScryptoCustomValueKind> for LenientRuntimeError {
     fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
@@ -182,14 +239,14 @@ impl From<TransactionOutcome> for DetailedTransactionOutcome {
                         .collect(),
                 )
             }
-            TransactionOutcome::Failure(error) => Self::Failure(LenientRuntimeError::from(error)),
+            TransactionOutcome::Failure(error) => Self::Failure(error.create_persistable()),
         }
     }
 }
 
 /// A "flattened", unambiguous representation of state changes resulting from a transaction,
 /// suitable for merkle hash computation (to be recorded on-ledger).
-#[derive(Debug, Clone, Default, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Default, ScryptoSbor)]
 pub struct LedgerStateChanges {
     /// Changes applied on Partition level, affecting all substates of a Partition *except* the
     /// ones referenced in [`substate_level_changes`].
@@ -224,28 +281,46 @@ impl LedgerStateChanges {
     }
 }
 
-/// A committed transaction (success or failure), extracted from the Engine's `TransactionReceipt`
+/// A committed transaction (success or failure), extracted from the Engine's [`TransactionReceipt`]
 /// of any locally-executed transaction (slightly post-processed).
+///
 /// It contains all the critical, deterministic pieces of the Engine's receipt, but also some of its
-/// other parts - for this reason, it is very clearly split into 2 parts (on-ledger vs off-ledger).
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+/// other parts - for this reason, it is very clearly split into 2 parts:
+///
+/// * The [`LedgerTransactionReceipt`] contains the parts of the receipt which are validated at
+///   consensus (success/failure, state changes and emitted events).
+/// * The [`LocalTransactionExecution`] contains other information which is useful for transaction
+///   analysis and investigation.
+#[derive(Debug, Clone)]
 pub struct LocalTransactionReceipt {
     pub on_ledger: LedgerTransactionReceipt,
     pub local_execution: LocalTransactionExecution,
 }
 
+pub struct TransientReceipt {
+    pub nullifications: Vec<Nullification>,
+}
+
 define_single_versioned! {
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub VersionedLedgerTransactionReceipt(LedgerTransactionReceiptVersions) => LedgerTransactionReceipt = LedgerTransactionReceiptV1
+    #[derive(Debug, Clone, ScryptoSbor)]
+    pub VersionedLedgerTransactionReceipt(LedgerTransactionReceiptVersions) => LedgerTransactionReceipt = LedgerTransactionReceiptV1,
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_transaction_receipt_cuttlefish.bin"
+        ))]
+    ]
 }
 
 /// A part of the [`LocalTransactionReceipt`] which is completely stored on ledger. It contains only
 /// the critical, deterministic pieces of the original Engine's `TransactionReceipt`.
+///
 /// All these pieces can be verified against the Receipt Root hash (found in the Ledger Proof).
-/// Note: the Ledger Receipt is still a pretty large structure (i.e. containing entire collections,
+///
+/// Note: the [`LedgerTransactionReceipt`] is still a pretty large structure (i.e. containing entire collections,
 /// like substate changes) and is not supposed to be hashed directly - it should instead go through
 /// a [`ConsensusReceipt`].
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct LedgerTransactionReceiptV1 {
     /// A simple, high-level outcome of the transaction.
     /// Its omitted details may be found in `LocalTransactionExecution::outcome`.
@@ -256,28 +331,84 @@ pub struct LedgerTransactionReceiptV1 {
     pub application_events: Vec<ApplicationEvent>,
 }
 
-define_single_versioned! {
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-    pub VersionedLocalTransactionExecution(LocalTransactionExecutionVersions) => LocalTransactionExecution = LocalTransactionExecutionV1
+define_versioned! {
+    /// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt`
+    /// (e.g. logs, summaries).
+    /// It is not verifiable against ledger, but is still be useful for debugging.
+    #[derive(Debug, Clone, ScryptoSbor)]
+    pub VersionedLocalTransactionExecution(LocalTransactionExecutionVersions) {
+        previous_versions: [
+            1 => LocalTransactionExecutionV1: { updates_to: 2 },
+        ],
+        latest_version: {
+            2 => LocalTransactionExecution = LocalTransactionExecutionV2,
+        },
+    },
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(
+            backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_local_transaction_execution_cuttlefish.bin"
+            ),
+            settings(allow_name_changes)
+        )]
+    ]
 }
 
-/// A computable/non-critical/non-deterministic part of the `LocalTransactionReceipt` (e.g. logs,
-/// summaries).
-/// It is not verifiable against ledger, but may still be useful for debugging.
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct LocalTransactionExecutionV1 {
-    pub outcome: DetailedTransactionOutcome,
+    pub outcome: DetailedTransactionOutcomeV1,
     pub fee_summary: TransactionFeeSummary,
     pub fee_source: FeeSource,
     pub fee_destination: FeeDestination,
     pub engine_costing_parameters: CostingParameters,
-    pub transaction_costing_parameters: TransactionCostingParametersReceipt,
-    pub application_logs: Vec<(Level, String)>,
+    pub transaction_costing_parameters: TransactionCostingParametersReceiptV1,
+    pub application_logs: Vec<(crate::engine_prelude::Level, String)>,
     pub state_update_summary: StateUpdateSummary,
     pub global_balance_summary: GlobalBalanceSummary,
     pub substates_system_structure: BySubstate<SubstateSystemStructure>,
     pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
     pub next_epoch: Option<EpochChangeEvent>,
+}
+
+impl From<LocalTransactionExecutionV1> for LocalTransactionExecutionV2 {
+    fn from(value: LocalTransactionExecutionV1) -> Self {
+        LocalTransactionExecutionV2 {
+            outcome: value.outcome.into(),
+            fee_summary: value.fee_summary,
+            fee_source: value.fee_source,
+            fee_destination: value.fee_destination,
+            engine_costing_parameters: value.engine_costing_parameters,
+            transaction_costing_parameters: value.transaction_costing_parameters.into(),
+            application_logs: value.application_logs,
+            state_update_summary: value.state_update_summary,
+            global_balance_summary: value.global_balance_summary,
+            substates_system_structure: value.substates_system_structure,
+            events_system_structure: value.events_system_structure,
+            next_epoch: value.next_epoch,
+            // May miss pre-cuttlefish intent nullifications. This is detailed in the Rustdoc below.
+            nullifications: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
+pub struct LocalTransactionExecutionV2 {
+    pub outcome: DetailedTransactionOutcomeV2,
+    pub fee_summary: TransactionFeeSummary,
+    pub fee_source: FeeSource,
+    pub fee_destination: FeeDestination,
+    pub engine_costing_parameters: CostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParametersReceiptV2,
+    pub application_logs: Vec<(crate::engine_prelude::Level, String)>,
+    pub state_update_summary: StateUpdateSummary,
+    pub global_balance_summary: GlobalBalanceSummary,
+    pub substates_system_structure: BySubstate<SubstateSystemStructure>,
+    pub events_system_structure: IndexMap<EventTypeIdentifier, EventSystemStructure>,
+    pub next_epoch: Option<EpochChangeEvent>,
+    /// Pre-cuttlefish, this may be missing Intent nullifications.
+    /// But this is guaranteed to include all subintent nullifications.
+    pub nullifications: Vec<Nullification>,
 }
 
 impl LedgerTransactionReceipt {
@@ -298,6 +429,12 @@ impl LedgerTransactionReceipt {
             ),
         }
     }
+}
+
+pub struct ExecutionFeeData {
+    pub fee_summary: TransactionFeeSummary,
+    pub engine_costing_parameters: CostingParameters,
+    pub transaction_costing_parameters: TransactionCostingParametersReceiptV2,
 }
 
 impl LocalTransactionReceipt {
@@ -334,6 +471,7 @@ impl LocalTransactionReceipt {
                 ),
                 events_system_structure: system_structure.event_system_structures,
                 next_epoch,
+                nullifications: commit_result.performed_nullifications,
             },
         }
     }
@@ -342,7 +480,7 @@ impl LocalTransactionReceipt {
 /// A container of items associated with a specific partition.
 /// This simply offers a less wasteful representation of a `Vec<(PartitionReference, T)>`, by
 /// avoiding the repeated [`NodeId`]s (within [`PartitionReference`]s).
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 #[sbor(categorize_types = "T")]
 pub struct ByPartition<T> {
     by_node_id: IndexMap<NodeId, IndexMap<PartitionNumber, T>>,
@@ -401,7 +539,7 @@ impl<T> Default for ByPartition<T> {
 /// A container of items associated with a specific substate.
 /// This simply offers a less wasteful representation of a `Vec<(SubstateReference, T)>`, by
 /// avoiding the repeated [`NodeId`]s and [`PartitionNumber`]s (within [`SubstateReference`]s).
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 #[sbor(categorize_types = "T")]
 pub struct BySubstate<T> {
     by_node_id: IndexMap<NodeId, IndexMap<PartitionNumber, IndexMap<SubstateKey, T>>>,

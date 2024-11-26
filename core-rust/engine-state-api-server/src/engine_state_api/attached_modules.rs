@@ -25,19 +25,11 @@ lazy_static::lazy_static! {
 /// abstraction layer higher than the rest of the Engine State API (i.e. it interprets the data that
 /// can be read using other, lower-level means).
 pub struct ObjectRoyaltyLoader<'s, S: SubstateDatabase> {
-    meta_loader: EngineStateMetaLoader<'s, S>,
-    data_loader: EngineStateDataLoader<'s, S>,
+    pub meta_loader: EngineStateMetaLoader<'s, S>,
+    pub data_loader: EngineStateDataLoader<'s, S>,
 }
 
 impl<'s, S: SubstateDatabase> ObjectRoyaltyLoader<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self {
-            meta_loader: EngineStateMetaLoader::new(database),
-            data_loader: EngineStateDataLoader::new(database),
-        }
-    }
-
     /// Returns Package and Component royalty amounts for all methods of the given object.
     pub fn load_method_amounts(
         &self,
@@ -66,6 +58,7 @@ impl<'s, S: SubstateDatabase> ObjectRoyaltyLoader<'s, S> {
                 })
                 .collect::<Result<NonIterMap<_, _>, _>>()?
         } else {
+            // It is ok for an object to NOT have Royalty module (and it means free methods):
             NonIterMap::new()
         };
 
@@ -98,19 +91,11 @@ pub struct MethodRoyaltyAmount {
 /// abstraction layer higher than the rest of the Engine State API (i.e. it interprets the data that
 /// can be read using other, lower-level means).
 pub struct ObjectRoleAssignmentLoader<'s, S: SubstateDatabase> {
-    meta_loader: EngineStateMetaLoader<'s, S>,
-    data_loader: EngineStateDataLoader<'s, S>,
+    pub meta_loader: EngineStateMetaLoader<'s, S>,
+    pub data_loader: EngineStateDataLoader<'s, S>,
 }
 
 impl<'s, S: SubstateDatabase> ObjectRoleAssignmentLoader<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self {
-            meta_loader: EngineStateMetaLoader::new(database),
-            data_loader: EngineStateDataLoader::new(database),
-        }
-    }
-
     /// Loads full information from the [`ModuleId::RoleAssignment`] module:
     /// - the Owner rule and updater,
     /// - the role-to-rule assignment for all roles defined by the object and its attached modules.
@@ -259,17 +244,10 @@ pub enum Assignment {
 /// abstraction layer higher than the rest of the Engine State API (i.e. it interprets the data that
 /// can be read using other, lower-level means).
 pub struct ObjectMetadataLoader<'s, S: SubstateDatabase> {
-    loader: EngineStateDataLoader<'s, S>,
+    pub loader: EngineStateDataLoader<'s, S>,
 }
 
 impl<'s, S: SubstateDatabase> ObjectMetadataLoader<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self {
-            loader: EngineStateDataLoader::new(database),
-        }
-    }
-
     /// Returns an iterator of keys within the Metadata module attached to the given object,
     /// starting at the given key.
     pub fn iter_keys(
@@ -322,7 +300,7 @@ pub struct MetadataKey {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AttachedModuleBrowsingError {
     UnderlyingError(EngineStateBrowsingError),
-    SborDecode(DecodeError),
+    SborDecode(String),
     NotAnObject,
     AttachedModulesInvariantBroken(String),
 }
@@ -377,24 +355,23 @@ impl From<AttachedModuleBrowsingError> for ResponseError {
     }
 }
 
-fn decode_kv_collection_key<D: ScryptoDecode>(key: SborCollectionKey) -> D {
+fn decode_kv_collection_key<D: ScryptoDecode + ScryptoDescribe>(key: SborCollectionKey) -> D {
     let SborCollectionKey::KeyValueStore(sbor_data) = key else {
         panic!("expected the Key-Value collection key; got {:?}", key)
     };
-    let Ok(decoded) = scrypto_decode(sbor_data.as_bytes()) else {
+    scrypto_decode_with_nice_error(sbor_data.as_bytes()).unwrap_or_else(|err| {
         panic!(
             "expected the collection key to be a {}; got {:?}",
             type_name::<D>(),
-            sbor_data
+            err,
         )
-    };
-    decoded
+    })
 }
 
-fn decode_latest<V: Versioned + ScryptoDecode>(
+fn decode_latest<V: Versioned + ScryptoDecode + ScryptoDescribe>(
     entry_data: SborData,
 ) -> Result<V::LatestVersion, AttachedModuleBrowsingError> {
-    Ok(scrypto_decode::<V>(entry_data.as_bytes())
+    Ok(scrypto_decode_with_nice_error::<V>(entry_data.as_bytes())
         .map_err(AttachedModuleBrowsingError::SborDecode)?
         .fully_update_and_into_latest_version())
 }

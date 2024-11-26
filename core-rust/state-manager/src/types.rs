@@ -62,23 +62,18 @@
  * permissions under this License.
  */
 
-use crate::accumulator_tree::IsMerklizableHash;
-use crate::engine_prelude::*;
-use crate::protocol::ProtocolVersionName;
-use crate::transaction::*;
-use crate::{LedgerTransactionOutcome, PartitionChange, SubstateChange};
+use crate::prelude::*;
 use std::fmt;
 use std::fmt::Formatter;
 use std::mem::size_of;
 use std::num::TryFromIntError;
-use std::ops::Range;
 
 /// A complete ID of a Substate.
-#[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoSbor)]
 pub struct SubstateReference(pub NodeId, pub PartitionNumber, pub SubstateKey);
 
 /// A complete ID of a Partition.
-#[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, ScryptoSbor)]
 pub struct PartitionReference(pub NodeId, pub PartitionNumber);
 
 define_wrapped_hash!(StateChangeHash);
@@ -305,7 +300,8 @@ impl LedgerHashes {
 #[derive(Debug)]
 pub struct PreviewRequest {
     pub manifest: TransactionManifestV1,
-    pub explicit_epoch_range: Option<Range<Epoch>>,
+    pub start_epoch_inclusive: Option<Epoch>,
+    pub end_epoch_exclusive: Option<Epoch>,
     pub notary_public_key: Option<PublicKey>,
     pub notary_is_signatory: bool,
     pub tip_percentage: u16,
@@ -315,13 +311,13 @@ pub struct PreviewRequest {
     pub message: MessageV1,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub enum InvalidCommitRequestError {
     TransactionParsingFailed,
     TransactionRootMismatch,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct CommitRequest {
     pub transactions: Vec<RawLedgerTransaction>,
     pub proof: LedgerProof,
@@ -329,13 +325,13 @@ pub struct CommitRequest {
     pub self_validator_id: Option<ValidatorId>, // for metrics calculation only
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct CommitSummary {
     pub validator_round_counters: Vec<(ValidatorId, LeaderRoundCounter)>,
     pub num_user_transactions: u32,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct PrepareRequest {
     pub committed_ledger_hashes: LedgerHashes,
     pub ancestor_transactions: Vec<RawLedgerTransaction>,
@@ -344,7 +340,7 @@ pub struct PrepareRequest {
     pub round_history: RoundHistory,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct RoundHistory {
     pub is_fallback: bool,
     pub epoch: Epoch,
@@ -354,7 +350,7 @@ pub struct RoundHistory {
     pub proposer_timestamp_ms: i64,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct PrepareResult {
     pub committed: Vec<CommittableTransaction>,
     /// Note: this is only used for testing
@@ -364,40 +360,92 @@ pub struct PrepareResult {
     pub ledger_hashes: LedgerHashes,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct CommittableTransaction {
     /// Not included for the Round Change transaction which is inserted and doesn't come from the proposal
     pub index: Option<u32>,
     pub raw: RawLedgerTransaction,
-    pub intent_hash: Option<IntentHash>,
+    pub transaction_intent_hash: Option<TransactionIntentHash>,
     pub notarized_transaction_hash: Option<NotarizedTransactionHash>,
     pub ledger_transaction_hash: LedgerTransactionHash,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+impl CommittableTransaction {
+    pub fn new(
+        index: usize,
+        raw: RawLedgerTransaction,
+        ledger_transaction_hash: LedgerTransactionHash,
+        user_hashes: UserTransactionHashes,
+    ) -> Self {
+        Self {
+            index: Some(
+                index
+                    .try_into()
+                    .expect("Proposal index should be < u32::MAX"),
+            ),
+            raw,
+            transaction_intent_hash: Some(user_hashes.transaction_intent_hash),
+            notarized_transaction_hash: Some(user_hashes.notarized_transaction_hash),
+            ledger_transaction_hash,
+        }
+    }
+}
+
+#[derive(Debug, ScryptoSbor)]
 pub struct RejectedTransaction {
     pub index: u32,
     // Note - these are None if the transaction can't even be prepared to determine the hashes
-    pub intent_hash: Option<IntentHash>,
+    pub transaction_intent_hash: Option<TransactionIntentHash>,
     pub notarized_transaction_hash: Option<NotarizedTransactionHash>,
     pub ledger_transaction_hash: Option<LedgerTransactionHash>,
     pub error: String,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+impl RejectedTransaction {
+    pub fn failed_before_prepare(index: usize, error: String) -> Self {
+        Self {
+            index: index
+                .try_into()
+                .expect("Proposal index should be < u32::MAX"),
+            transaction_intent_hash: None,
+            notarized_transaction_hash: None,
+            ledger_transaction_hash: None,
+            error,
+        }
+    }
+
+    pub fn new(
+        index: usize,
+        error: String,
+        ledger_transaction_hash: LedgerTransactionHash,
+        user_hashes: UserTransactionHashes,
+    ) -> Self {
+        Self {
+            index: index
+                .try_into()
+                .expect("Proposal index should be < u32::MAX"),
+            transaction_intent_hash: Some(user_hashes.transaction_intent_hash),
+            notarized_transaction_hash: Some(user_hashes.notarized_transaction_hash),
+            ledger_transaction_hash: Some(ledger_transaction_hash),
+            error,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct ActiveValidatorInfo {
     pub address: ComponentAddress,
     pub key: Secp256k1PublicKey,
     pub stake: Decimal,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct NextEpoch {
     pub epoch: Epoch,
     pub validator_set: Vec<ActiveValidatorInfo>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct TimestampedValidatorSignature {
     pub key: Secp256k1PublicKey,
     pub validator_address: ComponentAddress,
@@ -406,32 +454,47 @@ pub struct TimestampedValidatorSignature {
 }
 
 define_versioned!(
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub VersionedLedgerProof(LedgerProofVersions) {
         previous_versions: [
             1 => LedgerProofV1: { updates_to: 2 },
+            2 => LedgerProofV2: { updates_to: 3 },
         ],
         latest_version: {
-            2 => LedgerProof = LedgerProofV2,
+            3 => LedgerProof = LedgerProofV3,
         },
-    }
+    },
+    outer_attributes: [
+        #[derive(ScryptoSborAssertion)]
+        #[sbor_assert(backwards_compatible(
+            cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_proof_cuttlefish.bin"
+        ))]
+    ]
 );
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct LedgerProofV1 {
     pub opaque: Hash,
     pub ledger_header: LedgerHeaderV1,
     pub timestamped_signatures: Vec<TimestampedValidatorSignature>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct LedgerProofV2 {
     pub ledger_header: LedgerHeader,
-    pub origin: LedgerProofOrigin,
+    pub origin: LedgerProofOriginV1,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum LedgerProofOrigin {
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub struct LedgerProofV3 {
+    pub ledger_header: LedgerHeader,
+    pub origin: LedgerProofOriginV2,
+}
+
+pub type LedgerProofOrigin = LedgerProofOriginV2;
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub enum LedgerProofOriginV1 {
     Genesis {
         genesis_opaque_hash: Hash,
     },
@@ -441,7 +504,27 @@ pub enum LedgerProofOrigin {
     },
     ProtocolUpdate {
         protocol_version_name: ProtocolVersionName,
-        batch_idx: u32,
+        batch_index: u32,
+    },
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+pub enum LedgerProofOriginV2 {
+    Consensus {
+        opaque: Hash,
+        timestamped_signatures: Vec<TimestampedValidatorSignature>,
+    },
+    /// All fields except `protocol_version_name` might be inaccurate on old ledgers / before Cuttlefish
+    ProtocolUpdate {
+        protocol_version_name: ProtocolVersionName,
+        /// Captures the known hash of the config of the protocol update, for cross-referencing on boot-up.
+        /// This is `None` if (and only if) the node ran the protocol update before this was captured.
+        config_hash: Option<Hash>,
+        batch_group_index: usize,
+        batch_group_name: String,
+        batch_index: usize,
+        batch_name: String,
+        is_end_of_update: bool,
     },
 }
 
@@ -449,11 +532,11 @@ impl From<LedgerProofV1> for LedgerProofV2 {
     fn from(proof: LedgerProofV1) -> Self {
         let origin = if proof.timestamped_signatures.is_empty() {
             // The only V1 proofs without signatures are genesis
-            LedgerProofOrigin::Genesis {
+            LedgerProofOriginV1::Genesis {
                 genesis_opaque_hash: proof.opaque,
             }
         } else {
-            LedgerProofOrigin::Consensus {
+            LedgerProofOriginV1::Consensus {
                 opaque: proof.opaque,
                 timestamped_signatures: proof.timestamped_signatures,
             }
@@ -465,7 +548,57 @@ impl From<LedgerProofV1> for LedgerProofV2 {
     }
 }
 
-#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+impl From<LedgerProofOriginV1> for LedgerProofOriginV2 {
+    fn from(value: LedgerProofOriginV1) -> Self {
+        // We accept that this can be wrong on old nodes at <= Cuttlefish
+        // We could fix with a migration, but it shouldn't matter, as the only use
+        // of this state for protocol updates is resuming current updates.
+        match value {
+            LedgerProofOriginV1::Genesis {
+                genesis_opaque_hash,
+            } => LedgerProofOriginV2::ProtocolUpdate {
+                protocol_version_name: ProtocolVersionName::babylon(),
+                config_hash: Some(genesis_opaque_hash),
+                batch_group_index: 0,
+                batch_group_name: "".to_string(),
+                batch_index: 0,
+                batch_name: "".to_string(),
+                is_end_of_update: false,
+            },
+            LedgerProofOriginV1::Consensus {
+                opaque,
+                timestamped_signatures,
+            } => LedgerProofOriginV2::Consensus {
+                opaque,
+                timestamped_signatures,
+            },
+            LedgerProofOriginV1::ProtocolUpdate {
+                protocol_version_name,
+                batch_index: _,
+            } => LedgerProofOriginV2::ProtocolUpdate {
+                protocol_version_name,
+                config_hash: None,
+                batch_group_index: 0,
+                batch_group_name: "".to_string(),
+                // To avoid confusion, we discard the old batch index which was from a different/flattened batching structure
+                batch_index: 0,
+                batch_name: "".to_string(),
+                is_end_of_update: false,
+            },
+        }
+    }
+}
+
+impl From<LedgerProofV2> for LedgerProofV3 {
+    fn from(proof: LedgerProofV2) -> Self {
+        Self {
+            ledger_header: proof.ledger_header,
+            origin: proof.origin.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, ScryptoSbor)]
 pub struct LedgerHeaderV1 {
     pub epoch: Epoch,
     pub round: Round,
@@ -476,7 +609,7 @@ pub struct LedgerHeaderV1 {
     pub next_epoch: Option<NextEpoch>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
 pub struct LedgerHeader {
     pub epoch: Epoch,
     pub round: Round,
@@ -523,7 +656,7 @@ impl From<LedgerHeader> for LedgerStateSummary {
     }
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct ProtocolUpdateResult {
     pub post_update_proof: LedgerProof,
 }
@@ -553,7 +686,7 @@ impl EpochTransactionIdentifiers {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, ScryptoSbor)]
 pub struct ValidatorId {
     pub component_address: ComponentAddress,
     pub key: Secp256k1PublicKey,

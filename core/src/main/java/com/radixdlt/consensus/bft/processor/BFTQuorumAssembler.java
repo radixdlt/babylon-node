@@ -74,6 +74,7 @@ import com.radixdlt.consensus.bft.RoundUpdate;
 import com.radixdlt.consensus.bft.VoteProcessingResult.QuorumReached;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteAccepted;
 import com.radixdlt.consensus.bft.VoteProcessingResult.VoteRejected;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.ScheduledEventDispatcher;
 import com.radixdlt.monitoring.Metrics;
@@ -95,7 +96,8 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
   /** A local event triggering a delayed resolution of a timeout quorum */
   public record TimeoutQuorumDelayedResolution(
-      RoundQuorumWithLastVote roundQuorumWithLastVote, long millisecondsWaitTime) {}
+      RoundQuorumWithLastVote roundQuorumWithLastVote, long millisecondsWaitTime)
+      implements LocalEvent {}
 
   private final BFTEventProcessorAtCurrentRound forwardTo;
   private final BFTValidatorId self;
@@ -137,7 +139,7 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
 
   @Override
   public void processRoundUpdate(RoundUpdate roundUpdate) {
-    final var previousRound = this.latestRoundUpdate.getCurrentRound();
+    final var previousRound = this.latestRoundUpdate.currentRound();
     this.latestRoundUpdate = roundUpdate;
     this.hasCurrentRoundBeenResolved = false;
     this.hasTimeoutQuorumResolutionBeenDelayedInCurrentRound = false;
@@ -157,9 +159,9 @@ public final class BFTQuorumAssembler implements BFTEventProcessorAtCurrentRound
   }
 
   private void processVoteInternal(Vote vote) {
-    final var currentRound = this.latestRoundUpdate.getCurrentRound();
+    final var currentRound = this.latestRoundUpdate.currentRound();
 
-    if (!this.self.equals(this.latestRoundUpdate.getNextLeader()) && !vote.isTimeout()) {
+    if (!this.self.equals(this.latestRoundUpdate.nextLeader()) && !vote.isTimeout()) {
       metrics.bft().ignoredVotes().label(new IgnoredVote(VoteIgnoreReason.UNEXPECTED_VOTE)).inc();
       log.trace(
           "Vote: Ignoring vote from {} for round {}, unexpected vote",

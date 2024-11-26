@@ -82,10 +82,11 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.sync.SyncRelayConfig;
+import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -107,17 +108,20 @@ public final class REv2MempoolRelayerTest {
                 SafetyRecoveryConfig.MOCKED,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerWithSyncRelay(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100000)),
-                        StateComputerConfig.REV2ProposerConfig.mempool(
-                            ProposalLimitsConfig.zero(),
-                            new RustMempoolConfig(MEMPOOL_TX_SIZE * 1024 * 1024, MEMPOOL_TX_SIZE),
-                            new MempoolReceiverConfig(0),
-                            MempoolRelayerConfig.defaults())),
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(
+                                    100000)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.mempool(
+                                ProposalLimitsConfig.zero(),
+                                new RustMempoolConfig(
+                                    MEMPOOL_TX_SIZE * 1024 * 1024, MEMPOOL_TX_SIZE),
+                                new MempoolReceiverConfig(0),
+                                MempoolRelayerConfig.defaults())),
                     SyncRelayConfig.of(5000, 10, 3000L))));
   }
 
@@ -131,7 +135,8 @@ public final class REv2MempoolRelayerTest {
       var mempoolDispatcher =
           test.getInstance(1, Key.get(new TypeLiteral<EventDispatcher<MempoolAdd>>() {}));
       for (int i = 0; i < MEMPOOL_TX_SIZE; i++) {
-        mempoolDispatcher.dispatch(MempoolAdd.create(transactionGenerator.nextTransaction()));
+        RawNotarizedTransaction transaction = transactionGenerator.nextTransaction();
+        mempoolDispatcher.dispatch(new MempoolAdd(List.of(transaction)));
       }
 
       // Run all nodes except validator node0

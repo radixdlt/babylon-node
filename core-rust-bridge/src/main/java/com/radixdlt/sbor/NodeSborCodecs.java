@@ -75,10 +75,15 @@ import com.radixdlt.mempool.MempoolError;
 import com.radixdlt.mempool.ProposalTransactionsRequest;
 import com.radixdlt.mempool.RustMempoolConfig;
 import com.radixdlt.message.*;
+import com.radixdlt.p2p.AddressBookEntryDTO;
+import com.radixdlt.p2p.NodeIdDTO;
+import com.radixdlt.p2p.PeerAddressEntryDTO;
+import com.radixdlt.p2p.RocksDbHighPriorityPeersStore.HighPriorityPeers;
 import com.radixdlt.prometheus.LedgerStatus;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
 import com.radixdlt.protocol.*;
 import com.radixdlt.rev2.*;
+import com.radixdlt.safety.*;
 import com.radixdlt.sbor.codec.Codec;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
@@ -125,7 +130,6 @@ public final class NodeSborCodecs {
     LoggingConfig.registerCodec(codecMap);
     StateManagerConfig.registerCodec(codecMap);
     ScenariosExecutionConfig.registerCodec(codecMap);
-    ProtocolUpdateScenarios.registerCodec(codecMap);
     ProtocolConfig.registerCodec(codecMap);
     ProtocolUpdateTrigger.registerCodec(codecMap);
     ProtocolUpdateEnactmentCondition.registerCodec(codecMap);
@@ -134,10 +138,14 @@ public final class NodeSborCodecs {
     ProtocolUpdateResult.registerCodec(codecMap);
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);
+    RawPreviewTransaction.registerCodec(codecMap);
     PreparedIntent.registerCodec(codecMap);
+    PreparedTransactionIntentV2.registerCodec(codecMap);
     PreparedSignedIntent.registerCodec(codecMap);
     PreparedNotarizedTransaction.registerCodec(codecMap);
-    IntentHash.registerCodec(codecMap);
+    PreparedPreviewTransaction.registerCodec(codecMap);
+    TransactionIntentHash.registerCodec(codecMap);
+    SubintentHash.registerCodec(codecMap);
     SignedIntentHash.registerCodec(codecMap);
     NotarizedTransactionHash.registerCodec(codecMap);
     LedgerTransactionHash.registerCodec(codecMap);
@@ -201,6 +209,7 @@ public final class NodeSborCodecs {
     NonFungibleGlobalId.registerCodec(codecMap);
     InternalAddress.registerCodec(codecMap);
     PrepareIntentRequest.registerCodec(codecMap);
+    PrepareTransactionIntentV2Request.registerCodec(codecMap);
     TransactionMessage.registerCodec(codecMap);
     PlaintextTransactionMessage.registerCodec(codecMap);
     EncryptedTransactionMessage.registerCodec(codecMap);
@@ -213,6 +222,27 @@ public final class NodeSborCodecs {
     StateTreeGcConfig.registerCodec(codecMap);
     LedgerProofsGcConfig.registerCodec(codecMap);
     LedgerSyncLimitsConfig.registerCodec(codecMap);
+
+    BFTHeaderDTO.registerCodec(codecMap);
+    BFTValidatorDTO.registerCodec(codecMap);
+    BFTValidatorIdDTO.registerCodec(codecMap);
+    HighQCDTO.registerCodec(codecMap);
+    HighPriorityPeers.registerCodec(codecMap);
+    LedgerHeaderDTO.registerCodec(codecMap);
+    NextEpochDTO.registerCodec(codecMap);
+    QuorumCertificateDTO.registerCodec(codecMap);
+    RoundDTO.registerCodec(codecMap);
+    SafetyStateDTO.registerCodec(codecMap);
+    PeerAddressEntryDTO.registerCodec(codecMap);
+    TimeoutCertificateDTO.registerCodec(codecMap);
+    TimestampedECDSASignatureDTO.registerCodec(codecMap);
+    TimestampedECDSASignaturesDTO.registerCodec(codecMap);
+    VertexIdDTO.registerCodec(codecMap);
+    VoteDataDTO.registerCodec(codecMap);
+    VoteDTO.registerCodec(codecMap);
+
+    AddressBookEntryDTO.registerCodec(codecMap);
+    NodeIdDTO.registerCodec(codecMap);
   }
 
   public static void registerCodecsForExistingTypes(CodecMap codecMap) {

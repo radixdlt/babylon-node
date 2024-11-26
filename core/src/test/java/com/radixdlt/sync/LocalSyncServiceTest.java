@@ -194,7 +194,7 @@ public class LocalSyncServiceTest {
         SyncState.SyncingState.init(latestProof, ImmutableList.of(), targetHeader));
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(sender, StatusResponse.create(statusHeader));
+        .process(sender, new StatusResponse(statusHeader));
 
     verifyNoMoreInteractions(peersView);
     verifyNoMoreInteractions(peerControl);
@@ -214,7 +214,7 @@ public class LocalSyncServiceTest {
         SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer)));
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(unexpectedPeer, StatusResponse.create(statusHeader));
+        .process(unexpectedPeer, new StatusResponse(statusHeader));
 
     verifyNoMoreInteractions(peersView);
     verifyNoMoreInteractions(peerControl);
@@ -232,12 +232,12 @@ public class LocalSyncServiceTest {
 
     final var syncState =
         SyncState.SyncCheckState.init(currentHeader, ImmutableSet.of(expectedPeer))
-            .withStatusResponse(alreadyReceivedPeer, StatusResponse.create(statusHeader));
+            .withStatusResponse(alreadyReceivedPeer, new StatusResponse(statusHeader));
 
     this.setupSyncServiceWithState(syncState);
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(alreadyReceivedPeer, StatusResponse.create(statusHeader));
+        .process(alreadyReceivedPeer, new StatusResponse(statusHeader));
 
     verifyNoMoreInteractions(peersView);
     verifyNoMoreInteractions(peerControl);
@@ -264,13 +264,13 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting1, StatusResponse.create(statusHeader1));
+        .process(waiting1, new StatusResponse(statusHeader1));
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting2, StatusResponse.create(statusHeader2));
+        .process(waiting2, new StatusResponse(statusHeader2));
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting3, StatusResponse.create(statusHeader3));
+        .process(waiting3, new StatusResponse(statusHeader3));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(waiting2), any());
   }
@@ -286,7 +286,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .syncCheckReceiveStatusTimeoutEventProcessor()
-        .process(SyncCheckReceiveStatusTimeout.create());
+        .process(new SyncCheckReceiveStatusTimeout());
 
     verifyNoMoreInteractions(syncRequestDispatcher);
   }
@@ -306,17 +306,17 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting1, StatusResponse.create(statusHeader1));
+        .process(waiting1, new StatusResponse(statusHeader1));
 
     this.localSyncService
         .syncCheckReceiveStatusTimeoutEventProcessor()
-        .process(SyncCheckReceiveStatusTimeout.create());
+        .process(new SyncCheckReceiveStatusTimeout());
 
     // even though statusHeader2 is more up to date, it should be ignored because was received
     // after a timeout event
     this.localSyncService
         .statusResponseEventProcessor()
-        .process(waiting2, StatusResponse.create(statusHeader2));
+        .process(waiting2, new StatusResponse(statusHeader2));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(waiting1), any());
   }
@@ -339,7 +339,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .syncRequestTimeoutEventProcessor()
-        .process(SyncRequestTimeout.create(peer1, requestId));
+        .process(new SyncRequestTimeout(peer1, requestId));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer2), any());
   }
@@ -363,7 +363,7 @@ public class LocalSyncServiceTest {
     // waiting for response from peer1, but got a timeout for peer2
     this.localSyncService
         .syncRequestTimeoutEventProcessor()
-        .process(SyncRequestTimeout.create(peer2, requestId));
+        .process(new SyncRequestTimeout(peer2, requestId));
 
     verifyNoMoreInteractions(syncRequestDispatcher);
   }
@@ -386,7 +386,7 @@ public class LocalSyncServiceTest {
     // waiting for response for request id 2, but got a timeout for 1
     this.localSyncService
         .syncRequestTimeoutEventProcessor()
-        .process(SyncRequestTimeout.create(peer1, 1L));
+        .process(new SyncRequestTimeout(peer1, 1L));
 
     verifyNoMoreInteractions(syncRequestDispatcher);
   }
@@ -526,7 +526,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .syncLedgerUpdateTimeoutProcessor()
-        .process(SyncLedgerUpdateTimeout.create(latestProof.stateVersion()));
+        .process(new SyncLedgerUpdateTimeout(latestProof.stateVersion()));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
   }
@@ -546,7 +546,7 @@ public class LocalSyncServiceTest {
     this.localSyncService
         .syncLedgerUpdateTimeoutProcessor()
         .process(
-            SyncLedgerUpdateTimeout.create(
+            new SyncLedgerUpdateTimeout(
                 latestProof.stateVersion() - 1) // timeout event for a past state version
             );
 
@@ -566,7 +566,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(peer1, LedgerStatusUpdate.create(targetHeader));
+        .process(peer1, new LedgerStatusUpdate(targetHeader));
 
     verify(syncRequestDispatcher, times(1)).dispatch(eq(peer1), any());
   }
@@ -586,12 +586,11 @@ public class LocalSyncServiceTest {
             .withPendingRequest(peer1, 1L);
     this.setupSyncServiceWithState(syncState);
 
+    LedgerProofSyncStatusDto proof =
+        LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(newTargetProof);
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(
-            peer2,
-            LedgerStatusUpdate.create(
-                LedgerSyncDtoConversions.ledgerProofToSyncStatusDto(newTargetProof)));
+        .process(peer2, new LedgerStatusUpdate(proof));
 
     assertEquals(
         newTargetProof.ledgerHeader(),
@@ -615,7 +614,7 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(peer2, LedgerStatusUpdate.create(newTargetHeader));
+        .process(peer2, new LedgerStatusUpdate(newTargetHeader));
 
     assertEquals(syncState, this.localSyncService.getSyncState());
   }
@@ -639,12 +638,12 @@ public class LocalSyncServiceTest {
 
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(peer3, LedgerStatusUpdate.create(newTargetHeader));
+        .process(peer3, new LedgerStatusUpdate(newTargetHeader));
 
     // another, newer, ledger update from the same peer
     this.localSyncService
         .ledgerStatusUpdateEventProcessor()
-        .process(peer3, LedgerStatusUpdate.create(evenNewerTargetHeader));
+        .process(peer3, new LedgerStatusUpdate(evenNewerTargetHeader));
 
     assertEquals(
         peer3,

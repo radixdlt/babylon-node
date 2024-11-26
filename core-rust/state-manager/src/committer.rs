@@ -62,37 +62,19 @@
  * permissions under this License.
  */
 
-use crate::mempool_manager::MempoolManager;
-use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
-use crate::store::traits::*;
-use crate::transaction::*;
-use crate::types::CommitRequest;
-use crate::*;
+use crate::prelude::*;
 
-use crate::engine_prelude::*;
-
-use node_common::locks::{DbLock, RwLock};
-
-use tracing::warn;
-
-use crate::protocol::*;
 use crate::system_commits::*;
-
-use crate::accumulator_tree::storage::ReadableAccuTreeStore;
-
-use std::ops::Deref;
-use std::sync::Arc;
-use std::time::SystemTime;
 
 pub struct Committer {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
-    ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+    validator: Arc<RwLock<TransactionValidator>>,
     transaction_executor_factory: Arc<TransactionExecutorFactory>,
     mempool_manager: Arc<MempoolManager>,
     execution_cache_manager: Arc<ExecutionCacheManager>,
-    pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
     protocol_manager: Arc<ProtocolManager>,
     ledger_metrics: Arc<LedgerMetrics>,
+    formatter: Arc<Formatter>,
 }
 
 impl Committer {
@@ -100,22 +82,22 @@ impl Committer {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         transaction_executor_factory: Arc<TransactionExecutorFactory>,
-        ledger_transaction_validator: Arc<LedgerTransactionValidator>,
+        ledger_transaction_validator: Arc<RwLock<TransactionValidator>>,
         mempool_manager: Arc<MempoolManager>,
         execution_cache_manager: Arc<ExecutionCacheManager>,
-        pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
         protocol_manager: Arc<ProtocolManager>,
         ledger_metrics: Arc<LedgerMetrics>,
+        formatter: Arc<Formatter>,
     ) -> Self {
         Self {
             database,
-            ledger_transaction_validator,
+            validator: ledger_transaction_validator,
             transaction_executor_factory,
             mempool_manager,
             execution_cache_manager,
-            pending_transaction_result_cache,
             protocol_manager,
             ledger_metrics,
+            formatter,
         }
     }
 }
@@ -138,6 +120,7 @@ impl Committer {
 
         let commit_ledger_header = &proof.ledger_header;
         let commit_state_version = commit_ledger_header.state_version;
+        let commit_proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms;
 
         // We advance the top-of-ledger, hence lock:
         let database = self.database.lock();
@@ -152,9 +135,7 @@ impl Committer {
             .ledger_header
             .proposer_timestamp_ms;
         for (index, raw_transaction) in transactions.iter().enumerate() {
-            let result = self
-                .ledger_transaction_validator
-                .prepare_from_raw(raw_transaction);
+            let result = raw_transaction.prepare(self.validator.read().preparation_settings());
             let prepared_transaction = match result {
                 Ok(prepared_transaction) => prepared_transaction,
                 Err(error) => {
@@ -166,12 +147,20 @@ impl Committer {
                 }
             };
 
-            if let PreparedLedgerTransactionInner::RoundUpdateV1(_) = &prepared_transaction.inner {
-                let round_update = LedgerTransaction::from_raw(raw_transaction)
+            if let PreparedLedgerTransactionInner::Validator(_) = &prepared_transaction.inner {
+                let ledger_transaction = LedgerTransaction::from_raw(raw_transaction)
                     .expect("the same transaction was parsed fine above");
-                if let LedgerTransaction::RoundUpdateV1(round_update) = round_update {
-                    leader_round_counters_builder.update(&round_update.leader_proposal_history);
-                    proposer_timestamp_ms = round_update.proposer_timestamp_ms;
+                match ledger_transaction {
+                    LedgerTransaction::RoundUpdateV1(round_update) => {
+                        leader_round_counters_builder.update(&round_update.leader_proposal_history);
+                        proposer_timestamp_ms = round_update.proposer_timestamp_ms;
+                    }
+                    LedgerTransaction::Genesis(_)
+                    | LedgerTransaction::UserV1(_)
+                    | LedgerTransaction::FlashV1(_)
+                    | LedgerTransaction::UserV2(_) => {
+                        panic!("A validator transaction can only be a RoundUpdate")
+                    }
                 }
             }
 
@@ -185,6 +174,12 @@ impl Committer {
             .start_series_execution(database.deref());
         self.verify_pre_commit_invariants(&series_executor, transactions.len(), &proof);
 
+        debug!(
+            "Starting commit of normal transaction batch on top of existing state version {} until state version {}",
+            series_executor.latest_state_version(),
+            commit_state_version,
+        );
+
         // Naively, the below could be a part of pre-commit invariants (see above); however, we do
         // not want to panic, but rather return an `Err` for the consensus layer, since a
         // transaction root mismatch may mean a malicious peer (and not our inconsistent state).
@@ -197,7 +192,7 @@ impl Committer {
             .unwrap_or_else(|| {
                 Self::calculate_transaction_root(
                     database.deref(),
-                    series_executor.epoch_identifiers(),
+                    &series_executor.epoch_identifiers(),
                     series_executor.latest_state_version(),
                     &prepared_transactions,
                 )
@@ -223,23 +218,40 @@ impl Committer {
             .zip(prepared_transactions)
             .zip(proposer_timestamps)
         {
-            let validated = self
-                .ledger_transaction_validator
-                .validate_user_or_round_update(prepared)
+            let validated = prepared
+                .validate(
+                    self.validator.read().deref(),
+                    AcceptedLedgerTransactionKind::UserOrValidator,
+                )
                 .unwrap_or_else(|error| {
                     panic!("cannot validate transaction to be committed: {error:?}");
                 });
 
+            let hashes = validated.create_hashes();
+            let executable = validated.create_ledger_executable();
+
+            if let Some(user_hashes) = hashes.as_user() {
+                debug!(
+                    "Starting commit execution of {} for {:?}",
+                    user_hashes
+                        .transaction_intent_hash
+                        .display(&*self.formatter),
+                    series_executor.latest_state_version().next().unwrap(),
+                );
+            }
+
             let commit = series_executor
-                .execute_and_update_state(&validated, "prepared")
+                .execute_and_update_state(&executable, &hashes, "prepared")
                 .expect("cannot execute transaction to be committed");
 
-            if let ValidatedLedgerTransactionInner::UserV1(user_transaction) = &validated.inner {
-                committed_user_transactions.push(CommittedUserTransactionIdentifiers {
+            if let Some(user_hashes) = hashes.as_user() {
+                let identifiers = CommittedUserTransactionIdentifiers {
                     state_version: series_executor.latest_state_version(),
-                    intent_hash: user_transaction.intent_hash(),
-                    notarized_transaction_hash: user_transaction.notarized_transaction_hash(),
-                });
+                    transaction_intent_hash: user_hashes.transaction_intent_hash,
+                    notarized_transaction_hash: user_hashes.notarized_transaction_hash,
+                };
+                let nullifications = commit.local_receipt.local_execution.nullifications.clone();
+                committed_user_transactions.push((identifiers, nullifications));
             }
             transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
 
@@ -247,24 +259,19 @@ impl Committer {
                 series_executor.latest_state_version(),
                 proposer_timestamp_ms,
                 raw,
-                validated,
+                hashes,
                 commit,
             );
         }
 
-        self.protocol_manager.update_protocol_state_and_metrics(
-            series_executor.protocol_state(),
-            series_executor.epoch_change().as_ref(),
-        );
+        let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
+        let end_state = series_executor.finalize_series(BatchSituation::NonSystem);
+
+        self.protocol_manager
+            .update_protocol_state_and_metrics(&end_state);
 
         // Step 4.: Check final invariants, perform the DB commit
-        self.verify_post_commit_invariants(&series_executor, &proof);
-
-        // capture these before we lose the appropriate borrows:
-        let proposer_timestamp_ms = commit_ledger_header.proposer_timestamp_ms;
-        let round_counters = leader_round_counters_builder.build(series_executor.epoch_header());
-        let final_transaction_root = series_executor.latest_ledger_hashes().transaction_root;
-        let epoch_change = series_executor.epoch_change();
+        self.verify_post_commit_invariants(&end_state, &proof);
 
         database.commit(commit_bundle_builder.build(proof, vertex_store));
 
@@ -272,28 +279,20 @@ impl Committer {
 
         self.execution_cache_manager
             .access_exclusively()
-            .progress_base(&final_transaction_root);
-
-        self.mempool_manager.remove_committed(
-            committed_user_transactions
-                .iter()
-                .map(|txn| &txn.intent_hash),
-        );
-
-        if let Some(epoch_change) = epoch_change {
-            self.mempool_manager
-                .remove_txns_where_end_epoch_expired(epoch_change.epoch);
-        }
+            .progress_base(&end_state.ledger_hashes.transaction_root);
 
         let num_user_transactions = committed_user_transactions.len() as u32;
-        self.pending_transaction_result_cache
-            .write()
-            .track_committed_transactions(SystemTime::now(), committed_user_transactions);
+
+        self.mempool_manager.handle_committed_transactions(
+            SystemTime::now(),
+            end_state.epoch_change,
+            committed_user_transactions,
+        );
 
         self.ledger_metrics.update(
             commit_state_version,
             round_counters.clone(),
-            proposer_timestamp_ms,
+            commit_proposer_timestamp_ms,
             self_validator_id,
             transactions_metrics_data,
         );
@@ -314,8 +313,9 @@ impl Committer {
             transactions,
             proof,
             require_committed_successes,
+            batch_situation,
         } = request;
-        let proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
+        let commit_proposer_timestamp_ms = proof.ledger_header.proposer_timestamp_ms;
 
         let database = self.database.lock();
         let mut series_executor = self
@@ -323,11 +323,31 @@ impl Committer {
             .start_series_execution(database.deref());
         self.verify_pre_commit_invariants(&series_executor, transactions.len(), &proof);
 
+        debug!(
+            "Starting commit of system transaction batch on top of existing state version {} until state version {}",
+            series_executor.latest_state_version(),
+            proof.ledger_header.state_version,
+        );
+
         let mut commit_bundle_builder = series_executor.start_commit_builder();
         let mut transactions_metrics_data = Vec::new();
-        for RawAndValidatedTransaction { raw, validated } in transactions {
+        for ProcessedLedgerTransaction {
+            raw,
+            executable,
+            hashes,
+        } in transactions
+        {
+            if let Some(user_hashes) = hashes.as_user() {
+                debug!(
+                    "Starting commit execution of {} for {:?}",
+                    user_hashes
+                        .transaction_intent_hash
+                        .display(&*self.formatter),
+                    series_executor.latest_state_version().next().unwrap(),
+                );
+            }
             let mut commit = series_executor
-                .execute_and_update_state(&validated, "system transaction")
+                .execute_and_update_state(&executable, &hashes, "system transaction")
                 .expect("cannot execute system transaction");
             if require_committed_successes {
                 commit = commit.expect_success("system transaction not successful");
@@ -336,32 +356,29 @@ impl Committer {
             transactions_metrics_data.push(TransactionMetricsData::new(&raw, &commit));
             commit_bundle_builder.add_executed_transaction(
                 series_executor.latest_state_version(),
-                proposer_timestamp_ms,
+                commit_proposer_timestamp_ms,
                 raw,
-                validated,
+                hashes,
                 commit,
             );
         }
 
-        self.verify_post_commit_invariants(&series_executor, &proof);
+        let end_state = series_executor.finalize_series(batch_situation);
+        self.verify_post_commit_invariants(&end_state, &proof);
 
         self.execution_cache_manager
             .access_exclusively()
-            .progress_base(&series_executor.latest_ledger_hashes().transaction_root);
+            .progress_base(&end_state.ledger_hashes.transaction_root);
 
         database.commit(commit_bundle_builder.build(proof, None));
 
-        // Protocol updates aren't allowed during system transactions, so no need to handle an
-        // update here, just assign the latest protocol state.
-        self.protocol_manager.update_protocol_state_and_metrics(
-            series_executor.protocol_state(),
-            series_executor.epoch_change().as_ref(),
-        );
+        self.protocol_manager
+            .update_protocol_state_and_metrics(&end_state);
 
         self.ledger_metrics.update(
-            series_executor.latest_state_version(),
+            end_state.state_version,
             Vec::new(),
-            proposer_timestamp_ms,
+            commit_proposer_timestamp_ms,
             None,
             transactions_metrics_data,
         );
@@ -391,30 +408,23 @@ impl Committer {
         }
     }
 
-    fn verify_post_commit_invariants(
-        &self,
-        finished_series_executor: &TransactionSeriesExecutor<ActualStateManagerDatabase>,
-        proof: &LedgerProof,
-    ) {
+    fn verify_post_commit_invariants(&self, end_state: &StateTrackerEndState, proof: &LedgerProof) {
         let commit_state_version = proof.ledger_header.state_version;
-        if finished_series_executor.latest_state_version() != commit_state_version {
+        if end_state.state_version != commit_state_version {
             panic!(
                 "resultant state version differs from the proof ({:?} != {:?})",
-                finished_series_executor.latest_ledger_hashes(),
-                commit_state_version,
+                end_state.state_version, commit_state_version,
             );
         }
 
-        if finished_series_executor.latest_ledger_hashes() != &proof.ledger_header.hashes {
+        if end_state.ledger_hashes != proof.ledger_header.hashes {
             panic!(
                 "resultant ledger hashes at version {} differ from the proof ({:?} != {:?})",
-                commit_state_version,
-                finished_series_executor.latest_ledger_hashes(),
-                proof.ledger_header.hashes,
+                commit_state_version, end_state.ledger_hashes, proof.ledger_header.hashes,
             );
         }
 
-        let next_epoch = finished_series_executor.epoch_change().map(NextEpoch::from);
+        let next_epoch = end_state.epoch_change.clone().map(NextEpoch::from);
         if next_epoch != proof.ledger_header.next_epoch {
             panic!(
                 "resultant next epoch at version {} differs from the proof ({:?} != {:?})",
@@ -424,7 +434,7 @@ impl Committer {
 
         self.verify_post_commit_protocol_version(
             commit_state_version,
-            &finished_series_executor.next_protocol_version(),
+            &end_state.next_protocol_version,
             &proof.ledger_header.next_protocol_version,
         );
     }
@@ -493,6 +503,6 @@ impl Committer {
 
 pub struct CommittedUserTransactionIdentifiers {
     pub state_version: StateVersion,
-    pub intent_hash: IntentHash,
+    pub transaction_intent_hash: TransactionIntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
 }

@@ -72,8 +72,8 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.*;
 import com.radixdlt.serialization.DeserializeException;
 import com.radixdlt.testutil.InternalAddress;
-import com.radixdlt.transactions.IntentHash;
 import com.radixdlt.transactions.NotarizedTransactionHash;
+import com.radixdlt.transactions.TransactionIntentHash;
 import com.radixdlt.utils.Pair;
 
 /** Performs Bech32m encoding/decoding. */
@@ -110,7 +110,7 @@ public final class Addressing {
     return address.encode(this.networkDefinition);
   }
 
-  public String encode(IntentHash hash) {
+  public String encode(TransactionIntentHash hash) {
     return Bech32mCoder.encode(network.getIntentHashHrp(), hash.inner().asBytes());
   }
 

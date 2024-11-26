@@ -71,7 +71,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
 import com.radixdlt.harness.simulation.SimulationTest;
@@ -110,9 +109,7 @@ public final class ProposerTimestampSanityTest {
                     ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(10),
-                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                            10, EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4))))));
 
     /* One node delayed */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);
@@ -143,9 +140,7 @@ public final class ProposerTimestampSanityTest {
                     ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(10),
-                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                            10, EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4))))));
 
     /* One node rushing within acceptable bounds */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() + 500, builder);
@@ -176,10 +171,9 @@ public final class ProposerTimestampSanityTest {
                     ConsensusConfig.of(1000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(10),
-                            EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool(),
-                            StateComputerConfig.ProposerElectionMode.ONLY_WEIGHTED_BY_STAKE))));
+                                10, EpochNodeWeightMapping.constant(e -> IntStream.range(0, 4)))
+                            .withProposerElection(
+                                StateComputerConfig.ProposerElectionMode.ONLY_WEIGHTED_BY_STAKE))));
 
     /* One node rushing */
     modifyNthNodeTimeSupplier(0, () -> System.currentTimeMillis() - 4000, builder);

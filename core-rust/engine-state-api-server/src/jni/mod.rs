@@ -63,15 +63,11 @@
  */
 
 use crate::engine_state_api::{create_server, EngineStateApiServerConfig, EngineStateApiState};
+use crate::jni_prelude::*;
 use futures::channel::oneshot;
 use futures::channel::oneshot::Sender;
 use futures::FutureExt;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
 use prometheus::*;
-use state_manager::jni::node_rust_environment::JNINodeRustEnvironment;
-use std::str;
 use std::sync::{Arc, MutexGuard};
 use tokio::runtime::Runtime;
 

@@ -67,7 +67,7 @@ package com.radixdlt.bootstrap;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.consensus.Blake2b256Hasher;
+import com.radixdlt.crypto.Blake2b256Hasher;
 import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.sbor.NodeSborCodecs;

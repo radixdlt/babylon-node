@@ -99,7 +99,7 @@ public final class PeerDiscoveryModule extends AbstractModule {
     return new ScheduledEventProducerOnRunner<>(
         Runners.P2P_NETWORK,
         discoverPeersEventDispatcher,
-        DiscoverPeers::create,
+        () -> new DiscoverPeers(),
         Duration.ofMillis(500L),
         Duration.ofMillis(config.discoveryInterval()));
   }

@@ -73,11 +73,12 @@ import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.Runners;
 import com.radixdlt.environment.StartProcessorOnRunner;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.environment.rx.RxEnvironmentModule;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.ledger.LedgerProofBundle;
@@ -97,6 +98,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.PrivateKeys;
 import com.radixdlt.utils.TimeSupplier;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -126,7 +128,8 @@ public final class MempoolRunnerTest {
             .toInstance(
                 new RxRemoteEnvironment() {
                   @Override
-                  public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
+                  public <T extends RemoteEvent> Flowable<IncomingEvent<NodeId, T>> remoteEvents(
+                      Class<T> messageType) {
                     return Flowable.never();
                   }
                 });
@@ -151,7 +154,8 @@ public final class MempoolRunnerTest {
     Guice.createInjector(createModule()).injectMembers(this);
     moduleRunners.get(Runners.MEMPOOL).start(error -> log.error("Uncaught runner error", error));
 
-    MempoolAdd mempoolAdd = MempoolAdd.create(RawNotarizedTransaction.create(new byte[0]));
+    RawNotarizedTransaction transaction = RawNotarizedTransaction.create(new byte[0]);
+    MempoolAdd mempoolAdd = new MempoolAdd(List.of(transaction));
     mempoolAddEventDispatcher.dispatch(mempoolAdd);
 
     verify(stateComputer, timeout(1000).times(1)).addToMempool(eq(mempoolAdd), isNull());

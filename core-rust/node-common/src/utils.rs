@@ -62,7 +62,7 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
 /// An implementation helper for a runtime-safe "capture a single expected value" functionality.
 pub enum CaptureSupport<T> {
@@ -109,6 +109,15 @@ impl<T> CaptureSupport<T> {
         self.capture_value(value.clone());
     }
 
+    /// Calls [`Self::capture_value()`] with the constructed value, or does nothing if
+    /// not expecting any value at the moment.
+    pub fn capture_if_required(&mut self, constructor: impl FnOnce() -> T) {
+        if matches!(self, CaptureSupport::NotExpecting) {
+            return; // deliberately do nothing
+        }
+        self.capture_value(constructor());
+    }
+
     /// Returns the currently captured value and resets the instance to "not expecting" state.
     /// The [`Self::capture_value()`] must have been called before this method.
     pub fn retrieve_captured(&mut self) -> T {
@@ -118,6 +127,15 @@ impl<T> CaptureSupport<T> {
             panic!("nothing captured");
         };
         value
+    }
+
+    /// Extracts the captured value as an [`Option<T>`].
+    pub fn into_option(self) -> Option<T> {
+        match self {
+            CaptureSupport::NotExpecting => None,
+            CaptureSupport::Expecting => None,
+            CaptureSupport::Captured(x) => Some(x),
+        }
     }
 }
 
@@ -131,8 +149,8 @@ impl IsAccountExt for GlobalAddress {
             Some(entity_type) => matches!(
                 entity_type,
                 EntityType::GlobalAccount
-                    | EntityType::GlobalVirtualSecp256k1Account
-                    | EntityType::GlobalVirtualEd25519Account
+                    | EntityType::GlobalPreallocatedSecp256k1Account
+                    | EntityType::GlobalPreallocatedEd25519Account
             ),
             _ => false,
         }

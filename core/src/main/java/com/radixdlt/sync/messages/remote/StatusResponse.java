@@ -64,45 +64,8 @@
 
 package com.radixdlt.sync.messages.remote;
 
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.sync.LedgerProofSyncStatusDto;
-import java.util.Objects;
 
 /** Node status response message. */
-public final class StatusResponse {
-
-  private final LedgerProofSyncStatusDto proof;
-
-  public static StatusResponse create(LedgerProofSyncStatusDto proof) {
-    return new StatusResponse(proof);
-  }
-
-  private StatusResponse(LedgerProofSyncStatusDto proof) {
-    this.proof = proof;
-  }
-
-  public LedgerProofSyncStatusDto getProof() {
-    return proof;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{proof=%s}", this.getClass().getSimpleName(), this.proof);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof StatusResponse)) {
-      return false;
-    }
-    StatusResponse that = (StatusResponse) o;
-    return Objects.equals(proof, that.proof);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(proof);
-  }
-}
+public record StatusResponse(LedgerProofSyncStatusDto proof) implements RemoteEvent {}

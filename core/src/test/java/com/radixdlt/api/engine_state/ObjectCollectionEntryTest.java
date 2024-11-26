@@ -76,7 +76,7 @@ public final class ObjectCollectionEntryTest extends DeterministicEngineStateApi
 
   @Test
   public void engine_state_api_returns_object_kv_collection_entry() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
@@ -105,7 +105,7 @@ public final class ObjectCollectionEntryTest extends DeterministicEngineStateApi
 
   @Test
   public void engine_state_api_returns_object_sorted_collection_entry() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
@@ -141,7 +141,7 @@ public final class ObjectCollectionEntryTest extends DeterministicEngineStateApi
 
   @Test
   public void engine_state_api_returns_not_found_for_unknown_key() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
@@ -177,7 +177,7 @@ public final class ObjectCollectionEntryTest extends DeterministicEngineStateApi
     // Note: this is NOT the only endpoint in the Engine State API which is supposed to support
     // SBORs in different formats, but it is a convenient place to test it (both input and output).
 
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();

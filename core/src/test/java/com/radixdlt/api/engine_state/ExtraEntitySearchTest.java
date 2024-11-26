@@ -93,7 +93,7 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
 
   @Test
   public void engine_state_api_extra_entity_search_pages_through_all_entities() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // first list all entities with a single request
@@ -145,7 +145,7 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
   @Parameters(method = "broadFilters")
   public void engine_state_api_extra_entity_search_pages_through_filtered_entities(
       EntitySearchFilter filter) throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var allResponse =
@@ -194,7 +194,7 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
 
   @Test
   public void engine_state_api_extra_entity_search_sorts_by_creation_asc() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var allResponse = getExtraApi().extraEntitySearchPost(new ExtraEntitySearchRequest());
@@ -211,7 +211,7 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
 
   @Test
   public void engine_state_api_extra_entity_search_filters_by_system_type() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var allResponse =
@@ -231,7 +231,7 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
 
   @Test
   public void engine_state_api_extra_entity_search_filters_by_entity_type() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var allResponse =
@@ -252,7 +252,7 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
 
   @Test
   public void engine_state_api_extra_entity_search_filters_by_blueprint() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
@@ -279,7 +279,7 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
   @Test
   public void engine_state_api_extra_entity_search_requires_same_params_across_pages()
       throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var sameFilter = new EntityTypeFilter().entityType(EntityType.INTERNALKEYVALUESTORE);
@@ -336,7 +336,7 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
   @Parameters(method = "noneOrBroadFilters")
   public void engine_state_api_extra_entity_search_supports_history(
       @Nullable EntitySearchFilter filter) throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Arrange: collect all entities (as of now) and index them by creation version:
@@ -386,7 +386,10 @@ public final class ExtraEntitySearchTest extends DeterministicEngineStateApiTest
   public void engine_state_api_extra_entity_search_at_state_version_requires_history_feature()
       throws Exception {
     final var tooShortHistory =
-        new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(10));
+        defaultConfig()
+            .withStateTreeGcConfig(
+                new StateTreeGcConfig(
+                    UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(10)));
     try (var test = buildRunningServerTest(tooShortHistory)) {
       test.suppressUnusedWarning();
 

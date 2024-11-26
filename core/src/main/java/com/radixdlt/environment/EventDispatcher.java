@@ -64,11 +64,13 @@
 
 package com.radixdlt.environment;
 
+import com.radixdlt.consensus.event.LocalEvent;
+
 /**
  * A dispatcher of an event to an environment
  *
  * @param <T> the event class
  */
-public interface EventDispatcher<T> {
+public interface EventDispatcher<T extends LocalEvent> {
   void dispatch(T t);
 }

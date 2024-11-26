@@ -64,46 +64,8 @@
 
 package com.radixdlt.sync.messages.remote;
 
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.sync.LedgerExtensionSyncDto;
-import java.util.Objects;
 
 /** A response to the SyncRequest message. */
-public final class SyncResponse {
-
-  private final LedgerExtensionSyncDto dtoLedgerExtension;
-
-  public static SyncResponse create(LedgerExtensionSyncDto dtoLedgerExtension) {
-    return new SyncResponse(dtoLedgerExtension);
-  }
-
-  private SyncResponse(LedgerExtensionSyncDto dtoLedgerExtension) {
-    this.dtoLedgerExtension = Objects.requireNonNull(dtoLedgerExtension);
-  }
-
-  public LedgerExtensionSyncDto getLedgerExtension() {
-    return dtoLedgerExtension;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{ledgerExtension=%s}", this.getClass().getSimpleName(), dtoLedgerExtension);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof SyncResponse)) {
-      return false;
-    }
-    SyncResponse that = (SyncResponse) o;
-    return Objects.equals(dtoLedgerExtension, that.dtoLedgerExtension);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(dtoLedgerExtension);
-  }
-}
+public record SyncResponse(LedgerExtensionSyncDto ledgerExtension) implements RemoteEvent {}

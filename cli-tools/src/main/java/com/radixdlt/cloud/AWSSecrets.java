@@ -68,7 +68,7 @@ import com.radixdlt.addressing.Addressing;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.RadixKeyStore;
 import com.radixdlt.networks.Network;
-import com.radixdlt.utils.AWSSecretManager;
+import com.radixdlt.utils.AWSParameterStoreManager;
 import com.radixdlt.utils.AWSSecretsOutputOptions;
 import java.io.File;
 import java.io.IOException;
@@ -340,15 +340,16 @@ public class AWSSecrets {
       System.out.println("Secret " + secretName + " not stored in AWS");
       return;
     }
-    if (AWSSecretManager.awsSecretExists(secretName) && !canBeUpdated(awsSecretsOutputOptions)) {
+    if (AWSParameterStoreManager.awsParameterExists(secretName)
+        && !canBeUpdated(awsSecretsOutputOptions)) {
       System.out.println("Secret " + secretName + " cannot be updated");
       return;
     }
-    if (AWSSecretManager.awsSecretExists(secretName)) {
-      AWSSecretManager.updateAWSSecret(
+    if (AWSParameterStoreManager.awsParameterExists(secretName)) {
+      AWSParameterStoreManager.updateAWSParameter(
           awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
     } else {
-      AWSSecretManager.createAWSSecret(
+      AWSParameterStoreManager.createAWSParameter(
           awsSecret, secretName, awsSecretsOutputOptions, compress, binarySecret);
     }
   }

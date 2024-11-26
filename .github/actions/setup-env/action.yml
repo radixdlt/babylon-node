@@ -13,7 +13,7 @@ runs:
       uses: RDXWorks-actions/toolchain@master
       with:
         # IMPORTANT: This version should match the version in radixdlt-scrypto on respective branch
-        toolchain: stable
+        toolchain: 1.81.0
         default: true
         target: ${{inputs.cross-compile-to-windows == 'true' && 'x86_64-pc-windows-msvc' || ''}}
 

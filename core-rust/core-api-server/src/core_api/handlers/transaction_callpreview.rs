@@ -1,7 +1,4 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::PreviewRequest;
+use crate::prelude::*;
 
 macro_rules! args_from_bytes_vec {
     ($args: expr) => {{
@@ -49,12 +46,12 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_package_address(&extraction_context, package_address.as_str())
                     .map_err(|err| err.into_response_error("target.package_address"))?;
 
-            InstructionV1::CallFunction {
+            InstructionV1::CallFunction(CallFunction {
                 blueprint_name,
                 function_name,
                 package_address: package_address.into(),
                 args: args_from_bytes_vec!(args),
-            }
+            })
         }
         models::TargetIdentifier::ComponentMethodTargetIdentifier {
             component_address,
@@ -64,28 +61,23 @@ pub(crate) async fn handle_transaction_callpreview(
                 extract_component_address(&extraction_context, component_address.as_str())
                     .map_err(|err| err.into_response_error("target.component_address"))?;
 
-            InstructionV1::CallMethod {
+            InstructionV1::CallMethod(CallMethod {
                 address: component_address.into(),
                 method_name,
                 args: args_from_bytes_vec!(args),
-            }
+            })
         }
     };
 
     let result = state.state_manager.transaction_previewer.preview(
         PreviewRequest {
             manifest: TransactionManifestV1 {
-                instructions: vec![
-                    InstructionV1::CallMethod {
-                        address: FAUCET.into(),
-                        method_name: "lock_fee".to_string(),
-                        args: manifest_args!(Decimal::from(100u32)).into(),
-                    },
-                    requested_call,
-                ],
+                instructions: vec![requested_call],
                 blobs: index_map_new(),
+                object_names: Default::default(),
             },
-            explicit_epoch_range: None,
+            start_epoch_inclusive: None,
+            end_epoch_exclusive: None,
             notary_public_key: None,
             notary_is_signatory: true,
             tip_percentage: 0,
@@ -108,7 +100,6 @@ pub(crate) async fn handle_transaction_callpreview(
                 TransactionOutcome::Success(data) => {
                     let output = match data
                         .into_iter()
-                        .skip(1) // Skip the result of `lock_fee`
                         .map(|line_output| {
                             let bytes = match line_output {
                                 InstructionOutput::None => scrypto_encode(&()).unwrap(),

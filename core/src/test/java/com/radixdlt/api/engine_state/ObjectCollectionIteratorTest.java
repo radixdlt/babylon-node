@@ -79,7 +79,7 @@ public final class ObjectCollectionIteratorTest extends DeterministicEngineState
   @Test
   public void engine_state_api_object_collection_iterator_pages_through_all_entries()
       throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();

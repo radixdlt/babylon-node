@@ -109,7 +109,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // Execute it once, to initialize the account and learn its XRD vault address:
       var firstCommit =
-          getApiHelper().submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
+          getCoreApiHelper().submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
       var initialVaultBalance =
           this.getStateApi()
               .stateAccountPost(
@@ -133,7 +133,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // Execute precisely the deposit that was just previewed:
       var secondCommit =
-          getApiHelper().submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
+          getCoreApiHelper().submitAndWaitForSuccess(test, manifest, List.of(accountKeyPair));
       assertThat(secondCommit.stateVersion()).isGreaterThan(firstCommit.stateVersion()); // (sanity)
 
       // Sanity check - a preview now should give "3x from Faucet" amount:
@@ -160,7 +160,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
       // Arrange a ledger state where at least one state version does not have ledger proof:
       test.runUntilState(NodesPredicate.allAtExactlyStateVersion(stateVersionRange.first()));
-      getApiHelper().submitAndWaitForSuccess(test, Manifest.valid(), List.of());
+      getCoreApiHelper().submitAndWaitForSuccess(test, Manifest.valid(), List.of());
       test.runUntilState(NodesPredicate.allAtExactlyStateVersion(stateVersionRange.last()));
 
       // Locate one example of a state version which has and one which has no ledger proof:
@@ -207,7 +207,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   @Test
   public void transaction_preview_refuses_too_old_state_version() throws Exception {
     final var historyLength = 7L;
-    final var inspectedAtVersion = 23L;
+    final var inspectedAtVersion = 123L;
     final var oldestAvailableVersion = inspectedAtVersion - historyLength;
     try (var test = buildTest(true, historyLength)) {
       test.suppressUnusedWarning();
@@ -240,15 +240,22 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
     try (var test = buildTest(true, 100L)) {
       test.suppressUnusedWarning();
 
-      // Reach a known state version:
+      // Run a little, but resolve current version as it might be higher due to protocol updates
       test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(10L));
+      var currentVersion =
+          getStatusApi()
+              .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName))
+              .getCurrentStateIdentifier()
+              .getStateVersion();
 
       // Assert that a future version is not available:
       var atTooOldVersion =
           assertErrorResponseOfType(
-              () -> previewAtVersion(Manifest.valid(), Optional.of(11L)), BasicErrorResponse.class);
+              () -> previewAtVersion(Manifest.valid(), Optional.of(currentVersion + 1)),
+              BasicErrorResponse.class);
       assertThat(atTooOldVersion.getMessage())
-          .containsIgnoringCase("state version ahead of the current top-of-ledger 10");
+          .containsIgnoringCase(
+              String.format("state version ahead of the current top-of-ledger %s", currentVersion));
     }
   }
 
@@ -257,17 +264,23 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
     try (var test = buildTest(false, 100L)) {
       test.suppressUnusedWarning();
 
-      // Reach a known state version:
+      // Run a little, but resolve current version as it might be higher due to protocol updates
       test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(10L));
+      var currentVersion =
+          getStatusApi()
+              .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName))
+              .getCurrentStateIdentifier()
+              .getStateVersion();
 
       // Assert that a historical state version is not available
       var atTooOldVersion =
           assertErrorResponseOfType(
-              () -> previewAtVersion(Manifest.valid(), Optional.of(9L)), BasicErrorResponse.class);
+              () -> previewAtVersion(Manifest.valid(), Optional.of(currentVersion - 1)),
+              BasicErrorResponse.class);
       assertThat(atTooOldVersion.getMessage()).containsIgnoringCase("feature must be enabled");
 
       // The current version can still be requested explicitly, though:
-      var atOldestVersion = previewAtVersion(Manifest.valid(), Optional.of(10L));
+      var atOldestVersion = previewAtVersion(Manifest.valid(), Optional.of(currentVersion));
       assertThat(atOldestVersion.getReceipt().getStatus()).isEqualTo(TransactionStatus.SUCCEEDED);
     }
   }
@@ -275,7 +288,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
   @Test
   public void transaction_previewed_with_message_consumes_more_cost_units() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare a base request (no message)
@@ -288,7 +301,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .tipPercentage(1)
               .nonce(10L)
               .flags(
-                  new TransactionPreviewRequestFlags()
+                  new PreviewFlags()
                       .useFreeCredit(true)
                       .assumeAllSignatureProofs(true)
                       .skipEpochCheck(true))
@@ -334,7 +347,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
   @Test
   public void transaction_previewed_doesnt_include_toolkit_receipt_by_default() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare a request with the RET receipt opt-ins
@@ -347,7 +360,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .tipPercentage(1)
               .nonce(10L)
               .flags(
-                  new TransactionPreviewRequestFlags()
+                  new PreviewFlags()
                       .useFreeCredit(true)
                       .assumeAllSignatureProofs(true)
                       .skipEpochCheck(true))
@@ -365,7 +378,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("DataFlowIssue") // Suppress invalid null reference warnings
   @Test
   public void transaction_previewed_includes_a_toolkit_receipt_when_requested() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       // Prepare a request with the RET receipt opt-ins
@@ -378,7 +391,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
               .tipPercentage(1)
               .nonce(10L)
               .flags(
-                  new TransactionPreviewRequestFlags()
+                  new PreviewFlags()
                       .useFreeCredit(true)
                       .assumeAllSignatureProofs(true)
                       .skipEpochCheck(true))
@@ -414,7 +427,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
                                     .type(LedgerStateSelectorType.BYSTATEVERSION))
                         .orElse(null))
                 .flags(
-                    new TransactionPreviewRequestFlags()
+                    new PreviewFlags()
                         .useFreeCredit(false)
                         .skipEpochCheck(false)
                         .assumeAllSignatureProofs(true))
@@ -445,8 +458,10 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
 
   private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
     return buildRunningServerTest(
-        new DatabaseConfig(true, false, stateHistoryEnabled, false),
-        new StateTreeGcConfig(
-            UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength)));
+        defaultConfig()
+            .withDatabaseConfig(new DatabaseConfig(true, false, stateHistoryEnabled, false))
+            .withStateTreeGcConfig(
+                new StateTreeGcConfig(
+                    UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength))));
   }
 }

@@ -130,9 +130,7 @@ public final class DelayAfterFormingTcAndFormAQcTest {
                 ConsensusConfig.of(),
                 LedgerConfig.stateComputerMockedSync(
                     StateComputerConfig.mockedWithEpochs(
-                        Round.of(10000),
-                        EpochNodeWeightMapping.constant(4),
-                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                        10000, EpochNodeWeightMapping.constant(4)))));
   }
 
   private MessageSelector prioritizeVotesFrom(int nodeIdx) {

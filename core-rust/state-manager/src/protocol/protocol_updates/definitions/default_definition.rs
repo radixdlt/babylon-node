@@ -1,8 +1,4 @@
-use crate::engine_prelude::*;
-use crate::protocol::*;
-use crate::ActualStateManagerDatabase;
-use node_common::locks::DbLock;
-use std::sync::Arc;
+use crate::prelude::*;
 
 pub struct NoOpProtocolDefinition;
 
@@ -11,22 +7,22 @@ impl ProtocolUpdateDefinition for NoOpProtocolDefinition {
 
     fn create_batch_generator(
         &self,
-        _network: &NetworkDefinition,
-        _database: Arc<DbLock<ActualStateManagerDatabase>>,
+        _context: ProtocolUpdateContext,
+        _overrides_hash: Option<Hash>,
         _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
         Box::new(EmptyNodeBatchGenerator)
     }
 }
 
 struct EmptyNodeBatchGenerator;
 
-impl ProtocolUpdateNodeBatchGenerator for EmptyNodeBatchGenerator {
-    fn generate_batch(&self, _batch_idx: u32) -> ProtocolUpdateNodeBatch {
-        panic!("no batches")
+impl NodeProtocolUpdateGenerator for EmptyNodeBatchGenerator {
+    fn config_hash(&self) -> Hash {
+        Hash([0; Hash::LENGTH])
     }
-
-    fn batch_count(&self) -> u32 {
-        0
+    
+    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>> {
+        vec![]
     }
 }

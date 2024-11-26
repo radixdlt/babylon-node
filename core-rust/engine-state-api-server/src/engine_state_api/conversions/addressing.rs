@@ -1,7 +1,4 @@
-use crate::engine_state_api::models;
-use crate::engine_state_api::*;
-
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
 pub fn to_api_global_address(
     context: &MappingContext,
@@ -48,14 +45,16 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         EntityType::GlobalAccountLocker => models::EntityType::GlobalAccountLocker,
         EntityType::GlobalIdentity => models::EntityType::GlobalIdentity,
         EntityType::GlobalGenericComponent => models::EntityType::GlobalGenericComponent,
-        EntityType::GlobalVirtualSecp256k1Account => {
+        EntityType::GlobalPreallocatedSecp256k1Account => {
             models::EntityType::GlobalVirtualSecp256k1Account
         }
-        EntityType::GlobalVirtualEd25519Account => models::EntityType::GlobalVirtualEd25519Account,
-        EntityType::GlobalVirtualSecp256k1Identity => {
+        EntityType::GlobalPreallocatedEd25519Account => {
+            models::EntityType::GlobalVirtualEd25519Account
+        }
+        EntityType::GlobalPreallocatedSecp256k1Identity => {
             models::EntityType::GlobalVirtualSecp256k1Identity
         }
-        EntityType::GlobalVirtualEd25519Identity => {
+        EntityType::GlobalPreallocatedEd25519Identity => {
             models::EntityType::GlobalVirtualEd25519Identity
         }
         EntityType::InternalFungibleVault => models::EntityType::InternalFungibleVault,
@@ -84,14 +83,16 @@ pub fn extract_entity_type(entity_type: models::EntityType) -> EntityType {
         models::EntityType::GlobalIdentity => EntityType::GlobalIdentity,
         models::EntityType::GlobalGenericComponent => EntityType::GlobalGenericComponent,
         models::EntityType::GlobalVirtualSecp256k1Account => {
-            EntityType::GlobalVirtualSecp256k1Account
+            EntityType::GlobalPreallocatedSecp256k1Account
         }
-        models::EntityType::GlobalVirtualEd25519Account => EntityType::GlobalVirtualEd25519Account,
+        models::EntityType::GlobalVirtualEd25519Account => {
+            EntityType::GlobalPreallocatedEd25519Account
+        }
         models::EntityType::GlobalVirtualSecp256k1Identity => {
-            EntityType::GlobalVirtualSecp256k1Identity
+            EntityType::GlobalPreallocatedSecp256k1Identity
         }
         models::EntityType::GlobalVirtualEd25519Identity => {
-            EntityType::GlobalVirtualEd25519Identity
+            EntityType::GlobalPreallocatedEd25519Identity
         }
         models::EntityType::InternalFungibleVault => EntityType::InternalFungibleVault,
         models::EntityType::InternalNonFungibleVault => EntityType::InternalNonFungibleVault,

@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.epoch;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 
 /**
@@ -71,54 +72,8 @@ import java.util.Objects;
  *
  * @param <T> event which is wrapped TODO: Move other epoch events into this kind of object
  */
-public final class Epoched<T> {
-  private final long epoch;
-  private final T event;
-
-  private Epoched(long epoch, T event) {
-    this.epoch = epoch;
-    this.event = event;
-  }
-
-  public static <T> Epoched<T> from(long epoch, T event) {
-    Objects.requireNonNull(event);
-    return new Epoched<>(epoch, event);
-  }
-
-  public static boolean isInstance(Object event, Class<?> eventClass) {
-    if (event instanceof Epoched) {
-      Epoched<?> epoched = (Epoched<?>) event;
-      return eventClass.isInstance(epoched.event);
-    }
-
-    return false;
-  }
-
-  public long epoch() {
-    return epoch;
-  }
-
-  public T event() {
-    return event;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(epoch, event);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Epoched)) {
-      return false;
-    }
-
-    Epoched<?> other = (Epoched<?>) o;
-    return Objects.equals(other.event, this.event) && other.epoch == this.epoch;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, event);
+public record Epoched<T extends LocalEvent>(long epoch, T event) implements LocalEvent {
+  static <T extends LocalEvent> Epoched<T> from(long epoch, T event) {
+    return new Epoched<>(epoch, Objects.requireNonNull(event));
   }
 }

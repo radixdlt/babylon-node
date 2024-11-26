@@ -393,6 +393,10 @@ public final class AddressBookEntry {
       return maybeFailedHandshake.isEmpty() || maybeFailedHandshake.get().isExpired();
     }
 
+    public Optional<FailedHandshake> getMaybeFailedHandshake() {
+      return maybeFailedHandshake;
+    }
+
     @JsonProperty("latestConnectionStatus")
     @DsonOutput(DsonOutput.Output.ALL)
     private String getLatestConnectionStatusForSerializer() {

@@ -12,7 +12,7 @@ Otherwise, please set it up as [directed by GitHub docs](https://docs.github.com
 
 Main dependencies:
 - Java 17.0.4+ SDK installed and configured. It's very important to have at least 17.0.4, else you will hit Java Compiler bugs.
-- Install the latest [rust toolchain](https://www.rust-lang.org/tools/install). If you hit any rust compilation issues, try `rustup update` and try again.
+- Install the latest [rust toolchain](https://www.rust-lang.org/tools/install). If you hit any rust compilation issues, try `rustup update` and try again. If you still hit issues, ensure you're running with the Rust version corresponding to the version in the engine at the given protocol update you're working on.
 - Follow the set-up instructions for [radixdlt-scrypto](https://github.com/radixdlt/radixdlt-scrypto).
 
 If you wish to launch a local network through Docker:

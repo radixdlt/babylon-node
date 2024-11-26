@@ -99,11 +99,11 @@ public final class SyncResponseHandler {
    * details).
    */
   public void handle(SyncingState currentState, NodeId sender, SyncResponse syncResponse) {
-    final var dto = syncResponse.getLedgerExtension();
+    final var dto = syncResponse.ledgerExtension();
     final var start =
         LedgerSyncDtoConversions.syncDtoToConsensusOriginatedLedgerProof(dto.getStart());
     final var end = LedgerSyncDtoConversions.syncDtoToConsensusOriginatedLedgerProof(dto.getEnd());
-    final var ledgerExtension = LedgerExtension.create(dto.getTransactions(), end);
+    final var ledgerExtension = new LedgerExtension(dto.getTransactions(), end);
     this.checkMatchesPendingRequest(currentState, sender, start);
     this.checkValidTransactionCount(start, ledgerExtension);
     this.checkConsensusProof(end);
@@ -157,13 +157,10 @@ public final class SyncResponseHandler {
       this.syncedLedgerExtensionDispatcher.dispatch(ledgerExtension);
     } catch (InvalidCommitRequestException exception) {
       switch (exception.getError()) {
-        case InvalidCommitRequestError.TransactionParsingFailed ignored -> {
-          throw new InvalidSyncResponseException.UnparseableTransaction();
-        }
-
-        case InvalidCommitRequestError.TransactionRootMismatch ignored -> {
-          throw new InvalidSyncResponseException.ComputedTransactionRootMismatch();
-        }
+        case InvalidCommitRequestError.TransactionParsingFailed
+        ignored -> throw new InvalidSyncResponseException.UnparseableTransaction();
+        case InvalidCommitRequestError.TransactionRootMismatch
+        ignored -> throw new InvalidSyncResponseException.ComputedTransactionRootMismatch();
       }
     }
   }

@@ -62,11 +62,19 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
-use std::string::ToString;
+mod mempool_manager;
+mod mempool_relay_dispatcher;
+mod metrics;
+mod pending_transaction_result_cache;
+mod priority_mempool;
 
-pub use crate::pending_transaction_result_cache::*;
+pub use mempool_manager::*;
+pub use mempool_relay_dispatcher::*;
+pub use metrics::*;
+pub use pending_transaction_result_cache::*;
+pub use priority_mempool::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MempoolAddSource {
@@ -74,17 +82,17 @@ pub enum MempoolAddSource {
     MempoolSync,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MempoolAddError {
     PriorityThresholdNotMet {
-        min_tip_percentage_required: Option<u16>,
-        tip_percentage: u16,
+        min_tip_basis_points_required: Option<u32>,
+        tip_basis_points: u32,
     },
     Duplicate(NotarizedTransactionHash),
-    Rejected(MempoolAddRejection),
+    Rejected(MempoolAddRejection, Option<NotarizedTransactionHash>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MempoolAddRejection {
     pub reason: MempoolRejectionReason,
     pub against_state: AtState,
@@ -107,59 +115,43 @@ impl MempoolAddRejection {
     }
 
     pub fn is_permanent_for_payload(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_payload(),
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => self.reason.is_permanent_for_payload(),
-        }
+        self.reason.is_permanent_for_payload(&self.against_state)
     }
 
     pub fn is_permanent_for_intent(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => self.reason.is_permanent_for_intent(),
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => self.reason.is_permanent_for_payload(),
-        }
+        self.reason.is_permanent_for_intent(&self.against_state)
     }
 
-    pub fn is_rejected_because_intent_already_committed(&self) -> bool {
-        match &self.against_state {
-            AtState::Specific(specific) => match specific {
-                AtSpecificState::Committed { .. } => {
-                    self.reason.is_rejected_because_intent_already_committed()
-                }
-                AtSpecificState::PendingPreparingVertices { .. } => false,
-            },
-            AtState::Static => false,
-        }
+    pub fn transaction_intent_already_committed_error(&self) -> Option<&AlreadyCommittedError> {
+        self.reason
+            .transaction_intent_already_committed_error(&self.against_state)
     }
 }
 
-impl ToString for MempoolAddError {
-    fn to_string(&self) -> String {
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolAddError {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
         match self {
-            MempoolAddError::PriorityThresholdNotMet {min_tip_percentage_required, tip_percentage} => {
-                match min_tip_percentage_required {
-                    None => {
-                        "Priority Threshold not met. There is no known tip to guarantee mempool submission.".to_string()
-                    }
-                    Some(min_tip_percentage_required) => {
-                        format!("Priority Threshold not met: tip is {tip_percentage} while min tip required {min_tip_percentage_required}")
-                    }
+            MempoolAddError::PriorityThresholdNotMet {
+                min_tip_basis_points_required,
+                tip_basis_points,
+            } => match min_tip_basis_points_required {
+                None => {
+                    write!(f, "Priority Threshold not met. There is no known tip to guarantee mempool submission.")
+                }
+                Some(min_tip_percentage_required) => {
+                    write!(f, "Priority Threshold not met: tip is {tip_basis_points} basis points while min tip required {min_tip_percentage_required} basis points")
                 }
             },
-            MempoolAddError::Duplicate(_) => "Duplicate Entry".to_string(),
-            MempoolAddError::Rejected(rejection) => rejection.reason.to_string(),
+            MempoolAddError::Duplicate(_) => write!(f, "Duplicate Entry"),
+            MempoolAddError::Rejected(rejection, _) => {
+                rejection.reason.contextual_format(f, context)
+            }
         }
     }
 }
-
-pub mod mempool_manager;
-pub mod mempool_relay_dispatcher;
-pub mod metrics;
-pub mod pending_transaction_result_cache;
-pub mod priority_mempool;

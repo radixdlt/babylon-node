@@ -106,11 +106,11 @@ impl MempoolRelayDispatcher {
         let j_rust_global_context = self.j_rust_global_context_ref.as_obj();
         let result = env.call_method(
             j_rust_global_context,
-            MempoolRelayDispatcher::TRIGGER_METHOD_NAME,
-            MempoolRelayDispatcher::TRIGGER_METHOD_DESCRIPTOR,
+            Self::TRIGGER_METHOD_NAME,
+            Self::TRIGGER_METHOD_DESCRIPTOR,
             &[JValue::Object(JObject::from(jni_slice_to_jbytearray(
                 env,
-                &transaction.0,
+                transaction.as_slice(),
             )))],
         );
         if result.is_err() && env.exception_check()? {

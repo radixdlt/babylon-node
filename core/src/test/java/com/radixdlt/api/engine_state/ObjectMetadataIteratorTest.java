@@ -69,13 +69,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.models.MetadataEntryKey;
 import com.radixdlt.api.engine_state.generated.models.ObjectMetadataIteratorRequest;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.Address;
 import org.junit.Test;
 
 public final class ObjectMetadataIteratorTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_object_metadata_iterator_returns_string_keys() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
@@ -90,7 +92,30 @@ public final class ObjectMetadataIteratorTest extends DeterministicEngineStateAp
               .map(MetadataEntryKey::getKey)
               .toList();
 
-      assertThat(metadataKeys).containsExactly("name", "description", "icon_url", "tags");
+      assertThat(metadataKeys)
+          .containsExactly("info_url", "name", "description", "icon_url", "tags");
+    }
+  }
+
+  @Test
+  public void engine_state_api_object_metadata_iterator_supports_uninstantiated() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      final var uninstantiatedAccountAddress =
+          Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
+
+      final var metadataKeys =
+          getAttachedModulesApi()
+              .objectAttachedModulesMetadataIteratorPost(
+                  new ObjectMetadataIteratorRequest()
+                      .entityAddress(uninstantiatedAccountAddress.encode(networkDefinition)))
+              .getPage()
+              .stream()
+              .map(MetadataEntryKey::getKey)
+              .toList();
+
+      assertThat(metadataKeys).containsExactly("owner_badge", "owner_keys");
     }
   }
 }

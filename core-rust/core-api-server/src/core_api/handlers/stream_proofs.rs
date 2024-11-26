@@ -1,10 +1,5 @@
-use crate::core_api::*;
-
-use crate::engine_prelude::*;
-use state_manager::store::traits::*;
-use state_manager::{
-    LedgerProof, LedgerProofOrigin, ReadableRocks, StateManagerDatabase, StateVersion,
-};
+use crate::core_api::handlers::to_api_ledger_proof;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_proofs(
@@ -67,7 +62,7 @@ pub(crate) async fn handle_stream_proofs(
     let (page, continuation_token) = to_api_page(
         &mut proofs_iter,
         page_size,
-        |proof| handlers::to_api_ledger_proof(&mapping_context, proof),
+        |proof| to_api_ledger_proof(&mapping_context, proof),
         |proof| proof.ledger_header.state_version,
     )?;
 

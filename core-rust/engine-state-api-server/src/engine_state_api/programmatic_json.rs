@@ -1,4 +1,4 @@
-use crate::engine_prelude::*;
+use crate::prelude::*;
 
 use serde::Deserialize;
 use serde_with::serde_as;
@@ -26,7 +26,7 @@ impl<'a> ProgrammaticJsonEncoder<'a> {
         schema: &SchemaV1<ScryptoCustomSchema>,
         type_id: LocalTypeId,
     ) -> Result<serde_json::Value, MappingError> {
-        let raw_payload = RawScryptoPayload::new_from_valid_owned(payload_bytes);
+        let raw_payload = ScryptoRawPayload::new_from_valid_owned(payload_bytes);
         let serializable = raw_payload.serializable(SerializationParameters::WithSchema {
             mode: SerializationMode::Programmatic,
             custom_context: ScryptoValueDisplayContext::with_optional_bech32(Some(

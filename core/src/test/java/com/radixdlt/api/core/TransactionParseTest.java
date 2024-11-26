@@ -79,7 +79,7 @@ import org.junit.Test;
 public class TransactionParseTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_parse_rejected_transaction() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var transaction = TransactionBuilder.forTests().manifest(Manifest.validButReject()).prepare();
@@ -105,7 +105,7 @@ public class TransactionParseTest extends DeterministicCoreApiTestBase {
 
   @Test
   public void parsed_transaction_contains_its_message() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var created =

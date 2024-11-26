@@ -74,6 +74,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.crypto.Blake2b256Hasher;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.lang.Option;
@@ -253,7 +254,7 @@ public class StateComputerLedgerTest {
         new LedgerProof(
             REv2ToConsensus.ledgerHeader(ledgerHeader),
             new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()));
-    var verified = LedgerExtension.create(List.of(nextLedgerTransaction), header);
+    var verified = new LedgerExtension(List.of(nextLedgerTransaction), header);
 
     // Act
     sut.syncEventProcessor().process(verified);

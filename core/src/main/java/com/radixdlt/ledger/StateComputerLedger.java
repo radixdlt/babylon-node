@@ -316,7 +316,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
             switch (processedQcCommit) {
               case ProcessedQcCommit.OfConensusQc ofConensusQc -> {
                 final var ledgerExtension =
-                    LedgerExtension.create(transactions, ofConensusQc.ledgerProof());
+                    new LedgerExtension(transactions, ofConensusQc.ledgerProof());
                 metrics
                     .ledger()
                     .commit()

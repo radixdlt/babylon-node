@@ -78,6 +78,8 @@ import java.util.Objects;
 @SecurityCritical(SecurityKind.NUMERIC)
 public class UInt32 implements Comparable<UInt32>, Serializable {
 
+  public static final UInt32 MAX_VALUE = new UInt32(0xFFFF_FFFF);
+
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         UInt32.class,

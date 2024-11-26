@@ -1,14 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use super::addressing::*;
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::{
-    ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges,
-    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, ReadableRocks,
-    StateManagerDatabase, SubstateChangeAction, SubstateReference,
-};
+use crate::prelude::*;
 
 pub fn to_api_receipt(
     database: Option<&StateManagerDatabase<impl ReadableRocks>>,
@@ -23,7 +15,7 @@ pub fn to_api_receipt(
         DetailedTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
-            Some(error.render()),
+            Some(error.to_string(context)),
         ),
     };
 
@@ -156,6 +148,12 @@ pub fn to_api_substate_system_structure(
                     SystemFieldKind::VmBoot => models::SystemFieldKind::VmBoot,
                     SystemFieldKind::SystemBoot => models::SystemFieldKind::SystemBoot,
                     SystemFieldKind::KernelBoot => models::SystemFieldKind::KernelBoot,
+                    SystemFieldKind::TransactionValidationConfiguration => {
+                        models::SystemFieldKind::TransactionValidationConfiguration
+                    }
+                    SystemFieldKind::ProtocolUpdateStatusSummary => {
+                        models::SystemFieldKind::ProtocolUpdateStatusSummary
+                    }
                 },
             }
         }
@@ -556,10 +554,10 @@ impl StateMappingLookups {
         // Step 2 - Create the lookups from the database
         let mut blueprint_type_lookups = IndexMap::new();
         for (package_address, blueprint_name) in blueprints_to_fetch_types {
-            let definition = database.get_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
-                package_address.as_node_id(),
+            let definition = database.get_substate::<PackageBlueprintVersionDefinitionEntrySubstate>(
+                package_address,
                 PackagePartitionOffset::BlueprintVersionDefinitionKeyValue.as_main_partition(),
-                &SubstateKey::Map(scrypto_encode(&PackageBlueprintVersionDefinitionKeyPayload::from_content_source(
+                SubstateKey::Map(scrypto_encode(&PackageBlueprintVersionDefinitionKeyPayload::from_content_source(
                     BlueprintVersionKey::new_default(blueprint_name.clone())
                 )).unwrap()),
             ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
@@ -688,8 +686,9 @@ pub fn to_api_fee_summary(
 pub fn to_api_costing_parameters(
     _context: &MappingContext,
     engine_costing_parameters: &CostingParameters,
-    transaction_costing_parameters: &TransactionCostingParametersReceipt,
+    transaction_costing_parameters: &TransactionCostingParametersReceiptV2,
 ) -> Result<models::CostingParameters, MappingError> {
+    let tip_percentage_decimal: Decimal = transaction_costing_parameters.tip_proportion * 100;
     Ok(models::CostingParameters {
         execution_cost_unit_price: to_api_decimal(
             &engine_costing_parameters.execution_cost_unit_price,
@@ -709,7 +708,10 @@ pub fn to_api_costing_parameters(
         xrd_usd_price: to_api_decimal(&engine_costing_parameters.usd_price),
         xrd_storage_price: to_api_decimal(&engine_costing_parameters.state_storage_price),
         xrd_archive_storage_price: to_api_decimal(&engine_costing_parameters.archive_storage_price),
-        tip_percentage: to_api_u16_as_i32(transaction_costing_parameters.tip_percentage),
+        tip_percentage: tip_percentage_decimal.try_into().unwrap_or(i32::MAX),
+        tip_proportion: Some(to_api_decimal(
+            &transaction_costing_parameters.tip_proportion,
+        )),
     })
 }
 

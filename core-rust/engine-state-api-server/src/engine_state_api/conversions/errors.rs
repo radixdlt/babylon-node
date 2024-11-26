@@ -34,6 +34,7 @@ impl From<MappingError> for ResponseError {
 /// Should be used when extracting values from a client request
 #[derive(Debug, Clone)]
 #[allow(clippy::enum_variant_names)]
+#[allow(unused)] // Fields are used in Debug implementations, but it's not enough to satisfy the lint
 pub enum ExtractionError {
     InvalidInteger {
         message: String,

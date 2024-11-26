@@ -1,7 +1,7 @@
 openapi: 3.1.0
 
 info:
-  version: 'v1.2.3'
+  version: 'v1.3.0'
   title: 'Engine State API (Beta)'
   license:
     name: The Radix License, Version 1.0
@@ -779,6 +779,16 @@ components:
         - RoleAssignment
     EntityType:
       type: string
+      description: |
+        To improve clarity, some `EntityType` names have been updated at Cuttlefish.
+
+        But, due to backwards compatibility, the old names continue to be used here.
+
+        Notably:
+        * `GlobalVirtualSecp256k1Account` is now `GlobalPreallocatedSecp256k1Account` elsewhere
+        * `GlobalVirtualSecp256k1Identity` is now `GlobalPreallocatedSecp256k1Identity` elsewhere
+        * `GlobalVirtualEd25519Account` is now `GlobalPreallocatedEd25519Account` elsewhere
+        * `GlobalVirtualEd25519Identity` is now `GlobalPreallocatedEd25519Identity` elsewhere
       enum:
         - GlobalPackage
         - GlobalConsensusManager
@@ -1517,6 +1527,13 @@ components:
         - DenyAll
     AccessRule:
       type: object
+      description: |
+        A representation of an access rule in the Radix Engine.
+
+        Note that some of the field and discriminator names use an older naming schema,
+        for backwards compatibility.
+
+        See the [advanced access rules](https://docs.radixdlt.com/docs/advanced-accessrules) docs for more information.
       required:
         - type
       properties:
@@ -1537,7 +1554,7 @@ components:
             - access_rule
           properties:
             access_rule:
-              $ref: '#/components/schemas/AccessRuleNode'
+              $ref: '#/components/schemas/CompositeRequirement'
     AllowAllAccessRule:
       allOf:
         - $ref: '#/components/schemas/AccessRule'
@@ -1546,38 +1563,42 @@ components:
       allOf:
         - $ref: '#/components/schemas/AccessRule'
         - type: object
-    AccessRuleNodeType:
+    CompositeRequirementType:
       type: string
+      description: |
+        `ProofRule` is now called `BasicRequirement`.
       enum:
         - ProofRule
         - AnyOf
         - AllOf
-    AccessRuleNode:
+    CompositeRequirement:
       type: object
       required:
         - type
+      description: |
+        This type was historically called `AccessRuleNode`.
       properties:
         type:
-          $ref: '#/components/schemas/AccessRuleNodeType'
+          $ref: '#/components/schemas/CompositeRequirementType'
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match AccessRuleNodeType options above
-          ProofRule: '#/components/schemas/ProofAccessRuleNode'
-          AnyOf: '#/components/schemas/AnyOfAccessRuleNode'
-          AllOf: '#/components/schemas/AllOfAccessRuleNode'
-    ProofAccessRuleNode:
+          # NOTE: These need to match CompositeRequirementType options above
+          ProofRule: '#/components/schemas/ProofRuleCompositeRequirement'
+          AnyOf: '#/components/schemas/AnyOfCompositeRequirement'
+          AllOf: '#/components/schemas/AllOfCompositeRequirement'
+    ProofRuleCompositeRequirement:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNode'
+        - $ref: '#/components/schemas/CompositeRequirement'
         - type: object
           required:
             - proof_rule
           properties:
             proof_rule:
-              $ref: '#/components/schemas/ProofRule'
-    AnyOfAccessRuleNode:
+              $ref: '#/components/schemas/BasicRequirement'
+    AnyOfCompositeRequirement:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNode'
+        - $ref: '#/components/schemas/CompositeRequirement'
         - type: object
           required:
             - access_rules
@@ -1585,10 +1606,10 @@ components:
             access_rules:
               type: array
               items:
-                $ref: '#/components/schemas/AccessRuleNode'
-    AllOfAccessRuleNode:
+                $ref: '#/components/schemas/CompositeRequirement'
+    AllOfCompositeRequirement:
       allOf:
-        - $ref: '#/components/schemas/AccessRuleNode'
+        - $ref: '#/components/schemas/CompositeRequirement'
         - type: object
           required:
             - access_rules
@@ -1596,8 +1617,8 @@ components:
             access_rules:
               type: array
               items:
-                $ref: '#/components/schemas/AccessRuleNode'
-    ProofRuleType:
+                $ref: '#/components/schemas/CompositeRequirement'
+    BasicRequirementType:
       type: string
       enum:
         - Require
@@ -1605,34 +1626,34 @@ components:
         - AllOf
         - AnyOf
         - CountOf
-    ProofRule:
+    BasicRequirement:
       type: object
       required:
         - type
       properties:
         type:
-          $ref: '#/components/schemas/ProofRuleType'
+          $ref: '#/components/schemas/BasicRequirementType'
       discriminator:
         propertyName: type
         mapping:
-          # NOTE: These need to match ProofRuleType options above
-          Require: '#/components/schemas/RequireProofRule'
-          AmountOf: '#/components/schemas/AmountOfProofRule'
-          AllOf: '#/components/schemas/AllOfProofRule'
-          AnyOf: '#/components/schemas/AnyOfProofRule'
-          CountOf: '#/components/schemas/CountOfProofRule'
-    RequireProofRule:
+          # NOTE: These need to match BasicRequirementType options above
+          Require: '#/components/schemas/RequireBasicRequirement'
+          AmountOf: '#/components/schemas/AmountOfBasicRequirement'
+          AllOf: '#/components/schemas/AllOfBasicRequirement'
+          AnyOf: '#/components/schemas/AnyOfBasicRequirement'
+          CountOf: '#/components/schemas/CountOfBasicRequirement'
+    RequireBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - requirement
           properties:
             requirement:
               $ref: '#/components/schemas/Requirement'
-    AmountOfProofRule:
+    AmountOfBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - amount
@@ -1642,9 +1663,9 @@ components:
               type: string
             resource:
               $ref: '#/components/schemas/ResourceAddress'
-    AllOfProofRule:
+    AllOfBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - list
@@ -1653,9 +1674,9 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Requirement'
-    AnyOfProofRule:
+    AnyOfBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - list
@@ -1664,9 +1685,9 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Requirement'
-    CountOfProofRule:
+    CountOfBasicRequirement:
       allOf:
-        - $ref: '#/components/schemas/ProofRule'
+        - $ref: '#/components/schemas/BasicRequirement'
         - type: object
           required:
             - count
@@ -1680,6 +1701,7 @@ components:
                 $ref: '#/components/schemas/Requirement'
     Requirement:
       type: object
+      description: This is called `ResourceOrNonFungible` in the engine.
       required:
         - type
       properties:

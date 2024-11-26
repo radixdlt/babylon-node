@@ -62,16 +62,7 @@
  * permissions under this License.
  */
 
-use crate::staging::epoch_handling::EpochAwareAccuTreeFactory;
-
-use crate::store::traits::*;
-use crate::transaction::*;
-
-use crate::*;
-
-use crate::engine_prelude::*;
-
-use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
+use crate::prelude::*;
 
 /// A builder of a [`CommitBundle`] from individual transactions and their commit results.
 pub struct CommitBundleBuilder {
@@ -109,7 +100,7 @@ impl CommitBundleBuilder {
         state_version: StateVersion,
         proposer_timestamp_ms: i64,
         raw: RawLedgerTransaction,
-        validated: ValidatedLedgerTransaction,
+        hashes: LedgerTransactionHashes,
         result: ProcessedCommitResult,
     ) {
         self.substate_store_update.apply(result.database_updates);
@@ -131,7 +122,7 @@ impl CommitBundleBuilder {
                 raw,
                 receipt: result.local_receipt,
                 identifiers: CommittedTransactionIdentifiers {
-                    payload: validated.create_identifiers(),
+                    transaction_hashes: hashes,
                     resultant_ledger_hashes: hash_structures_diff.ledger_hashes,
                     proposer_timestamp_ms,
                 },

@@ -1,178 +1,22 @@
-use node_common::locks::{DbLock, RwLock};
-use std::ops::Deref;
-use std::sync::Arc;
-use std::time::SystemTime;
+use crate::prelude::*;
 
-use crate::engine_prelude::*;
-
-use crate::query::StateManagerSubstateQueries;
-
-use crate::store::traits::transactions::QueryableTransactionStore;
-use crate::store::traits::{QueryableProofStore, TransactionIndex};
-use crate::transaction::{ExecutionConfigurator, TransactionLogic};
-use crate::{
-    ActualStateManagerDatabase, AlreadyCommittedError, AtSpecificState, AtState,
-    ExecutionRejectionReason, MempoolRejectionReason, PendingTransactionRecord,
-    PendingTransactionResultCache, TransactionAttempt,
-};
-
-use super::{
-    LedgerTransaction, PreparedLedgerTransaction, PreparedLedgerTransactionInner,
-    RawLedgerTransaction, ValidatedLedgerTransaction, ValidatedLedgerTransactionInner,
-};
-
-pub struct LedgerTransactionValidator {
-    pub validation_config: ValidationConfig,
-    pub ledger_payload_limit: usize,
-    pub user_transaction_validator: NotarizedTransactionValidator,
+pub trait LedgerTransactionValidationErrorExtensions {
+    fn into_user_validation_error(self) -> TransactionValidationError;
 }
 
-impl LedgerTransactionValidator {
-    pub fn default_from_network(network: &NetworkDefinition) -> Self {
-        Self::default_from_validation_config(ValidationConfig::default(network.id))
-    }
-
-    pub fn default_from_validation_config(validation_config: ValidationConfig) -> Self {
-        Self {
-            validation_config,
-            // Add a few extra bytes for the enum discriminator at the start(!)
-            ledger_payload_limit: validation_config.max_notarized_payload_size + 10,
-            user_transaction_validator: NotarizedTransactionValidator::new(validation_config),
-        }
-    }
-
-    pub fn prepare_from_model(
-        &self,
-        transaction: &LedgerTransaction,
-    ) -> Result<PreparedLedgerTransaction, TransactionValidationError> {
-        self.prepare_from_raw(&transaction.to_raw()?)
-    }
-
-    pub fn prepare_from_raw(
-        &self,
-        raw: &RawLedgerTransaction,
-    ) -> Result<PreparedLedgerTransaction, TransactionValidationError> {
-        self.prepare_from_payload_bytes(raw.as_slice())
-    }
-
-    fn prepare_from_payload_bytes(
-        &self,
-        raw_payload_bytes: &[u8],
-    ) -> Result<PreparedLedgerTransaction, TransactionValidationError> {
-        if raw_payload_bytes.len() > self.ledger_payload_limit {
-            return Err(TransactionValidationError::TransactionTooLarge);
-        }
-
-        Ok(PreparedLedgerTransaction::prepare_from_payload(
-            raw_payload_bytes,
-        )?)
-    }
-
-    pub fn validate_user_or_round_update_from_model(
-        &self,
-        transaction: &LedgerTransaction,
-    ) -> Result<ValidatedLedgerTransaction, LedgerTransactionValidationError> {
-        self.validate_user_or_round_update(transaction.prepare()?)
-    }
-
-    pub fn validate_user_or_round_update_from_raw(
-        &self,
-        raw: &RawLedgerTransaction,
-    ) -> Result<ValidatedLedgerTransaction, LedgerTransactionValidationError> {
-        self.validate_user_or_round_update_from_payload_bytes(raw.as_slice())
-    }
-
-    pub fn validate_user_or_round_update_from_payload_bytes(
-        &self,
-        payload_bytes: &[u8],
-    ) -> Result<ValidatedLedgerTransaction, LedgerTransactionValidationError> {
-        let prepared = self.prepare_from_payload_bytes(payload_bytes)?;
-        self.validate_user_or_round_update(prepared)
-    }
-
-    pub fn validate_user_or_round_update(
-        &self,
-        prepared: PreparedLedgerTransaction,
-    ) -> Result<ValidatedLedgerTransaction, LedgerTransactionValidationError> {
-        let validated_inner = match prepared.inner {
-            PreparedLedgerTransactionInner::Genesis(_) => {
-                return Err(LedgerTransactionValidationError::GenesisTransactionProvided);
-            }
-            PreparedLedgerTransactionInner::UserV1(prepared) => {
-                let validated = self.user_transaction_validator.validate(*prepared)?;
-                ValidatedLedgerTransactionInner::UserV1(Box::new(validated))
-            }
-            PreparedLedgerTransactionInner::RoundUpdateV1(prepared) => {
-                ValidatedLedgerTransactionInner::RoundUpdateV1(prepared)
-            }
-            PreparedLedgerTransactionInner::FlashV1(_) => {
-                return Err(LedgerTransactionValidationError::FlashTransactionProvided);
-            }
-        };
-        Ok(ValidatedLedgerTransaction {
-            inner: validated_inner,
-            summary: prepared.summary,
-        })
-    }
-
-    pub fn validate_genesis(
-        &self,
-        prepared: PreparedLedgerTransaction,
-    ) -> ValidatedLedgerTransaction {
-        let PreparedLedgerTransactionInner::Genesis(t) = prepared.inner else {
-            panic!("Genesis transaction was not a system transaction")
-        };
-        ValidatedLedgerTransaction {
-            inner: ValidatedLedgerTransactionInner::Genesis(t),
-            summary: prepared.summary,
-        }
-    }
-
-    pub fn validate_flash(
-        &self,
-        prepared: PreparedLedgerTransaction,
-    ) -> ValidatedLedgerTransaction {
-        let PreparedLedgerTransactionInner::FlashV1(t) = prepared.inner else {
-            panic!("Flash transaction was not a system transaction")
-        };
-        ValidatedLedgerTransaction {
-            inner: ValidatedLedgerTransactionInner::FlashV1(t),
-            summary: prepared.summary,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum LedgerTransactionValidationError {
-    ValidationError(TransactionValidationError),
-    GenesisTransactionProvided,
-    FlashTransactionProvided,
-}
-
-impl LedgerTransactionValidationError {
+impl LedgerTransactionValidationErrorExtensions for LedgerTransactionValidationError {
     // Should only be called on errors from validating user transactions
-    pub fn into_user_validation_error(self) -> TransactionValidationError {
+    fn into_user_validation_error(self) -> TransactionValidationError {
         match self {
             LedgerTransactionValidationError::ValidationError(x) => x,
-            LedgerTransactionValidationError::GenesisTransactionProvided => {
-                panic!("into_user_validation_error called on a genesis transaction payload")
-            }
-            LedgerTransactionValidationError::FlashTransactionProvided => {
-                panic!("into_user_validation_error called on a flash transaction payload")
+            LedgerTransactionValidationError::GenesisTransactionNotCurrentlyPermitted
+            | LedgerTransactionValidationError::UserTransactionNotCurrentlyPermitted
+            | LedgerTransactionValidationError::ValidateTransactionNotCurrentlyPermitted
+            | LedgerTransactionValidationError::ProtocolUpdateNotCurrentlyPermitted
+            | LedgerTransactionValidationError::FlashNotCurrentlyPermitted => {
+                panic!("into_user_validation_error called unexpectedly on an incorrect transaction type error")
             }
         }
-    }
-}
-
-impl From<TransactionValidationError> for LedgerTransactionValidationError {
-    fn from(value: TransactionValidationError) -> Self {
-        Self::ValidationError(value)
-    }
-}
-
-impl From<PrepareError> for LedgerTransactionValidationError {
-    fn from(value: PrepareError) -> Self {
-        Self::ValidationError(TransactionValidationError::PrepareError(value))
     }
 }
 
@@ -181,35 +25,37 @@ impl From<PrepareError> for LedgerTransactionValidationError {
 pub struct CommittabilityValidator {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     execution_configurator: Arc<ExecutionConfigurator>,
-    user_transaction_validator: NotarizedTransactionValidator,
+    transaction_validator: Arc<RwLock<TransactionValidator>>,
+    formatter: Arc<Formatter>,
 }
 
 impl CommittabilityValidator {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         execution_configurator: Arc<ExecutionConfigurator>,
-        user_transaction_validator: NotarizedTransactionValidator,
+        transaction_validator: Arc<RwLock<TransactionValidator>>,
+        formatter: Arc<Formatter>,
     ) -> Self {
         Self {
             database,
             execution_configurator,
-            user_transaction_validator,
+            transaction_validator,
+            formatter,
         }
     }
 
     pub fn prepare_from_raw(
         &self,
         transaction: &RawNotarizedTransaction,
-    ) -> Result<PreparedNotarizedTransactionV1, TransactionValidationError> {
-        self.user_transaction_validator
-            .prepare_from_raw(transaction)
+    ) -> Result<PreparedUserTransaction, PrepareError> {
+        transaction.prepare(self.transaction_validator.read().preparation_settings())
     }
 
     pub fn validate(
         &self,
-        transaction: PreparedNotarizedTransactionV1,
-    ) -> Result<ValidatedNotarizedTransactionV1, TransactionValidationError> {
-        self.user_transaction_validator.validate(transaction)
+        transaction: PreparedUserTransaction,
+    ) -> Result<ValidatedUserTransaction, TransactionValidationError> {
+        transaction.validate(self.transaction_validator.read().deref())
     }
 }
 
@@ -217,14 +63,15 @@ impl CommittabilityValidator {
     /// Determine whether it would be rejected given the current state of the substate store.
     pub fn check_for_rejection(
         &self,
-        transaction: &ValidatedNotarizedTransactionV1,
+        executable: &ExecutableTransaction,
+        user_hashes: &UserTransactionHashes,
         timestamp: SystemTime,
     ) -> TransactionAttempt {
         let database = self.database.snapshot();
         let executed_at_state_version = database.max_state_version();
 
         let existing =
-            database.get_txn_state_version_by_identifier(&transaction.prepared.intent_hash());
+            database.get_txn_state_version_by_identifier(&user_hashes.transaction_intent_hash);
 
         if let Some(state_version) = existing {
             let committed_transaction_identifiers = database
@@ -232,16 +79,12 @@ impl CommittabilityValidator {
                 .expect("transaction of a state version obtained from an index");
 
             return TransactionAttempt {
-                rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                     AlreadyCommittedError {
-                        notarized_transaction_hash: transaction
-                            .prepared
-                            .notarized_transaction_hash(),
                         committed_state_version: state_version,
-                        committed_notarized_transaction_hash: *committed_transaction_identifiers
-                            .payload
-                            .typed
-                            .user()
+                        committed_notarized_transaction_hash: committed_transaction_identifiers
+                            .transaction_hashes
+                            .as_user()
                             .expect("non-user transaction located by intent hash")
                             .notarized_transaction_hash,
                     },
@@ -253,20 +96,30 @@ impl CommittabilityValidator {
             };
         }
 
+        trace!(
+            "Starting mempool execution of {}",
+            user_hashes
+                .transaction_intent_hash
+                .display(&*self.formatter),
+        );
+
         let receipt = self
             .execution_configurator
-            .wrap_pending_transaction(transaction)
+            .wrap_pending_transaction(executable, user_hashes)
             .execute_on(database.deref());
 
         let result = match receipt.result {
             TransactionResult::Reject(RejectResult { reason }) => {
                 if matches!(
                     reason,
-                    ExecutionRejectionReason::IntentHashPreviouslyCommitted
+                    ExecutionRejectionReason::IntentHashPreviouslyCommitted(
+                        IntentHash::Transaction(_)
+                    )
                 ) {
+                    // Note - this panic protects against the invariant that already_committed_error()
                     panic!(
-                        "intent {:?} not found by Node, but reported as committed by Engine",
-                        transaction.prepared.intent_hash()
+                        "[INVARIANT VIOLATION] When checking for rejection against a database snapshot, a transaction intent {:?} was not found in the Node's stores, but was reported as committed by the Engine",
+                        user_hashes.transaction_intent_hash
                     );
                 }
                 Err(MempoolRejectionReason::FromExecution(Box::new(reason)))
@@ -290,18 +143,18 @@ impl CommittabilityValidator {
     }
 }
 
-/// A caching wrapper for a `CommittabilityValidator`.
+/// A caching wrapper for a [`CommittabilityValidator`].
 pub struct CachedCommittabilityValidator {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     committability_validator: Arc<RwLock<CommittabilityValidator>>,
-    pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+    pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
 }
 
 impl CachedCommittabilityValidator {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         committability_validator: Arc<RwLock<CommittabilityValidator>>,
-        pending_transaction_result_cache: Arc<RwLock<PendingTransactionResultCache>>,
+        pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
     ) -> Self {
         Self {
             database,
@@ -310,97 +163,25 @@ impl CachedCommittabilityValidator {
         }
     }
 
+    /// From a system perspective, the [`CachedCommittabilityValidator`] is a subsystem
+    /// of the [`MempoolManager`], which enforces ordering of `RwLock` access to ensure
+    /// we are free of deadlocks.
+    ///
+    /// Therefore we are safe to expose direct access to the cache to the [`MempoolManager`]
+    /// so that it can enforce atomicity and correct lock order where important.
+    pub fn get_cache(&self) -> &RwLock<PendingTransactionResultCache> {
+        &self.pending_transaction_result_cache
+    }
+
     pub fn prepare_from_raw(
         &self,
         transaction: &RawNotarizedTransaction,
-    ) -> Result<PreparedNotarizedTransactionV1, TransactionValidationError> {
+    ) -> Result<PreparedUserTransaction, PrepareError> {
         self.committability_validator
             .read()
             .prepare_from_raw(transaction)
     }
 
-    fn read_record(
-        &self,
-        prepared: &PreparedNotarizedTransactionV1,
-    ) -> Option<PendingTransactionRecord> {
-        // Even though we only want to read the cache here, the LRU structs require a write lock
-        self.pending_transaction_result_cache
-            .write()
-            .get_pending_transaction_record(
-                &prepared.intent_hash(),
-                &prepared.notarized_transaction_hash(),
-            )
-    }
-
-    fn write_attempt(
-        &self,
-        metadata: TransactionMetadata,
-        attempt: TransactionAttempt,
-    ) -> PendingTransactionRecord {
-        self.pending_transaction_result_cache
-            .write()
-            .track_transaction_result(
-                metadata.intent_hash,
-                metadata.notarized_transaction_hash,
-                Some(metadata.invalid_from_epoch),
-                attempt,
-            )
-    }
-}
-
-struct TransactionMetadata {
-    intent_hash: IntentHash,
-    notarized_transaction_hash: NotarizedTransactionHash,
-    invalid_from_epoch: Epoch,
-}
-
-impl TransactionMetadata {
-    pub fn read_from(prepared: &PreparedNotarizedTransactionV1) -> Self {
-        Self {
-            intent_hash: prepared.intent_hash(),
-            notarized_transaction_hash: prepared.notarized_transaction_hash(),
-            invalid_from_epoch: prepared
-                .signed_intent
-                .intent
-                .header
-                .inner
-                .end_epoch_exclusive,
-        }
-    }
-}
-
-enum ShouldRecalculate {
-    Yes,
-    No(PendingTransactionRecord),
-}
-
-pub enum CheckMetadata {
-    Cached,
-    Fresh(StaticValidation),
-}
-
-impl CheckMetadata {
-    pub fn was_cached(&self) -> bool {
-        match self {
-            Self::Cached => true,
-            Self::Fresh(_) => false,
-        }
-    }
-}
-
-pub enum StaticValidation {
-    Valid(Box<ValidatedNotarizedTransactionV1>),
-    Invalid,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum ForceRecalculation {
-    Yes,
-    IfCachedAsValid,
-    No,
-}
-
-impl CachedCommittabilityValidator {
     /// Reads the transaction rejection status from the cache, else calculates it fresh, using
     /// `CommittabilityValidator`.
     ///
@@ -412,7 +193,7 @@ impl CachedCommittabilityValidator {
     /// attempt was cached, and the validated notarized transaction (if it's new)
     pub fn check_for_rejection_cached(
         &self,
-        prepared: PreparedNotarizedTransactionV1,
+        prepared: PreparedUserTransaction,
         force_recalculate: ForceRecalculation,
     ) -> (PendingTransactionRecord, CheckMetadata) {
         let current_time = SystemTime::now();
@@ -423,17 +204,25 @@ impl CachedCommittabilityValidator {
             return (record, CheckMetadata::Cached);
         }
 
-        let metadata = TransactionMetadata::read_from(&prepared);
+        let metadata = TransactionMetadata::read_from_prepared(&prepared);
 
         let read_committability_validator = self.committability_validator.read();
         match read_committability_validator.validate(prepared) {
             Ok(validated) => {
                 // Transaction was valid - let's also attempt to execute it
-                let attempt =
-                    read_committability_validator.check_for_rejection(&validated, current_time);
+                let user_hashes = validated.hashes();
+                let executable = validated.create_executable();
+                let attempt = read_committability_validator.check_for_rejection(
+                    &executable,
+                    &user_hashes,
+                    current_time,
+                );
                 (
                     self.write_attempt(metadata, attempt),
-                    CheckMetadata::Fresh(StaticValidation::Valid(Box::new(validated))),
+                    CheckMetadata::Fresh(StaticValidation::Valid {
+                        executable,
+                        user_hashes,
+                    }),
                 )
             }
             Err(validation_error) => {
@@ -461,21 +250,23 @@ impl CachedCommittabilityValidator {
     /// Returns the transaction's new pending transaction record.
     pub fn check_for_rejection_validated(
         &self,
-        validated: &ValidatedNotarizedTransactionV1,
+        executable: &ExecutableTransaction,
+        user_hashes: &UserTransactionHashes,
     ) -> PendingTransactionRecord {
-        let metadata = TransactionMetadata::read_from(&validated.prepared);
+        let metadata = TransactionMetadata::read_from_user_executable(executable, user_hashes);
 
-        let attempt = self
-            .committability_validator
-            .read()
-            .check_for_rejection(validated, SystemTime::now());
+        let attempt = self.committability_validator.read().check_for_rejection(
+            executable,
+            user_hashes,
+            SystemTime::now(),
+        );
 
         self.write_attempt(metadata, attempt)
     }
 
     fn should_recalculate(
         &self,
-        prepared: &PreparedNotarizedTransactionV1,
+        prepared: &PreparedUserTransaction,
         current_time: SystemTime,
         force_recalculate: ForceRecalculation,
     ) -> ShouldRecalculate {
@@ -498,4 +289,116 @@ impl CachedCommittabilityValidator {
         }
         ShouldRecalculate::Yes
     }
+
+    fn read_record(&self, prepared: &PreparedUserTransaction) -> Option<PendingTransactionRecord> {
+        // Even though we only want to read the cache here, the LRU structs require a write lock
+        self.pending_transaction_result_cache
+            .write()
+            .get_pending_transaction_record(prepared.hashes())
+    }
+
+    fn write_attempt(
+        &self,
+        metadata: TransactionMetadata,
+        attempt: TransactionAttempt,
+    ) -> PendingTransactionRecord {
+        self.pending_transaction_result_cache
+            .write()
+            .track_transaction_result(
+                metadata.user_hashes,
+                Some(metadata.end_epoch_exclusive),
+                attempt,
+            )
+    }
+}
+
+struct TransactionMetadata {
+    user_hashes: UserTransactionHashes,
+    end_epoch_exclusive: Epoch,
+}
+
+impl TransactionMetadata {
+    pub fn read_from_user_executable(
+        executable: &ExecutableTransaction,
+        user_hashes: &UserTransactionHashes,
+    ) -> Self {
+        Self {
+            user_hashes: user_hashes.clone(),
+            end_epoch_exclusive: executable
+                .overall_epoch_range()
+                .expect("User executable transactions should have an epoch range")
+                .end_epoch_exclusive,
+        }
+    }
+
+    pub fn read_from_prepared(prepared: &PreparedUserTransaction) -> Self {
+        Self {
+            user_hashes: prepared.hashes(),
+            end_epoch_exclusive: match prepared {
+                #[allow(deprecated)]
+                PreparedUserTransaction::V1(prepared) => {
+                    prepared
+                        .signed_intent
+                        .intent
+                        .header
+                        .inner
+                        .end_epoch_exclusive
+                }
+                PreparedUserTransaction::V2(prepared) => {
+                    let transaction_intent = &prepared.signed_intent.transaction_intent;
+
+                    let root_intent_expiry_epoch = transaction_intent
+                        .root_intent_core
+                        .header
+                        .inner
+                        .end_epoch_exclusive;
+                    let non_root_intent_expiry_epochs = transaction_intent
+                        .non_root_subintents
+                        .subintents
+                        .iter()
+                        .map(|subintent| subintent.intent_core.header.inner.end_epoch_exclusive);
+
+                    // Unwrapping as we know it's non-empty
+                    std::iter::once(root_intent_expiry_epoch)
+                        .chain(non_root_intent_expiry_epochs)
+                        .min()
+                        .unwrap()
+                }
+            },
+        }
+    }
+}
+
+enum ShouldRecalculate {
+    Yes,
+    No(PendingTransactionRecord),
+}
+
+pub enum CheckMetadata {
+    Cached,
+    Fresh(StaticValidation),
+}
+
+impl CheckMetadata {
+    pub fn was_cached(&self) -> bool {
+        match self {
+            Self::Cached => true,
+            Self::Fresh(_) => false,
+        }
+    }
+}
+
+pub enum StaticValidation {
+    Valid {
+        executable: ExecutableTransaction,
+        user_hashes: UserTransactionHashes,
+    },
+    Invalid,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum ForceRecalculation {
+    Yes,
+    IfCachedAsValid,
+    No,
 }

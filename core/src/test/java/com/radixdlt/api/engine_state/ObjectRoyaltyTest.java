@@ -66,16 +66,31 @@ package com.radixdlt.api.engine_state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.api.DeterministicEngineStateApiTestBase;
 import com.radixdlt.api.engine_state.generated.client.ApiException;
 import com.radixdlt.api.engine_state.generated.models.*;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.Decimal;
 import org.junit.Test;
 
 public final class ObjectRoyaltyTest extends DeterministicEngineStateApiTestBase {
 
   @Test
   public void engine_state_api_returns_object_royalty() throws Exception {
-    try (var test = buildRunningServerTestWithScenarios("royalties")) {
+    final var config =
+        defaultConfig()
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults()
+                        .epochExactRoundCount(1000000),
+                    ImmutableList.of("royalties")));
+    try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
       // Find all the component instances created by the `royalties` Scenario:
@@ -148,6 +163,29 @@ public final class ObjectRoyaltyTest extends DeterministicEngineStateApiTestBase
                   .name("method_with_usd_package_royalty")
                   .packageRoyaltyAmount(usd(1))
                   .componentRoyaltyAmount(usd(4)));
+    }
+  }
+
+  @Test
+  public void engine_state_api_returns_object_royalty_of_uninstantiated_entity() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      var uninstantiatedIdentityAddress =
+          Address.virtualIdentityAddress(ECKeyPair.generateNew().getPublicKey());
+      var methodRoyalties =
+          getAttachedModulesApi()
+              .objectAttachedModulesRoyaltyPost(
+                  new ObjectRoyaltyRequest()
+                      .entityAddress(uninstantiatedIdentityAddress.encode(networkDefinition)))
+              .getMethodRoyalties();
+
+      assertThat(methodRoyalties)
+          .containsExactly(
+              new ObjectMethodRoyalty()
+                  .name("securify")
+                  .packageRoyaltyAmount(null)
+                  .componentRoyaltyAmount(null));
     }
   }
 

@@ -104,7 +104,7 @@ public class FallBehindMultipleEpochsLedgerSyncTest {
             .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed(10))
             .ledgerAndEpochsAndSync(
                 ConsensusConfig.of(3000),
-                Round.of(10),
+                10,
                 (unused) -> IntStream.of(0, 1),
                 SyncRelayConfig.of(200L, 10, 2000L))
             .addTestModules(

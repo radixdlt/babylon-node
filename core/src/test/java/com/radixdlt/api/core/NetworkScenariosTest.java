@@ -64,16 +64,16 @@
 
 package com.radixdlt.api.core;
 
-import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.*;
-import com.radixdlt.harness.deterministic.TestProtocolConfig;
-import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
-import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.radixdlt.environment.ScenariosExecutionConfig;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.rev2.Decimal;
 import java.util.List;
 import java.util.stream.LongStream;
 import org.junit.Test;
@@ -81,38 +81,29 @@ import org.junit.Test;
 public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_network_scenarios() throws Exception {
-    // pick a custom subset/permutation (different than "all scenarios"):
-    final var protocolConfig =
-        new TestProtocolConfig()
-            .withGenesisScenarios(ImmutableList.of("radiswap", "transfer_xrd", "royalties"))
-            .with(
-                TestProtocolConfig.updateTo(
-                    ProtocolUpdateTrigger.ANEMONE,
-                    ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(3L)))
-            .with(
-                TestProtocolConfig.updateTo(
-                        ProtocolUpdateTrigger.BOTTLENOSE,
-                        ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(4L))
-                    .withScenarios(ImmutableList.of("maya_router", "access-controller-v2")));
-    try (var test = buildRunningServerTestWithProtocolConfig(30, protocolConfig)) {
+    final var config =
+        defaultConfig()
+            .withScenarioExecutionConfig(ScenariosExecutionConfig.ALL_FOR_NETWORK)
+            .withGenesis(
+                GenesisBuilder.createTestGenesisWithNumValidators(
+                    1,
+                    Decimal.ONE,
+                    GenesisConsensusManagerConfig.Builder.testDefaults(),
+                    // Pick a custom subset/permutation of genesis scenarios (different from "all
+                    // scenarios")
+                    ImmutableList.of("radiswap", "transfer_xrd", "royalties")));
+    try (var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
-      // Query scenarios right after genesis
-      final var genesisScenarios =
-          getStatusApi()
-              .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
-              .getExecutedScenarios();
-      assertThat(genesisScenarios).hasSize(3); // there is 3 of them
+      // By the time we complete node start-up, all protocol updates and scenarios will have run.
 
-      // Wait for all protocol updates:
-      test.runUntilState(allAtOrOverEpoch(protocolConfig.lastProtocolUpdateEnactmentEpoch()));
-
-      // query all scenarios
+      // Query all scenarios
       final var allScenarios =
           getStatusApi()
               .statusScenariosPost(new ScenariosRequest().network(networkLogicalName))
               .getExecutedScenarios();
-      assertThat(allScenarios).hasSize(5); // there is 3 genesis + 2 bottlenose
+      // There are 3 configured genesis scenarios + 3 bottlenose, plus more at Cuttlefish and beyond
+      assertThat(allScenarios).hasSizeGreaterThan(6);
 
       // assert some selected properties of the known scenarios
       assertScenario(
@@ -175,7 +166,7 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
               "usd_royalty_component_address"));
       assertScenario(
           allScenarios,
-          3,
+          4,
           "maya_router",
           ImmutableList.of(
               "maya-router-create-accounts",
@@ -192,7 +183,7 @@ public class NetworkScenariosTest extends DeterministicCoreApiTestBase {
               "resource_2"));
       assertScenario(
           allScenarios,
-          4,
+          5,
           "access-controller-v2",
           ImmutableList.of(
               "access-controller-v2-instantiate",

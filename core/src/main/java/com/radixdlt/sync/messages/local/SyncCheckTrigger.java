@@ -64,26 +64,17 @@
 
 package com.radixdlt.sync.messages.local;
 
-/** A message indicating that the sync service should start the sync check. */
-public final class SyncCheckTrigger {
+import com.radixdlt.consensus.event.LocalEvent;
 
+/** A message indicating that the sync service should start the sync check. */
+public record SyncCheckTrigger() implements LocalEvent {
   public static SyncCheckTrigger create() {
     return new SyncCheckTrigger();
   }
 
-  private SyncCheckTrigger() {}
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return o != null && getClass() == o.getClass();
+    return o instanceof SyncCheckTrigger;
   }
 
   @Override

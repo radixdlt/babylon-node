@@ -77,6 +77,7 @@ import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.TransactionHeader;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.transactions.*;
+import com.radixdlt.utils.UInt64;
 import java.util.List;
 import java.util.Optional;
 
@@ -101,18 +102,50 @@ public final class TransactionPreparer {
       prepareIntentFunc =
           Natives.builder(TransactionPreparer::prepareIntent).build(new TypeToken<>() {});
 
+  public static PreparedTransactionIntentV2 prepareTransactionIntentV2(
+      NetworkDefinition network, TransactionHeader header, List<Integer> subintentDiscriminators) {
+    var rustSubintentDiscriminators =
+        subintentDiscriminators.stream().map(UInt64::fromNonNegativeLong).toList();
+    return prepareTransactionIntentV2Func
+        .call(new PrepareTransactionIntentV2Request(network, header, rustSubintentDiscriminators))
+        .unwrap(TransactionPreparationException::new);
+  }
+
+  private static final Natives.Call1<
+          PrepareTransactionIntentV2Request, Result<PreparedTransactionIntentV2, String>>
+      prepareTransactionIntentV2Func =
+          Natives.builder(TransactionPreparer::prepareTransactionIntentV2)
+              .build(new TypeToken<>() {});
+
   public static PreparedSignedIntent prepareSignedIntent(
       byte[] intent, List<SignatureWithPublicKey> signatures) {
 
-    return prepareSignedIntentBytesFunc
+    return prepareSignedIntentFunc
         .call(tuple(intent, signatures))
         .unwrap(TransactionPreparationException::new);
   }
 
   private static final Natives.Call1<
           Tuple.Tuple2<byte[], List<SignatureWithPublicKey>>, Result<PreparedSignedIntent, String>>
-      prepareSignedIntentBytesFunc =
+      prepareSignedIntentFunc =
           Natives.builder(TransactionPreparer::prepareSignedIntent).build(new TypeToken<>() {});
+
+  public static PreparedSignedIntent prepareSignedIntentV2(
+      byte[] transactionIntent,
+      List<SignatureWithPublicKey> signatures,
+      List<List<SignatureWithPublicKey>> subintentSignatures) {
+
+    return prepareSignedTransactionIntentV2Func
+        .call(tuple(transactionIntent, signatures, subintentSignatures))
+        .unwrap(TransactionPreparationException::new);
+  }
+
+  private static final Natives.Call1<
+          Tuple.Tuple3<byte[], List<SignatureWithPublicKey>, List<List<SignatureWithPublicKey>>>,
+          Result<PreparedSignedIntent, String>>
+      prepareSignedTransactionIntentV2Func =
+          Natives.builder(TransactionPreparer::prepareSignedTransactionIntentV2)
+              .build(new TypeToken<>() {});
 
   public static PreparedNotarizedTransaction prepareNotarizedTransaction(
       byte[] signedIntent, Signature signature) {
@@ -127,6 +160,32 @@ public final class TransactionPreparer {
           Natives.builder(TransactionPreparer::prepareNotarizedTransaction)
               .build(new TypeToken<>() {});
 
+  public static PreparedNotarizedTransaction prepareNotarizedTransactionV2(
+      byte[] signedIntent, Signature signature) {
+    return prepareNotarizedTransactionV2Func
+        .call(tuple(signedIntent, signature))
+        .unwrap(TransactionPreparationException::new);
+  }
+
+  private static final Natives.Call1<
+          Tuple.Tuple2<byte[], Signature>, Result<PreparedNotarizedTransaction, String>>
+      prepareNotarizedTransactionV2Func =
+          Natives.builder(TransactionPreparer::prepareNotarizedTransactionV2)
+              .build(new TypeToken<>() {});
+
+  public static PreparedPreviewTransaction prepareUnsignedPreviewTransactionV2(
+      PreparedTransactionIntentV2 transactionIntent) {
+    return prepareUnsignedPreviewTransactionV2Func
+        .call(tuple(transactionIntent.transactionIntentBytes()))
+        .unwrap(TransactionPreparationException::new);
+  }
+
+  private static final Natives.Call1<
+          Tuple.Tuple1<byte[]>, Result<PreparedPreviewTransaction, String>>
+      prepareUnsignedPreviewTransactionV2Func =
+          Natives.builder(TransactionPreparer::prepareUnsignedPreviewTransactionV2)
+              .build(new TypeToken<>() {});
+
   public static RawLedgerTransaction rawNotarizedTransactionToRawLedgerTransaction(
       RawNotarizedTransaction notarized) {
     return userTransactionToLedger.call(notarized).unwrap(TransactionPreparationException::new);
@@ -138,9 +197,17 @@ public final class TransactionPreparer {
 
   private static native byte[] prepareIntent(byte[] requestPayload);
 
+  private static native byte[] prepareTransactionIntentV2(byte[] requestPayload);
+
   private static native byte[] prepareSignedIntent(byte[] requestPayload);
 
+  private static native byte[] prepareSignedTransactionIntentV2(byte[] requestPayload);
+
   private static native byte[] prepareNotarizedTransaction(byte[] requestPayload);
+
+  private static native byte[] prepareNotarizedTransactionV2(byte[] requestPayload);
+
+  private static native byte[] prepareUnsignedPreviewTransactionV2(byte[] requestPayload);
 
   private static native byte[] userTransactionToLedger(byte[] requestPayload);
 }

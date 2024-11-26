@@ -28,40 +28,40 @@ compileClasspath - Compile classpath for source set 'main'.
 |         |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |         |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |         |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-|         +--- org.json:json -> 20180813
-|         +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4
-|         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4
-|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4
-|         |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4 (c)
-|         |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4 (c)
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4
-|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.core:jackson-core -> 2.12.4 (*)
-|         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.12.4
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.12.4
-|         |    +--- org.json:json:20190722 -> 20180813
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.12.4
-|         |    +--- com.google.guava:guava:21.0 -> 31.1-jre
+|         +--- org.json:json -> 20240303
+|         +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
+|         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
+|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
+|         |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4 (c)
+|         |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4 (c)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4
+|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.core:jackson-core -> 2.15.4 (*)
+|         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.15.4
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
+|         |    +--- org.json:json:20231013 -> 20240303
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.15.4
+|         |    +--- com.google.guava:guava:23.6.1-jre -> 31.1-jre
 |         |    |    +--- com.google.guava:failureaccess:1.0.1
 |         |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 |         |    |    +--- com.google.code.findbugs:jsr305:3.0.2
 |         |    |    +--- org.checkerframework:checker-qual:3.12.0
 |         |    |    +--- com.google.errorprone:error_prone_annotations:2.11.0
 |         |    |    \--- com.google.j2objc:j2objc-annotations:1.3
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 |         +--- com.google.guava:guava -> 31.1-jre (*)
 |         +--- com.google.inject:guice -> 5.0.1
 |         |    +--- javax.inject:javax.inject:1
@@ -83,34 +83,34 @@ compileClasspath - Compile classpath for source set 'main'.
 |    \--- io.reactivex.rxjava3:rxjava:3.0.6 -> 3.0.13
 |         \--- org.reactivestreams:reactive-streams:1.0.3
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-\--- io.netty:netty-all -> 4.1.109.Final
-     +--- io.netty:netty-buffer:4.1.109.Final
-     +--- io.netty:netty-codec:4.1.109.Final
-     +--- io.netty:netty-codec-dns:4.1.109.Final
-     +--- io.netty:netty-codec-haproxy:4.1.109.Final
-     +--- io.netty:netty-codec-http:4.1.109.Final
-     +--- io.netty:netty-codec-http2:4.1.109.Final
-     +--- io.netty:netty-codec-memcache:4.1.109.Final
-     +--- io.netty:netty-codec-mqtt:4.1.109.Final
-     +--- io.netty:netty-codec-redis:4.1.109.Final
-     +--- io.netty:netty-codec-smtp:4.1.109.Final
-     +--- io.netty:netty-codec-socks:4.1.109.Final
-     +--- io.netty:netty-codec-stomp:4.1.109.Final
-     +--- io.netty:netty-codec-xml:4.1.109.Final
-     +--- io.netty:netty-common:4.1.109.Final
-     +--- io.netty:netty-handler:4.1.109.Final
-     +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
-     +--- io.netty:netty-handler-proxy:4.1.109.Final
-     +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
-     +--- io.netty:netty-resolver:4.1.109.Final
-     +--- io.netty:netty-resolver-dns:4.1.109.Final
-     +--- io.netty:netty-transport:4.1.109.Final
-     +--- io.netty:netty-transport-rxtx:4.1.109.Final
-     +--- io.netty:netty-transport-sctp:4.1.109.Final
-     +--- io.netty:netty-transport-udt:4.1.109.Final
-     +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
-     +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
-     \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
+\--- io.netty:netty-all -> 4.1.115.Final
+     +--- io.netty:netty-buffer:4.1.115.Final
+     +--- io.netty:netty-codec:4.1.115.Final
+     +--- io.netty:netty-codec-dns:4.1.115.Final
+     +--- io.netty:netty-codec-haproxy:4.1.115.Final
+     +--- io.netty:netty-codec-http:4.1.115.Final
+     +--- io.netty:netty-codec-http2:4.1.115.Final
+     +--- io.netty:netty-codec-memcache:4.1.115.Final
+     +--- io.netty:netty-codec-mqtt:4.1.115.Final
+     +--- io.netty:netty-codec-redis:4.1.115.Final
+     +--- io.netty:netty-codec-smtp:4.1.115.Final
+     +--- io.netty:netty-codec-socks:4.1.115.Final
+     +--- io.netty:netty-codec-stomp:4.1.115.Final
+     +--- io.netty:netty-codec-xml:4.1.115.Final
+     +--- io.netty:netty-common:4.1.115.Final
+     +--- io.netty:netty-handler:4.1.115.Final
+     +--- io.netty:netty-transport-native-unix-common:4.1.115.Final
+     +--- io.netty:netty-handler-proxy:4.1.115.Final
+     +--- io.netty:netty-handler-ssl-ocsp:4.1.115.Final
+     +--- io.netty:netty-resolver:4.1.115.Final
+     +--- io.netty:netty-resolver-dns:4.1.115.Final
+     +--- io.netty:netty-transport:4.1.115.Final
+     +--- io.netty:netty-transport-rxtx:4.1.115.Final
+     +--- io.netty:netty-transport-sctp:4.1.115.Final
+     +--- io.netty:netty-transport-udt:4.1.115.Final
+     +--- io.netty:netty-transport-classes-epoll:4.1.115.Final
+     +--- io.netty:netty-transport-classes-kqueue:4.1.115.Final
+     \--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final
 
 compileOnly - Compile only dependencies for source set 'main'. (n)
 No dependencies
@@ -144,41 +144,40 @@ integrationCompileClasspath - Compile classpath for source set 'integration'.
 |         |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |         |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |         |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-|         +--- org.json:json -> 20180813
-|         +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4
-|         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4
-|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4
-|         |    |         +--- junit:junit:4.13.1 -> 4.13.2 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4 (c)
-|         |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4 (c)
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4
-|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.core:jackson-core -> 2.12.4 (*)
-|         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.12.4
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.12.4
-|         |    +--- org.json:json:20190722 -> 20180813
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.12.4
-|         |    +--- com.google.guava:guava:21.0 -> 31.1-jre
+|         +--- org.json:json -> 20240303
+|         +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
+|         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
+|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
+|         |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4 (c)
+|         |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4 (c)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4
+|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.core:jackson-core -> 2.15.4 (*)
+|         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.15.4
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
+|         |    +--- org.json:json:20231013 -> 20240303
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.15.4
+|         |    +--- com.google.guava:guava:23.6.1-jre -> 31.1-jre
 |         |    |    +--- com.google.guava:failureaccess:1.0.1
 |         |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 |         |    |    +--- com.google.code.findbugs:jsr305:3.0.2
 |         |    |    +--- org.checkerframework:checker-qual:3.12.0
 |         |    |    +--- com.google.errorprone:error_prone_annotations:2.11.0
 |         |    |    \--- com.google.j2objc:j2objc-annotations:1.3
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 |         +--- com.google.guava:guava -> 31.1-jre (*)
 |         +--- com.google.inject:guice -> 5.0.1
 |         |    +--- javax.inject:javax.inject:1
@@ -200,34 +199,34 @@ integrationCompileClasspath - Compile classpath for source set 'integration'.
 |    \--- io.reactivex.rxjava3:rxjava:3.0.6 -> 3.0.13
 |         \--- org.reactivestreams:reactive-streams:1.0.3
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.109.Final
-|    +--- io.netty:netty-buffer:4.1.109.Final
-|    +--- io.netty:netty-codec:4.1.109.Final
-|    +--- io.netty:netty-codec-dns:4.1.109.Final
-|    +--- io.netty:netty-codec-haproxy:4.1.109.Final
-|    +--- io.netty:netty-codec-http:4.1.109.Final
-|    +--- io.netty:netty-codec-http2:4.1.109.Final
-|    +--- io.netty:netty-codec-memcache:4.1.109.Final
-|    +--- io.netty:netty-codec-mqtt:4.1.109.Final
-|    +--- io.netty:netty-codec-redis:4.1.109.Final
-|    +--- io.netty:netty-codec-smtp:4.1.109.Final
-|    +--- io.netty:netty-codec-socks:4.1.109.Final
-|    +--- io.netty:netty-codec-stomp:4.1.109.Final
-|    +--- io.netty:netty-codec-xml:4.1.109.Final
-|    +--- io.netty:netty-common:4.1.109.Final
-|    +--- io.netty:netty-handler:4.1.109.Final
-|    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
-|    +--- io.netty:netty-handler-proxy:4.1.109.Final
-|    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
-|    +--- io.netty:netty-resolver:4.1.109.Final
-|    +--- io.netty:netty-resolver-dns:4.1.109.Final
-|    +--- io.netty:netty-transport:4.1.109.Final
-|    +--- io.netty:netty-transport-rxtx:4.1.109.Final
-|    +--- io.netty:netty-transport-sctp:4.1.109.Final
-|    +--- io.netty:netty-transport-udt:4.1.109.Final
-|    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
-|    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
-|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
++--- io.netty:netty-all -> 4.1.115.Final
+|    +--- io.netty:netty-buffer:4.1.115.Final
+|    +--- io.netty:netty-codec:4.1.115.Final
+|    +--- io.netty:netty-codec-dns:4.1.115.Final
+|    +--- io.netty:netty-codec-haproxy:4.1.115.Final
+|    +--- io.netty:netty-codec-http:4.1.115.Final
+|    +--- io.netty:netty-codec-http2:4.1.115.Final
+|    +--- io.netty:netty-codec-memcache:4.1.115.Final
+|    +--- io.netty:netty-codec-mqtt:4.1.115.Final
+|    +--- io.netty:netty-codec-redis:4.1.115.Final
+|    +--- io.netty:netty-codec-smtp:4.1.115.Final
+|    +--- io.netty:netty-codec-socks:4.1.115.Final
+|    +--- io.netty:netty-codec-stomp:4.1.115.Final
+|    +--- io.netty:netty-codec-xml:4.1.115.Final
+|    +--- io.netty:netty-common:4.1.115.Final
+|    +--- io.netty:netty-handler:4.1.115.Final
+|    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final
+|    +--- io.netty:netty-handler-proxy:4.1.115.Final
+|    +--- io.netty:netty-handler-ssl-ocsp:4.1.115.Final
+|    +--- io.netty:netty-resolver:4.1.115.Final
+|    +--- io.netty:netty-resolver-dns:4.1.115.Final
+|    +--- io.netty:netty-transport:4.1.115.Final
+|    +--- io.netty:netty-transport-rxtx:4.1.115.Final
+|    +--- io.netty:netty-transport-sctp:4.1.115.Final
+|    +--- io.netty:netty-transport-udt:4.1.115.Final
+|    +--- io.netty:netty-transport-classes-epoll:4.1.115.Final
+|    +--- io.netty:netty-transport-classes-kqueue:4.1.115.Final
+|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -254,42 +253,41 @@ integrationRuntimeClasspath - Runtime classpath of source set 'integration'.
 |    |    |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |    |    |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |    |    |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-|    |    +--- org.json:json -> 20180813
-|    |    +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4
-|    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4
-|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4
-|    |    |    |         +--- junit:junit:4.13.1 -> 4.13.2 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4 (c)
-|    |    |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4 (c)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4
-|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.core:jackson-core -> 2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.12.4
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.12.4
-|    |    |    +--- org.json:json:20190722 -> 20180813
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.12.4
-|    |    |    +--- com.google.guava:guava:21.0 -> 31.1-jre
+|    |    +--- org.json:json -> 20240303
+|    |    +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
+|    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4 (c)
+|    |    |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4 (c)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.core:jackson-core -> 2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.15.4
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
+|    |    |    +--- org.json:json:20231013 -> 20240303
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.15.4
+|    |    |    +--- com.google.guava:guava:23.6.1-jre -> 31.1-jre
 |    |    |    |    +--- com.google.guava:failureaccess:1.0.1
 |    |    |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 |    |    |    |    +--- com.google.code.findbugs:jsr305:3.0.2
 |    |    |    |    +--- org.checkerframework:checker-qual:3.12.0
 |    |    |    |    +--- com.google.errorprone:error_prone_annotations:2.11.0
 |    |    |    |    \--- com.google.j2objc:j2objc-annotations:1.3
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 |    |    +--- com.google.guava:guava -> 31.1-jre (*)
 |    |    +--- com.google.inject:guice -> 5.0.1
 |    |    |    +--- javax.inject:javax.inject:1
@@ -304,61 +302,92 @@ integrationRuntimeClasspath - Runtime classpath of source set 'integration'.
 |    |    |    \--- io.prometheus:simpleclient:0.16.0 (*)
 |    |    +--- io.prometheus:simpleclient_hotspot -> 0.16.0
 |    |    |    \--- io.prometheus:simpleclient:0.16.0 (*)
-|    |    \--- software.amazon.awssdk:secretsmanager:2.16.3
-|    |         +--- software.amazon.awssdk:aws-json-protocol:2.16.3
-|    |         |    +--- software.amazon.awssdk:aws-core:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:regions:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:utils:2.16.3
-|    |         |    |    |    |    +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3
-|    |         |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    |    |    \--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    \--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.12.4 (*)
-|    |         |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.1 -> 2.12.4 (*)
-|    |         |    |    |    \--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    +--- software.amazon.awssdk:auth:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
-|    |         |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    +--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    \--- software.amazon.eventstream:eventstream:1.0.1
-|    |         |    +--- software.amazon.awssdk:protocol-core:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    \--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    \--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.12.4 (*)
+|    |    +--- software.amazon.awssdk:secretsmanager:2.16.3
+|    |    |    +--- software.amazon.awssdk:aws-json-protocol:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:aws-core:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:regions:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3
+|    |    |    |    |    |    |    +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3
+|    |    |    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    |    |    \--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    \--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.15.4 (*)
+|    |    |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.1 -> 2.15.4 (*)
+|    |    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    +--- software.amazon.awssdk:auth:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
+|    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
+|    |    |    |    +--- software.amazon.awssdk:protocol-core:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    \--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    \--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.15.4 (*)
+|    |    |    +--- software.amazon.awssdk:protocol-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:auth:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:aws-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:apache-client:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    +--- org.apache.httpcomponents:httpclient:4.5.13
+|    |    |    |    |    +--- org.apache.httpcomponents:httpcore:4.4.13
+|    |    |    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    |    |    \--- commons-codec:commons-codec:1.11
+|    |    |    |    \--- org.apache.httpcomponents:httpcore:4.4.11 -> 4.4.13
+|    |    |    \--- software.amazon.awssdk:netty-nio-client:2.16.3
+|    |    |         +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |         +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |         +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |         +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |         +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
+|    |    |         |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
+|    |    |         |         \--- org.reactivestreams:reactive-streams:1.0.3
+|    |    |         +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |         \--- org.slf4j:slf4j-api:1.7.28
+|    |    \--- software.amazon.awssdk:ssm:2.16.3
+|    |         +--- software.amazon.awssdk:aws-json-protocol:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:protocol-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:auth:2.16.3 (*)
@@ -368,32 +397,14 @@ integrationRuntimeClasspath - Runtime classpath of source set 'integration'.
 |    |         +--- software.amazon.awssdk:utils:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:aws-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         +--- software.amazon.awssdk:apache-client:2.16.3
-|    |         |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    +--- org.apache.httpcomponents:httpclient:4.5.13
-|    |         |    |    +--- org.apache.httpcomponents:httpcore:4.4.13
-|    |         |    |    +--- commons-logging:commons-logging:1.2
-|    |         |    |    \--- commons-codec:commons-codec:1.11
-|    |         |    \--- org.apache.httpcomponents:httpcore:4.4.11 -> 4.4.13
-|    |         \--- software.amazon.awssdk:netty-nio-client:2.16.3
-|    |              +--- software.amazon.awssdk:annotations:2.16.3
-|    |              +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |              +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |              +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |              +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
-|    |              |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
-|    |              |         \--- org.reactivestreams:reactive-streams:1.0.3
-|    |              +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |              \--- org.slf4j:slf4j-api:1.7.28
+|    |         +--- software.amazon.awssdk:apache-client:2.16.3 (*)
+|    |         \--- software.amazon.awssdk:netty-nio-client:2.16.3 (*)
 |    +--- project :core-rust-bridge
 |    |    \--- project :common (*)
 |    +--- project :keygen
 |    |    +--- project :common (*)
 |    |    \--- commons-cli:commons-cli -> 1.4
-|    +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4 (*)
+|    +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4 (*)
 |    +--- io.swagger:swagger-annotations:1.5.0
 |    +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1
 |    |    +--- org.reactivestreams:reactive-streams:1.0.3
@@ -414,118 +425,117 @@ integrationRuntimeClasspath - Runtime classpath of source set 'integration'.
 |    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 -> 1.9.10 (*)
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
-|    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
-|    +--- io.netty:netty-all -> 4.1.109.Final
-|    |    +--- io.netty:netty-buffer:4.1.109.Final
-|    |    |    \--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-codec:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport:4.1.109.Final
-|    |    |         +--- io.netty:netty-common:4.1.109.Final
-|    |    |         +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |         \--- io.netty:netty-resolver:4.1.109.Final
-|    |    |              \--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-codec-dns:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    +--- io.netty:netty-codec-haproxy:4.1.109.Final
-|    |    +--- io.netty:netty-codec-http:4.1.109.Final
-|    |    +--- io.netty:netty-codec-http2:4.1.109.Final
-|    |    +--- io.netty:netty-codec-memcache:4.1.109.Final
-|    |    +--- io.netty:netty-codec-mqtt:4.1.109.Final
-|    |    +--- io.netty:netty-codec-redis:4.1.109.Final
-|    |    +--- io.netty:netty-codec-smtp:4.1.109.Final
-|    |    +--- io.netty:netty-codec-socks:4.1.109.Final
-|    |    +--- io.netty:netty-codec-stomp:4.1.109.Final
-|    |    +--- io.netty:netty-codec-xml:4.1.109.Final
-|    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-handler:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
-|    |    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    |    \--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-handler-proxy:4.1.109.Final
-|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
-|    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    +--- io.netty:netty-resolver-dns:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-codec-dns:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-handler:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-rxtx:4.1.109.Final
-|    |    +--- io.netty:netty-transport-sctp:4.1.109.Final
-|    |    +--- io.netty:netty-transport-udt:4.1.109.Final
-|    |    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-resolver-dns:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-epoll:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-kqueue:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.109.Final (*)
-|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.109.Final
-|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final (*)
+|    +--- org.xerial.snappy:snappy-java -> 1.1.10.1
+|    +--- io.netty:netty-all -> 4.1.115.Final
+|    |    +--- io.netty:netty-buffer:4.1.115.Final
+|    |    |    \--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-codec:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.1.115.Final
+|    |    |         +--- io.netty:netty-common:4.1.115.Final
+|    |    |         +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |         \--- io.netty:netty-resolver:4.1.115.Final
+|    |    |              \--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-codec-dns:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    +--- io.netty:netty-codec-haproxy:4.1.115.Final
+|    |    +--- io.netty:netty-codec-http:4.1.115.Final
+|    |    +--- io.netty:netty-codec-http2:4.1.115.Final
+|    |    +--- io.netty:netty-codec-memcache:4.1.115.Final
+|    |    +--- io.netty:netty-codec-mqtt:4.1.115.Final
+|    |    +--- io.netty:netty-codec-redis:4.1.115.Final
+|    |    +--- io.netty:netty-codec-smtp:4.1.115.Final
+|    |    +--- io.netty:netty-codec-socks:4.1.115.Final
+|    |    +--- io.netty:netty-codec-stomp:4.1.115.Final
+|    |    +--- io.netty:netty-codec-xml:4.1.115.Final
+|    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-handler:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-handler-proxy:4.1.115.Final
+|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.115.Final
+|    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    +--- io.netty:netty-resolver-dns:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-codec-dns:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-rxtx:4.1.115.Final
+|    |    +--- io.netty:netty-transport-sctp:4.1.115.Final
+|    |    +--- io.netty:netty-transport-udt:4.1.115.Final
+|    |    +--- io.netty:netty-transport-classes-epoll:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-resolver-dns:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-kqueue:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.115.Final (*)
+|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.115.Final
+|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final (*)
 |    +--- com.google.inject:guice -> 5.0.1 (*)
 |    +--- com.google.inject.extensions:guice-grapher -> 5.0.1
 |    |    +--- com.google.inject.extensions:guice-assistedinject:5.0.1
 |    |    |    \--- com.google.inject:guice:5.0.1 (*)
 |    |    \--- com.google.inject:guice:5.0.1 (*)
-|    +--- io.undertow:undertow-core -> 2.2.9.Final
+|    +--- io.undertow:undertow-core -> 2.2.37.Final
 |    |    +--- org.jboss.logging:jboss-logging:3.4.1.Final
-|    |    +--- org.jboss.xnio:xnio-api:3.8.4.Final
-|    |    |    +--- org.wildfly.common:wildfly-common:1.5.2.Final
+|    |    +--- org.jboss.xnio:xnio-api:3.8.16.Final
+|    |    |    +--- org.wildfly.common:wildfly-common:1.5.4.Final
 |    |    |    +--- org.wildfly.client:wildfly-client-config:1.0.1.Final
-|    |    |    |    +--- org.jboss.logging:jboss-logging:3.3.1.Final -> 3.4.1.Final
-|    |    |    |    \--- org.wildfly.common:wildfly-common:1.2.0.Final -> 1.5.2.Final
-|    |    |    \--- org.jboss.threads:jboss-threads:2.3.3.Final -> 3.1.0.Final
+|    |    |    |    \--- org.jboss.logging:jboss-logging:3.3.1.Final -> 3.4.1.Final
+|    |    |    \--- org.jboss.threads:jboss-threads:2.3.6.Final -> 3.1.0.Final
 |    |    |         +--- org.jboss.logging:jboss-logging:3.4.1.Final
-|    |    |         \--- org.wildfly.common:wildfly-common:1.5.0.Final -> 1.5.2.Final
-|    |    +--- org.jboss.xnio:xnio-nio:3.8.4.Final
-|    |    |    \--- org.jboss.xnio:xnio-api:3.8.4.Final (*)
+|    |    |         \--- org.wildfly.common:wildfly-common:1.5.0.Final -> 1.5.4.Final
+|    |    +--- org.jboss.xnio:xnio-nio:3.8.16.Final
+|    |    |    \--- org.jboss.xnio:xnio-api:3.8.16.Final (*)
 |    |    \--- org.jboss.threads:jboss-threads:3.1.0.Final (*)
 |    +--- com.stijndewitt.undertow.cors:undertow-cors-filter -> 0.4.0
-|    \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> 2.12.4
-|         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         +--- org.yaml:snakeyaml:1.27
-|         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|    \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> 2.15.4
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         +--- org.yaml:snakeyaml:2.1
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 +--- project :core-rust-bridge (*)
 +--- project :common (*)
 +--- commons-cli:commons-cli -> 1.4
 +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1 (*)
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.109.Final (*)
++--- io.netty:netty-all -> 4.1.115.Final (*)
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -571,41 +581,40 @@ p2pTestCompileClasspath - Compile classpath for source set 'p2p test'.
 |         |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |         |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |         |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-|         +--- org.json:json -> 20180813
-|         +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4
-|         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4
-|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4
-|         |    |         +--- junit:junit:4.13.1 -> 4.13.2 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4 (c)
-|         |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4 (c)
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4
-|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.core:jackson-core -> 2.12.4 (*)
-|         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.12.4
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.12.4
-|         |    +--- org.json:json:20190722 -> 20180813
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.12.4
-|         |    +--- com.google.guava:guava:21.0 -> 31.1-jre
+|         +--- org.json:json -> 20240303
+|         +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
+|         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
+|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
+|         |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4 (c)
+|         |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4 (c)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4
+|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.core:jackson-core -> 2.15.4 (*)
+|         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.15.4
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
+|         |    +--- org.json:json:20231013 -> 20240303
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.15.4
+|         |    +--- com.google.guava:guava:23.6.1-jre -> 31.1-jre
 |         |    |    +--- com.google.guava:failureaccess:1.0.1
 |         |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 |         |    |    +--- com.google.code.findbugs:jsr305:3.0.2
 |         |    |    +--- org.checkerframework:checker-qual:3.12.0
 |         |    |    +--- com.google.errorprone:error_prone_annotations:2.11.0
 |         |    |    \--- com.google.j2objc:j2objc-annotations:1.3
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 |         +--- com.google.guava:guava -> 31.1-jre (*)
 |         +--- com.google.inject:guice -> 5.0.1
 |         |    +--- javax.inject:javax.inject:1
@@ -627,34 +636,34 @@ p2pTestCompileClasspath - Compile classpath for source set 'p2p test'.
 |    \--- io.reactivex.rxjava3:rxjava:3.0.6 -> 3.0.13
 |         \--- org.reactivestreams:reactive-streams:1.0.3
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.109.Final
-|    +--- io.netty:netty-buffer:4.1.109.Final
-|    +--- io.netty:netty-codec:4.1.109.Final
-|    +--- io.netty:netty-codec-dns:4.1.109.Final
-|    +--- io.netty:netty-codec-haproxy:4.1.109.Final
-|    +--- io.netty:netty-codec-http:4.1.109.Final
-|    +--- io.netty:netty-codec-http2:4.1.109.Final
-|    +--- io.netty:netty-codec-memcache:4.1.109.Final
-|    +--- io.netty:netty-codec-mqtt:4.1.109.Final
-|    +--- io.netty:netty-codec-redis:4.1.109.Final
-|    +--- io.netty:netty-codec-smtp:4.1.109.Final
-|    +--- io.netty:netty-codec-socks:4.1.109.Final
-|    +--- io.netty:netty-codec-stomp:4.1.109.Final
-|    +--- io.netty:netty-codec-xml:4.1.109.Final
-|    +--- io.netty:netty-common:4.1.109.Final
-|    +--- io.netty:netty-handler:4.1.109.Final
-|    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
-|    +--- io.netty:netty-handler-proxy:4.1.109.Final
-|    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
-|    +--- io.netty:netty-resolver:4.1.109.Final
-|    +--- io.netty:netty-resolver-dns:4.1.109.Final
-|    +--- io.netty:netty-transport:4.1.109.Final
-|    +--- io.netty:netty-transport-rxtx:4.1.109.Final
-|    +--- io.netty:netty-transport-sctp:4.1.109.Final
-|    +--- io.netty:netty-transport-udt:4.1.109.Final
-|    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
-|    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
-|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
++--- io.netty:netty-all -> 4.1.115.Final
+|    +--- io.netty:netty-buffer:4.1.115.Final
+|    +--- io.netty:netty-codec:4.1.115.Final
+|    +--- io.netty:netty-codec-dns:4.1.115.Final
+|    +--- io.netty:netty-codec-haproxy:4.1.115.Final
+|    +--- io.netty:netty-codec-http:4.1.115.Final
+|    +--- io.netty:netty-codec-http2:4.1.115.Final
+|    +--- io.netty:netty-codec-memcache:4.1.115.Final
+|    +--- io.netty:netty-codec-mqtt:4.1.115.Final
+|    +--- io.netty:netty-codec-redis:4.1.115.Final
+|    +--- io.netty:netty-codec-smtp:4.1.115.Final
+|    +--- io.netty:netty-codec-socks:4.1.115.Final
+|    +--- io.netty:netty-codec-stomp:4.1.115.Final
+|    +--- io.netty:netty-codec-xml:4.1.115.Final
+|    +--- io.netty:netty-common:4.1.115.Final
+|    +--- io.netty:netty-handler:4.1.115.Final
+|    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final
+|    +--- io.netty:netty-handler-proxy:4.1.115.Final
+|    +--- io.netty:netty-handler-ssl-ocsp:4.1.115.Final
+|    +--- io.netty:netty-resolver:4.1.115.Final
+|    +--- io.netty:netty-resolver-dns:4.1.115.Final
+|    +--- io.netty:netty-transport:4.1.115.Final
+|    +--- io.netty:netty-transport-rxtx:4.1.115.Final
+|    +--- io.netty:netty-transport-sctp:4.1.115.Final
+|    +--- io.netty:netty-transport-udt:4.1.115.Final
+|    +--- io.netty:netty-transport-classes-epoll:4.1.115.Final
+|    +--- io.netty:netty-transport-classes-kqueue:4.1.115.Final
+|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -681,42 +690,41 @@ p2pTestRuntimeClasspath - Runtime classpath of source set 'p2p test'.
 |    |    |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |    |    |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |    |    |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-|    |    +--- org.json:json -> 20180813
-|    |    +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4
-|    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4
-|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4
-|    |    |    |         +--- junit:junit:4.13.1 -> 4.13.2 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4 (c)
-|    |    |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4 (c)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4
-|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.core:jackson-core -> 2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.12.4
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.12.4
-|    |    |    +--- org.json:json:20190722 -> 20180813
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.12.4
-|    |    |    +--- com.google.guava:guava:21.0 -> 31.1-jre
+|    |    +--- org.json:json -> 20240303
+|    |    +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
+|    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4 (c)
+|    |    |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4 (c)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.core:jackson-core -> 2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.15.4
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
+|    |    |    +--- org.json:json:20231013 -> 20240303
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.15.4
+|    |    |    +--- com.google.guava:guava:23.6.1-jre -> 31.1-jre
 |    |    |    |    +--- com.google.guava:failureaccess:1.0.1
 |    |    |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 |    |    |    |    +--- com.google.code.findbugs:jsr305:3.0.2
 |    |    |    |    +--- org.checkerframework:checker-qual:3.12.0
 |    |    |    |    +--- com.google.errorprone:error_prone_annotations:2.11.0
 |    |    |    |    \--- com.google.j2objc:j2objc-annotations:1.3
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 |    |    +--- com.google.guava:guava -> 31.1-jre (*)
 |    |    +--- com.google.inject:guice -> 5.0.1
 |    |    |    +--- javax.inject:javax.inject:1
@@ -731,61 +739,92 @@ p2pTestRuntimeClasspath - Runtime classpath of source set 'p2p test'.
 |    |    |    \--- io.prometheus:simpleclient:0.16.0 (*)
 |    |    +--- io.prometheus:simpleclient_hotspot -> 0.16.0
 |    |    |    \--- io.prometheus:simpleclient:0.16.0 (*)
-|    |    \--- software.amazon.awssdk:secretsmanager:2.16.3
-|    |         +--- software.amazon.awssdk:aws-json-protocol:2.16.3
-|    |         |    +--- software.amazon.awssdk:aws-core:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:regions:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:utils:2.16.3
-|    |         |    |    |    |    +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3
-|    |         |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    |    |    \--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    \--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.12.4 (*)
-|    |         |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.1 -> 2.12.4 (*)
-|    |         |    |    |    \--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    +--- software.amazon.awssdk:auth:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
-|    |         |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    +--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    \--- software.amazon.eventstream:eventstream:1.0.1
-|    |         |    +--- software.amazon.awssdk:protocol-core:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    \--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    \--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.12.4 (*)
+|    |    +--- software.amazon.awssdk:secretsmanager:2.16.3
+|    |    |    +--- software.amazon.awssdk:aws-json-protocol:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:aws-core:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:regions:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3
+|    |    |    |    |    |    |    +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3
+|    |    |    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    |    |    \--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    \--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.15.4 (*)
+|    |    |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.1 -> 2.15.4 (*)
+|    |    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    +--- software.amazon.awssdk:auth:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
+|    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
+|    |    |    |    +--- software.amazon.awssdk:protocol-core:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    \--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    \--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.15.4 (*)
+|    |    |    +--- software.amazon.awssdk:protocol-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:auth:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:aws-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:apache-client:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    +--- org.apache.httpcomponents:httpclient:4.5.13
+|    |    |    |    |    +--- org.apache.httpcomponents:httpcore:4.4.13
+|    |    |    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    |    |    \--- commons-codec:commons-codec:1.11
+|    |    |    |    \--- org.apache.httpcomponents:httpcore:4.4.11 -> 4.4.13
+|    |    |    \--- software.amazon.awssdk:netty-nio-client:2.16.3
+|    |    |         +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |         +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |         +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |         +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |         +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
+|    |    |         |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
+|    |    |         |         \--- org.reactivestreams:reactive-streams:1.0.3
+|    |    |         +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |         \--- org.slf4j:slf4j-api:1.7.28
+|    |    \--- software.amazon.awssdk:ssm:2.16.3
+|    |         +--- software.amazon.awssdk:aws-json-protocol:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:protocol-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:auth:2.16.3 (*)
@@ -795,32 +834,14 @@ p2pTestRuntimeClasspath - Runtime classpath of source set 'p2p test'.
 |    |         +--- software.amazon.awssdk:utils:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:aws-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         +--- software.amazon.awssdk:apache-client:2.16.3
-|    |         |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    +--- org.apache.httpcomponents:httpclient:4.5.13
-|    |         |    |    +--- org.apache.httpcomponents:httpcore:4.4.13
-|    |         |    |    +--- commons-logging:commons-logging:1.2
-|    |         |    |    \--- commons-codec:commons-codec:1.11
-|    |         |    \--- org.apache.httpcomponents:httpcore:4.4.11 -> 4.4.13
-|    |         \--- software.amazon.awssdk:netty-nio-client:2.16.3
-|    |              +--- software.amazon.awssdk:annotations:2.16.3
-|    |              +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |              +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |              +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |              +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
-|    |              |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
-|    |              |         \--- org.reactivestreams:reactive-streams:1.0.3
-|    |              +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |              \--- org.slf4j:slf4j-api:1.7.28
+|    |         +--- software.amazon.awssdk:apache-client:2.16.3 (*)
+|    |         \--- software.amazon.awssdk:netty-nio-client:2.16.3 (*)
 |    +--- project :core-rust-bridge
 |    |    \--- project :common (*)
 |    +--- project :keygen
 |    |    +--- project :common (*)
 |    |    \--- commons-cli:commons-cli -> 1.4
-|    +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4 (*)
+|    +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4 (*)
 |    +--- io.swagger:swagger-annotations:1.5.0
 |    +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1
 |    |    +--- org.reactivestreams:reactive-streams:1.0.3
@@ -841,118 +862,117 @@ p2pTestRuntimeClasspath - Runtime classpath of source set 'p2p test'.
 |    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 -> 1.9.10 (*)
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
-|    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
-|    +--- io.netty:netty-all -> 4.1.109.Final
-|    |    +--- io.netty:netty-buffer:4.1.109.Final
-|    |    |    \--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-codec:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport:4.1.109.Final
-|    |    |         +--- io.netty:netty-common:4.1.109.Final
-|    |    |         +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |         \--- io.netty:netty-resolver:4.1.109.Final
-|    |    |              \--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-codec-dns:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    +--- io.netty:netty-codec-haproxy:4.1.109.Final
-|    |    +--- io.netty:netty-codec-http:4.1.109.Final
-|    |    +--- io.netty:netty-codec-http2:4.1.109.Final
-|    |    +--- io.netty:netty-codec-memcache:4.1.109.Final
-|    |    +--- io.netty:netty-codec-mqtt:4.1.109.Final
-|    |    +--- io.netty:netty-codec-redis:4.1.109.Final
-|    |    +--- io.netty:netty-codec-smtp:4.1.109.Final
-|    |    +--- io.netty:netty-codec-socks:4.1.109.Final
-|    |    +--- io.netty:netty-codec-stomp:4.1.109.Final
-|    |    +--- io.netty:netty-codec-xml:4.1.109.Final
-|    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-handler:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
-|    |    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    |    \--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-handler-proxy:4.1.109.Final
-|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
-|    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    +--- io.netty:netty-resolver-dns:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-codec-dns:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-handler:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-rxtx:4.1.109.Final
-|    |    +--- io.netty:netty-transport-sctp:4.1.109.Final
-|    |    +--- io.netty:netty-transport-udt:4.1.109.Final
-|    |    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-resolver-dns:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-epoll:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-kqueue:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.109.Final (*)
-|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.109.Final
-|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final (*)
+|    +--- org.xerial.snappy:snappy-java -> 1.1.10.1
+|    +--- io.netty:netty-all -> 4.1.115.Final
+|    |    +--- io.netty:netty-buffer:4.1.115.Final
+|    |    |    \--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-codec:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.1.115.Final
+|    |    |         +--- io.netty:netty-common:4.1.115.Final
+|    |    |         +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |         \--- io.netty:netty-resolver:4.1.115.Final
+|    |    |              \--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-codec-dns:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    +--- io.netty:netty-codec-haproxy:4.1.115.Final
+|    |    +--- io.netty:netty-codec-http:4.1.115.Final
+|    |    +--- io.netty:netty-codec-http2:4.1.115.Final
+|    |    +--- io.netty:netty-codec-memcache:4.1.115.Final
+|    |    +--- io.netty:netty-codec-mqtt:4.1.115.Final
+|    |    +--- io.netty:netty-codec-redis:4.1.115.Final
+|    |    +--- io.netty:netty-codec-smtp:4.1.115.Final
+|    |    +--- io.netty:netty-codec-socks:4.1.115.Final
+|    |    +--- io.netty:netty-codec-stomp:4.1.115.Final
+|    |    +--- io.netty:netty-codec-xml:4.1.115.Final
+|    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-handler:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-handler-proxy:4.1.115.Final
+|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.115.Final
+|    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    +--- io.netty:netty-resolver-dns:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-codec-dns:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-rxtx:4.1.115.Final
+|    |    +--- io.netty:netty-transport-sctp:4.1.115.Final
+|    |    +--- io.netty:netty-transport-udt:4.1.115.Final
+|    |    +--- io.netty:netty-transport-classes-epoll:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-resolver-dns:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-kqueue:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.115.Final (*)
+|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.115.Final
+|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final (*)
 |    +--- com.google.inject:guice -> 5.0.1 (*)
 |    +--- com.google.inject.extensions:guice-grapher -> 5.0.1
 |    |    +--- com.google.inject.extensions:guice-assistedinject:5.0.1
 |    |    |    \--- com.google.inject:guice:5.0.1 (*)
 |    |    \--- com.google.inject:guice:5.0.1 (*)
-|    +--- io.undertow:undertow-core -> 2.2.9.Final
+|    +--- io.undertow:undertow-core -> 2.2.37.Final
 |    |    +--- org.jboss.logging:jboss-logging:3.4.1.Final
-|    |    +--- org.jboss.xnio:xnio-api:3.8.4.Final
-|    |    |    +--- org.wildfly.common:wildfly-common:1.5.2.Final
+|    |    +--- org.jboss.xnio:xnio-api:3.8.16.Final
+|    |    |    +--- org.wildfly.common:wildfly-common:1.5.4.Final
 |    |    |    +--- org.wildfly.client:wildfly-client-config:1.0.1.Final
-|    |    |    |    +--- org.jboss.logging:jboss-logging:3.3.1.Final -> 3.4.1.Final
-|    |    |    |    \--- org.wildfly.common:wildfly-common:1.2.0.Final -> 1.5.2.Final
-|    |    |    \--- org.jboss.threads:jboss-threads:2.3.3.Final -> 3.1.0.Final
+|    |    |    |    \--- org.jboss.logging:jboss-logging:3.3.1.Final -> 3.4.1.Final
+|    |    |    \--- org.jboss.threads:jboss-threads:2.3.6.Final -> 3.1.0.Final
 |    |    |         +--- org.jboss.logging:jboss-logging:3.4.1.Final
-|    |    |         \--- org.wildfly.common:wildfly-common:1.5.0.Final -> 1.5.2.Final
-|    |    +--- org.jboss.xnio:xnio-nio:3.8.4.Final
-|    |    |    \--- org.jboss.xnio:xnio-api:3.8.4.Final (*)
+|    |    |         \--- org.wildfly.common:wildfly-common:1.5.0.Final -> 1.5.4.Final
+|    |    +--- org.jboss.xnio:xnio-nio:3.8.16.Final
+|    |    |    \--- org.jboss.xnio:xnio-api:3.8.16.Final (*)
 |    |    \--- org.jboss.threads:jboss-threads:3.1.0.Final (*)
 |    +--- com.stijndewitt.undertow.cors:undertow-cors-filter -> 0.4.0
-|    \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> 2.12.4
-|         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         +--- org.yaml:snakeyaml:1.27
-|         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|    \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> 2.15.4
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         +--- org.yaml:snakeyaml:2.1
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 +--- project :core-rust-bridge (*)
 +--- project :common (*)
 +--- commons-cli:commons-cli -> 1.4
 +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1 (*)
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.109.Final (*)
++--- io.netty:netty-all -> 4.1.115.Final (*)
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -976,41 +996,41 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    |    |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |    |    |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |    |    |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-|    |    +--- org.json:json -> 20180813
-|    |    +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4
-|    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4
-|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4 (c)
-|    |    |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4 (c)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4
-|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.core:jackson-core -> 2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.12.4
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.12.4
-|    |    |    +--- org.json:json:20190722 -> 20180813
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.12.4
-|    |    |    +--- com.google.guava:guava:21.0 -> 31.1-jre
+|    |    +--- org.json:json -> 20240303
+|    |    +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
+|    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4 (c)
+|    |    |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4 (c)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.core:jackson-core -> 2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.15.4
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
+|    |    |    +--- org.json:json:20231013 -> 20240303
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.15.4
+|    |    |    +--- com.google.guava:guava:23.6.1-jre -> 31.1-jre
 |    |    |    |    +--- com.google.guava:failureaccess:1.0.1
 |    |    |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 |    |    |    |    +--- com.google.code.findbugs:jsr305:3.0.2
 |    |    |    |    +--- org.checkerframework:checker-qual:3.12.0
 |    |    |    |    +--- com.google.errorprone:error_prone_annotations:2.11.0
 |    |    |    |    \--- com.google.j2objc:j2objc-annotations:1.3
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 |    |    +--- com.google.guava:guava -> 31.1-jre (*)
 |    |    +--- com.google.inject:guice -> 5.0.1
 |    |    |    +--- javax.inject:javax.inject:1
@@ -1025,61 +1045,92 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    |    |    \--- io.prometheus:simpleclient:0.16.0 (*)
 |    |    +--- io.prometheus:simpleclient_hotspot -> 0.16.0
 |    |    |    \--- io.prometheus:simpleclient:0.16.0 (*)
-|    |    \--- software.amazon.awssdk:secretsmanager:2.16.3
-|    |         +--- software.amazon.awssdk:aws-json-protocol:2.16.3
-|    |         |    +--- software.amazon.awssdk:aws-core:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:regions:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:utils:2.16.3
-|    |         |    |    |    |    +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3
-|    |         |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    |    |    \--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    \--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.12.4 (*)
-|    |         |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.1 -> 2.12.4 (*)
-|    |         |    |    |    \--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    +--- software.amazon.awssdk:auth:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
-|    |         |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    +--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    \--- software.amazon.eventstream:eventstream:1.0.1
-|    |         |    +--- software.amazon.awssdk:protocol-core:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    \--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    \--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.12.4 (*)
+|    |    +--- software.amazon.awssdk:secretsmanager:2.16.3
+|    |    |    +--- software.amazon.awssdk:aws-json-protocol:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:aws-core:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:regions:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3
+|    |    |    |    |    |    |    +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3
+|    |    |    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    |    |    \--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    \--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.15.4 (*)
+|    |    |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.1 -> 2.15.4 (*)
+|    |    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    +--- software.amazon.awssdk:auth:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
+|    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
+|    |    |    |    +--- software.amazon.awssdk:protocol-core:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    \--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    \--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.15.4 (*)
+|    |    |    +--- software.amazon.awssdk:protocol-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:auth:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:aws-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:apache-client:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    +--- org.apache.httpcomponents:httpclient:4.5.13
+|    |    |    |    |    +--- org.apache.httpcomponents:httpcore:4.4.13
+|    |    |    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    |    |    \--- commons-codec:commons-codec:1.11
+|    |    |    |    \--- org.apache.httpcomponents:httpcore:4.4.11 -> 4.4.13
+|    |    |    \--- software.amazon.awssdk:netty-nio-client:2.16.3
+|    |    |         +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |         +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |         +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |         +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |         +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
+|    |    |         |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
+|    |    |         |         \--- org.reactivestreams:reactive-streams:1.0.3
+|    |    |         +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |         \--- org.slf4j:slf4j-api:1.7.28
+|    |    \--- software.amazon.awssdk:ssm:2.16.3
+|    |         +--- software.amazon.awssdk:aws-json-protocol:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:protocol-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:auth:2.16.3 (*)
@@ -1089,32 +1140,14 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    |         +--- software.amazon.awssdk:utils:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:aws-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         +--- software.amazon.awssdk:apache-client:2.16.3
-|    |         |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    +--- org.apache.httpcomponents:httpclient:4.5.13
-|    |         |    |    +--- org.apache.httpcomponents:httpcore:4.4.13
-|    |         |    |    +--- commons-logging:commons-logging:1.2
-|    |         |    |    \--- commons-codec:commons-codec:1.11
-|    |         |    \--- org.apache.httpcomponents:httpcore:4.4.11 -> 4.4.13
-|    |         \--- software.amazon.awssdk:netty-nio-client:2.16.3
-|    |              +--- software.amazon.awssdk:annotations:2.16.3
-|    |              +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |              +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |              +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |              +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
-|    |              |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
-|    |              |         \--- org.reactivestreams:reactive-streams:1.0.3
-|    |              +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |              \--- org.slf4j:slf4j-api:1.7.28
+|    |         +--- software.amazon.awssdk:apache-client:2.16.3 (*)
+|    |         \--- software.amazon.awssdk:netty-nio-client:2.16.3 (*)
 |    +--- project :core-rust-bridge
 |    |    \--- project :common (*)
 |    +--- project :keygen
 |    |    +--- project :common (*)
 |    |    \--- commons-cli:commons-cli -> 1.4
-|    +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4 (*)
+|    +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4 (*)
 |    +--- io.swagger:swagger-annotations:1.5.0
 |    +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1
 |    |    +--- org.reactivestreams:reactive-streams:1.0.3
@@ -1135,118 +1168,117 @@ runtimeClasspath - Runtime classpath of source set 'main'.
 |    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 -> 1.9.10 (*)
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
-|    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
-|    +--- io.netty:netty-all -> 4.1.109.Final
-|    |    +--- io.netty:netty-buffer:4.1.109.Final
-|    |    |    \--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-codec:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport:4.1.109.Final
-|    |    |         +--- io.netty:netty-common:4.1.109.Final
-|    |    |         +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |         \--- io.netty:netty-resolver:4.1.109.Final
-|    |    |              \--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-codec-dns:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    +--- io.netty:netty-codec-haproxy:4.1.109.Final
-|    |    +--- io.netty:netty-codec-http:4.1.109.Final
-|    |    +--- io.netty:netty-codec-http2:4.1.109.Final
-|    |    +--- io.netty:netty-codec-memcache:4.1.109.Final
-|    |    +--- io.netty:netty-codec-mqtt:4.1.109.Final
-|    |    +--- io.netty:netty-codec-redis:4.1.109.Final
-|    |    +--- io.netty:netty-codec-smtp:4.1.109.Final
-|    |    +--- io.netty:netty-codec-socks:4.1.109.Final
-|    |    +--- io.netty:netty-codec-stomp:4.1.109.Final
-|    |    +--- io.netty:netty-codec-xml:4.1.109.Final
-|    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-handler:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
-|    |    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    |    \--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-handler-proxy:4.1.109.Final
-|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
-|    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    +--- io.netty:netty-resolver-dns:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-codec-dns:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-handler:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-rxtx:4.1.109.Final
-|    |    +--- io.netty:netty-transport-sctp:4.1.109.Final
-|    |    +--- io.netty:netty-transport-udt:4.1.109.Final
-|    |    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-resolver-dns:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-epoll:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-kqueue:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.109.Final (*)
-|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.109.Final
-|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final (*)
+|    +--- org.xerial.snappy:snappy-java -> 1.1.10.1
+|    +--- io.netty:netty-all -> 4.1.115.Final
+|    |    +--- io.netty:netty-buffer:4.1.115.Final
+|    |    |    \--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-codec:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.1.115.Final
+|    |    |         +--- io.netty:netty-common:4.1.115.Final
+|    |    |         +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |         \--- io.netty:netty-resolver:4.1.115.Final
+|    |    |              \--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-codec-dns:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    +--- io.netty:netty-codec-haproxy:4.1.115.Final
+|    |    +--- io.netty:netty-codec-http:4.1.115.Final
+|    |    +--- io.netty:netty-codec-http2:4.1.115.Final
+|    |    +--- io.netty:netty-codec-memcache:4.1.115.Final
+|    |    +--- io.netty:netty-codec-mqtt:4.1.115.Final
+|    |    +--- io.netty:netty-codec-redis:4.1.115.Final
+|    |    +--- io.netty:netty-codec-smtp:4.1.115.Final
+|    |    +--- io.netty:netty-codec-socks:4.1.115.Final
+|    |    +--- io.netty:netty-codec-stomp:4.1.115.Final
+|    |    +--- io.netty:netty-codec-xml:4.1.115.Final
+|    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-handler:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-handler-proxy:4.1.115.Final
+|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.115.Final
+|    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    +--- io.netty:netty-resolver-dns:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-codec-dns:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-rxtx:4.1.115.Final
+|    |    +--- io.netty:netty-transport-sctp:4.1.115.Final
+|    |    +--- io.netty:netty-transport-udt:4.1.115.Final
+|    |    +--- io.netty:netty-transport-classes-epoll:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-resolver-dns:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-kqueue:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.115.Final (*)
+|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.115.Final
+|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final (*)
 |    +--- com.google.inject:guice -> 5.0.1 (*)
 |    +--- com.google.inject.extensions:guice-grapher -> 5.0.1
 |    |    +--- com.google.inject.extensions:guice-assistedinject:5.0.1
 |    |    |    \--- com.google.inject:guice:5.0.1 (*)
 |    |    \--- com.google.inject:guice:5.0.1 (*)
-|    +--- io.undertow:undertow-core -> 2.2.9.Final
+|    +--- io.undertow:undertow-core -> 2.2.37.Final
 |    |    +--- org.jboss.logging:jboss-logging:3.4.1.Final
-|    |    +--- org.jboss.xnio:xnio-api:3.8.4.Final
-|    |    |    +--- org.wildfly.common:wildfly-common:1.5.2.Final
+|    |    +--- org.jboss.xnio:xnio-api:3.8.16.Final
+|    |    |    +--- org.wildfly.common:wildfly-common:1.5.4.Final
 |    |    |    +--- org.wildfly.client:wildfly-client-config:1.0.1.Final
-|    |    |    |    +--- org.jboss.logging:jboss-logging:3.3.1.Final -> 3.4.1.Final
-|    |    |    |    \--- org.wildfly.common:wildfly-common:1.2.0.Final -> 1.5.2.Final
-|    |    |    \--- org.jboss.threads:jboss-threads:2.3.3.Final -> 3.1.0.Final
+|    |    |    |    \--- org.jboss.logging:jboss-logging:3.3.1.Final -> 3.4.1.Final
+|    |    |    \--- org.jboss.threads:jboss-threads:2.3.6.Final -> 3.1.0.Final
 |    |    |         +--- org.jboss.logging:jboss-logging:3.4.1.Final
-|    |    |         \--- org.wildfly.common:wildfly-common:1.5.0.Final -> 1.5.2.Final
-|    |    +--- org.jboss.xnio:xnio-nio:3.8.4.Final
-|    |    |    \--- org.jboss.xnio:xnio-api:3.8.4.Final (*)
+|    |    |         \--- org.wildfly.common:wildfly-common:1.5.0.Final -> 1.5.4.Final
+|    |    +--- org.jboss.xnio:xnio-nio:3.8.16.Final
+|    |    |    \--- org.jboss.xnio:xnio-api:3.8.16.Final (*)
 |    |    \--- org.jboss.threads:jboss-threads:3.1.0.Final (*)
 |    +--- com.stijndewitt.undertow.cors:undertow-cors-filter -> 0.4.0
-|    \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> 2.12.4
-|         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         +--- org.yaml:snakeyaml:1.27
-|         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|    \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> 2.15.4
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         +--- org.yaml:snakeyaml:2.1
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 +--- project :core-rust-bridge (*)
 +--- project :common (*)
 +--- commons-cli:commons-cli -> 1.4
 +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1 (*)
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-\--- io.netty:netty-all -> 4.1.109.Final (*)
+\--- io.netty:netty-all -> 4.1.115.Final (*)
 
 runtimeElements - Elements of runtime for main. (n)
 No dependencies
@@ -1271,41 +1303,40 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |         |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |         |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |         |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-|         +--- org.json:json -> 20180813
-|         +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4
-|         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4
-|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4
-|         |    |         +--- junit:junit:4.13.1 -> 4.13.2 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4 (c)
-|         |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4 (c)
-|         |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4 (c)
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4
-|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.core:jackson-core -> 2.12.4 (*)
-|         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.12.4
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.12.4
-|         |    +--- org.json:json:20190722 -> 20180813
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.12.4
-|         |    +--- com.google.guava:guava:21.0 -> 31.1-jre
+|         +--- org.json:json -> 20240303
+|         +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
+|         |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
+|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
+|         |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4 (c)
+|         |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4 (c)
+|         |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4 (c)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4
+|         |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.core:jackson-core -> 2.15.4 (*)
+|         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.15.4
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
+|         |    +--- org.json:json:20231013 -> 20240303
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.15.4
+|         |    +--- com.google.guava:guava:23.6.1-jre -> 31.1-jre
 |         |    |    +--- com.google.guava:failureaccess:1.0.1
 |         |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 |         |    |    +--- com.google.code.findbugs:jsr305:3.0.2
 |         |    |    +--- org.checkerframework:checker-qual:3.12.0
 |         |    |    +--- com.google.errorprone:error_prone_annotations:2.11.0
 |         |    |    \--- com.google.j2objc:j2objc-annotations:1.3
-|         |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 |         +--- com.google.guava:guava -> 31.1-jre (*)
 |         +--- com.google.inject:guice -> 5.0.1
 |         |    +--- javax.inject:javax.inject:1
@@ -1327,34 +1358,34 @@ testCompileClasspath - Compile classpath for source set 'test'.
 |    \--- io.reactivex.rxjava3:rxjava:3.0.6 -> 3.0.13
 |         \--- org.reactivestreams:reactive-streams:1.0.3
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.109.Final
-|    +--- io.netty:netty-buffer:4.1.109.Final
-|    +--- io.netty:netty-codec:4.1.109.Final
-|    +--- io.netty:netty-codec-dns:4.1.109.Final
-|    +--- io.netty:netty-codec-haproxy:4.1.109.Final
-|    +--- io.netty:netty-codec-http:4.1.109.Final
-|    +--- io.netty:netty-codec-http2:4.1.109.Final
-|    +--- io.netty:netty-codec-memcache:4.1.109.Final
-|    +--- io.netty:netty-codec-mqtt:4.1.109.Final
-|    +--- io.netty:netty-codec-redis:4.1.109.Final
-|    +--- io.netty:netty-codec-smtp:4.1.109.Final
-|    +--- io.netty:netty-codec-socks:4.1.109.Final
-|    +--- io.netty:netty-codec-stomp:4.1.109.Final
-|    +--- io.netty:netty-codec-xml:4.1.109.Final
-|    +--- io.netty:netty-common:4.1.109.Final
-|    +--- io.netty:netty-handler:4.1.109.Final
-|    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
-|    +--- io.netty:netty-handler-proxy:4.1.109.Final
-|    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
-|    +--- io.netty:netty-resolver:4.1.109.Final
-|    +--- io.netty:netty-resolver-dns:4.1.109.Final
-|    +--- io.netty:netty-transport:4.1.109.Final
-|    +--- io.netty:netty-transport-rxtx:4.1.109.Final
-|    +--- io.netty:netty-transport-sctp:4.1.109.Final
-|    +--- io.netty:netty-transport-udt:4.1.109.Final
-|    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
-|    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
-|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
++--- io.netty:netty-all -> 4.1.115.Final
+|    +--- io.netty:netty-buffer:4.1.115.Final
+|    +--- io.netty:netty-codec:4.1.115.Final
+|    +--- io.netty:netty-codec-dns:4.1.115.Final
+|    +--- io.netty:netty-codec-haproxy:4.1.115.Final
+|    +--- io.netty:netty-codec-http:4.1.115.Final
+|    +--- io.netty:netty-codec-http2:4.1.115.Final
+|    +--- io.netty:netty-codec-memcache:4.1.115.Final
+|    +--- io.netty:netty-codec-mqtt:4.1.115.Final
+|    +--- io.netty:netty-codec-redis:4.1.115.Final
+|    +--- io.netty:netty-codec-smtp:4.1.115.Final
+|    +--- io.netty:netty-codec-socks:4.1.115.Final
+|    +--- io.netty:netty-codec-stomp:4.1.115.Final
+|    +--- io.netty:netty-codec-xml:4.1.115.Final
+|    +--- io.netty:netty-common:4.1.115.Final
+|    +--- io.netty:netty-handler:4.1.115.Final
+|    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final
+|    +--- io.netty:netty-handler-proxy:4.1.115.Final
+|    +--- io.netty:netty-handler-ssl-ocsp:4.1.115.Final
+|    +--- io.netty:netty-resolver:4.1.115.Final
+|    +--- io.netty:netty-resolver-dns:4.1.115.Final
+|    +--- io.netty:netty-transport:4.1.115.Final
+|    +--- io.netty:netty-transport-rxtx:4.1.115.Final
+|    +--- io.netty:netty-transport-sctp:4.1.115.Final
+|    +--- io.netty:netty-transport-udt:4.1.115.Final
+|    +--- io.netty:netty-transport-classes-epoll:4.1.115.Final
+|    +--- io.netty:netty-transport-classes-kqueue:4.1.115.Final
+|    \--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2
@@ -1384,42 +1415,41 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    |    |    +--- org.bouncycastle:bcprov-jdk15on:1.70
 |    |    |    \--- org.bouncycastle:bcutil-jdk15on:1.70
 |    |    |         \--- org.bouncycastle:bcprov-jdk15on:1.70
-|    |    +--- org.json:json -> 20180813
-|    |    +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4
-|    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4
-|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4
-|    |    |    |         +--- junit:junit:4.13.1 -> 4.13.2 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.12.4 (c)
-|    |    |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4 (c)
-|    |    |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4 (c)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4
-|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.core:jackson-core -> 2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.12.4
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.12.4
-|    |    |    +--- org.json:json:20190722 -> 20180813
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
-|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.12.4
-|    |    |    +--- com.google.guava:guava:21.0 -> 31.1-jre
+|    |    +--- org.json:json -> 20240303
+|    |    +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4
+|    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-annotations:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.4 (c)
+|    |    |    |         +--- com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4 (c)
+|    |    |    |         \--- com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4 (c)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4
+|    |    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.core:jackson-core -> 2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor -> 2.15.4
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-json-org -> 2.15.4
+|    |    |    +--- org.json:json:20231013 -> 20240303
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
+|    |    +--- com.fasterxml.jackson.datatype:jackson-datatype-guava -> 2.15.4
+|    |    |    +--- com.google.guava:guava:23.6.1-jre -> 31.1-jre
 |    |    |    |    +--- com.google.guava:failureaccess:1.0.1
 |    |    |    |    +--- com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava
 |    |    |    |    +--- com.google.code.findbugs:jsr305:3.0.2
 |    |    |    |    +--- org.checkerframework:checker-qual:3.12.0
 |    |    |    |    +--- com.google.errorprone:error_prone_annotations:2.11.0
 |    |    |    |    \--- com.google.j2objc:j2objc-annotations:1.3
-|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|    |    |    +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|    |    |    \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 |    |    +--- com.google.guava:guava -> 31.1-jre (*)
 |    |    +--- com.google.inject:guice -> 5.0.1
 |    |    |    +--- javax.inject:javax.inject:1
@@ -1434,61 +1464,92 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    |    |    \--- io.prometheus:simpleclient:0.16.0 (*)
 |    |    +--- io.prometheus:simpleclient_hotspot -> 0.16.0
 |    |    |    \--- io.prometheus:simpleclient:0.16.0 (*)
-|    |    \--- software.amazon.awssdk:secretsmanager:2.16.3
-|    |         +--- software.amazon.awssdk:aws-json-protocol:2.16.3
-|    |         |    +--- software.amazon.awssdk:aws-core:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:regions:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:utils:2.16.3
-|    |         |    |    |    |    +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3
-|    |         |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    |    |    \--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3
-|    |         |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    |    |    \--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.12.4 (*)
-|    |         |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |         |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.1 -> 2.12.4 (*)
-|    |         |    |    |    \--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    +--- software.amazon.awssdk:auth:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
-|    |         |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    +--- org.slf4j:slf4j-api:1.7.28
-|    |         |    |    \--- software.amazon.eventstream:eventstream:1.0.1
-|    |         |    +--- software.amazon.awssdk:protocol-core:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    |    \--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    \--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.12.4 (*)
+|    |    +--- software.amazon.awssdk:secretsmanager:2.16.3
+|    |    |    +--- software.amazon.awssdk:aws-json-protocol:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:aws-core:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:regions:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3
+|    |    |    |    |    |    |    +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3
+|    |    |    |    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    |    |    \--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3
+|    |    |    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    |    |    \--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    |    |    +--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.15.4 (*)
+|    |    |    |    |    |    |    \--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    |    +--- com.fasterxml.jackson.core:jackson-annotations:2.12.1 -> 2.15.4 (*)
+|    |    |    |    |    |    \--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    +--- software.amazon.awssdk:auth:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
+|    |    |    |    |    +--- software.amazon.awssdk:profiles:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.28
+|    |    |    |    |    \--- software.amazon.eventstream:eventstream:1.0.1
+|    |    |    |    +--- software.amazon.awssdk:protocol-core:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    |    \--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    \--- com.fasterxml.jackson.core:jackson-core:2.12.1 -> 2.15.4 (*)
+|    |    |    +--- software.amazon.awssdk:protocol-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:auth:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:regions:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:aws-core:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    +--- software.amazon.awssdk:apache-client:2.16.3
+|    |    |    |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |    |    +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |    |    +--- org.apache.httpcomponents:httpclient:4.5.13
+|    |    |    |    |    +--- org.apache.httpcomponents:httpcore:4.4.13
+|    |    |    |    |    +--- commons-logging:commons-logging:1.2
+|    |    |    |    |    \--- commons-codec:commons-codec:1.11
+|    |    |    |    \--- org.apache.httpcomponents:httpcore:4.4.11 -> 4.4.13
+|    |    |    \--- software.amazon.awssdk:netty-nio-client:2.16.3
+|    |    |         +--- software.amazon.awssdk:annotations:2.16.3
+|    |    |         +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
+|    |    |         +--- software.amazon.awssdk:utils:2.16.3 (*)
+|    |    |         +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
+|    |    |         +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
+|    |    |         |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
+|    |    |         |         \--- org.reactivestreams:reactive-streams:1.0.3
+|    |    |         +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
+|    |    |         \--- org.slf4j:slf4j-api:1.7.28
+|    |    \--- software.amazon.awssdk:ssm:2.16.3
+|    |         +--- software.amazon.awssdk:aws-json-protocol:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:protocol-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:sdk-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:auth:2.16.3 (*)
@@ -1498,32 +1559,14 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    |         +--- software.amazon.awssdk:utils:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:aws-core:2.16.3 (*)
 |    |         +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         +--- software.amazon.awssdk:apache-client:2.16.3
-|    |         |    +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |         |    +--- software.amazon.awssdk:annotations:2.16.3
-|    |         |    +--- org.apache.httpcomponents:httpclient:4.5.13
-|    |         |    |    +--- org.apache.httpcomponents:httpcore:4.4.13
-|    |         |    |    +--- commons-logging:commons-logging:1.2
-|    |         |    |    \--- commons-codec:commons-codec:1.11
-|    |         |    \--- org.apache.httpcomponents:httpcore:4.4.11 -> 4.4.13
-|    |         \--- software.amazon.awssdk:netty-nio-client:2.16.3
-|    |              +--- software.amazon.awssdk:annotations:2.16.3
-|    |              +--- software.amazon.awssdk:http-client-spi:2.16.3 (*)
-|    |              +--- software.amazon.awssdk:utils:2.16.3 (*)
-|    |              +--- software.amazon.awssdk:metrics-spi:2.16.3 (*)
-|    |              +--- com.typesafe.netty:netty-reactive-streams-http:2.0.4
-|    |              |    \--- com.typesafe.netty:netty-reactive-streams:2.0.4
-|    |              |         \--- org.reactivestreams:reactive-streams:1.0.3
-|    |              +--- org.reactivestreams:reactive-streams:1.0.2 -> 1.0.3
-|    |              \--- org.slf4j:slf4j-api:1.7.28
+|    |         +--- software.amazon.awssdk:apache-client:2.16.3 (*)
+|    |         \--- software.amazon.awssdk:netty-nio-client:2.16.3 (*)
 |    +--- project :core-rust-bridge
 |    |    \--- project :common (*)
 |    +--- project :keygen
 |    |    +--- project :common (*)
 |    |    \--- commons-cli:commons-cli -> 1.4
-|    +--- com.fasterxml.jackson.core:jackson-databind -> 2.12.4 (*)
+|    +--- com.fasterxml.jackson.core:jackson-databind -> 2.15.4 (*)
 |    +--- io.swagger:swagger-annotations:1.5.0
 |    +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1
 |    |    +--- org.reactivestreams:reactive-streams:1.0.3
@@ -1544,118 +1587,117 @@ testRuntimeClasspath - Runtime classpath of source set 'test'.
 |    |    \--- org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21 -> 1.9.10 (*)
 |    +--- com.lmax:disruptor -> 3.4.4
 |    +--- commons-cli:commons-cli -> 1.4
-|    +--- org.xerial.snappy:snappy-java -> 1.1.8.4
-|    +--- io.netty:netty-all -> 4.1.109.Final
-|    |    +--- io.netty:netty-buffer:4.1.109.Final
-|    |    |    \--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-codec:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport:4.1.109.Final
-|    |    |         +--- io.netty:netty-common:4.1.109.Final
-|    |    |         +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |         \--- io.netty:netty-resolver:4.1.109.Final
-|    |    |              \--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-codec-dns:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    +--- io.netty:netty-codec-haproxy:4.1.109.Final
-|    |    +--- io.netty:netty-codec-http:4.1.109.Final
-|    |    +--- io.netty:netty-codec-http2:4.1.109.Final
-|    |    +--- io.netty:netty-codec-memcache:4.1.109.Final
-|    |    +--- io.netty:netty-codec-mqtt:4.1.109.Final
-|    |    +--- io.netty:netty-codec-redis:4.1.109.Final
-|    |    +--- io.netty:netty-codec-smtp:4.1.109.Final
-|    |    +--- io.netty:netty-codec-socks:4.1.109.Final
-|    |    +--- io.netty:netty-codec-stomp:4.1.109.Final
-|    |    +--- io.netty:netty-codec-xml:4.1.109.Final
-|    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    +--- io.netty:netty-handler:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final
-|    |    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    |    \--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-handler-proxy:4.1.109.Final
-|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.109.Final
-|    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    +--- io.netty:netty-resolver-dns:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-resolver:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-codec:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-codec-dns:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-handler:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-rxtx:4.1.109.Final
-|    |    +--- io.netty:netty-transport-sctp:4.1.109.Final
-|    |    +--- io.netty:netty-transport-udt:4.1.109.Final
-|    |    +--- io.netty:netty-transport-classes-epoll:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-resolver-dns:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-epoll:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.109.Final (*)
-|    |    +--- io.netty:netty-transport-native-kqueue:4.1.109.Final
-|    |    |    +--- io.netty:netty-common:4.1.109.Final
-|    |    |    +--- io.netty:netty-buffer:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport:4.1.109.Final (*)
-|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.109.Final (*)
-|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.109.Final (*)
-|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.109.Final
-|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.109.Final (*)
+|    +--- org.xerial.snappy:snappy-java -> 1.1.10.1
+|    +--- io.netty:netty-all -> 4.1.115.Final
+|    |    +--- io.netty:netty-buffer:4.1.115.Final
+|    |    |    \--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-codec:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport:4.1.115.Final
+|    |    |         +--- io.netty:netty-common:4.1.115.Final
+|    |    |         +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |         \--- io.netty:netty-resolver:4.1.115.Final
+|    |    |              \--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-codec-dns:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    +--- io.netty:netty-codec-haproxy:4.1.115.Final
+|    |    +--- io.netty:netty-codec-http:4.1.115.Final
+|    |    +--- io.netty:netty-codec-http2:4.1.115.Final
+|    |    +--- io.netty:netty-codec-memcache:4.1.115.Final
+|    |    +--- io.netty:netty-codec-mqtt:4.1.115.Final
+|    |    +--- io.netty:netty-codec-redis:4.1.115.Final
+|    |    +--- io.netty:netty-codec-smtp:4.1.115.Final
+|    |    +--- io.netty:netty-codec-socks:4.1.115.Final
+|    |    +--- io.netty:netty-codec-stomp:4.1.115.Final
+|    |    +--- io.netty:netty-codec-xml:4.1.115.Final
+|    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    +--- io.netty:netty-handler:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final
+|    |    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    |    \--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-handler-proxy:4.1.115.Final
+|    |    +--- io.netty:netty-handler-ssl-ocsp:4.1.115.Final
+|    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    +--- io.netty:netty-resolver-dns:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-resolver:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-codec:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-codec-dns:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-handler:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-rxtx:4.1.115.Final
+|    |    +--- io.netty:netty-transport-sctp:4.1.115.Final
+|    |    +--- io.netty:netty-transport-udt:4.1.115.Final
+|    |    +--- io.netty:netty-transport-classes-epoll:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-classes-kqueue:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-resolver-dns:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-epoll:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-epoll:4.1.115.Final (*)
+|    |    +--- io.netty:netty-transport-native-kqueue:4.1.115.Final
+|    |    |    +--- io.netty:netty-common:4.1.115.Final
+|    |    |    +--- io.netty:netty-buffer:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport:4.1.115.Final (*)
+|    |    |    +--- io.netty:netty-transport-native-unix-common:4.1.115.Final (*)
+|    |    |    \--- io.netty:netty-transport-classes-kqueue:4.1.115.Final (*)
+|    |    \--- io.netty:netty-resolver-dns-native-macos:4.1.115.Final
+|    |         \--- io.netty:netty-resolver-dns-classes-macos:4.1.115.Final (*)
 |    +--- com.google.inject:guice -> 5.0.1 (*)
 |    +--- com.google.inject.extensions:guice-grapher -> 5.0.1
 |    |    +--- com.google.inject.extensions:guice-assistedinject:5.0.1
 |    |    |    \--- com.google.inject:guice:5.0.1 (*)
 |    |    \--- com.google.inject:guice:5.0.1 (*)
-|    +--- io.undertow:undertow-core -> 2.2.9.Final
+|    +--- io.undertow:undertow-core -> 2.2.37.Final
 |    |    +--- org.jboss.logging:jboss-logging:3.4.1.Final
-|    |    +--- org.jboss.xnio:xnio-api:3.8.4.Final
-|    |    |    +--- org.wildfly.common:wildfly-common:1.5.2.Final
+|    |    +--- org.jboss.xnio:xnio-api:3.8.16.Final
+|    |    |    +--- org.wildfly.common:wildfly-common:1.5.4.Final
 |    |    |    +--- org.wildfly.client:wildfly-client-config:1.0.1.Final
-|    |    |    |    +--- org.jboss.logging:jboss-logging:3.3.1.Final -> 3.4.1.Final
-|    |    |    |    \--- org.wildfly.common:wildfly-common:1.2.0.Final -> 1.5.2.Final
-|    |    |    \--- org.jboss.threads:jboss-threads:2.3.3.Final -> 3.1.0.Final
+|    |    |    |    \--- org.jboss.logging:jboss-logging:3.3.1.Final -> 3.4.1.Final
+|    |    |    \--- org.jboss.threads:jboss-threads:2.3.6.Final -> 3.1.0.Final
 |    |    |         +--- org.jboss.logging:jboss-logging:3.4.1.Final
-|    |    |         \--- org.wildfly.common:wildfly-common:1.5.0.Final -> 1.5.2.Final
-|    |    +--- org.jboss.xnio:xnio-nio:3.8.4.Final
-|    |    |    \--- org.jboss.xnio:xnio-api:3.8.4.Final (*)
+|    |    |         \--- org.wildfly.common:wildfly-common:1.5.0.Final -> 1.5.4.Final
+|    |    +--- org.jboss.xnio:xnio-nio:3.8.16.Final
+|    |    |    \--- org.jboss.xnio:xnio-api:3.8.16.Final (*)
 |    |    \--- org.jboss.threads:jboss-threads:3.1.0.Final (*)
 |    +--- com.stijndewitt.undertow.cors:undertow-cors-filter -> 0.4.0
-|    \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> 2.12.4
-|         +--- com.fasterxml.jackson.core:jackson-databind:2.12.4 (*)
-|         +--- org.yaml:snakeyaml:1.27
-|         +--- com.fasterxml.jackson.core:jackson-core:2.12.4 (*)
-|         \--- com.fasterxml.jackson:jackson-bom:2.12.4 (*)
+|    \--- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml -> 2.15.4
+|         +--- com.fasterxml.jackson.core:jackson-databind:2.15.4 (*)
+|         +--- org.yaml:snakeyaml:2.1
+|         +--- com.fasterxml.jackson.core:jackson-core:2.15.4 (*)
+|         \--- com.fasterxml.jackson:jackson-bom:2.15.4 (*)
 +--- project :core-rust-bridge (*)
 +--- project :common (*)
 +--- commons-cli:commons-cli -> 1.4
 +--- com.github.akarnokd:rxjava3-extensions -> 3.0.1 (*)
 +--- io.reactivex.rxjava3:rxjava -> 3.0.13 (*)
-+--- io.netty:netty-all -> 4.1.109.Final (*)
++--- io.netty:netty-all -> 4.1.115.Final (*)
 +--- junit:junit -> 4.13.2
 |    \--- org.hamcrest:hamcrest-core:1.3
 +--- org.assertj:assertj-core -> 3.20.2

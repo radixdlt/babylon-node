@@ -49,14 +49,14 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 # - https://packages.debian.org/bookworm/openjdk-17-jdk
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    docker.io=20.10.24+dfsg1-1+b3 \
-    libssl-dev=3.0.14-1~deb12u2 \
+    docker.io=20.10.24+dfsg1-1+deb12u1 \
+    libssl-dev=3.0.15-1~deb12u1 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.12+7-2~deb12u1 \
+    openjdk-17-jdk=17.0.13+11-2~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -126,19 +126,19 @@ RUN apt-get update \
     ca-certificates \
     build-essential=12.9 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u7 \
+    curl=7.88.1-10+deb12u8 \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.14-1~deb12u2 \
+    libssl-dev=3.0.15-1~deb12u1 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
-  && sh rustup.sh -y --target 1.71.1-aarch64-unknown-linux-gnu 1.71.1-x86_64-unknown-linux-gnu --default-toolchain 1.77.2
+  && sh rustup.sh -y --target 1.81.0-aarch64-unknown-linux-gnu 1.81.0-x86_64-unknown-linux-gnu --default-toolchain 1.81.0
 
 RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
 
@@ -177,11 +177,13 @@ RUN USER=root "$HOME/.cargo/bin/cargo" init --lib --name dummy --vcs none . \
   && mkdir -p ./jni-export/src \
   && mkdir -p ./node-common/src \
   && mkdir -p ./state-manager/src \
+  && mkdir -p ./p2p/src \
   && touch ./core-api-server/src/lib.rs \
   && touch ./engine-state-api-server/src/lib.rs \
   && touch ./jni-export/src/lib.rs \
   && touch ./node-common/src/lib.rs \
-  && touch ./state-manager/src/lib.rs
+  && touch ./state-manager/src/lib.rs \
+  && touch ./p2p/src/lib.rs
 COPY core-rust/Cargo.toml ./
 COPY core-rust/Cargo.lock ./
 COPY core-rust/core-api-server/Cargo.toml ./core-api-server
@@ -189,6 +191,7 @@ COPY core-rust/engine-state-api-server/Cargo.toml ./engine-state-api-server
 COPY core-rust/jni-export/Cargo.toml ./jni-export
 COPY core-rust/node-common/Cargo.toml ./node-common
 COPY core-rust/state-manager/Cargo.toml ./state-manager
+COPY core-rust/p2p/Cargo.toml ./p2p
 
 COPY docker/build_scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
 
@@ -256,9 +259,9 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.12+7-2~deb12u1 \
+    openjdk-17-jre-headless=17.0.13+11-2~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u7 \
+    curl=7.88.1-10+deb12u8 \
     gettext-base=0.21-12 \
     daemontools=1:0.76-8.1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-4911

@@ -131,10 +131,9 @@ public final class ProposerTimestampInaccurateClockAndLeaderDownTest {
                     ConsensusConfig.of(1000, 0L),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(10),
+                            10,
                             EpochNodeWeightMapping.constant(
-                                e -> IntStream.range(0, NUM_VALIDATORS)),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                                e -> IntStream.range(0, NUM_VALIDATORS))))));
 
     // One node has an inaccurate clock: 10s rushing
     // A little "hack" with AtomicReference to get the lucky node's key out of the closure

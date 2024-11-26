@@ -75,6 +75,7 @@ import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry;
 import com.radixdlt.p2p.addressbook.AddressBookEntry.PeerAddressEntry.LatestConnectionStatus;
 import com.radixdlt.p2p.capability.AppVersionCapability;
 import com.radixdlt.p2p.capability.RemotePeerCapability;
+import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.protocol.RustProtocolUpdate;
 import com.radixdlt.sync.SyncRelayConfig;
 import java.math.BigDecimal;
@@ -178,10 +179,9 @@ public final class SystemModelMapper {
     return addressBookEntry;
   }
 
-  public ProtocolConfiguration protocolConfiguration(
-      com.radixdlt.protocol.ProtocolConfig protocolConfig) {
+  public ProtocolConfiguration protocolConfiguration(ProtocolConfig protocolConfig) {
     return new ProtocolConfiguration()
-        .genesisProtocolVersion(protocolConfig.genesisProtocolVersion())
+        .genesisProtocolVersion(ProtocolConfig.GENESIS_PROTOCOL_VERSION_NAME)
         .protocolUpdateTriggers(
             protocolConfig.protocolUpdateTriggers().stream()
                 .map(this::protocolUpdateTrigger)
@@ -216,6 +216,11 @@ public final class SystemModelMapper {
           enactUnconditionallyAtEpoch -> new EnactAtStartOfEpochUnconditionallyCondition()
               .epoch(enactUnconditionallyAtEpoch.epoch().toLong())
               .type(ProtocolUpdateEnactmentConditionType.ENACTATSTARTOFEPOCHUNCONDITIONALLY);
+          case com.radixdlt.protocol.ProtocolUpdateEnactmentCondition
+              .EnactImmediatelyAfterEndOfProtocolUpdate
+          enactImmediatelyAfterEndOfProtocolUpdate -> new EnactImmediatelyAfterEndOfProtocolUpdate()
+              .triggerAfter(enactImmediatelyAfterEndOfProtocolUpdate.protocolVersionName())
+              .type(ProtocolUpdateEnactmentConditionType.ENACTIMMEDIATELYAFTERENDOFPROTOCOLUPDATE);
         };
 
     return new ProtocolUpdateTrigger()

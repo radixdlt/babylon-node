@@ -85,6 +85,7 @@ import com.radixdlt.consensus.bft.BFTInsertUpdate;
 import com.radixdlt.consensus.bft.BFTRebuildUpdate;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.crypto.Blake2b256Hasher;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.serialization.DefaultSerialization;
@@ -377,7 +378,7 @@ public class VertexStoreTest {
         .dispatch(
             argThat(
                 u -> {
-                  List<VertexWithHash> sentVertices = u.getVertexStoreState().getVertices();
+                  List<VertexWithHash> sentVertices = u.vertexStoreState().getVertices();
                   return sentVertices.equals(vertices.subList(1, vertices.size()));
                 }));
   }

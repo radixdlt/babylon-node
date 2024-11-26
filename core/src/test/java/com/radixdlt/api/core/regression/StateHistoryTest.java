@@ -118,7 +118,7 @@ public class StateHistoryTest extends DeterministicCoreApiTestBase {
                           .hexPayloadBytes()));
       // ... and then a burning transaction, so that they end up in one low-level "commit batch":
       final var result =
-          getApiHelper().submitAndWaitForSuccess(test, burnManifest, List.of(accountKeyPair));
+          getCoreApiHelper().submitAndWaitForSuccess(test, burnManifest, List.of(accountKeyPair));
 
       // Assert: we only need this to succeed (the original bug caused panics)
       assertThat(result.errorMessage()).isEmpty();
@@ -127,8 +127,10 @@ public class StateHistoryTest extends DeterministicCoreApiTestBase {
 
   private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
     return buildRunningServerTest(
-        new DatabaseConfig(true, false, stateHistoryEnabled, false),
-        new StateTreeGcConfig(
-            UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength)));
+        defaultConfig()
+            .withDatabaseConfig(new DatabaseConfig(true, false, stateHistoryEnabled, false))
+            .withStateTreeGcConfig(
+                new StateTreeGcConfig(
+                    UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength))));
   }
 }

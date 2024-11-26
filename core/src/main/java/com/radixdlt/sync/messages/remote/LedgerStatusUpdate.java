@@ -64,48 +64,11 @@
 
 package com.radixdlt.sync.messages.remote;
 
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.sync.LedgerProofSyncStatusDto;
-import java.util.Objects;
 
 /**
  * A message pushed to a subset of connected non-validator nodes indicating that the ledger state
  * has been updated.
  */
-public final class LedgerStatusUpdate {
-
-  private final LedgerProofSyncStatusDto proof;
-
-  public static LedgerStatusUpdate create(LedgerProofSyncStatusDto proof) {
-    return new LedgerStatusUpdate(proof);
-  }
-
-  private LedgerStatusUpdate(LedgerProofSyncStatusDto proof) {
-    this.proof = proof;
-  }
-
-  public LedgerProofSyncStatusDto getProof() {
-    return proof;
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{proof=%s}", this.getClass().getSimpleName(), this.proof);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    LedgerStatusUpdate that = (LedgerStatusUpdate) o;
-    return Objects.equals(proof, that.proof);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(proof);
-  }
-}
+public record LedgerStatusUpdate(LedgerProofSyncStatusDto proof) implements RemoteEvent {}

@@ -25,4 +25,4 @@ jni = { workspace = true }
 
 [lib]
 name = "corerust"
-crate_type = ["cdylib"]
+crate-type = ["cdylib"]

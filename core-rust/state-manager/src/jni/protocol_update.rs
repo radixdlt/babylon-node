@@ -62,8 +62,8 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::{protocol::*, ProtocolUpdateResult};
+use crate::jni_prelude::*;
+use crate::protocol::*;
 use jni::objects::{JClass, JObject};
 use jni::sys::jbyteArray;
 use jni::JNIEnv;
@@ -77,7 +77,7 @@ use super::node_rust_environment::JNINodeRustEnvironment;
 //
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyProtocolUpdate(
+extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyKnownPendingProtocolUpdate(
     env: JNIEnv,
     _class: JClass,
     j_node_rust_env: JObject,
@@ -86,10 +86,10 @@ extern "system" fn Java_com_radixdlt_protocol_RustProtocolUpdate_applyProtocolUp
     jni_sbor_coded_fallible_call(
         &env,
         request_payload,
-        |protocol_version_name: ProtocolVersionName| -> JavaResult<ProtocolUpdateResult> {
+        |_: ()| -> JavaResult<ProtocolUpdateResult> {
             let result = JNINodeRustEnvironment::get(&env, j_node_rust_env)
                 .state_manager
-                .apply_protocol_update(&protocol_version_name);
+                .apply_known_pending_protocol_updates();
             Ok(result)
         },
     )

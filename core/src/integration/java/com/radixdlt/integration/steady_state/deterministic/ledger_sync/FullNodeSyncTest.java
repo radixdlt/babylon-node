@@ -70,7 +70,6 @@ import static com.radixdlt.harness.predicates.NodePredicate.atOrOverStateVersion
 import static com.radixdlt.harness.predicates.NodesPredicate.*;
 
 import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
@@ -83,7 +82,7 @@ import org.junit.Test;
 
 public class FullNodeSyncTest {
   private static DeterministicTest createTest(
-      int numValidators, int numFullNodes, Round epochMaxRound) {
+      int numValidators, int numFullNodes, int epochMaxRound) {
     final var syncConfig =
         new SyncRelayConfig(
             500L,
@@ -104,8 +103,8 @@ public class FullNodeSyncTest {
                 LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.mockedWithEpochs(
                         epochMaxRound,
-                        EpochNodeWeightMapping.constant(epoch -> IntStream.range(0, numValidators)),
-                        new StateComputerConfig.MockedMempoolConfig.NoMempool()),
+                        EpochNodeWeightMapping.constant(
+                            epoch -> IntStream.range(0, numValidators))),
                     syncConfig)));
   }
 
@@ -132,21 +131,21 @@ public class FullNodeSyncTest {
 
   @Test
   public void test_5_validators_and_1_full_node() {
-    try (var test = createTest(5, 1, Round.of(100))) {
+    try (var test = createTest(5, 1, 100)) {
       run(test, 5, 100L);
     }
   }
 
   @Test
   public void test_3_validators_and_2_full_nodes() {
-    try (var test = createTest(3, 2, Round.of(100))) {
+    try (var test = createTest(3, 2, 100)) {
       run(test, 3, 101L);
     }
   }
 
   @Test
   public void test_4_validators_and_50_full_nodes_and_two_rounds_per_epoch() {
-    try (var test = createTest(4, 50, Round.of(2))) {
+    try (var test = createTest(4, 50, 2)) {
       run(test, 4, 100L);
     }
   }

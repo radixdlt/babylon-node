@@ -111,10 +111,15 @@ public interface MessageMutator {
    * @return A {@code MessageMutator} that drops {@code LocalTimeout} messages.
    */
   static MessageMutator dropTimeouts() {
-    return (message, queue) -> {
-      Object msg = message.message();
-      return msg instanceof ScheduledLocalTimeout
-          || Epoched.isInstance(msg, ScheduledLocalTimeout.class);
-    };
+    return (message, queue) -> isScheduledLocalTimeout(message.message());
+  }
+
+  static boolean isScheduledLocalTimeout(Object msg) {
+    return msg instanceof ScheduledLocalTimeout || isEpochedScheduledLocalTimeout(msg);
+  }
+
+  static boolean isEpochedScheduledLocalTimeout(Object msg) {
+    return msg instanceof Epoched<?> epoched
+        && ScheduledLocalTimeout.class.isInstance(epoched.event());
   }
 }

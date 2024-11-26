@@ -65,6 +65,7 @@
 package com.radixdlt.ledger;
 
 import com.google.common.primitives.Ints;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.transactions.RawLedgerTransaction;
 import java.util.List;
@@ -88,11 +89,8 @@ import java.util.List;
  *       "TransactionRun" and "CommittedTransactionWithProof".
  * </ul>
  */
-public record LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof) {
-
-  public static LedgerExtension create(List<RawLedgerTransaction> transactions, LedgerProof proof) {
-    return new LedgerExtension(transactions, proof);
-  }
+public record LedgerExtension(List<RawLedgerTransaction> transactions, LedgerProof proof)
+    implements LocalEvent {
 
   public boolean contains(RawLedgerTransaction transaction) {
     return transactions.contains(transaction);
@@ -107,13 +105,15 @@ public record LedgerExtension(List<RawLedgerTransaction> transactions, LedgerPro
   public LedgerExtension getExtensionFrom(long startStateVersion) {
     final var proofStateVersion = this.proof.stateVersion();
     final var startIndex = this.transactions.size() - proofStateVersion + startStateVersion;
+
     if (startIndex < 0 || startIndex > this.transactions.size()) {
       throw new IllegalArgumentException(
           "%s transactions ending with state version %s cannot be an extension of state version %s"
               .formatted(this.transactions.size(), proofStateVersion, startStateVersion));
     }
+
     final var extension =
         this.transactions.subList(Ints.checkedCast(startIndex), this.transactions.size());
-    return LedgerExtension.create(extension, this.proof);
+    return new LedgerExtension(extension, this.proof);
   }
 }

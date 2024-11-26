@@ -220,6 +220,16 @@ public sealed interface Option<T> permits Some, None {
 
   /**
    * Return current value stored in current instance if current instance is present. If current
+   * instance is empty then return {@code null}.
+   *
+   * @return either value stored in current instance or {@code null} if current instance is empty
+   */
+  default T toNullable() {
+    return fold(Functions::id, () -> null);
+  }
+
+  /**
+   * Return current value stored in current instance if current instance is present. If current
    * instance is empty then return value returned by provided supplier. If current instance is not
    * empty then supplier is not invoked.
    *

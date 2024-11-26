@@ -14,7 +14,7 @@ pub fn to_api_metadata_value_substate(
             entry_name
         ))
     );
-    Ok(key_value_store_optional_substate_versioned!(
+    Ok(key_value_store_optional_substate_single_versioned!(
         substate,
         MetadataModuleEntry,
         models::MetadataKey {

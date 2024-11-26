@@ -1,8 +1,4 @@
-use crate::engine_prelude::*;
-use crate::ActualStateManagerDatabase;
-use crate::{protocol::*, transaction::FlashTransactionV1};
-use node_common::locks::DbLock;
-use std::sync::Arc;
+use crate::prelude::*;
 
 /// Any protocol update beginning `test-` just injects a single transaction.
 pub struct TestProtocolUpdateDefinition {
@@ -33,17 +29,19 @@ impl ProtocolUpdateDefinition for TestProtocolUpdateDefinition {
 
     fn create_batch_generator(
         &self,
-        _network: &NetworkDefinition,
-        _database: Arc<DbLock<ActualStateManagerDatabase>>,
+        _context: ProtocolUpdateContext,
+        _overrides_hash: Option<Hash>,
         _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdateNodeBatchGenerator> {
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
+        let batch = ProtocolUpdateBatch {
+            transactions: vec![ProtocolUpdateTransaction::flash(
+                format!("{}-txn", self.protocol_name),
+                StateUpdates::default(),
+            )],
+        };
         Box::new(ArbitraryNodeBatchGenerator {
-            batches: vec![ProtocolUpdateNodeBatch::FlashTransactions(vec![
-                FlashTransactionV1 {
-                    name: format!("{}-txn", self.protocol_name),
-                    state_updates: StateUpdates::default(),
-                },
-            ])],
+            config_hash: Hash([0; Hash::LENGTH]),
+            batches: vec![NodeProtocolUpdateBatch::ProtocolUpdateBatch(batch)],
         })
     }
 }

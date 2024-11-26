@@ -62,21 +62,8 @@
  * permissions under this License.
  */
 
-use std::collections::HashSet;
-use std::sync::Arc;
+use crate::jni_prelude::*;
 
-use crate::mempool::priority_mempool::MempoolTransaction;
-
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-
-use crate::engine_prelude::*;
-use crate::mempool::*;
-use crate::MempoolAddSource;
-use node_common::java::*;
-
-use super::node_rust_environment::JNINodeRustEnvironment;
 use super::transaction_preparer::JavaPreparedNotarizedTransaction;
 
 //
@@ -94,11 +81,12 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_add(
         &env,
         request_payload,
         |transaction: RawNotarizedTransaction| -> Result<(), MempoolAddErrorJava> {
-            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env).add_if_committable(
-                MempoolAddSource::MempoolSync,
-                transaction,
-                false,
-            )?;
+            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
+                .add_if_committable(MempoolAddSource::MempoolSync, transaction, false)
+                .map_err(|err| {
+                    let formatter = JNINodeRustEnvironment::get_formatter(&env, j_node_rust_env);
+                    MempoolAddErrorJava::new_from(err, &formatter)
+                })?;
             Ok(())
         },
     )
@@ -136,9 +124,9 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_getCount(
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_no_args: ()| -> i32 {
-        let mempool = JNINodeRustEnvironment::get_mempool(&env, j_node_rust_env);
-        let read_mempool = mempool.read();
-        read_mempool.get_count().try_into().unwrap()
+        let mempool_count =
+            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env).get_mempool_count();
+        mempool_count.try_into().unwrap()
     })
 }
 
@@ -182,7 +170,7 @@ extern "system" fn Java_com_radixdlt_mempool_RustMempool_reevaluateTransactionCo
 // DTO Models + Mapping
 //
 
-#[derive(Debug, Categorize, Encode, Decode)]
+#[derive(Debug, Sbor)]
 pub struct ProposalTransactionsRequest {
     pub max_count: u32,
     pub max_payload_size_bytes: u32,
@@ -195,37 +183,37 @@ impl From<Arc<MempoolTransaction>> for JavaPreparedNotarizedTransaction {
         // to extract the raw payload bytes, to avoid having to clone the full bytes here.
         Self {
             notarized_transaction_bytes: value.raw.clone(),
-            intent_hash: value.intent_hash(),
-            signed_intent_hash: value.signed_intent_hash(),
+            intent_hash: value.transaction_intent_hash(),
+            signed_intent_hash: value.signed_transaction_intent_hash(),
             notarized_transaction_hash: value.notarized_transaction_hash(),
         }
     }
 }
 
-#[derive(Debug, Categorize, Encode, Decode)]
+#[derive(Debug, Sbor)]
 enum MempoolAddErrorJava {
     PriorityThresholdNotMet {
         min_tip_percentage_required: Option<u32>,
-        tip_percentage: u32,
+        tip_basis_points: u32,
     },
     Duplicate(NotarizedTransactionHash),
     TransactionValidationError(String),
     Rejected(String),
 }
 
-impl From<MempoolAddError> for MempoolAddErrorJava {
-    fn from(err: MempoolAddError) -> Self {
+impl MempoolAddErrorJava {
+    fn new_from(err: MempoolAddError, formatter: &Formatter) -> Self {
         match err {
             MempoolAddError::PriorityThresholdNotMet {
-                min_tip_percentage_required,
-                tip_percentage,
+                min_tip_basis_points_required: min_tip_percentage_required,
+                tip_basis_points,
             } => MempoolAddErrorJava::PriorityThresholdNotMet {
-                min_tip_percentage_required: min_tip_percentage_required.map(|x| x as u32),
-                tip_percentage: tip_percentage as u32,
+                min_tip_percentage_required,
+                tip_basis_points,
             },
             MempoolAddError::Duplicate(hash) => MempoolAddErrorJava::Duplicate(hash),
-            MempoolAddError::Rejected(rejection) => {
-                MempoolAddErrorJava::Rejected(rejection.reason.to_string())
+            MempoolAddError::Rejected(rejection, _) => {
+                MempoolAddErrorJava::Rejected(rejection.reason.to_string(formatter))
             }
         }
     }

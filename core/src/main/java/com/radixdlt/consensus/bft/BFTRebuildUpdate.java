@@ -64,43 +64,8 @@
 
 package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
-import java.util.Objects;
 
 /** An update emitted when the BFT has been rebuilt */
-public final class BFTRebuildUpdate {
-  private final VertexStoreState vertexStoreState;
-
-  private BFTRebuildUpdate(VertexStoreState vertexStoreState) {
-    this.vertexStoreState = vertexStoreState;
-  }
-
-  public static BFTRebuildUpdate create(VertexStoreState vertexStoreState) {
-    return new BFTRebuildUpdate(vertexStoreState);
-  }
-
-  public VertexStoreState getVertexStoreState() {
-    return vertexStoreState;
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{root=%s}", this.getClass().getSimpleName(), vertexStoreState.getRoot());
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(vertexStoreState);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof BFTRebuildUpdate)) {
-      return false;
-    }
-
-    BFTRebuildUpdate other = (BFTRebuildUpdate) o;
-    return Objects.equals(other.vertexStoreState, this.vertexStoreState);
-  }
-}
+public record BFTRebuildUpdate(VertexStoreState vertexStoreState) implements LocalEvent {}

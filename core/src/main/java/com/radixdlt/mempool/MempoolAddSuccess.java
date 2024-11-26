@@ -64,51 +64,15 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.util.Objects;
 import java.util.Optional;
 
 /** Message indicating that a transaction was successfully added to the mempool */
-public final class MempoolAddSuccess {
-  private final RawNotarizedTransaction transaction;
-  private final NodeId origin;
-
-  private MempoolAddSuccess(RawNotarizedTransaction transaction, NodeId origin) {
-    this.transaction = transaction;
-    this.origin = origin;
-  }
-
-  public RawNotarizedTransaction getTxn() {
-    return transaction;
-  }
-
+public record MempoolAddSuccess(RawNotarizedTransaction transaction, NodeId origin)
+    implements LocalEvent {
   public Optional<NodeId> getOrigin() {
     return Optional.ofNullable(origin);
-  }
-
-  public static MempoolAddSuccess create(RawNotarizedTransaction transaction, NodeId origin) {
-    Objects.requireNonNull(transaction);
-    return new MempoolAddSuccess(transaction, origin);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(transaction, origin);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof MempoolAddSuccess other)) {
-      return false;
-    }
-
-    return Objects.equals(this.transaction, other.transaction)
-        && Objects.equals(this.origin, other.origin);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{txn=%s}", this.getClass().getSimpleName(), this.transaction);
   }
 }

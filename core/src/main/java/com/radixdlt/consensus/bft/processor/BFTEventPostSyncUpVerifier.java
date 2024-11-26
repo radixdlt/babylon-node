@@ -99,12 +99,12 @@ public final class BFTEventPostSyncUpVerifier implements BFTEventProcessorAtCurr
 
   @Override
   public void processVote(Vote vote) {
-    if (!this.latestRoundUpdate.getCurrentRound().equals(vote.getRound())) {
+    if (!this.latestRoundUpdate.currentRound().equals(vote.getRound())) {
       this.metrics.bft().preconditionViolations().inc();
       log.warn(
           "Precondition violation: ignoring a vote for round {} current round is {}",
           vote.getRound(),
-          this.latestRoundUpdate.getCurrentRound());
+          this.latestRoundUpdate.currentRound());
       return;
     }
     forwardTo.processVote(vote);
@@ -114,12 +114,12 @@ public final class BFTEventPostSyncUpVerifier implements BFTEventProcessorAtCurr
   public void processProposal(Proposal proposal) {
     // This should never happen but adding a guard just in case (e.g. if there's a bug in
     // SyncUpPreprocessor)
-    if (!this.latestRoundUpdate.getCurrentRound().equals(proposal.getRound())) {
+    if (!this.latestRoundUpdate.currentRound().equals(proposal.getRound())) {
       this.metrics.bft().preconditionViolations().inc();
       log.warn(
           "Precondition violation: ignoring a proposal for round {} current round is {}",
           proposal.getRound(),
-          this.latestRoundUpdate.getCurrentRound());
+          this.latestRoundUpdate.currentRound());
       return;
     }
     forwardTo.processProposal(proposal);

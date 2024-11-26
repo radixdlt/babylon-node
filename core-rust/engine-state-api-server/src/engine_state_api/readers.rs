@@ -3,11 +3,6 @@ use std::ops::Deref;
 use crate::engine_prelude::*;
 
 use convert_case::{Case, Casing};
-use itertools::Itertools;
-
-use state_manager::store::traits::indices::{
-    CreationId, EntityBlueprintId, EntityBlueprintIdV1, EntityListingIndex,
-};
 
 use super::*;
 
@@ -27,17 +22,13 @@ pub struct EngineStateMetaLoader<'s, S: SubstateDatabase> {
     // Engine, but many parts could be achieved in a more performant way (e.g. avoid loading the
     // same data multiple times, or avoid parsing large parts of SBOR). We can either extend the
     // Engine's reader, or implement required lower-level logic here.
-    reader: SystemDatabaseReader<'s, S>,
+    pub reader: SystemDatabaseReader<'s, S>,
+    // The IDs of entities that should be returned as `is_instantiated: false`; they were captured
+    // during "staged instantiation" by this loader's factory.
+    pub non_instantiated_node_ids: IndexSet<NodeId>,
 }
 
 impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self {
-            reader: SystemDatabaseReader::new(database),
-        }
-    }
-
     /// Loads metadata on the given blueprint.
     pub fn load_blueprint_meta(
         &self,
@@ -135,24 +126,17 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
     ) -> Result<EntityMeta, EngineStateBrowsingError> {
         let type_info = match self.reader.get_type_info(node_id) {
             Ok(type_info) => type_info,
-            Err(error) => match error {
-                SystemReaderError::NodeIdDoesNotExist => {
-                    if node_id.is_global_virtual() {
-                        return self.derive_uninstantiated_entity_meta(
-                            node_id.entity_type().expect("we just checked its type"),
-                        );
+            Err(error) => {
+                return Err(match error {
+                    SystemReaderError::NodeIdDoesNotExist => {
+                        EngineStateBrowsingError::RequestedItemNotFound(ItemKind::Entity)
                     }
-                    return Err(EngineStateBrowsingError::RequestedItemNotFound(
-                        ItemKind::Entity,
-                    ));
-                }
-                unexpected => {
-                    return Err(EngineStateBrowsingError::UnexpectedEngineError(
+                    unexpected => EngineStateBrowsingError::UnexpectedEngineError(
                         unexpected,
                         "when getting type info".to_string(),
-                    ))
-                }
-            },
+                    ),
+                })
+            }
         };
         match type_info {
             TypeInfoSubstate::Object(object_info) => Ok(EntityMeta::Object(
@@ -172,7 +156,6 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
     }
 
     /// Loads metadata on "state" (i.e. all fields and collections) of the given object's module.
-    /// Does *not* support uninstantiated objects.
     ///
     /// API note: this is normally a part of the [`Self::load_entity_meta()`] result, but some
     /// clients are interested only in specific module and can use this cheaper method.
@@ -393,7 +376,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
         index: usize,
         schema: BlueprintCollectionSchema<BlueprintPayloadDef>,
     ) -> Result<BlueprintCollectionMeta, EngineStateBrowsingError> {
-        let (kind, collection_schema) = Self::destructure_collection_schema(schema);
+        let (kind, collection_schema) = destructure_collection_schema(schema);
         let BlueprintKeyValueSchema { key, value, .. } = collection_schema;
         let declared_key_type = self.load_blueprint_type_meta(node_id, key)?;
         let declared_value_type = self.load_blueprint_type_meta(node_id, value)?;
@@ -459,7 +442,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
             object_type,
         } = object_info;
         Ok(ObjectMeta {
-            is_instantiated: true,
+            is_instantiated: !self.non_instantiated_node_ids.contains(node_id),
             main_module_state: self.load_object_module_state_meta(node_id, ModuleId::Main)?,
             attached_module_states: match object_type {
                 ObjectType::Global { modules } => modules
@@ -494,50 +477,6 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
                     .collect::<Result<Vec<_>, _>>()?,
             },
         })
-    }
-
-    /// An implementation delegate of [`Self::load_entity_meta()`] for uninstantiated entities.
-    // TODO(after development in scrypto repo): The implementation here hardcodes the results for
-    // the only currently known uninstantiated entity types (accounts and identities). A more robust
-    // solution could be implemented on the Engine's side (e.g. staged instantiation).
-    fn derive_uninstantiated_entity_meta(
-        &self,
-        entity_type: EntityType,
-    ) -> Result<EntityMeta, EngineStateBrowsingError> {
-        let blueprint_id = match entity_type {
-            EntityType::GlobalVirtualSecp256k1Account | EntityType::GlobalVirtualEd25519Account => {
-                BlueprintId::new(&ACCOUNT_PACKAGE, ACCOUNT_BLUEPRINT)
-            }
-            EntityType::GlobalVirtualSecp256k1Identity
-            | EntityType::GlobalVirtualEd25519Identity => {
-                BlueprintId::new(&IDENTITY_PACKAGE, IDENTITY_BLUEPRINT)
-            }
-            _ => panic!("not an uninstantiated entity type"),
-        };
-        let blueprint_info = BlueprintInfo {
-            blueprint_id,
-            blueprint_version: BlueprintVersion::default(),
-            outer_obj_info: OuterObjectInfo::None,
-            features: index_set_new(),
-            generic_substitutions: vec![],
-        };
-        Ok(EntityMeta::Object(ObjectMeta {
-            is_instantiated: false,
-            main_module_state: self.load_blueprint_state_meta(&BlueprintTypeTarget {
-                blueprint_info: blueprint_info.clone(),
-                meta: SchemaValidationMeta::Blueprint,
-            })?,
-            attached_module_states: index_map_new(),
-            blueprint_reference: BlueprintReference {
-                id: blueprint_info.blueprint_id,
-                version: blueprint_info.blueprint_version,
-            },
-            instance_meta: ObjectInstanceMeta {
-                outer_object: None,
-                enabled_features: vec![],
-                substituted_generic_types: vec![],
-            },
-        }))
     }
 
     /// An implementation delegate of [`Self::load_entity_meta()`] for `KeyValueStore`s.
@@ -613,7 +552,7 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
             .into_iter()
             .enumerate()
             .map(|(index, (_partition_description, schema))| {
-                let (kind, collection_schema) = Self::destructure_collection_schema(schema);
+                let (kind, collection_schema) = destructure_collection_schema(schema);
                 let BlueprintKeyValueSchema { key, value, .. } = collection_schema;
                 Ok(ObjectCollectionMeta::new(
                     index,
@@ -690,31 +629,11 @@ impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
                         .as_ref()
                         .clone()
                         .fully_update_and_into_latest_version()
-                    // .as_unique_version()
-                    // .clone()
                 }
                 ResolvedTypeReference::WellKnown(_) => SchemaV1::empty(),
             },
             type_reference,
         })
-    }
-
-    /// Converts the given [`BlueprintCollectionSchema`] to a more direct representation.
-    fn destructure_collection_schema(
-        schema: BlueprintCollectionSchema<BlueprintPayloadDef>,
-    ) -> (
-        ObjectCollectionKind,
-        BlueprintKeyValueSchema<BlueprintPayloadDef>,
-    ) {
-        match schema {
-            BlueprintCollectionSchema::KeyValueStore(schema) => {
-                (ObjectCollectionKind::KeyValueStore, schema)
-            }
-            BlueprintCollectionSchema::Index(schema) => (ObjectCollectionKind::Index, schema),
-            BlueprintCollectionSchema::SortedIndex(schema) => {
-                (ObjectCollectionKind::SortedIndex, schema)
-            }
-        }
     }
 }
 
@@ -1190,84 +1109,12 @@ struct AuthorizedCallablesMeta {
     roles: BlueprintRolesDefinition,
 }
 
-/// A lister of entities.
-pub struct EngineEntityLister<'s, S> {
-    database: &'s S,
-}
-
-/// Basic information about an entity (i.e. read from a DB index, for listing purposes).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EntitySummary {
-    pub node_id: NodeId,
-    pub creation_id: CreationId,
-    pub blueprint_id: Option<BlueprintId>, // only present for Object entities
-}
-
-impl<'s, S: EntityListingIndex> EngineEntityLister<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self { database }
-    }
-
-    /// Returns an iterator of entities having one of the given [`EntityType`]s, starting from the
-    /// given [`CreationId`] (or its successor, if it does not exist), in the [`CreationId`]'s
-    /// natural order (ascending).
-    pub fn iter_created_entities(
-        &self,
-        entity_types: impl Iterator<Item = EntityType>,
-        from_creation_id: Option<&CreationId>,
-    ) -> Result<impl Iterator<Item = EntitySummary> + 's, EngineStateBrowsingError> {
-        Ok(entity_types
-            .map(|entity_type| {
-                self.database
-                    .get_created_entity_iter(entity_type, from_creation_id)
-            })
-            .kmerge_by(|(a_creation_id, _), (b_creation_id, _)| a_creation_id < b_creation_id)
-            .map(Self::to_entity_summary))
-    }
-
-    /// Returns an iterator of entities having the given [`BlueprintId`], starting from the given
-    /// [`CreationId`] (or its successor, if it does not exist), in the [`CreationId`]'s natural
-    /// order (ascending).
-    pub fn iter_blueprint_entities(
-        &self,
-        blueprint_id: &BlueprintId,
-        from_creation_id: Option<&CreationId>,
-    ) -> Result<impl Iterator<Item = EntitySummary> + 's, EngineStateBrowsingError> {
-        Ok(self
-            .database
-            .get_blueprint_entity_iter(blueprint_id, from_creation_id)
-            .map(Self::to_entity_summary))
-    }
-
-    /// Converts a database index entry into an [`EntitySummary`].
-    fn to_entity_summary(db_entry: (CreationId, EntityBlueprintId)) -> EntitySummary {
-        let (creation_id, entity_blueprint_id) = db_entry;
-        let EntityBlueprintIdV1 {
-            node_id,
-            blueprint_id,
-        } = entity_blueprint_id;
-        EntitySummary {
-            node_id,
-            creation_id,
-            blueprint_id,
-        }
-    }
-}
-
 /// A loader of Engine State's data (i.e. values) required by the Engine State API.
 pub struct EngineStateDataLoader<'s, S: SubstateDatabase> {
-    reader: SystemDatabaseReader<'s, S>,
+    pub reader: SystemDatabaseReader<'s, S>,
 }
 
 impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
-    /// Creates an instance reading from the given database.
-    pub fn new(database: &'s S) -> Self {
-        Self {
-            reader: SystemDatabaseReader::new(database),
-        }
-    }
-
     /// Loads an SBOR-encoded value of the given field.
     /// Note: technically, loading an SBOR does not need the fully-resolved field metadata (just its
     /// index); however, the object we return is schema-aware, so that it can render itself
@@ -1756,6 +1603,24 @@ impl From<EngineStateBrowsingError> for ResponseError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Invalid Engine state: {}", message),
             ),
+        }
+    }
+}
+
+/// Converts the given [`BlueprintCollectionSchema`] to a more direct representation.
+fn destructure_collection_schema(
+    schema: BlueprintCollectionSchema<BlueprintPayloadDef>,
+) -> (
+    ObjectCollectionKind,
+    BlueprintKeyValueSchema<BlueprintPayloadDef>,
+) {
+    match schema {
+        BlueprintCollectionSchema::KeyValueStore(schema) => {
+            (ObjectCollectionKind::KeyValueStore, schema)
+        }
+        BlueprintCollectionSchema::Index(schema) => (ObjectCollectionKind::Index, schema),
+        BlueprintCollectionSchema::SortedIndex(schema) => {
+            (ObjectCollectionKind::SortedIndex, schema)
         }
     }
 }

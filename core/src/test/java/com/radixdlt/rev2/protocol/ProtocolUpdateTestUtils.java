@@ -70,22 +70,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.Streams;
-import com.google.inject.AbstractModule;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.api.CoreApiServer;
-import com.radixdlt.api.CoreApiServerModule;
-import com.radixdlt.api.core.generated.client.ApiClient;
-import com.radixdlt.api.core.generated.models.CommittedTransaction;
-import com.radixdlt.api.core.generated.models.DeletedSubstate;
-import com.radixdlt.api.core.generated.models.FlashLedgerTransaction;
-import com.radixdlt.api.core.generated.models.FlashSetSubstate;
+import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.consensus.BFTConfiguration;
-import com.radixdlt.environment.CoreApiServerFlags;
 import com.radixdlt.environment.EventDispatcher;
-import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
@@ -97,7 +86,6 @@ import com.radixdlt.state.RustStateReader;
 import com.radixdlt.statecomputer.commit.NextEpoch;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
-import com.radixdlt.utils.FreePortFinder;
 import com.radixdlt.utils.PrivateKeys;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +125,7 @@ public final class ProtocolUpdateTestUtils {
             .notaryIsSignatory(true)
             .prepare()
             .raw();
-    mempoolDispatcher.dispatch(MempoolAdd.create(signalReadinessTransaction));
+    mempoolDispatcher.dispatch(new MempoolAdd(List.of(signalReadinessTransaction)));
     test.runUntilState(allCommittedTransactionSuccess(signalReadinessTransaction));
     // Check that the state reader returns a correct value
     test.getNodeInjectors()
@@ -248,36 +236,5 @@ public final class ProtocolUpdateTestUtils {
                   .toList();
           assertEquals(fromFlash.getDeletedSubstates(), deletedFromReceipt);
         });
-  }
-
-  public static class CoreApiHelper {
-
-    private final int coreApiPort;
-
-    public CoreApiHelper() {
-      this.coreApiPort = FreePortFinder.findFreeLocalPort();
-    }
-
-    public Module module() {
-      return new AbstractModule() {
-        @Override
-        protected void configure() {
-          install(new CoreApiServerModule("127.0.0.1", coreApiPort, new CoreApiServerFlags(true)));
-        }
-
-        @ProvidesIntoSet
-        private StartProcessorOnRunner startCoreApi(CoreApiServer coreApiServer) {
-          // This is a slightly hacky way to run something on node start-up in a Deterministic test.
-          // Stop is called by the AutoClosable binding in CoreApiServerModule
-          return new StartProcessorOnRunner("coreApi", coreApiServer::start);
-        }
-      };
-    }
-
-    public ApiClient client() {
-      final var apiClient = new ApiClient();
-      apiClient.updateBaseUri("http://127.0.0.1:" + coreApiPort + "/core");
-      return apiClient;
-    }
   }
 }

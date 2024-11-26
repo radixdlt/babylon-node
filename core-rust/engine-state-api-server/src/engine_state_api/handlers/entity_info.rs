@@ -1,7 +1,4 @@
-use crate::engine_prelude::*;
-use crate::engine_state_api::*;
-use state_manager::historical_state::VersionScopingSupport;
-use state_manager::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
+use crate::prelude::*;
 
 pub(crate) async fn handle_entity_info(
     state: State<EngineStateApiState>,
@@ -21,9 +18,12 @@ pub(crate) async fn handle_entity_info(
         .database
         .snapshot()
         .scoped_at(requested_state_version)?;
+    let loader_factory = EngineStateLoaderFactory::new(state.network.clone(), &database)
+        .ensure_instantiated(&node_id);
 
-    let meta_loader = EngineStateMetaLoader::new(&database);
-    let entity_meta = meta_loader.load_entity_meta(&node_id)?;
+    let entity_meta = loader_factory
+        .create_meta_loader()
+        .load_entity_meta(&node_id)?;
 
     // Technically, the ancestry information could be interpreted as part of "meta" and included in
     // the `EntityMeta` above. However, we plan to move `EngineStateMetaLoader` (among others) into

@@ -1,9 +1,4 @@
-use crate::engine_state_api::*;
-
-use crate::engine_prelude::*;
-
-use crate::engine_state_api::handlers::HandlerPagingSupport;
-use state_manager::historical_state::VersionScopingSupport;
+use crate::prelude::*;
 
 pub(crate) async fn handle_kv_store_iterator(
     state: State<EngineStateApiState>,
@@ -30,7 +25,10 @@ pub(crate) async fn handle_kv_store_iterator(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let meta_loader = EngineStateMetaLoader::new(&database);
+    let loader_factory = EngineStateLoaderFactory::new(state.network.clone(), &database)
+        .ensure_instantiated(&node_id);
+
+    let meta_loader = loader_factory.create_meta_loader();
     let EntityMeta::KeyValueStore(kv_store_meta) = meta_loader.load_entity_meta(&node_id)? else {
         return Err(ResponseError::new(
             StatusCode::BAD_REQUEST,
@@ -41,8 +39,7 @@ pub(crate) async fn handle_kv_store_iterator(
         }));
     };
 
-    let data_loader = EngineStateDataLoader::new(&database);
-
+    let data_loader = loader_factory.create_data_loader();
     let page = paging_support
         .get_page(|from| data_loader.iter_kv_store_keys(&node_id, &kv_store_meta, from))?;
 

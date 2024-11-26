@@ -65,12 +65,14 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 
 /** Vertex Store update of committed vertices */
 public record BFTCommittedUpdate(
-    ImmutableList<ExecutedVertex> committed, VertexStoreState vertexStoreState) {
+    ImmutableList<ExecutedVertex> committed, VertexStoreState vertexStoreState)
+    implements LocalEvent {
   public int vertexStoreSize() {
     return vertexStoreState.getVertices().size();
   }

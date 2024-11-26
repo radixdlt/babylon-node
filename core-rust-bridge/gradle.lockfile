@@ -2,13 +2,13 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 aopalliance:aopalliance:1.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-annotations:2.12.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-core:2.12.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-databind:2.12.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.datatype:jackson-datatype-guava:2.12.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.12.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson:jackson-bom:2.12.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.15.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-core:2.15.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.15.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.datatype:jackson-datatype-guava:2.15.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.15.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson:jackson-bom:2.15.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=compileClasspath,runtimeClasspath,spotless865453420,testCompileClasspath,testRuntimeClasspath
 com.google.errorprone:error_prone_annotations:2.11.0=compileClasspath,runtimeClasspath,spotless865453420,testCompileClasspath,testRuntimeClasspath
 com.google.googlejavaformat:google-java-format:1.13.0=spotless865453420
@@ -47,7 +47,7 @@ org.jacoco:org.jacoco.ant:0.8.7=jacocoAnt
 org.jacoco:org.jacoco.core:0.8.7=jacocoAnt
 org.jacoco:org.jacoco.report:0.8.7=jacocoAnt
 org.javassist:javassist:3.26.0-GA=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-org.json:json:20180813=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.json:json:20240303=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.mockito:mockito-core:3.12.4=testCompileClasspath,testRuntimeClasspath
 org.objenesis:objenesis:3.2=testCompileClasspath,testRuntimeClasspath
 org.ow2.asm:asm-analysis:9.1=jacocoAnt
@@ -70,6 +70,7 @@ software.amazon.awssdk:protocol-core:2.16.3=runtimeClasspath,testRuntimeClasspat
 software.amazon.awssdk:regions:2.16.3=runtimeClasspath,testRuntimeClasspath
 software.amazon.awssdk:sdk-core:2.16.3=runtimeClasspath,testRuntimeClasspath
 software.amazon.awssdk:secretsmanager:2.16.3=runtimeClasspath,testRuntimeClasspath
+software.amazon.awssdk:ssm:2.16.3=runtimeClasspath,testRuntimeClasspath
 software.amazon.awssdk:utils:2.16.3=runtimeClasspath,testRuntimeClasspath
 software.amazon.eventstream:eventstream:1.0.1=runtimeClasspath,testRuntimeClasspath
 empty=annotationProcessor,testAnnotationProcessor

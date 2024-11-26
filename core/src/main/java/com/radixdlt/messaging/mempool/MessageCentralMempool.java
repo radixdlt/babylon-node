@@ -65,13 +65,15 @@
 package com.radixdlt.messaging.mempool;
 
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.messaging.core.Message;
 import com.radixdlt.messaging.core.MessageCentral;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.transactions.RawNotarizedTransaction;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 
@@ -95,10 +97,16 @@ public final class MessageCentralMempool {
     this.messageCentral.send(recipient, message);
   }
 
-  public Flowable<RemoteEvent<NodeId, MempoolAdd>> mempoolComands() {
+  public Flowable<IncomingEvent<NodeId, MempoolAdd>> mempoolComands() {
     return messageCentral
         .messagesOf(MempoolAddMessage.class)
-        .map(msg -> RemoteEvent.create(msg.source(), MempoolAdd.create(msg.message().getTxns())))
+        .map(
+            msg -> {
+              List<RawNotarizedTransaction> transactions = msg.message().getTxns();
+              MempoolAdd event = new MempoolAdd(transactions);
+              return new IncomingEvent<>(
+                  Objects.requireNonNull(msg.source()), Objects.requireNonNull(event));
+            })
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 }

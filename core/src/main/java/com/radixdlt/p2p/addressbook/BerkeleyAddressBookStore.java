@@ -300,9 +300,5 @@ public final class BerkeleyAddressBookStore implements AddressBookPersistence {
     public BerkeleyAddressBookStoreException(String message) {
       super(message);
     }
-
-    public BerkeleyAddressBookStoreException(String message, Throwable cause) {
-      super(message, cause);
-    }
   }
 }

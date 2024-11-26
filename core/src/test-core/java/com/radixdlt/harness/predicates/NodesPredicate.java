@@ -100,6 +100,14 @@ public final class NodesPredicate {
     return allNodesMatch(NodePredicate.atOrOverEpoch(epoch));
   }
 
+  public static Predicate<List<Injector>> allAtExactlyProtocolVersion(String protocolVersion) {
+    return allNodesMatch(NodePredicate.atExactlyProtocolVersion(protocolVersion));
+  }
+
+  public static Predicate<List<Injector>> allAtOrOverProtocolVersion(String protocolVersion) {
+    return allNodesMatch(NodePredicate.atOrOverProtocolVersion(protocolVersion));
+  }
+
   public static Predicate<List<Injector>> allCommittedTransactionSuccess(
       RawNotarizedTransaction transaction) {
     return allNodesMatch(NodePredicate.committedUserTransaction(transaction, true, true));

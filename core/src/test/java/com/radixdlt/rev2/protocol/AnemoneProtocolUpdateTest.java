@@ -74,6 +74,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.api.CoreApiHelper;
 import com.radixdlt.api.core.generated.api.StreamApi;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.environment.EventDispatcher;
@@ -92,12 +93,13 @@ import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class AnemoneProtocolUpdateTest {
-  private static final String PROTOCOL_VERSION_NAME = ProtocolUpdateTrigger.ANEMONE;
+  private static final String PROTOCOL_VERSION_NAME = ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME;
   private static final long PROTOCOL_UPDATE_EPOCH = 4L;
 
   // Enact anemone at fixed epoch 4
@@ -119,17 +121,18 @@ public final class AnemoneProtocolUpdateTest {
             new FunctionalRadixNodeModule(
                 FunctionalRadixNodeModule.NodeStorageConfig.tempFolder(folder),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    StateComputerConfig.rev2(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5)),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction(),
-                        PROTOCOL_CONFIG))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(
+                            GenesisBuilder.createTestGenesisWithNumValidators(
+                                1,
+                                Decimal.ONE,
+                                GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5)))
+                        .withProposerConfig(
+                            StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction())
+                        .withProtocolConfig(PROTOCOL_CONFIG))));
   }
 
   private PreparedNotarizedTransaction createGetTimeCallTxn(boolean secondPrecision) {
@@ -153,12 +156,12 @@ public final class AnemoneProtocolUpdateTest {
 
       // Act & Assert #1: Submit TimePrecision::Minute transaction and expect a success
       final var minutePrecisionBeforeTx = createGetTimeCallTxn(false).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(minutePrecisionBeforeTx));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(minutePrecisionBeforeTx)));
       test.runUntilState(allCommittedTransactionSuccess(minutePrecisionBeforeTx));
 
       // Act & Assert #2: Submit TimePrecision::Second transaction and expect a failure
       final var secondPrecisionBeforeTx = createGetTimeCallTxn(true).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(secondPrecisionBeforeTx));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(secondPrecisionBeforeTx)));
       test.runUntilState(allNodesMatch(committedFailedUserTransaction(secondPrecisionBeforeTx)));
 
       // Act & Assert #3: Run until protocol update epoch and verify protocol update
@@ -174,7 +177,7 @@ public final class AnemoneProtocolUpdateTest {
       assertEquals(
           PROTOCOL_VERSION_NAME,
           postProtocolUpdateProof
-              .closestProtocolUpdateInitProofOnOrBefore()
+              .latestProofWhichInitiatedOneOrMoreProtocolUpdates()
               .unwrap()
               .ledgerHeader()
               .nextProtocolVersion()
@@ -182,19 +185,19 @@ public final class AnemoneProtocolUpdateTest {
 
       // Act & Assert #4: Submit TimePrecision::Minute transaction and expect a success
       final var minutePrecisionAfterTx = createGetTimeCallTxn(false).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(minutePrecisionAfterTx));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(minutePrecisionAfterTx)));
       test.runUntilState(allCommittedTransactionSuccess(minutePrecisionAfterTx));
 
       // Act & Assert #5: Submit TimePrecision::Second transaction and expect a success
       final var secondPrecisionAfterTx = createGetTimeCallTxn(true).raw();
-      mempoolDispatcher.dispatch(MempoolAdd.create(secondPrecisionAfterTx));
+      mempoolDispatcher.dispatch(new MempoolAdd(List.of(secondPrecisionAfterTx)));
       test.runUntilState(allCommittedTransactionSuccess(secondPrecisionAfterTx));
     }
   }
 
   @Test
   public void core_api_streams_anemone_flash_transactions() throws Exception {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Start a single node network and run until protocol update:
       test.startAllNodes();
@@ -224,7 +227,18 @@ public final class AnemoneProtocolUpdateTest {
               .map(txn -> ((FlashLedgerTransaction) txn.getLedgerTransaction()).getName())
               .toList());
 
-      ProtocolUpdateTestUtils.verifyFlashTransactionReceipts(committedFlashTransactions);
+      // We filter out "anemone-validator-fee-fix" because it's a no-op on inttestnet
+      var transactionsToVerify =
+          committedFlashTransactions.stream()
+              .filter(
+                  txn ->
+                      !((FlashLedgerTransaction) txn.getLedgerTransaction())
+                          .getName()
+                          .equals("anemone-validator-fee-fix"))
+              .toList();
+
+      // Now verify the transactions
+      ProtocolUpdateTestUtils.verifyFlashTransactionReceipts(transactionsToVerify);
     }
   }
 }

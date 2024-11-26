@@ -72,15 +72,12 @@ import static org.junit.Assert.*;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Module;
 import com.radixdlt.addressing.Addressing;
+import com.radixdlt.api.CoreApiHelper;
 import com.radixdlt.api.core.generated.api.StreamApi;
 import com.radixdlt.api.core.generated.api.TransactionApi;
 import com.radixdlt.api.core.generated.client.ApiException;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.api.core.generated.models.TransactionStatus;
-import com.radixdlt.environment.DatabaseConfig;
-import com.radixdlt.environment.LedgerProofsGcConfig;
-import com.radixdlt.environment.ScenariosExecutionConfig;
-import com.radixdlt.environment.StateTreeGcConfig;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
@@ -94,7 +91,6 @@ import com.radixdlt.protocol.ProtocolUpdateTrigger;
 import com.radixdlt.rev2.*;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.sync.TransactionsAndProofReader;
-import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import java.util.Arrays;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,13 +105,18 @@ public final class BottlenoseProtocolUpdateTest {
           ImmutableList.of(
               // Update to Anemone at some arbitrary earlier moment (in case of dependencies):
               new ProtocolUpdateTrigger(
-                  ProtocolUpdateTrigger.ANEMONE, unconditionallyAtEpoch(BOTTLENOSE_EPOCH - 3)),
+                  ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME,
+                  unconditionallyAtEpoch(BOTTLENOSE_EPOCH - 3)),
               new ProtocolUpdateTrigger(
-                  ProtocolUpdateTrigger.BOTTLENOSE, unconditionallyAtEpoch(BOTTLENOSE_EPOCH))));
+                  ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
+                  unconditionallyAtEpoch(BOTTLENOSE_EPOCH))));
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private DeterministicTest createTest(Module... extraModules) {
+    var genesis =
+        GenesisBuilder.createTestGenesisWithNumValidators(
+            1, Decimal.ONE, GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5));
     return DeterministicTest.builder()
         .addPhysicalNodes(PhysicalNodeConfig.createBatch(1, true))
         .messageSelector(firstSelector())
@@ -125,24 +126,12 @@ public final class BottlenoseProtocolUpdateTest {
             new FunctionalRadixNodeModule(
                 FunctionalRadixNodeModule.NodeStorageConfig.tempFolder(folder),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
-                    new StateComputerConfig.REv2StateComputerConfig(
-                        Network.INTEGRATIONTESTNET.getId(),
-                        GenesisBuilder.createTestGenesisWithNumValidators(
-                            1,
-                            Decimal.ONE,
-                            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(5)),
-                        new DatabaseConfig(true, false, false, false),
-                        StateComputerConfig.REV2ProposerConfig.Mempool.singleTransaction(),
-                        false,
-                        StateTreeGcConfig.forTesting(),
-                        LedgerProofsGcConfig.forTesting(),
-                        LedgerSyncLimitsConfig.defaults(),
-                        PROTOCOL_CONFIG,
-                        false,
-                        ScenariosExecutionConfig.ALL))));
+                    StateComputerConfig.rev2()
+                        .withGenesis(genesis)
+                        .withProtocolConfig(PROTOCOL_CONFIG))));
   }
 
   @Test
@@ -160,14 +149,15 @@ public final class BottlenoseProtocolUpdateTest {
                     .type(TargetIdentifierType.FUNCTION))
             .addArgumentsItem("4d0101"); // hex-encoded SBOR `true` (for `allow_recover` parameter)
 
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Arrange: Start a single node network, reach state just before Bottlenose:
       test.startAllNodes();
       final var stateComputer = test.getInstance(0, RustStateComputer.class);
       test.runUntilState(allAtOrOverEpoch(BOTTLENOSE_EPOCH - 1));
       assertNotEquals(
-          ProtocolUpdateTrigger.BOTTLENOSE, stateComputer.protocolState().currentProtocolVersion());
+          ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
+          stateComputer.protocolState().currentProtocolVersion());
 
       // Act: Preview a transaction trying to create an AccountLocker:
       final var callBeforeBottlenose =
@@ -180,7 +170,8 @@ public final class BottlenoseProtocolUpdateTest {
       // Arrange: Run the Bottlenose protocol update:
       test.runUntilState(allAtOrOverEpoch(BOTTLENOSE_EPOCH));
       assertEquals(
-          ProtocolUpdateTrigger.BOTTLENOSE, stateComputer.protocolState().currentProtocolVersion());
+          ProtocolConfig.BOTTLENOSE_PROTOCOL_VERSION_NAME,
+          stateComputer.protocolState().currentProtocolVersion());
 
       // Act: Preview the same transaction again:
       final var callAfterBottlenose =
@@ -194,7 +185,7 @@ public final class BottlenoseProtocolUpdateTest {
 
   @Test
   public void core_api_streams_bottlenose_flash_transactions() throws Exception {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Arrange: Start a single Node network and capture the state version right before Bottlenose:
       test.startAllNodes();

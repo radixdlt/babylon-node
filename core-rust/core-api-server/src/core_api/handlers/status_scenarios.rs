@@ -1,10 +1,4 @@
-use crate::core_api::*;
-
-use crate::engine_prelude::*;
-
-use state_manager::store::traits::scenario::{
-    ExecutedScenario, ExecutedScenarioStore, ExecutedScenarioTransaction, ScenarioSequenceNumber,
-};
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_scenarios(
@@ -58,7 +52,7 @@ pub fn to_api_scenario_transaction(
     Ok(models::ExecutedScenarioTransaction {
         logical_name: transaction.logical_name.clone(),
         state_version: to_api_state_version(transaction.state_version)?,
-        intent_hash: to_api_intent_hash(&transaction.intent_hash),
-        intent_hash_bech32m: to_api_hash_bech32m(context, &transaction.intent_hash)?,
+        intent_hash: to_api_transaction_intent_hash(&transaction.transaction_intent_hash),
+        intent_hash_bech32m: to_api_hash_bech32m(context, &transaction.transaction_intent_hash)?,
     })
 }

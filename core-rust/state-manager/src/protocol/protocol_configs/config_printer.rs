@@ -17,22 +17,38 @@ use super::*;
 // ============================================================================
 
 #[test]
-fn print_protocol_config_code() {
+fn print_fixed_config_code() {
+    // This is used for stokenet and dumunet
+    let version = ProtocolVersionName::cuttlefish_part2();
+    let start_epoch = Epoch::of(1);
+    let end_epoch = Epoch::of(10000000);
+    let thresholds = vec![SignalledReadinessThreshold {
+        required_ratio_of_stake_supported: dec!(0.8),
+        required_consecutive_completed_epochs_of_support: 10,
+    }];
+    output(version, start_epoch, end_epoch, thresholds, None)
+}
+
+#[test]
+fn print_calculated_protocol_config_code() {
+    // This is used for mainnet calculations
+
     // PARAMETERS
     let calculator = CalculationParameters {
         expected_epoch_length: Duration::minutes(5),
         // This data can come from the Core API /core/state/consensus-manager response
-        base_epoch: Epoch::of(97091),
-        base_epoch_effective_start: DateTime::<Utc>::from_str("2024-05-09T18:01:00.000Z").unwrap(),
+        base_epoch: Epoch::of(150729),
+        base_epoch_effective_start: DateTime::<Utc>::from_str("2024-11-13T01:18:58.703Z").unwrap(),
     };
 
-    let version = BOTTLENOSE_PROTOCOL_VERSION;
-    let version_const = stringify!(BOTTLENOSE_PROTOCOL_VERSION);
-    let target_start = DateTime::<Utc>::from_str("2024-06-03T18:00:00.000Z").unwrap();
-    let enactment_window = Duration::days(28);
+    // See https://learn.radixdlt.com/article/radix-foundation-protocol-update-candidate-policies
+    // For guidance on how to set these paramaters
+    let version = ProtocolVersionName::cuttlefish_part1();
+    let target_start = DateTime::<Utc>::from_str("2024-12-10T16:00:00.000Z").unwrap();
+    let enactment_window = Duration::days(10); // Normally set to 28 days, but shorter due to christmas
     let proposed_thresholds = [(dec!(0.75), Duration::days(14))];
 
-    // OUTPUT
+    // CALCULATE
     let start_epoch = calculator
         .estimate_current_epoch_at(target_start)
         .next()
@@ -51,8 +67,25 @@ fn print_protocol_config_code() {
         })
         .collect::<Vec<_>>();
 
-    let trigger = ProtocolUpdateTrigger::of(
+    output(
         version,
+        start_epoch,
+        end_epoch,
+        thresholds,
+        Some(calculator),
+    )
+}
+
+fn output(
+    version: ProtocolVersionName,
+    start_epoch: Epoch,
+    end_epoch: Epoch,
+    thresholds: Vec<SignalledReadinessThreshold>,
+    calculator: Option<CalculationParameters>,
+) {
+    // OUTPUT
+    let trigger = ProtocolUpdateTrigger::of(
+        version.clone(),
         ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
             lower_bound_inclusive: start_epoch,
             upper_bound_exclusive: end_epoch,
@@ -64,7 +97,9 @@ fn print_protocol_config_code() {
         .expect("Generated protocol update trigger should be valid");
 
     let base_indent = "        ";
-    println!("{base_indent}{version_const} => EnactAtStartOfEpochIfValidatorsReady {{");
+    println!(
+        "{base_indent}ProtocolVersionName::{version}() => EnactAtStartOfEpochIfValidatorsReady {{"
+    );
     println!(
         "{base_indent}    // ================================================================="
     );
@@ -76,33 +111,44 @@ fn print_protocol_config_code() {
     println!(
         "{base_indent}    // ================================================================="
     );
-    println!("{base_indent}    // The below estimates are based off:");
-    println!(
-        "{base_indent}    // - Calculating relative to epoch {}",
-        calculator.base_epoch.number(),
-    );
-    println!(
-        "{base_indent}    // - Using that epoch {} started at {}",
-        calculator.base_epoch.number(),
-        display_instant(calculator.base_epoch_effective_start),
-    );
-    println!(
-        "{base_indent}    // - Assuming epoch length will be {}",
-        display_duration(calculator.expected_epoch_length),
-    );
-    println!(
-        "{base_indent}    // ================================================================="
-    );
-    println!(
-        "{base_indent}    lower_bound_inclusive: Epoch::of({}), // estimated: {}",
-        start_epoch.number(),
-        display_instant(calculator.estimate_start_of_epoch(start_epoch)),
-    );
-    println!(
-        "{base_indent}    upper_bound_exclusive: Epoch::of({}), // estimated: {}",
-        end_epoch.number(),
-        display_instant(calculator.estimate_start_of_epoch(end_epoch)),
-    );
+    if let Some(calculator) = &calculator {
+        println!("{base_indent}    // The below estimates are based off:");
+        println!(
+            "{base_indent}    // - Calculating relative to epoch {}",
+            calculator.base_epoch.number(),
+        );
+        println!(
+            "{base_indent}    // - Using that epoch {} started at {}",
+            calculator.base_epoch.number(),
+            display_instant(calculator.base_epoch_effective_start),
+        );
+        println!(
+            "{base_indent}    // - Assuming epoch length will be {}",
+            display_duration(calculator.expected_epoch_length),
+        );
+        println!(
+            "{base_indent}    // ================================================================="
+        );
+        println!(
+            "{base_indent}    lower_bound_inclusive: Epoch::of({}), // estimated: {}",
+            start_epoch.number(),
+            display_instant(calculator.estimate_start_of_epoch(start_epoch)),
+        );
+        println!(
+            "{base_indent}    upper_bound_exclusive: Epoch::of({}), // estimated: {}",
+            end_epoch.number(),
+            display_instant(calculator.estimate_start_of_epoch(end_epoch)),
+        );
+    } else {
+        println!(
+            "{base_indent}    lower_bound_inclusive: Epoch::of({}),",
+            start_epoch.number(),
+        );
+        println!(
+            "{base_indent}    upper_bound_exclusive: Epoch::of({}),",
+            end_epoch.number(),
+        );
+    }
 
     if thresholds.is_empty() {
         println!("{base_indent}    readiness_thresholds: vec![],");
@@ -111,17 +157,24 @@ fn print_protocol_config_code() {
         for threshold in thresholds {
             let ratio = threshold.required_ratio_of_stake_supported;
             let epochs = threshold.required_consecutive_completed_epochs_of_support;
-            let est_duration = calculator.estimate_duration_of_full_epochs(epochs);
             println!("{base_indent}        SignalledReadinessThreshold {{");
             println!(
                 "{base_indent}            required_ratio_of_stake_supported: dec!({}),",
                 ratio
             );
-            println!(
-                "{base_indent}            required_consecutive_completed_epochs_of_support: {}, // estimated: {}",
-                epochs,
-                display_duration(est_duration),
-            );
+            if let Some(calculator) = &calculator {
+                let est_duration = calculator.estimate_duration_of_full_epochs(epochs);
+                println!(
+                    "{base_indent}            required_consecutive_completed_epochs_of_support: {}, // estimated: {}",
+                    epochs,
+                    display_duration(est_duration),
+                );
+            } else {
+                println!(
+                    "{base_indent}            required_consecutive_completed_epochs_of_support: {},",
+                    epochs,
+                );
+            }
             println!("{base_indent}        }},");
         }
         println!("{base_indent}    ],");

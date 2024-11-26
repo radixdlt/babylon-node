@@ -61,36 +61,24 @@
  * Work. You assume all risks associated with Your use of the Work and the exercise of
  * permissions under this License.
  */
-
 use std::ops::Deref;
+use std::path::{PathBuf, MAIN_SEPARATOR};
 use std::str::FromStr;
-use std::sync::Arc;
 
-use crate::engine_prelude::*;
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+use crate::jni_prelude::*;
 use node_common::environment::setup_tracing;
-use node_common::java::{jni_call, jni_jbytearray_to_vector};
-use node_common::locks::*;
 use prometheus::Registry;
 
 use node_common::scheduler::{Scheduler, UntilDropTracker};
 use tokio::runtime::Runtime;
 use tracing::Level;
 
-use crate::mempool_manager::MempoolManager;
-use crate::mempool_relay_dispatcher::MempoolRelayDispatcher;
-use crate::priority_mempool::PriorityMempool;
-
 use super::fatal_panic_handler::FatalPanicHandler;
 
 use crate::protocol::ProtocolManager;
+use crate::store::rocks_db::ActualStateManagerDatabase;
 use crate::transaction::Preparator;
-use crate::{
-    ActualStateManagerDatabase, Committer, LedgerMetrics, StateManager, StateManagerConfig,
-    SystemExecutor,
-};
+use p2p::rocks_db::{ActualAddressBookDatabase, ActualSafetyStoreDatabase};
 
 const POINTER_JNI_FIELD_NAME: &str = "rustNodeRustEnvironmentPointer";
 
@@ -123,15 +111,15 @@ pub struct JNINodeRustEnvironment {
     pub state_manager: StateManager,
     pub metric_registry: Arc<Registry>,
     pub running_task_tracker: UntilDropTracker,
+    pub address_book_store: Arc<ActualAddressBookDatabase>,
+    pub safety_store_store: Arc<ActualSafetyStoreDatabase>,
 }
 
 impl JNINodeRustEnvironment {
     pub fn init(env: &JNIEnv, j_node_rust_env: JObject, j_config: jbyteArray) {
-        let config_bytes: Vec<u8> = jni_jbytearray_to_vector(env, j_config).unwrap();
-        let config = StateManagerConfig::valid_from_java(&config_bytes).unwrap();
-
+        let (base_path, config) =
+            Self::prepare_config(&jni_jbytearray_to_vector(env, j_config).unwrap());
         let network = config.network_definition.clone();
-
         let runtime = Arc::new(Runtime::new().unwrap());
 
         setup_tracing(
@@ -157,6 +145,7 @@ impl JNINodeRustEnvironment {
         let state_manager = StateManager::new(
             config,
             Some(MempoolRelayDispatcher::new(env, j_node_rust_env).unwrap()),
+            Arc::new(JavaGenesisDataResolver::new(env, j_node_rust_env).unwrap()),
             &lock_factory,
             &metric_registry,
             &scheduler,
@@ -164,16 +153,42 @@ impl JNINodeRustEnvironment {
 
         let running_task_tracker = scheduler.into_task_tracker();
 
+        let address_book_db_path = Self::combine(&base_path, "address_book");
+        let safety_store_db_path = Self::combine(&base_path, "consensus_safety_store");
         let jni_node_rust_env = JNINodeRustEnvironment {
             runtime,
             network,
             state_manager,
             metric_registry,
             running_task_tracker,
+            address_book_store: Arc::new(ActualAddressBookDatabase::new(address_book_db_path)),
+            safety_store_store: Arc::new(ActualSafetyStoreDatabase::new(safety_store_db_path)),
         };
 
         env.set_rust_field(j_node_rust_env, POINTER_JNI_FIELD_NAME, jni_node_rust_env)
             .unwrap();
+    }
+
+    fn prepare_config(config_bytes: &[u8]) -> (String, StateManagerConfig) {
+        let config = StateManagerConfig::valid_from_java(config_bytes).unwrap();
+        let base_path = config.database_backend_config.rocks_db_path.clone();
+        let mut state_manager_db_path = config.database_backend_config.rocks_db_path.clone();
+
+        state_manager_db_path.push(MAIN_SEPARATOR);
+        state_manager_db_path.push_str("state_manager");
+
+        let config = StateManagerConfig {
+            database_backend_config: DatabaseBackendConfig {
+                rocks_db_path: state_manager_db_path,
+            },
+            ..config
+        };
+
+        (base_path, config)
+    }
+
+    fn combine(base: &String, ext: &str) -> PathBuf {
+        [base, ext].iter().collect()
     }
 
     pub fn cleanup(env: &JNIEnv, j_node_rust_env: JObject) {
@@ -199,6 +214,11 @@ impl JNINodeRustEnvironment {
             .clone()
     }
 
+    pub fn get_formatter(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<Formatter> {
+        let env = Self::get(env, j_node_rust_env);
+        env.state_manager.formatter.clone()
+    }
+
     pub fn get_database(
         env: &JNIEnv,
         j_node_rust_env: JObject,
@@ -209,11 +229,18 @@ impl JNINodeRustEnvironment {
             .clone()
     }
 
-    pub fn get_mempool(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<RwLock<PriorityMempool>> {
-        Self::get(env, j_node_rust_env)
-            .state_manager
-            .mempool
-            .clone()
+    pub fn get_address_book_database(
+        env: &JNIEnv,
+        j_node_rust_env: JObject,
+    ) -> Arc<ActualAddressBookDatabase> {
+        Self::get(env, j_node_rust_env).address_book_store.clone()
+    }
+
+    pub fn get_safety_store_database(
+        env: &JNIEnv,
+        j_node_rust_env: JObject,
+    ) -> Arc<ActualSafetyStoreDatabase> {
+        Self::get(env, j_node_rust_env).safety_store_store.clone()
     }
 
     pub fn get_mempool_manager(env: &JNIEnv, j_node_rust_env: JObject) -> Arc<MempoolManager> {

@@ -1,10 +1,4 @@
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::LedgerHeader;
-use std::ops::Deref;
-
-use node_common::utils::IsAccountExt;
+use crate::prelude::*;
 
 /// Maximum number of resource addresses allowed in the request.
 /// Must be aligned with the `maxItems` in the API documentation.
@@ -66,7 +60,7 @@ pub(crate) async fn handle_lts_state_account_deposit_behaviour(
 
     // If it does not exist, then either it is an empty virtual account, or a bad account address:
     let Some(default_deposit_rule) = default_deposit_rule else {
-        return if account_address.as_node_id().is_global_virtual() {
+        return if account_address.as_node_id().is_global_preallocated() {
             Ok(empty_virtual_account_response(
                 &mapping_context,
                 &header,

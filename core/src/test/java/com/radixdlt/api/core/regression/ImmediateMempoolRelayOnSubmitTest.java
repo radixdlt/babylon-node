@@ -79,7 +79,7 @@ import org.junit.Test;
 public class ImmediateMempoolRelayOnSubmitTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_immediate_relay_event_on_core_api_submit() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var validTransaction = TransactionBuilder.forNetwork(networkDefinition).prepare();
@@ -102,7 +102,7 @@ public class ImmediateMempoolRelayOnSubmitTest extends DeterministicCoreApiTestB
       RawNotarizedTransaction transaction) {
     return m -> {
       if (m.value().message() instanceof MempoolAddSuccess message) {
-        return message.getTxn().equals(transaction);
+        return message.transaction().equals(transaction);
       }
       return false;
     };
