@@ -1,5 +1,9 @@
 use crate::engine_prelude::*;
 use crate::prelude::*;
+use radix_engine_interface::blueprints::account::{
+    AccountTryDepositOrAbortManifestInput, AccountWithdrawManifestInput,
+};
+use radix_transactions::manifest::{CallMethod, TakeFromWorktop};
 
 #[derive(Debug, Clone, Copy, EnumIter, Display, EnumString)]
 pub(crate) enum MeshApiOperationType {
@@ -188,4 +192,101 @@ fn resolve_global_fee_balance_changes(
         *fee_balance_change = fee_balance_change.sub_or_panic(*paid_fee_amount_xrd);
     }
     Ok(fee_balance_changes)
+}
+
+/// This method converts Transaction V1 instructons to operations.
+/// Note that it supports very limited number of instructions because it
+/// is implemented just for sanity checks.
+pub fn to_mesh_api_operations_from_instructions_v1(
+    instructions: &[InstructionV1],
+    mapping_context: &MappingContext,
+    database: &StateManagerDatabase<impl ReadableRocks>,
+) -> Result<Vec<models::Operation>, ResponseError> {
+    let mut operations = Vec::new();
+    let mut next_index = 0;
+    while next_index < instructions.len() {
+        let mut instruction = &instructions[next_index];
+        next_index = next_index + 1;
+        match instruction {
+            InstructionV1::CallMethod(CallMethod {
+                address: DynamicGlobalAddress::Static(global_address),
+                method_name,
+                args,
+            }) if global_address.is_account() => {
+                let args_bytes = manifest_encode(&args).unwrap();
+                match method_name.as_str() {
+                    "lock_fee" => (),
+                    "withdraw" => {
+                        let input = manifest_decode::<AccountWithdrawManifestInput>(&args_bytes)
+                            .map_err(|_| {
+                                ResponseError::from(ApiError::InvalidWithdrawInstruction)
+                                    .with_details("Invalid withdraw instruction")
+                            })?;
+                        operations.push(to_mesh_api_operation_no_fee(
+                            mapping_context,
+                            database,
+                            operations.len() as i64,
+                            None,
+                            global_address,
+                            &match input.resource_address {
+                                ManifestResourceAddress::Static(resource_address) => {
+                                    resource_address
+                                }
+                                ManifestResourceAddress::Named(_) => {
+                                    return Err(ResponseError::from(
+                                        ApiError::NamedAddressNotSupported,
+                                    )
+                                    .with_details("Named address is not supported"))
+                                }
+                            },
+                            -input.amount.clone(),
+                        )?);
+                    }
+                    _ => {
+                        return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                            .with_details(format!("Unrecognized instruction: {:?}", instruction)));
+                    }
+                }
+            }
+            InstructionV1::TakeFromWorktop(TakeFromWorktop {
+                resource_address,
+                amount,
+            }) if next_index < instructions.len() => {
+                instruction = &instructions[next_index];
+                next_index = next_index + 1;
+
+                match instruction {
+                    InstructionV1::CallMethod(CallMethod {
+                        address: DynamicGlobalAddress::Static(global_address),
+                        method_name,
+                        args,
+                    }) if method_name.eq("try_deposit_or_abort") && global_address.is_account() => {
+                        if let Ok(_input) = manifest_decode::<AccountTryDepositOrAbortManifestInput>(
+                            &manifest_encode(&args).unwrap(),
+                        ) {
+                            operations.push(to_mesh_api_operation_no_fee(
+                                mapping_context,
+                                database,
+                                operations.len() as i64,
+                                None,
+                                global_address,
+                                resource_address,
+                                *amount,
+                            )?);
+                        }
+                    }
+                    _ => {
+                        return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                            .with_details(format!("Unrecognized instruction: {:?}", instruction)));
+                    }
+                }
+            }
+            _ => {
+                return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                    .with_details(format!("Unrecognized instruction: {:?}", instruction)));
+            }
+        }
+    }
+
+    Ok(operations)
 }
