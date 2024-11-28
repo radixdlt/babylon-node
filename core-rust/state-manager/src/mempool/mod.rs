@@ -80,6 +80,7 @@ pub use priority_mempool::*;
 pub enum MempoolAddSource {
     CoreApi,
     MempoolSync,
+    MeshApi,
 }
 
 #[derive(Debug, Clone)]

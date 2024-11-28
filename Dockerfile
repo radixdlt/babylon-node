@@ -178,12 +178,14 @@ RUN USER=root "$HOME/.cargo/bin/cargo" init --lib --name dummy --vcs none . \
   && mkdir -p ./node-common/src \
   && mkdir -p ./state-manager/src \
   && mkdir -p ./p2p/src \
+  && mkdir -p ./mesh-api-server/src \
   && touch ./core-api-server/src/lib.rs \
   && touch ./engine-state-api-server/src/lib.rs \
   && touch ./jni-export/src/lib.rs \
   && touch ./node-common/src/lib.rs \
   && touch ./state-manager/src/lib.rs \
-  && touch ./p2p/src/lib.rs
+  && touch ./p2p/src/lib.rs \
+  && touch ./mesh-api-server/src/lib.rs
 COPY core-rust/Cargo.toml ./
 COPY core-rust/Cargo.lock ./
 COPY core-rust/core-api-server/Cargo.toml ./core-api-server
@@ -192,6 +194,7 @@ COPY core-rust/jni-export/Cargo.toml ./jni-export
 COPY core-rust/node-common/Cargo.toml ./node-common
 COPY core-rust/state-manager/Cargo.toml ./state-manager
 COPY core-rust/p2p/Cargo.toml ./p2p
+COPY core-rust/mesh-api-server/Cargo.toml ./mesh-api-server
 
 COPY docker/build_scripts/cargo_build_by_platform.sh /opt/radixdlt/cargo_build_by_platform.sh
 
@@ -210,7 +213,7 @@ RUN --mount=type=cache,id=radixdlt-babylon-node-rust-cache,target=/root/.cache/s
 FROM library-build-stage-cache-packages AS library-build-stage
 
 # Tidy up from the previous layer
-RUN rm -rf core-api-server engine-state-api-server jni-export node-common state-manager
+RUN rm -rf core-api-server engine-state-api-server jni-export node-common state-manager mesh-api-server
 
 # Copy across all the code (docker ignore excepted)
 COPY core-rust ./
@@ -309,6 +312,8 @@ ENV RADIXDLT_HOME=/home/radixdlt \
     RADIXDLT_PROMETHEUS_API_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_ENGINE_STATE_API_PORT=3336 \
     RADIXDLT_ENGINE_STATE_API_BIND_ADDRESS=0.0.0.0 \
+    RADIXDLT_MESH_API_PORT=3337 \
+    RADIXDLT_MESH_API_BIND_ADDRESS=0.0.0.0 \
     RADIXDLT_NETWORK_ID=240 \
     RADIXDLT_NODE_KEY_CREATE_IF_MISSING=false
 
