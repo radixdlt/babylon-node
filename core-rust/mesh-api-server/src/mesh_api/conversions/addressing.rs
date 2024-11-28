@@ -76,7 +76,6 @@ pub fn to_api_account_identifier_from_global_address(
     let node_id: &NodeId = address.as_ref();
     let address = to_api_entity_address(mapping_context, node_id)?;
 
-    // TODO:MESH remove account filtering
     if !node_id.is_global_account() {
         return Err(MappingError::InvalidAccount {
             message: format!("address {} is not an account", address),

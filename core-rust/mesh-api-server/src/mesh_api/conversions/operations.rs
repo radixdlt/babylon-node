@@ -20,17 +20,6 @@ pub(crate) enum MeshApiOperationStatus {
     Failure,
 }
 
-// TODO:MESH This one might be confusing. Failed transaction will still have successful FeePayment
-// operation
-impl From<DetailedTransactionOutcome> for MeshApiOperationStatus {
-    fn from(value: DetailedTransactionOutcome) -> Self {
-        match value {
-            DetailedTransactionOutcome::Success(..) => Self::Success,
-            DetailedTransactionOutcome::Failure(..) => Self::Failure,
-        }
-    }
-}
-
 impl From<MeshApiOperationStatus> for models::OperationStatus {
     fn from(value: MeshApiOperationStatus) -> Self {
         let successful = match value {
@@ -50,7 +39,6 @@ pub fn to_mesh_api_operation_no_fee(
     resource_address: &ResourceAddress,
     amount: Decimal,
 ) -> Result<models::Operation, MappingError> {
-    // TODO:MESH what about fee locking, burning, minting?
     let op_type = if amount.is_positive() {
         MeshApiOperationType::Deposit
     } else {
@@ -110,7 +98,11 @@ pub fn to_mesh_api_operations(
                 state_version.number()
             ),
         })?;
-    let status = MeshApiOperationStatus::from(local_execution.outcome);
+    let operation_status = match local_execution.outcome {
+        DetailedTransactionOutcome::Success(..) => MeshApiOperationStatus::Success,
+        DetailedTransactionOutcome::Failure(..) => MeshApiOperationStatus::Failure,
+    };
+
     let fee_balance_changes =
         resolve_global_fee_balance_changes(database, &local_execution.fee_source)?;
 
@@ -158,7 +150,7 @@ pub fn to_mesh_api_operations(
                         mapping_context,
                         database,
                         output.len() as i64,
-                        Some(status),
+                        Some(operation_status),
                         entity,
                         resource_address,
                         *amount,
