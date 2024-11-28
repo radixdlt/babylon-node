@@ -4,12 +4,12 @@
 Once you have read the [contributing guide](../CONTRIBUTING.md), if you want to start development, you will need to know which branches to use.
 
 > [!NOTE]
-> Supported base branches:
-> * `develop` - The primary development branch for upcoming features and enhancements
-> * `release/*` - Various past and future releases
-> * `main` - A mirror of the latest release
+> The currently supported base branches are:
+> * `develop` - The primary development branch for features and enhancements to be released at the next protocol version.
+> * `release/XXX` = `release/cuttlefish` - The lasest published protocol version.
+> * `main` - A pointer to the code in the latest release.
 > 
-> When clicking merge on a PR to one of these branches, it is your duty to ensure that PRs are raised to merge that branch into all later/downstream supported base branches.
+> When clicking merge on a PR to one of these base branches `B`, it is your duty to ensure that a new PR is raised from `B` to all base branches above `B` in the list.
 
 ## Summary of approach
 
@@ -17,20 +17,19 @@ Once you have read the [contributing guide](../CONTRIBUTING.md), if you want to 
 
 We use a variant of `git-flow`, where there are three types of base branches: the `main`, `develop`, and `release/*` branches.
 
-* The `main` branch is the public-facing base branch and **represents the last official release**. It's also used for docs.
 * The `develop` branch is the primary integration branch, for work targeting the next protocol version.
-* The `release/*` branches are for all named protocol versions (i.e. each 1.X in the naming scheme. Typically patch releases should re-use same branch). A subset of release branches are **currently supported** - typically these are those currently on a live environment, or under development.
+* The `release/*` branches are for all named protocol versions. Only the latest released `release/XXX` branch is **currently supported**. In exceptional scenarios, we may release a hot-fix to the previous release branch.
+* The `main` branch is the public-facing base branch and **represents the last official release**. It's also used for docs.
 
-At any given time, there is a strict ordering on the supported base branches, where the process aims to guarantee all work on previous branches is in the later/downstream branches. This order (from earliest/most upstream to latest/most downstream) is as follows:
+> [!IMPORTANT]
+> The development/merge process aims to ensure that there is a strict ordering on the supported base branches under the "contains all changes" partial order. This ensures that work ends up in the right place, we minimise merge conflicts, and that work doesn't go missing.
+>
+> The order (from latest/most downstream to earliest/most upstream) is as follows:
+> * `develop`
+> * The currently supported `release/XXX` branch
+> * `main`
 
-* Released `release/*` branches still compatibile with a mainnet network
-* `main`
-* Unreleased `release/*` branches
-* `develop`
-
-The latest ordering is at the top of this document.
-
-### Development process
+### Development/Merge process
 
 When working on changes:
 * You will first need to select the correct base branch to create your feature branch from. For some epics, it is acceptable to choose a long running `feature/*` or `epic/*` branch as your base, to break up the work into separate reviews.
@@ -45,23 +44,24 @@ When working on changes:
 >
 > But if this process is properly followed, such merge conflicts will be rare. 
 
-## Which base branch should I use for X?
+## Which base branch should I use for my change?
 
 ### Code changes
 
-Features branches usually branch from `develop`, unless they need to target the current/previous protocol version, in which case, they will need to target the appropriate `release/*` branch.
+For most code changes, choose `develop`. Code against the `develop` branch will be released at the next protocol update.
 
-### Stand-alone doc changes
+For code changes which need to go out as a fully-interoperable update to the node at the current protocol version, use the current `release/XXX` branch. Such changes will be reviewed more carefully to mitigate the risk of regression. Once the change is merged, it is the merger's responsibility to ensure `release/XXX` is merged into the develop branch.
 
-Public facing docs change unrelated to another ticket should use a base branch of `main` - as this is the branch which is first visible when someone looks at the repository.
+### Stand-alone README changes
+
+Public facing docs change unrelated to another ticket should use a base branch of `main` - as this is the branch which is first visible when someone looks at the repository. Once the change is merged, it is the merger's responsibility to ensure `main` is merged into both `release/XXX` and `develop` branches to avoid merge conflicts or confusion.
+
 
 ### Workflow / CI changes
 
-Workflow changes should branch from the _most upstream_ (earliest) supported branch. Typically this is a `release/*` branch.
+For github workflow changes, start by branching off of and merging to the current `main` branch.
 
-Once the post-merge process is followed, this change will find itself on all later/downstream base branches too.
-
-This ensures that these changes are on all supported branches, so builds can be built on `develop` or on all supported branches.
+Once the change is merged, it is the merger's responsibility to ensure `main` is merged into both `release/XXX` and `develop`, so that the changes also apply for current development, and for any hotfixes which need to be built and release.
 
 ## Merge or Rebase/Cherry-pick?
 
