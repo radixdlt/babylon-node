@@ -23,7 +23,7 @@ pub(crate) async fn handle_mempool_transaction(
     let notarized_transaction_hash = if payload_hashes.is_empty() {
         return Err(
             ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
-                "transaction {} not found in mempool transactions",
+                "Transaction {} not found in mempool transactions",
                 &request.transaction_identifier.hash
             )),
         );
@@ -41,7 +41,7 @@ pub(crate) async fn handle_mempool_transaction(
         None => {
             return Err(
                 ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
-                    "transaction {} payload not found in mempool transactions",
+                    "Transaction {} payload not found in mempool transactions",
                     &request.transaction_identifier.hash
                 )),
             )
@@ -55,7 +55,7 @@ pub(crate) async fn handle_mempool_transaction(
 
         UserTransaction::V2(_) => {
             return Err(ResponseError::from(ApiError::InvalidTransaction)
-                .with_details(format!("V2 transactions not supported")))
+                .with_details(format!("Transactions V2 not supported")))
         }
     };
 
