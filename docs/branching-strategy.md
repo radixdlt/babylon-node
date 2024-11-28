@@ -72,7 +72,7 @@ We acknowledge the weakness of merging that this can make the git history messie
 
 At merge time, it is acceptable but not recommended to squash-merge. We encourage developers to instead squash commits before asking for a review. This results in a better record of the review / iteration process.
 
-## Why do we follow this model?
+### Why do we follow this model?
 
 In order to support a network built upon deterministic execution of the radix engine, we need to have a very clear policy of what is compatible with what. This is where the protocol version strategy comes in. And this maps to git via the `release/*` branch strategy.
 
