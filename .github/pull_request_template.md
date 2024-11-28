@@ -1,7 +1,7 @@
 > [!IMPORTANT]
 >
-> * Please read our [Contributing Guidelines](https://github.com/radixdlt/babylon-node/blob/main/CONTRIBUTING.md) before opening a PR.
-> * Before creating your PR, please ensure you read the [branching strategy](https://github.com/radixdlt/babylon-node/blob/main/docs/branching-strategy.md). The end result after completing the merge actions should be that `main <= release/XXX <= develop`, where `XXX` is the latest released protocol version. This ensures that we minimise merge conflicts, and that work doesn't go missing.
+> * Please read our [Contributing Guidelines](/CONTRIBUTING.md) before opening a PR.
+> * Before creating your PR, please ensure you read the [branching strategy](/docs/branching-strategy.md). The end result after completing the merge actions should be that `main <= release/XXX <= develop`, where `XXX` is the latest released protocol version. This ensures that we minimise merge conflicts, and that work doesn't go missing.
 > * As per the branching strategy, **you must ensure you select the _correct base branch_**, both for branching from, and in the PR UI above. The following process can be used to decide the base branch:
 >   * For code changes which can wait until the next protocol update to be released, use `develop`. This should be the default for code changes.
 >   * For code changes which need to go out as a fully-interoperable update to the node at the current protocol version, use `release/XXX`.
