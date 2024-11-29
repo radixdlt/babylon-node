@@ -72,8 +72,6 @@ import com.google.common.collect.Maps;
 import com.radixdlt.lang.Result;
 import com.radixdlt.utils.properties.RuntimeProperties;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -98,21 +96,21 @@ final class NetworkQueryHostIp {
 
   public record VotedResult(
       Optional<HostIp> conclusiveHostIp,
-      ImmutableMap<URL, Result<HostIp, IOException>> individualQueryResults) {}
+      ImmutableMap<String, Result<HostIp, IOException>> individualQueryResults) {}
 
   @VisibleForTesting static final String QUERY_URLS_PROPERTY = "network.host_ip_query_urls";
 
   @VisibleForTesting
-  static final ImmutableList<URL> DEFAULT_QUERY_URLS =
+  static final ImmutableList<String> DEFAULT_QUERY_URLS =
       ImmutableList.of(
-          makeurl("https://checkip.amazonaws.com/"),
-          makeurl("https://ipv4.icanhazip.com/"),
-          makeurl("https://myexternalip.com/raw"),
-          makeurl("https://ipecho.net/plain"),
-          makeurl("https://www.trackip.net/ip"),
-          makeurl("https://ifconfig.co/ip"));
+          "https://checkip.amazonaws.com/",
+          "https://ipv4.icanhazip.com/",
+          "https://myexternalip.com/raw",
+          "https://ipecho.net/plain",
+          "https://www.trackip.net/ip",
+          "https://ifconfig.co/ip");
 
-  static NetworkQueryHostIp create(Collection<URL> urls) {
+  static NetworkQueryHostIp create(Collection<String> urls) {
     return new NetworkQueryHostIp(urls);
   }
 
@@ -121,18 +119,16 @@ final class NetworkQueryHostIp {
     if (urlsProperty == null || urlsProperty.trim().isEmpty()) {
       return create(DEFAULT_QUERY_URLS);
     }
-    ImmutableList<URL> urls =
-        Arrays.asList(urlsProperty.split(",")).stream()
-            .map(NetworkQueryHostIp::makeurl)
-            .collect(ImmutableList.toImmutableList());
+    ImmutableList<String> urls =
+        Arrays.asList(urlsProperty.split(",")).stream().collect(ImmutableList.toImmutableList());
     return create(urls);
   }
 
-  private final List<URL> hosts;
+  private final List<String> hosts;
   private final OkHttpClient okHttpClient;
   private final Supplier<VotedResult> result = Suppliers.memoize(this::get);
 
-  NetworkQueryHostIp(Collection<URL> urls) {
+  NetworkQueryHostIp(Collection<String> urls) {
     if (urls.isEmpty()) {
       throw new IllegalArgumentException("At least one URL must be specified");
     }
@@ -153,11 +149,11 @@ final class NetworkQueryHostIp {
     Collections.shuffle(this.hosts);
     log.debug("Using hosts {}", this.hosts);
     final Map<HostIp, AtomicInteger> successCounts = Maps.newHashMap();
-    final ImmutableMap.Builder<URL, Result<HostIp, IOException>> queryResults =
+    final ImmutableMap.Builder<String, Result<HostIp, IOException>> queryResults =
         ImmutableMap.builder();
     int maxCount = 0;
     Optional<HostIp> maxResult = Optional.empty();
-    for (URL url : this.hosts) {
+    for (String url : this.hosts) {
       final Result<HostIp, IOException> result = query(url);
       queryResults.put(url, result);
       if (result.isSuccess()) {
@@ -191,7 +187,7 @@ final class NetworkQueryHostIp {
     return new VotedResult(maxResult, queryResults.build());
   }
 
-  Result<HostIp, IOException> query(URL url) {
+  Result<HostIp, IOException> query(String url) {
     try {
       // Some services simply require the headers we set here:
       final var request =
@@ -212,14 +208,6 @@ final class NetworkQueryHostIp {
       }
     } catch (IOException ex) {
       return Result.error(ex);
-    }
-  }
-
-  private static URL makeurl(String s) {
-    try {
-      return new URL(s);
-    } catch (MalformedURLException ex) {
-      throw new IllegalStateException("While constructing URL for " + s, ex);
     }
   }
 }
