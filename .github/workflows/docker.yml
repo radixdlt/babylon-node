@@ -372,32 +372,32 @@ jobs:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --target-reference=${{ github.ref_name }}
           command: monitor
 
-# TEMPORARILY REMOVE EPHEMERAL TESTS
-# => Until we can change them to only run the "node" tests and not the transaction tests
-# ephemeral-deploy-and-test:
-#   name: Run ephemeral deploy and test
-#   needs:
-#     - build_deb
-#     - build_push_container
-#   runs-on: ubuntu-22.04
-#   steps:
-#     - name: Get docker image tag
-#       run: |
-#         #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
-#         TAGS="${{ needs.build_deb.outputs.tags }}"
-#         DOCKER_TAG=$(echo $TAGS | awk 'NR==1{print $1}' | cut -d':' -f2)
-#         echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
-#         echo "BABYLON_NODE_BRANCH=$GITHUB_HEAD_REF" >> $GITHUB_ENV
-#     - name: Deploy and test on ephemeral network
-#       uses: RDXWorks-actions/jenkins-job-trigger-action@master
-#       with:
-#         jenkins_url: "${{ env.JENKINS_URL }}"
-#         jenkins_user: ${{ env.JENKINS_USER }}
-#         jenkins_token: ${{ env.JENKINS_TOKEN }}
-#         job_name: "ephemeral-deployments/job/ephemeral-env-deploy-and-test"
-#         job_params: |
-#           {
-#             "nodeDockerTag": "${{ env.DOCKER_TAG }}",
-#             "babylonNodeBranch": "${{ env.BABYLON_NODE_BRANCH }}"
-#           }
-#         job_timeout: "3600"
+
+ ephemeral-deploy-and-benchmark:
+   name: Deploy ephemeral environment and run benchmark tests.
+   needs:
+     - build_deb
+     - build_push_container
+   runs-on: ubuntu-22.04
+   steps:
+     - name: Get docker image tag
+       run: |
+         #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
+         TAGS="${{ needs.build_deb.outputs.tags }}"
+         DOCKER_TAG=$(echo $TAGS | awk 'NR==1{print $1}' | cut -d':' -f2)
+         echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
+         echo "GITHUB_REF_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
+         echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" >> $GITHUB_ENV
+     - name: Deploy and test on ephemeral network
+       uses: RDXWorks-actions/jenkins-job-trigger-action@master
+       with:
+         jenkins_url: "${{ env.JENKINS_URL }}"
+         jenkins_user: ${{ env.JENKINS_USER }}
+         jenkins_token: ${{ env.JENKINS_TOKEN }}
+         job_name: "ephemeral-deployments/job/ephemeral-node-ci-benchmark"
+         job_params: |
+           {
+             "RADIXDLT_NODE_DOCKER_TAG": "${{ env.DOCKER_TAG }}",
+             "RADIXDLT_GITHUB_TRIGGER" : "${{ env.GITHUB_REPOSITORY }}:${{ env.GITHUB_REF_NAME }}",
+           }
+         job_timeout: "3600"
