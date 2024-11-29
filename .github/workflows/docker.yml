@@ -379,6 +379,14 @@ jobs:
       - build_push_container_private
     runs-on: ubuntu-22.04
     steps:
+      - uses: ./.github/actions/fetch-secrets
+        with:
+          role_name: "${{ secrets.BABYLON_SECRETS_ROLE_ARN }}"
+          app_name: "babylon-node"
+          step_name: "deploy"
+          secret_prefix: "JENKINS"
+          secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
+          parse_json: true
       - name: Get docker image tag
         run: |
           #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
