@@ -413,7 +413,7 @@ jobs:
           jenkins_url: "${{ env.JENKINS_URL }}"
           jenkins_user: ${{ env.JENKINS_USER }}
           jenkins_token: ${{ env.JENKINS_TOKEN }}
-          job_name: "ephemeral-deployments/job/ephemeral-node-ci-benchmark"
+          job_name: "babylon-testing/job/ephemeral-deployments/job/ephemeral-node-ci-benchmark"
           job_params: |
             {
               "RADIXDLT_NODE_DOCKER_TAG": "${{ env.DOCKER_TAG }}",
