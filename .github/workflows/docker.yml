@@ -373,9 +373,11 @@ jobs:
           command: monitor
 
   ephemeral-deploy-and-benchmark:
+    permissions:
+      id-token: write
+      contents: read
     name: Deploy ephemeral environment and run benchmark tests.
     needs:
-      - build_deb
       - build_push_container_private
     runs-on: ubuntu-22.04
     steps:
@@ -391,6 +393,12 @@ jobs:
           secret_prefix: "JENKINS"
           secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
           parse_json: true
+      - name: Connect to tailnet
+        uses: radixdlt/public-iac-resuable-artifacts/tailnet@main
+        with:
+          role_name: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-common-secrets-read-access"
+          region: "eu-west-2"
+          secret_name: "arn:aws:secretsmanager:eu-west-2:${{ secrets.SECRETS_ACCOUNT_ID }}:secret:github-actions/common/tailscale-public-workflows-DpiE80"
       - name: Get docker image tag
         run: |
           #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
