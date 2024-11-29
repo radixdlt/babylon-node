@@ -376,7 +376,7 @@ jobs:
     name: Deploy ephemeral environment and run benchmark tests.
     needs:
       - build_deb
-      - build_push_container
+      - build_push_container_private
     runs-on: ubuntu-22.04
     steps:
       - name: Get docker image tag
