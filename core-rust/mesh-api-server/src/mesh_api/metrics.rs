@@ -73,7 +73,6 @@ pub struct MeshApiMetrics {
 }
 
 impl MeshApiMetrics {
-    // TODO:MESH implement it properly for MeshApi
     pub fn new(registry: &Registry) -> Self {
         MeshApiMetrics {
             handle_request: new_timer_vec(

@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 pub fn to_mesh_api_currency_from_resource_address(
     mapping_context: &MappingContext,
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &dyn SubstateDatabase,
     resource_address: &ResourceAddress,
 ) -> Result<models::Currency, MappingError> {
     let resource_node_id = resource_address.as_node_id();
@@ -14,7 +14,6 @@ pub fn to_mesh_api_currency_from_resource_address(
             message: format!("resource {} is not fungible type", symbol),
         });
     }
-
     let divisibility: FungibleResourceManagerDivisibilityFieldSubstate =
         read_optional_main_field_substate(
             database,

@@ -69,8 +69,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.api.DeterministicMeshApiTestBase;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
 import com.radixdlt.api.mesh.generated.models.*;
+import com.radixdlt.identifiers.Address;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.rev2.Manifest;
+import com.radixdlt.rev2.ScryptoConstants;
 import com.radixdlt.rev2.TransactionBuilder;
 import java.util.HashSet;
+import java.util.List;
 import org.junit.Test;
 
 public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
@@ -81,12 +86,12 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
       test.suppressUnusedWarning();
 
       // Arrange
-      var expected_transaction_identifiers = new HashSet<TransactionIdentifier>();
+      var expectedTransactionIdentifiers = new HashSet<TransactionIdentifier>();
 
       for (int i = 0; i < 2; i++) {
         var transaction = TransactionBuilder.forTests().prepare();
 
-        expected_transaction_identifiers.add(
+        expectedTransactionIdentifiers.add(
             new TransactionIdentifier()
                 .hash(addressing.encode(transaction.transactionIntentHash())));
 
@@ -103,14 +108,14 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
 
       // Act
       // Get mempool from the MeshAPI
-      var mempool_response =
+      var mempoolResponse =
           new HashSet<>(
               getMempoolApi()
                   .mempool(new NetworkRequest().networkIdentifier(getNetworkIdentifier()))
                   .getTransactionIdentifiers());
 
       // Assert that both transactions are in the mempool  list
-      assertThat(mempool_response.equals(expected_transaction_identifiers));
+      assertThat(mempoolResponse.equals(expectedTransactionIdentifiers));
     }
   }
 
@@ -120,8 +125,30 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
       test.suppressUnusedWarning();
 
       // Arrange
-      var transaction = TransactionBuilder.forTests().prepare();
-      var transaction_identifier =
+      var senderKeyPair = TransactionBuilder.generateKeyPair(2);
+      var senderAddress = Address.virtualAccountAddress(senderKeyPair.getPublicKey());
+      var senderAddressStr = senderAddress.encode(networkDefinition);
+
+      var receiverKeyPair = TransactionBuilder.generateKeyPair(3);
+      var receiverAddress = Address.virtualAccountAddress(receiverKeyPair.getPublicKey());
+      var receiverAddressStr = receiverAddress.encode(networkDefinition);
+
+      // Prefund sender account
+      getCoreApiHelper()
+          .submitAndWaitForSuccess(test, Manifest.depositFromFaucet(senderAddress), List.of());
+
+      var transaction =
+          TransactionBuilder.forTests()
+              .manifest(
+                  Manifest.transferBetweenAccountsFeeFromSender(
+                      senderAddress,
+                      ScryptoConstants.XRD_RESOURCE_ADDRESS,
+                      Decimal.ofNonNegative(1000),
+                      receiverAddress))
+              .signatories(List.of(senderKeyPair))
+              .prepare();
+
+      var transactionIdentifier =
           new TransactionIdentifier().hash(addressing.encode(transaction.transactionIntentHash()));
 
       // Submit transaction to the CoreAPI
@@ -136,17 +163,37 @@ public class MeshApiMempoolEndpointsTest extends DeterministicMeshApiTestBase {
 
       // Act
       // Get mempool transaction from the MeshAPI
-      var mempool_transaction_response =
+      var mempoolTransactionResponse =
           getMempoolApi()
               .mempoolTransaction(
                   new MempoolTransactionRequest()
                       .networkIdentifier(getNetworkIdentifier())
-                      .transactionIdentifier(transaction_identifier))
+                      .transactionIdentifier(transactionIdentifier))
               .getTransaction();
 
-      // Assert that transaction1 is in the mempool transaction list
-      assertThat(mempool_transaction_response)
-          .isEqualTo(new Transaction().transactionIdentifier(transaction_identifier));
+      var xrdCurrency =
+          new Currency()
+              .symbol(ScryptoConstants.XRD_RESOURCE_ADDRESS.encode(networkDefinition))
+              .decimals(18);
+      var withdrawOperation =
+          new Operation()
+              .operationIdentifier(new OperationIdentifier().index(0L))
+              .type("Withdraw")
+              .account(new AccountIdentifier().address(senderAddressStr))
+              .amount(new Amount().value("-1000000000000000000000").currency(xrdCurrency));
+      var depositOperation =
+          new Operation()
+              .operationIdentifier(new OperationIdentifier().index(1L))
+              .type("Deposit")
+              .account(new AccountIdentifier().address(receiverAddressStr))
+              .amount(new Amount().value("1000000000000000000000").currency(xrdCurrency));
+      var expectedTransaction =
+          new Transaction()
+              .transactionIdentifier(transactionIdentifier)
+              .operations(List.of(withdrawOperation, depositOperation));
+
+      // Assert that expected transaction is in the mempool transaction list
+      assertThat(mempoolTransactionResponse).isEqualTo(expectedTransaction);
     }
   }
 }

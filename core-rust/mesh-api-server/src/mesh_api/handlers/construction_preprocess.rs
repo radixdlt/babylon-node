@@ -30,6 +30,7 @@ pub(crate) async fn handle_construction_preprocess(
                 senders.push(account);
             }
             MeshApiOperationType::Deposit => {}
+            MeshApiOperationType::FeePayment => {}
         }
     }
 

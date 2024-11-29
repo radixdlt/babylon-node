@@ -80,6 +80,8 @@ pub(crate) async fn handle_construction_payloads(
                 builder = builder.take_from_worktop(address, quantity, &bucket);
                 builder = builder.try_deposit_or_abort(account, None, bucket);
             }
+            // At the moment of construction we cannot determine the fee amount - skip it
+            MeshApiOperationType::FeePayment => (),
         }
     }
     let manifest = builder.build();

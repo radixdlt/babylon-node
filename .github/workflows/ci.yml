@@ -255,17 +255,19 @@ jobs:
         env:
           # This is to skip keygen step
           RADIXDLT_NODE_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=
-        run: ./gradlew :core:run --info &
+        run: |
+          echo "db.historical_substate_values.enable=true" >> core/default.config
+          ./gradlew :core:run --info &
       - name: Wait for 2 minutes
         run: sleep 2m
       - name: Install mesh-cli
         run: curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/master/scripts/install.sh | sh -s
       - name: Run Data API tests
-        run: ./bin/rosetta-cli check:data --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:data
       - name: Run Construction API tests
-        run: ./bin/rosetta-cli check:construction --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:construction
       - name: Run Coinbase-spec tests
-        run: ./bin/rosetta-cli check:spec --configuration-file core-rust/mesh-api-server/mesh-cli-configs/default.json
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:spec
   cross-xwin:
     name: Cross compile to Windows
     runs-on: ubuntu-latest

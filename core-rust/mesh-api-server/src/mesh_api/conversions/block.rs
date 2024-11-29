@@ -93,18 +93,11 @@ pub fn extract_state_version_from_mesh_api_block_identifier(
 }
 
 pub fn to_mesh_api_block_identifier_from_state_version(
-    database: &StateManagerDatabase<impl ReadableRocks>,
     state_version: StateVersion,
+    transaction_tree_hash: &TransactionTreeHash,
+    receipt_tree_hash: &ReceiptTreeHash,
 ) -> Result<models::BlockIdentifier, MappingError> {
     let index = to_mesh_api_block_index_from_state_version(state_version)?;
-    let transaction_identifiers = database
-        .get_committed_transaction_identifiers(state_version)
-        .ok_or_else(|| MappingError::TransactionNotFound)?;
-
-    let transaction_tree_hash = transaction_identifiers
-        .resultant_ledger_hashes
-        .transaction_root;
-    let receipt_tree_hash = transaction_identifiers.resultant_ledger_hashes.receipt_root;
 
     let mut hash_bytes = [0u8; 32];
 
@@ -119,10 +112,13 @@ pub fn to_mesh_api_block_identifier_from_state_version(
 }
 
 pub fn to_mesh_api_block_identifier_from_ledger_header(
-    database: &StateManagerDatabase<impl ReadableRocks>,
     ledger_header: &LedgerStateSummary,
 ) -> Result<models::BlockIdentifier, MappingError> {
-    to_mesh_api_block_identifier_from_state_version(database, ledger_header.state_version)
+    to_mesh_api_block_identifier_from_state_version(
+        ledger_header.state_version,
+        &ledger_header.hashes.transaction_root,
+        &ledger_header.hashes.receipt_root,
+    )
 }
 
 pub fn to_mesh_api_block_index_from_state_version(
