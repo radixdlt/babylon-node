@@ -379,6 +379,10 @@ jobs:
       - build_push_container_private
     runs-on: ubuntu-22.04
     steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
       - uses: ./.github/actions/fetch-secrets
         with:
           role_name: "${{ secrets.BABYLON_SECRETS_ROLE_ARN }}"
