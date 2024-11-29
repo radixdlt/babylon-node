@@ -1,7 +1,8 @@
 use crate::engine_prelude::*;
 use crate::prelude::*;
 use radix_engine_interface::blueprints::account::{
-    AccountTryDepositOrAbortManifestInput, AccountWithdrawManifestInput,
+    AccountTryDepositBatchOrAbortManifestInput, AccountTryDepositOrAbortManifestInput,
+    AccountWithdrawManifestInput,
 };
 use radix_transactions::manifest::{CallMethod, TakeFromWorktop};
 
@@ -196,6 +197,8 @@ pub fn to_mesh_api_operations_from_instructions_v1(
 ) -> Result<Vec<models::Operation>, ResponseError> {
     let mut operations = Vec::new();
     let mut next_index = 0;
+    let mut withdraw_input: Option<(ResourceAddress, Decimal)> = None;
+
     while next_index < instructions.len() {
         let mut instruction = &instructions[next_index];
         next_index = next_index + 1;
@@ -204,35 +207,58 @@ pub fn to_mesh_api_operations_from_instructions_v1(
                 address: DynamicGlobalAddress::Static(global_address),
                 method_name,
                 args,
-            }) if global_address.is_account() => {
+            }) => {
                 let args_bytes = manifest_encode(&args).unwrap();
                 match method_name.as_str() {
                     "lock_fee" => (),
-                    "withdraw" => {
+                    "withdraw" if global_address.is_account() => {
                         let input = manifest_decode::<AccountWithdrawManifestInput>(&args_bytes)
                             .map_err(|_| {
-                                ResponseError::from(ApiError::InvalidWithdrawInstruction)
+                                ResponseError::from(ApiError::InvalidManifestInstruction)
                                     .with_details("Invalid withdraw instruction")
                             })?;
+                        let resource_adddress = &match input.resource_address {
+                            ManifestResourceAddress::Static(resource_address) => resource_address,
+                            ManifestResourceAddress::Named(_) => {
+                                return Err(ResponseError::from(ApiError::NamedAddressNotSupported)
+                                    .with_details("Named address is not supported"))
+                            }
+                        };
+
                         operations.push(to_mesh_api_operation_no_fee(
                             mapping_context,
                             database,
                             operations.len() as i64,
                             None,
                             global_address,
-                            &match input.resource_address {
-                                ManifestResourceAddress::Static(resource_address) => {
-                                    resource_address
-                                }
-                                ManifestResourceAddress::Named(_) => {
-                                    return Err(ResponseError::from(
-                                        ApiError::NamedAddressNotSupported,
-                                    )
-                                    .with_details("Named address is not supported"))
-                                }
-                            },
+                            resource_adddress,
                             -input.amount.clone(),
                         )?);
+                        withdraw_input = Some((*resource_adddress, input.amount));
+                    }
+                    // Below assumes that previous operation was Withdraw and whole withdraw amount
+                    // shall be deposited to the global address
+                    "try_deposit_batch_or_abort"
+                        if global_address.is_account() && withdraw_input.is_some() =>
+                    {
+                        let (resource_address, amount) = withdraw_input.unwrap();
+                        if let Ok(_input) = manifest_decode::<
+                            AccountTryDepositBatchOrAbortManifestInput,
+                        >(&args_bytes)
+                        {
+                            operations.push(to_mesh_api_operation_no_fee(
+                                mapping_context,
+                                database,
+                                operations.len() as i64,
+                                None,
+                                global_address,
+                                &resource_address,
+                                amount,
+                            )?);
+                        } else {
+                            return Err(ResponseError::from(ApiError::InvalidManifestInstruction)
+                                .with_details("Invalid try_deposit_batch_or_abort instruction"));
+                        }
                     }
                     _ => {
                         return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
@@ -265,6 +291,9 @@ pub fn to_mesh_api_operations_from_instructions_v1(
                                 resource_address,
                                 *amount,
                             )?);
+                        } else {
+                            return Err(ResponseError::from(ApiError::InvalidManifestInstruction)
+                                .with_details("Invalid try_deposit_or_abort instruction"));
                         }
                     }
                     _ => {
@@ -272,6 +301,7 @@ pub fn to_mesh_api_operations_from_instructions_v1(
                             .with_details(format!("Unrecognized instruction: {:?}", instruction)));
                     }
                 }
+                withdraw_input = None;
             }
             _ => {
                 return Err(ResponseError::from(ApiError::UnrecognizedInstruction)

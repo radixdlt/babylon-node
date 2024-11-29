@@ -145,6 +145,10 @@ public abstract class DeterministicMeshApiTestBase {
     return coreApiHelper.assertErrorResponseOfType(apiCall, responseClass);
   }
 
+  protected CoreApiHelper getCoreApiHelper() {
+    return coreApiHelper;
+  }
+
   protected TransactionApi getCoreTransactionApi() {
     return coreApiHelper.transactionApi();
   }

@@ -31,8 +31,8 @@ pub(crate) enum ApiError {
     InvalidNumberOfSignatures,
     #[strum(serialize = "Invalid transaction")]
     InvalidTransaction,
-    #[strum(serialize = "Invalid Withdraw instruction")]
-    InvalidWithdrawInstruction,
+    #[strum(serialize = "Invalid manifest instruction")]
+    InvalidManifestInstruction,
     #[strum(serialize = "Named address not supported")]
     NamedAddressNotSupported,
     #[strum(serialize = "Instruction is not recognized")]
