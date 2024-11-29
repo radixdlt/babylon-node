@@ -128,6 +128,10 @@ final class NetworkQueryHostIp {
   private final OkHttpClient okHttpClient;
   private final Supplier<VotedResult> result = Suppliers.memoize(this::get);
 
+  NetworkQueryHostIp() {
+    this(DEFAULT_QUERY_URLS);
+  }
+
   NetworkQueryHostIp(Collection<String> urls) {
     if (urls.isEmpty()) {
       throw new IllegalArgumentException("At least one URL must be specified");
@@ -140,20 +144,24 @@ final class NetworkQueryHostIp {
     return this.hosts.size();
   }
 
+  List<String> hosts() {
+    return this.hosts;
+  }
+
   public VotedResult queryNetworkHosts() {
     return result.get();
   }
 
   VotedResult get() {
     // Make sure we don't DoS the first one on the list
-    Collections.shuffle(this.hosts);
-    log.debug("Using hosts {}", this.hosts);
+    Collections.shuffle(this.hosts());
+    log.debug("Using hosts {}", this.hosts());
     final Map<HostIp, AtomicInteger> successCounts = Maps.newHashMap();
     final ImmutableMap.Builder<String, Result<HostIp, IOException>> queryResults =
         ImmutableMap.builder();
     int maxCount = 0;
     Optional<HostIp> maxResult = Optional.empty();
-    for (String url : this.hosts) {
+    for (String url : this.hosts()) {
       final Result<HostIp, IOException> result = query(url);
       queryResults.put(url, result);
       if (result.isSuccess()) {
