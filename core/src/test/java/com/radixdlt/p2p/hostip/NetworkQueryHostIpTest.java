@@ -65,18 +65,19 @@
 package com.radixdlt.p2p.hostip;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.radixdlt.lang.Result;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class NetworkQueryHostIpTest {
 
@@ -112,43 +113,31 @@ public class NetworkQueryHostIpTest {
 
   @Test
   public void testCollectionNotEmptyQueryNotSuccessful() throws IOException {
-    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(makeUrl(404, "not found")));
-    Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
-    assertFalse(host.isPresent());
-  }
-
-  @Test
-  public void testCollectionNotEmptyQueryIoException() throws IOException {
-    URL url = mock(URL.class);
-    doReturn("https://mock.url/with-io-problems").when(url).toString();
-    doThrow(new IOException("test exception")).when(url).openConnection();
-    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(List.of(url));
+    NetworkQueryHostIp nqhip =
+        makeNetworkQueryHostIp(Map.of("a", Result.error(new IOException(""))));
     Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
     assertFalse(host.isPresent());
   }
 
   @Test
   public void testCollectionAllDifferent() throws IOException {
-    List<URL> urls =
-        List.of(
-            makeUrl(200, "127.0.0.1"),
-            makeUrl(200, "127.0.0.2"),
-            makeUrl(200, "127.0.0.3"),
-            makeUrl(200, "127.0.0.4"));
-    NetworkQueryHostIp nqhip = NetworkQueryHostIp.create(urls);
+    NetworkQueryHostIp nqhip =
+        makeNetworkQueryHostIp(
+            Map.of(
+                "a", Result.success(new HostIp("1")),
+                "b", Result.success(new HostIp("2")),
+                "c", Result.success(new HostIp("2")),
+                "d", Result.success(new HostIp("4"))));
     Optional<HostIp> host = nqhip.queryNetworkHosts().conclusiveHostIp();
-    assertFalse(host.isPresent());
+    assertEquals(Optional.of(new HostIp("2")), host);
   }
 
-  private static URL makeUrl(int status, String body) throws IOException {
-    HttpURLConnection conn = mock(HttpURLConnection.class);
-    doReturn(status).when(conn).getResponseCode();
-    doReturn(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)))
-        .when(conn)
-        .getInputStream();
-    URL url = mock(URL.class);
-    doReturn(conn).when(url).openConnection();
-    doReturn("https://mock.url/?result=%s".formatted(body)).when(url).toString();
-    return url;
+  NetworkQueryHostIp makeNetworkQueryHostIp(Map<String, Result<HostIp, IOException>> responses) {
+    NetworkQueryHostIp nqhip = spy(NetworkQueryHostIp.class);
+    doReturn(new ArrayList<String>(responses.keySet())).when(nqhip).hosts();
+    for (var entry : responses.entrySet()) {
+      doReturn(entry.getValue()).when(nqhip).query(Mockito.eq(entry.getKey()));
+    }
+    return nqhip;
   }
 }
