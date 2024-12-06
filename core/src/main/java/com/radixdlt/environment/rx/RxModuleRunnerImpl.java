@@ -64,6 +64,8 @@
 
 package com.radixdlt.environment.rx;
 
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.event.CoreEvent;
 import com.radixdlt.consensus.event.LocalEvent;
@@ -73,6 +75,7 @@ import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.RemoteEventProcessor;
 import com.radixdlt.environment.StartProcessor;
 import com.radixdlt.modules.ModuleRunner;
+import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -83,7 +86,6 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -191,14 +193,17 @@ public final class RxModuleRunnerImpl implements ModuleRunner {
         return;
       }
 
-      this.executorService = Executors.newScheduledThreadPool(4);
-      var scheduler = Schedulers.from(this.executorService);
+      this.executorService =
+          newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads(threadName));
+      var singleThreadScheduler = Schedulers.from(this.executorService);
 
       logger.info("Starting Runner: {}", this.threadName);
 
       this.executorService.submit(() -> startProcessors.forEach(StartProcessor::start));
       final var disposables =
-          this.subscriptions.stream().map(s -> s.subscribe(scheduler, errorHandler)).toList();
+          this.subscriptions.stream()
+              .map(s -> s.subscribe(singleThreadScheduler, errorHandler))
+              .toList();
       this.compositeDisposable = new CompositeDisposable(disposables);
 
       this.onStart.forEach(f -> f.accept(this.executorService));
