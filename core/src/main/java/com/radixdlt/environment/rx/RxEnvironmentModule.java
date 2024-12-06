@@ -82,7 +82,6 @@ import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.modules.ModuleRunner;
 import com.radixdlt.p2p.NodeId;
-import com.radixdlt.utils.ThreadFactories;
 import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
@@ -98,8 +97,7 @@ import java.util.stream.Collectors;
 public final class RxEnvironmentModule extends AbstractModule {
   @Override
   public void configure() {
-    ScheduledExecutorService ses =
-        Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
+    ScheduledExecutorService ses = Executors.newScheduledThreadPool(4);
     bind(Environment.class).to(RxEnvironment.class);
     bind(ScheduledExecutorService.class).toInstance(ses);
 
