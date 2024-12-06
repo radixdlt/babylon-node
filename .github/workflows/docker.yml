@@ -378,7 +378,7 @@ jobs:
       contents: read
     name: Deploy ephemeral environment and run benchmark tests.
     needs:
-      - setup_version_properties
+      - setup_tags
       - build_push_container_private
     runs-on: ubuntu-22.04
     steps:
@@ -413,7 +413,7 @@ jobs:
           job_name: "babylon-testing/job/ephemeral-deployments/job/ephemeral-node-ci-benchmark"
           job_params: |
             {
-              "RADIXDLT_NODE_DOCKER_TAG": "${{ needs.setup_version_properties.outputs.VERSION_TAG }}",
+              "RADIXDLT_NODE_DOCKER_TAG": "${{ needs.setup_tags.outputs.tag }}",
               "RADIXDLT_GITHUB_TRIGGER" : "${{ env.GITHUB_REPOSITORY }}:${{ env.GITHUB_REF_NAME }}"
             }
           job_timeout: "3600"
