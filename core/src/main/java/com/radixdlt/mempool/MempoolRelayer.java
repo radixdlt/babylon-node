@@ -74,6 +74,7 @@ import com.radixdlt.p2p.PeersView;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -95,6 +96,7 @@ public final class MempoolRelayer {
   private final int maxMessagePayloadSize;
   private final int maxMessageTransactionCount;
   private final int maxRelayedSize;
+  private final ArrayList<RawNotarizedTransaction> cache;
 
   @Inject
   public MempoolRelayer(
@@ -115,13 +117,18 @@ public final class MempoolRelayer {
     this.maxMessageTransactionCount = maxMessageTransactionCount;
     this.maxRelayedSize = maxRelayedSize;
     this.metrics = Objects.requireNonNull(metrics);
+    this.cache = new ArrayList<>();
   }
 
   public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
     return mempoolAddSuccess -> {
-      final var ignorePeers =
-          mempoolAddSuccess.getOrigin().map(ImmutableList::of).orElse(ImmutableList.of());
-      relayTransactions(ImmutableList.of(mempoolAddSuccess.transaction()), ignorePeers);
+      if (this.cache.size() < 10) {
+        this.cache.add(mempoolAddSuccess.transaction());
+      } else {
+        // FIXME: handle transaction origin properly and if there is very a few txns.
+        relayTransactions(this.cache, ImmutableList.of());
+        this.cache.clear();
+      }
     };
   }
 
