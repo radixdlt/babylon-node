@@ -378,6 +378,7 @@ jobs:
       contents: read
     name: Deploy ephemeral environment and run benchmark tests.
     needs:
+      - setup_version_properties
       - build_push_container_private
     runs-on: ubuntu-22.04
     steps:
@@ -401,10 +402,6 @@ jobs:
           secret_name: "arn:aws:secretsmanager:eu-west-2:${{ secrets.SECRETS_ACCOUNT_ID }}:secret:github-actions/common/tailscale-public-workflows-DpiE80"
       - name: Get docker image tag
         run: |
-          #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
-          TAGS="${{ needs.build_deb.outputs.tags }}"
-          DOCKER_TAG=$(echo $TAGS | awk 'NR==1{print $1}' | cut -d':' -f2)
-          echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
           echo "GITHUB_REF_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
           echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" >> $GITHUB_ENV
       - name: Deploy and test on ephemeral network
@@ -416,7 +413,7 @@ jobs:
           job_name: "babylon-testing/job/ephemeral-deployments/job/ephemeral-node-ci-benchmark"
           job_params: |
             {
-              "RADIXDLT_NODE_DOCKER_TAG": "${{ env.DOCKER_TAG }}",
+              "RADIXDLT_NODE_DOCKER_TAG": "${{ needs.setup_version_properties.outputs.VERSION_TAG }}",
               "RADIXDLT_GITHUB_TRIGGER" : "${{ env.GITHUB_REPOSITORY }}:${{ env.GITHUB_REF_NAME }}"
             }
           job_timeout: "3600"
