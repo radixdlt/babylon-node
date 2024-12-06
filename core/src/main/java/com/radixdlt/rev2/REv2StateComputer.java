@@ -154,7 +154,6 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         .forEach(
             transaction -> {
               try {
-                log.info("Attempt to add transaction to mempool: origin = " + origin);
                 mempool.addTransaction(transaction);
                 // Please note that a `MempoolAddSuccess` event is only dispatched when the above
                 // call does not throw. This is deliberate: we do not want to propagate the
@@ -163,13 +162,11 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
                 var success =
                     new MempoolAddSuccess(
                         RawNotarizedTransaction.create(transaction.getPayload()), origin);
-                log.info("Add transaction success");
                 mempoolAddSuccessEventDispatcher.dispatch(success);
               } catch (MempoolDuplicateException ignored) {
-                log.info("Duplicate transaction");
                 // Ignore these specific subclass of the `MempoolRejectedException` logged below
               } catch (MempoolRejectedException e) {
-                log.info("Transaction rejected: " + e.getMessage());
+                log.debug(e);
               }
             });
   }
