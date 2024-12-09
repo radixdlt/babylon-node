@@ -17,19 +17,25 @@ pub(crate) async fn handle_construction_parse(
     })?;
 
     let (instructions, signers) = if request.signed {
-        let transaction =
-            NotarizedTransactionV1::from_raw(&RawNotarizedTransaction::from_vec(transaction_bytes))
-                .map_err(|_| {
-                    ResponseError::from(ApiError::InvalidTransaction)
-                        .with_details(format!("Invalid transaction: {}", &request.transaction))
-                })?;
+        let transaction = match manifest_decode::<AnyTransaction>(&transaction_bytes) {
+            Ok(AnyTransaction::NotarizedTransactionV1(transaction)) => transaction,
+            Ok(_) => {
+                return Err(ResponseError::from(ApiError::InvalidTransaction)
+                    .with_details("Only V1 notarized transactions are supported in the Mesh API parse endpoint"));
+            }
+            Err(_) => {
+                return Err(ResponseError::from(ApiError::InvalidTransaction)
+                    .with_details(format!("Invalid transaction: {}", &request.transaction)))
+            }
+        };
+
         let validated = transaction
             .prepare_and_validate(&TransactionValidator::new_with_latest_config(
                 &state.network,
             ))
             .map_err(|e| {
                 ResponseError::from(ApiError::InvalidTransaction)
-                    .with_details(format!("Invalid transaction: error = {:?}", e))
+                    .with_details(format!("Transaction validation error: {:?}", e))
             })?;
 
         let instructions = transaction.signed_intent.intent.instructions.0;
