@@ -96,7 +96,6 @@ RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE=<true/false>
 RADIXDLT_STATE_HASH_TREE_STATE_VERSION_HISTORY_LENGTH=<history_length_to_keep>
 ```
 
-
 ### Base URL
 
 ```plaintext
@@ -218,8 +217,8 @@ Fields:
 - `operation_identifier`: Index of the operation within a transaction.
 - `related_operations`: Not set.
 - `type`:
-  - `Withdraw`: Withdraw assets from an account (success or failure).
-  - `Deposit`: Deposit assets to an account (success or failure).
+  - `Withdraw`: Withdraw assets from an account (always success, failed operations are filtered out).
+  - `Deposit`: Deposit assets to an account (always success, failed operations are filtered out).
   - `FeePayment`: Withdraw assets to cover transaction fees (always success, even if the transaction fails).
 - `status`: Operation status.
 - `account`: Account transferring the resources.

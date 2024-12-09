@@ -99,11 +99,6 @@ pub fn to_mesh_api_operations(
                 state_version.number()
             ),
         })?;
-    let operation_status = match local_execution.outcome {
-        DetailedTransactionOutcome::Success(..) => MeshApiOperationStatus::Success,
-        DetailedTransactionOutcome::Failure(..) => MeshApiOperationStatus::Failure,
-    };
-
     let fee_balance_changes =
         resolve_global_fee_balance_changes(database, &local_execution.fee_source)?;
 
@@ -151,7 +146,8 @@ pub fn to_mesh_api_operations(
                         mapping_context,
                         database,
                         output.len() as i64,
-                        Some(operation_status),
+                        // There are no non-fee balance changes for failed transactions
+                        Some(MeshApiOperationStatus::Success),
                         entity,
                         resource_address,
                         *amount,
