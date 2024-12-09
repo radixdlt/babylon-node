@@ -152,7 +152,7 @@ public final class MessageCentralImpl implements MessageCentral {
             but this isn't guaranteed because currently
             outboundMessageProcessor spawns a CompletableFuture
             and doesn't await its completion. */
-            1,
+            4,
             outboundQueue::take,
             this::outboundMessageProcessor,
             log);

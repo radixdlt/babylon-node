@@ -372,32 +372,48 @@ jobs:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --target-reference=${{ github.ref_name }}
           command: monitor
 
-# TEMPORARILY REMOVE EPHEMERAL TESTS
-# => Until we can change them to only run the "node" tests and not the transaction tests
-# ephemeral-deploy-and-test:
-#   name: Run ephemeral deploy and test
-#   needs:
-#     - build_deb
-#     - build_push_container
-#   runs-on: ubuntu-22.04
-#   steps:
-#     - name: Get docker image tag
-#       run: |
-#         #There can be multiple tag entries. Get the first and only take the tag (i.e. not the image repo and name)
-#         TAGS="${{ needs.build_deb.outputs.tags }}"
-#         DOCKER_TAG=$(echo $TAGS | awk 'NR==1{print $1}' | cut -d':' -f2)
-#         echo "DOCKER_TAG=$DOCKER_TAG" >> $GITHUB_ENV
-#         echo "BABYLON_NODE_BRANCH=$GITHUB_HEAD_REF" >> $GITHUB_ENV
-#     - name: Deploy and test on ephemeral network
-#       uses: RDXWorks-actions/jenkins-job-trigger-action@master
-#       with:
-#         jenkins_url: "${{ env.JENKINS_URL }}"
-#         jenkins_user: ${{ env.JENKINS_USER }}
-#         jenkins_token: ${{ env.JENKINS_TOKEN }}
-#         job_name: "ephemeral-deployments/job/ephemeral-env-deploy-and-test"
-#         job_params: |
-#           {
-#             "nodeDockerTag": "${{ env.DOCKER_TAG }}",
-#             "babylonNodeBranch": "${{ env.BABYLON_NODE_BRANCH }}"
-#           }
-#         job_timeout: "3600"
+  ephemeral-deploy-and-benchmark:
+    permissions:
+      id-token: write
+      contents: read
+    name: Deploy ephemeral environment and run benchmark tests.
+    needs:
+      - setup_tags
+      - build_push_container_private
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+      - uses: ./.github/actions/fetch-secrets
+        with:
+          role_name: "${{ secrets.BABYLON_SECRETS_ROLE_ARN }}"
+          app_name: "babylon-node"
+          step_name: "deploy"
+          secret_prefix: "JENKINS"
+          secret_name: "github-actions/radixdlt/babylon-node/jenkins-api-token"
+          parse_json: true
+      - name: Connect to tailnet
+        uses: radixdlt/public-iac-resuable-artifacts/tailnet@main
+        with:
+          role_name: "arn:aws:iam::${{ secrets.SECRETS_ACCOUNT_ID }}:role/gh-common-secrets-read-access"
+          region: "eu-west-2"
+          secret_name: "arn:aws:secretsmanager:eu-west-2:${{ secrets.SECRETS_ACCOUNT_ID }}:secret:github-actions/common/tailscale-public-workflows-DpiE80"
+      - name: Get docker image tag
+        run: |
+          echo "GITHUB_REF_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
+          echo "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" >> $GITHUB_ENV
+      - name: Deploy and test on ephemeral network
+        uses: RDXWorks-actions/jenkins-job-trigger-action@master
+        with:
+          jenkins_url: "${{ env.JENKINS_URL }}"
+          jenkins_user: ${{ env.JENKINS_USER }}
+          jenkins_token: ${{ env.JENKINS_TOKEN }}
+          job_name: "babylon-testing/job/ephemeral-deployments/job/ephemeral-node-ci-benchmark"
+          job_params: |
+            {
+              "RADIXDLT_NODE_DOCKER_TAG": "${{ needs.setup_tags.outputs.tag }}",
+              "RADIXDLT_GITHUB_TRIGGER" : "${{ env.GITHUB_REPOSITORY }}:${{ env.GITHUB_REF_NAME }}"
+            }
+          job_timeout: "3600"
