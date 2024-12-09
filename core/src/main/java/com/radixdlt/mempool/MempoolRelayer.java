@@ -122,7 +122,7 @@ public final class MempoolRelayer {
 
   public EventProcessor<MempoolAddSuccess> mempoolAddSuccessEventProcessor() {
     return mempoolAddSuccess -> {
-      if (this.cache.size() < 50) {
+      if (this.cache.size() < 100) {
         this.cache.add(mempoolAddSuccess.transaction());
       } else {
         // FIXME: handle transaction origin properly and if there is very a few txns.
