@@ -36,7 +36,7 @@ pub(crate) async fn handle_network_options(
         Err(StateHistoryError::StateHistoryDisabled) => false,
         Err(err) => {
             return Err(
-                ResponseError::from(ApiError::StateHistoryNotAvailable).with_details(format!(
+                ResponseError::from(ApiError::GetStateHistoryError).with_details(format!(
                     "Error checking if historical balances enabled, {:?}",
                     err
                 )),

@@ -27,7 +27,7 @@ pub(crate) async fn handle_account_balance(
     };
 
     let scoped_database = database.scoped_at(state_version).map_err(|err| {
-        ResponseError::from(ApiError::StateHistoryNotAvailable)
+        ResponseError::from(ApiError::GetStateHistoryError)
             .with_details(format!("Getting state history error: {:?}", err))
     })?;
 
