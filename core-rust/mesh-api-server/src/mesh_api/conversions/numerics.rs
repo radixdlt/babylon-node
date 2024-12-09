@@ -39,7 +39,6 @@ pub(crate) fn extract_amount_from_option(
     )
 }
 
-// If amount has more decimals than the currency, then the surplus decimals are truncated
 pub fn to_mesh_api_amount(
     amount: Decimal,
     currency: models::Currency,
@@ -107,7 +106,8 @@ mod tests {
             metadata: None,
         };
 
-        // Surplus decimals are truncated
+        // Surplus decimals are truncated.
+        // In fact, decimal mismatch should never be observable.
         let mesh_api_amount = to_mesh_api_amount(dec!(200.027), currency).unwrap();
         assert_eq!(
             extract_amount(&extraction_context, &mesh_api_amount).unwrap(),

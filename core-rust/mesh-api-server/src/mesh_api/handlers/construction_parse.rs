@@ -49,7 +49,11 @@ pub(crate) async fn handle_construction_parse(
 
     let mapping_context = MappingContext::new(&state.network);
     let database = state.state_manager.database.snapshot();
-    let operations = to_mesh_api_operations_from_instructions_v1(&instructions, &mapping_context, database.deref())?;
+    let operations = to_mesh_api_operations_from_instructions_v1(
+        &instructions,
+        &mapping_context,
+        database.deref(),
+    )?;
 
     // See https://docs.cdp.coinbase.com/mesh/docs/models#constructionparseresponse for field
     // definitions

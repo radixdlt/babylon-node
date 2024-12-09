@@ -32,12 +32,10 @@ pub(crate) async fn handle_mempool_transaction(
     };
 
     let user_transaction = match mempool.get_mempool_payload(&notarized_transaction_hash) {
-        Some(transaction) => transaction.raw.into_typed().map_err(|_| {
-            ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
-                "Invalid transaction hex: {:?}",
-                notarized_transaction_hash
-            ))
-        })?,
+        Some(transaction) => {
+            // Transaction is known to be executable, so it is safe to unwrap here
+            transaction.raw.into_typed().unwrap()
+        }
         None => {
             return Err(
                 ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
@@ -55,7 +53,7 @@ pub(crate) async fn handle_mempool_transaction(
 
         UserTransaction::V2(_) => {
             return Err(ResponseError::from(ApiError::InvalidTransaction)
-                .with_details(format!("Transactions V2 not supported")))
+                .with_details(format!("Transaction V2 not supported")))
         }
     };
 
