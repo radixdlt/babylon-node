@@ -44,20 +44,58 @@ These constraints simplify the implementation without causing Mesh CLI tests to 
 
 ### Operations
 
-Currently, a simple parser is used to extract operations from given instructions (endpoints: `/mempool/transaction` and `/construction/parse`). This parser supports basic instructions.
+Currently, a very specific parser is used to extract operations from given instructions (endpoints: `/mempool/transaction` and `/construction/parse`).
+It works only with the instructions constructed by Mesh.
+`Withdraw` and `Deposit` are the direct result of the instructions being used, while a `FeePayment` is added at commit time.
 
-While it is possible to use transaction previews, receipts, and balance change summaries to extract operations, this approach is deemed too resource-heavy:
-- `/mempool/transaction`: Not crucial given Radix's short finality time.
-- `/construction/parse`: Used only for sanity checks.
+Technically, it would be possible to use transaction previews, receipts, and balance change summaries to extract operations.
+But we don't do it for following reasons:
+- both endpoint methods should wotrk offline
+- both endpoint methods should be static (not affected by current state of the network)
+- this approach is deemed too resource-heavy
 
 ## Configuration
 
+### Server settings
+There are 3 settings to configure Mesh API server, which allow to:
+- enable/disable Mesh API server launch (disabled by default),
+- override the default port (3337),
+- override the default bind address (127.0.0.1).
+
+#### node running bare-metal
 ```plaintext
-api.mesh.enabled=<false by default>
-api.engine_state.port=<3337 by default>
-api.engine_state.bind_address=<127.0.0.1 by default>
-db.historical_substate_values.enable=<false by default>
+api.mesh.enabled=<true/false>
+api.mesh.port=<port number>
+api.mesh.bind_address=<ip address>
 ```
+#### node-running in a Docker
+Set below environmental variables
+
+```plaintext
+RADIXDLT_MESH_API_ENABLED=<true/false>
+RADIXDLT_MESH_API_PORT=<port number>
+RADIXDLT_MESH_API_BIND_ADDRESS=<ip address>
+```
+
+### Enable historical balances for reconciliation tests
+In order to proceed with reconciliation tests historical balances shall be enabled.
+There are 2 useful settings:
+- enable/disable historical substate values (disabled by default),
+- adjust the state version history length to keep (60000 by default).
+
+#### node running bare-metal
+`state_version_history_length` controls how much history is kept in historical_substate_balues
+```plaintext
+db.historical_substate_values.enable=<true/false>
+state_hash_tree.state_version_history_length=<history_length_to_keep>
+```
+
+#### node-running in a Docker
+```
+RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE=<true/false>
+RADIXDLT_STATE_HASH_TREE_STATE_VERSION_HISTORY_LENGTH=<history_length_to_keep>
+```
+
 
 ### Base URL
 
@@ -78,6 +116,7 @@ http://localhost:3337/mesh/account/balance
 1. [Terminal 1] Download the `rosetta-cli` prebuilt binary:
     ```bash
     curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/master/scripts/install.sh | sh -s
+
     alias mesh-cli='./bin/rosetta-cli --configuration-file <root-of-babylon-node-repo>/core-rust/mesh-api-server/mesh-cli-configs/localnet.json'
     ```
     **Note:** As of November 2024, there are issues with the prebuilt MacOS binary. Use the workaround below:
