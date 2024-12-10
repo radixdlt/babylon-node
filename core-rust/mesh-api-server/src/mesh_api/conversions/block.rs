@@ -6,7 +6,7 @@ const MAX_API_STATE_VERSION: u64 = 100000000000000;
 /// Block index => State version
 /// Block hash  => 32 bytes of: transaction_tree_hash[0..12] | receipt_tree_hash[0..12] | state_version
 pub fn extract_state_version_from_block_hash(
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &ActualStateManagerDatabase,
     block_hash: &str,
 ) -> Result<StateVersion, ExtractionError> {
     if block_hash.len() == 32 {
@@ -52,7 +52,7 @@ pub fn extract_state_version_from_block_hash(
 }
 
 pub fn extract_state_version_from_mesh_api_partial_block_identifier(
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &ActualStateManagerDatabase,
     block_identifier: &models::PartialBlockIdentifier,
 ) -> Result<Option<StateVersion>, ExtractionError> {
     let state_version = match (&block_identifier.hash, &block_identifier.index) {
@@ -75,7 +75,7 @@ pub fn extract_state_version_from_mesh_api_partial_block_identifier(
 }
 
 pub fn extract_state_version_from_mesh_api_block_identifier(
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &ActualStateManagerDatabase,
     block_identifier: &models::BlockIdentifier,
 ) -> Result<StateVersion, ExtractionError> {
     let state_version_from_hash =

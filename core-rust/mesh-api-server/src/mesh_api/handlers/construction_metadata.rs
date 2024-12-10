@@ -9,7 +9,7 @@ pub(crate) async fn handle_construction_metadata(
 ) -> Result<Json<models::ConstructionMetadataResponse>, ResponseError> {
     assert_matching_network(&request.network_identifier, &state.network)?;
 
-    let database = state.state_manager.database.snapshot();
+    let database = state.state_manager.database.access_direct();
     let current_epoch = database
         .get_latest_epoch_proof()
         .unwrap()
