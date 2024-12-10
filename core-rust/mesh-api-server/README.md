@@ -50,14 +50,14 @@ It works only with the instructions constructed by Mesh.
 
 Technically, it would be possible to use transaction previews, receipts, and balance change summaries to extract operations.
 But we don't do it for following reasons:
-- both endpoint methods should wotrk offline
+- both endpoint methods should work offline
 - both endpoint methods should be static (not affected by current state of the network)
 - this approach is deemed too resource-heavy
 
 ## Configuration
 
 ### Server settings
-There are 3 settings to configure Mesh API server, which allow to:
+There are 3 configuration settings for a node's Mesh API server, which can:
 - enable/disable Mesh API server launch (disabled by default),
 - override the default port (3337),
 - override the default bind address (127.0.0.1).
@@ -68,7 +68,7 @@ api.mesh.enabled=<true/false>
 api.mesh.port=<port number>
 api.mesh.bind_address=<ip address>
 ```
-#### Node running in a Docker
+#### Node running in Docker
 Set below environmental variables
 
 ```plaintext
@@ -89,7 +89,7 @@ db.historical_substate_values.enable=<true/false>
 state_hash_tree.state_version_history_length=<history_length_to_keep>
 ```
 
-#### Node running in a Docker
+#### Node running in Docker
 ```
 RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE=<true/false>
 RADIXDLT_STATE_HASH_TREE_STATE_VERSION_HISTORY_LENGTH=<history_length_to_keep>
@@ -149,7 +149,7 @@ http://localhost:3337/mesh/account/balance
         RADIXDLT_NODE_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY= ./gradlew :core:run --info
         ```
 
-    - Node running in a Docker
+    - Node running in Docker
 
         - Manual setup for production or testnet
 

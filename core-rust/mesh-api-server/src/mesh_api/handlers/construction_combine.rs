@@ -27,7 +27,7 @@ pub(crate) async fn handle_construction_combine(
 
     let intent = IntentV1::from_raw(&raw).map_err(|err| {
         ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
-            "Failed to create transaction intent from raw: {:?}",
+            "Failed to create transaction intent v1 from raw: {:?}",
             err
         ))
     })?;
