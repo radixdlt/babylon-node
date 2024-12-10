@@ -62,13 +62,13 @@ There are 3 settings to configure Mesh API server, which allow to:
 - override the default port (3337),
 - override the default bind address (127.0.0.1).
 
-#### node running bare-metal
+#### Node running bare-metal
 ```plaintext
 api.mesh.enabled=<true/false>
 api.mesh.port=<port number>
 api.mesh.bind_address=<ip address>
 ```
-#### node-running in a Docker
+#### Node running in a Docker
 Set below environmental variables
 
 ```plaintext
@@ -83,14 +83,13 @@ There are 2 useful settings:
 - enable/disable historical substate values (disabled by default),
 - adjust the state version history length to keep (60000 by default).
 
-#### node running bare-metal
-`state_version_history_length` controls how much history is kept in historical_substate_balues
+#### Node running bare-metal
 ```plaintext
 db.historical_substate_values.enable=<true/false>
 state_hash_tree.state_version_history_length=<history_length_to_keep>
 ```
 
-#### node-running in a Docker
+#### Node running in a Docker
 ```
 RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE=<true/false>
 RADIXDLT_STATE_HASH_TREE_STATE_VERSION_HISTORY_LENGTH=<history_length_to_keep>
@@ -127,10 +126,70 @@ http://localhost:3337/mesh/account/balance
     ```
 
 2. [Terminal 2] Launch the node:
-    ```bash
-    cd <root-of-babylon-node-repo>
-    RADIXDLT_NODE_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY= ./gradlew :core:run --info
-    ```
+
+    - Node running bare-metal
+        - Change working directory to the root of the `babylon-node` repository
+        - Enable Mesh API server in `core/default.config`
+        ```plaintext
+        api.mesh.enabled=true
+        ```
+        - Optionally setup Mesh port and bind address
+        ```
+        api.mesh.port=3337
+        api.mesh.bind_address=
+        ```
+        - For reconciliation tests enable historical balances and optionally set state history length
+        ```
+        db.historical_substate_values.enable=true
+        state_hash_tree.state_version_history_length=60000
+        ```
+
+        - Start the node
+        ```bash
+        RADIXDLT_NODE_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY= ./gradlew :core:run --info
+        ```
+
+    - Node running in a Docker
+
+        - Manual setup for production or testnet
+
+            Follow these steps to setup a node - [Manual Setup with Docker](https://docs.radixdlt.com/v1/docs/node-setup-docker).
+
+            Before launching a node set Mesh environment variables (mentioned in previous section) in `radix-fullnode-compose.yml` in `core` section:
+            - Enable Mesh API server:
+            ```yaml
+            RADIXDLT_MESH_API_ENABLED: 'true'
+            ```
+            - Optionally setup Mesh port and bind address
+            ```yaml
+            RADIXDLT_MESH_API_PORT: 3337
+            RADIXDLT_MESH_API_BIND_ADDRESS: '0.0.0.0'
+            ```
+            - For reconciliation tests enable historical balances and optionally set state history length
+            ```yaml
+            RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE: 'true'
+            RADIXDLT_STATE_HASH_TREE_STATE_VERSION_HISTORY_LENGTH: 60000
+            ```
+
+        - Simple setup for testnet
+
+            Follow these steps to setup a node - [Simple testnet setup](https://github.com/radixdlt/babylon-node/tree/develop/testnet-node).
+
+            Before launching a node set Mesh environment variables (mentioned in previous section) in `radix-node.env`:
+            - Enable Mesh API server:
+            ```plaintext
+            RADIXDLT_MESH_API_ENABLED=true
+            ```
+            - Optionally setup Mesh port and bind address
+            ```plaintext
+            RADIXDLT_MESH_API_PORT=3337
+            RADIXDLT_MESH_API_BIND_ADDRESS=0.0.0.0
+            ```
+            - For reconciliation tests enable historical balances and optionally set state history length
+            ```plaintext
+            RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE=true
+            RADIXDLT_STATE_HASH_TREE_STATE_VERSION_HISTORY_LENGTH=60000
+            ```
 
 3. [Terminal 1] Run Mesh API tests:
     ```bash
@@ -141,19 +200,10 @@ http://localhost:3337/mesh/account/balance
 
 #### Reconciliation Tests
 
-- **Historical Balances:** Enable historical balances before launching the node:
-    ```plaintext
-    db.historical_substate_values.enable=true
-    ```
-    Or, use the following environment variable:
-    ```bash
-    RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE=1
-    ```
-
-- **Whole Ledger Reconciliation:** If reconciling the entire ledger for a network (e.g., `stokenet`):
-  - Set a future `state_version` in the `data.end_conditions.index` field of the `mesh-cli` config file.
-  - Launch the node with an empty database.
-  - Start `mesh-cli` as soon as possible to avoid pruning historical balances.
+If whole ledger shall be reconciled for eg. `mainnet` or `stokenet`, then make sure to:
+- Set a future `state_version` in the `data.end_conditions.index` field of the `mesh-cli` config file.
+- Launch the node with an empty database.
+- Start `mesh-cli` as soon as possible to avoid pruning historical balances.
 
 ### Unit Tests
 
