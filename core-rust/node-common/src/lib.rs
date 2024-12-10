@@ -64,11 +64,13 @@
 
 pub mod config;
 pub mod environment;
+pub mod fee_computer;
 pub mod indexing;
 pub mod java;
 pub mod jni;
 pub mod locks;
 pub mod metrics;
+pub mod numerics;
 pub mod scheduler;
 pub mod store;
 pub mod utils;
@@ -76,8 +78,10 @@ pub mod utils;
 pub mod prelude {
     // Modules to export downstream
     pub use crate::config::*;
+    pub use crate::fee_computer::*;
     pub use crate::locks::*;
     pub use crate::metrics::*;
+    pub use crate::numerics::*;
     pub use crate::store::*;
     pub use crate::utils::*;
 
