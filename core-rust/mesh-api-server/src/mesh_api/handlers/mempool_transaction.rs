@@ -19,27 +19,58 @@ pub(crate) async fn handle_mempool_transaction(
     )
     .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    if mempool
-        .get_mempool_payload_hashes_for_intent(&intent_hash)
-        .is_empty()
-    {
+    let payload_hashes = mempool.get_mempool_payload_hashes_for_intent(&intent_hash);
+    let notarized_transaction_hash = if payload_hashes.is_empty() {
         return Err(
             ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
-                "transaction {} not found in mempool transactions",
+                "Transaction {} not found in mempool transactions",
                 &request.transaction_identifier.hash
             )),
         );
-    }
+    } else {
+        payload_hashes.get(0).unwrap()
+    };
+
+    let user_transaction = match mempool.get_mempool_payload(&notarized_transaction_hash) {
+        Some(transaction) => {
+            // Transaction is known to be executable, so it is safe to unwrap here
+            transaction.raw.into_typed().unwrap()
+        }
+        None => {
+            return Err(
+                ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
+                    "Transaction {} payload not found in mempool transactions",
+                    &request.transaction_identifier.hash
+                )),
+            )
+        }
+    };
+
+    let instructions = match user_transaction {
+        UserTransaction::V1(notarized_transaction) => {
+            notarized_transaction.signed_intent.intent.instructions.0
+        }
+
+        UserTransaction::V2(_) => {
+            return Err(ResponseError::from(ApiError::InvalidTransaction)
+                .with_details(format!("Transaction V2 not supported")))
+        }
+    };
+
+    let database = state.state_manager.database.snapshot();
+    let operations = to_mesh_api_operations_from_instructions_v1(
+        &instructions,
+        &mapping_context,
+        database.deref(),
+    )?;
 
     let transaction_identifier = Box::new(models::TransactionIdentifier {
         hash: to_api_transaction_hash_bech32m(&mapping_context, &intent_hash)?,
     });
 
-    // TODO:MESH prepare transaction estimates
     let transaction = Box::new(models::Transaction {
         transaction_identifier,
-        // TODO:MESH Use the same approach as in `construction_parse`?
-        operations: vec![],
+        operations,
         related_transactions: None,
         metadata: None,
     });

@@ -13,7 +13,7 @@ pub(crate) fn read_current_ledger_header(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &impl SubstateDatabase,
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Result<FieldSubstate<D>, ResponseError> {
@@ -27,7 +27,7 @@ pub(crate) fn read_mandatory_main_field_substate<D: ScryptoDecode>(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &impl SubstateDatabase,
     node_id: &NodeId,
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,
@@ -50,7 +50,7 @@ pub(crate) fn read_mandatory_substate<D: ScryptoDecode>(
 }
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &impl SubstateDatabase,
     node_id: &NodeId,
     substate_key: &SubstateKey,
 ) -> Option<FieldSubstate<D>> {
@@ -59,7 +59,7 @@ pub(crate) fn read_optional_main_field_substate<D: ScryptoDecode>(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &impl SubstateDatabase,
     node_id: &NodeId,
     collection_index: CollectionIndex,
     substate_key: &SubstateKey,
@@ -80,7 +80,7 @@ pub(crate) fn read_optional_collection_substate<D: ScryptoDecode>(
 
 #[tracing::instrument(skip_all)]
 pub(crate) fn read_optional_substate<D: ScryptoDecode>(
-    database: &StateManagerDatabase<impl ReadableRocks>,
+    database: &impl SubstateDatabase,
     node_id: &NodeId,
     partition_number: PartitionNumber,
     substate_key: &SubstateKey,

@@ -1,10 +1,16 @@
 use crate::engine_prelude::*;
 use crate::prelude::*;
+use radix_engine_interface::blueprints::account::{
+    AccountTryDepositBatchOrAbortManifestInput, AccountTryDepositOrAbortManifestInput,
+    AccountWithdrawManifestInput,
+};
+use radix_transactions::manifest::{CallMethod, TakeFromWorktop};
 
 #[derive(Debug, Clone, Copy, EnumIter, Display, EnumString)]
 pub(crate) enum MeshApiOperationType {
     Withdraw,
     Deposit,
+    FeePayment,
 }
 
 #[derive(Debug, Clone, Copy, EnumIter, Display)]
@@ -13,17 +19,6 @@ pub(crate) enum MeshApiOperationStatus {
     Success,
     #[strum(serialize = "Failure")]
     Failure,
-}
-
-// TODO:MESH This one might be confusing. Failed transaction will still have successful FeePayment
-// operation
-impl From<DetailedTransactionOutcome> for MeshApiOperationStatus {
-    fn from(value: DetailedTransactionOutcome) -> Self {
-        match value {
-            DetailedTransactionOutcome::Success(..) => Self::Success,
-            DetailedTransactionOutcome::Failure(..) => Self::Failure,
-        }
-    }
 }
 
 impl From<MeshApiOperationStatus> for models::OperationStatus {
@@ -45,7 +40,6 @@ pub fn to_mesh_api_operation_no_fee(
     resource_address: &ResourceAddress,
     amount: Decimal,
 ) -> Result<models::Operation, MappingError> {
-    // TODO:MESH what about fee locking, burning, minting?
     let op_type = if amount.is_positive() {
         MeshApiOperationType::Deposit
     } else {
@@ -68,6 +62,30 @@ pub fn to_mesh_api_operation_no_fee(
     })
 }
 
+pub fn to_mesh_api_operation_fee_payment(
+    mapping_context: &MappingContext,
+    database: &StateManagerDatabase<impl ReadableRocks>,
+    index: i64,
+    account_address: &GlobalAddress,
+    amount: Decimal,
+) -> Result<models::Operation, MappingError> {
+    let currency = to_mesh_api_currency_from_resource_address(mapping_context, database, &XRD)?;
+    let account = to_api_account_identifier_from_global_address(mapping_context, account_address)?;
+
+    // see https://docs.cdp.coinbase.com/mesh/docs/models#operation
+    Ok(models::Operation {
+        operation_identifier: Box::new(models::OperationIdentifier::new(index)),
+        related_operations: None,
+        _type: MeshApiOperationType::FeePayment.to_string(),
+        // Fee payment is always success, even if transaction failed
+        status: Some(MeshApiOperationStatus::Success.to_string()),
+        account: Some(Box::new(account)),
+        amount: Some(Box::new(to_mesh_api_amount(amount, currency)?)),
+        coin_change: None,
+        metadata: None,
+    })
+}
+
 pub fn to_mesh_api_operations(
     mapping_context: &MappingContext,
     database: &StateManagerDatabase<impl ReadableRocks>,
@@ -81,7 +99,6 @@ pub fn to_mesh_api_operations(
                 state_version.number()
             ),
         })?;
-    let status = MeshApiOperationStatus::from(local_execution.outcome);
     let fee_balance_changes =
         resolve_global_fee_balance_changes(database, &local_execution.fee_source)?;
 
@@ -97,6 +114,30 @@ pub fn to_mesh_api_operations(
     let mut output = Vec::with_capacity(fee_payment_computation.relevant_entities.len());
     for entity in &fee_payment_computation.relevant_entities {
         if entity.is_account() {
+            if let Some(fee_balance_changes) =
+                fee_payment_computation.fee_balance_changes.get(&entity)
+            {
+                for amount in fee_balance_changes
+                    .iter()
+                    .filter_map(|(fee_payment_type, amount)| {
+                        if *fee_payment_type == FeePaymentBalanceChangeType::FeePayment {
+                            Some(amount)
+                        } else {
+                            None
+                        }
+                    })
+                {
+                    let operation = to_mesh_api_operation_fee_payment(
+                        mapping_context,
+                        database,
+                        output.len() as i64,
+                        entity,
+                        *amount,
+                    )?;
+                    output.push(operation)
+                }
+            }
+
             if let Some(non_fee_balance_changes) =
                 fee_payment_computation.non_fee_balance_changes.get(&entity)
             {
@@ -105,7 +146,8 @@ pub fn to_mesh_api_operations(
                         mapping_context,
                         database,
                         output.len() as i64,
-                        Some(status),
+                        // There are no non-fee balance changes for failed transactions
+                        Some(MeshApiOperationStatus::Success),
                         entity,
                         resource_address,
                         *amount,
@@ -139,4 +181,129 @@ fn resolve_global_fee_balance_changes(
         *fee_balance_change = fee_balance_change.sub_or_panic(*paid_fee_amount_xrd);
     }
     Ok(fee_balance_changes)
+}
+
+/// This method converts Transaction V1 instructons to operations.
+/// The parser is limited to the instructions generated by the Mesh construction API.
+pub fn to_mesh_api_operations_from_instructions_v1(
+    instructions: &[InstructionV1],
+    mapping_context: &MappingContext,
+    database: &StateManagerDatabase<impl ReadableRocks>,
+) -> Result<Vec<models::Operation>, ResponseError> {
+    let mut operations = Vec::new();
+    let mut next_index = 0;
+    let mut withdraw_input: Option<(ResourceAddress, Decimal)> = None;
+
+    while next_index < instructions.len() {
+        let mut instruction = &instructions[next_index];
+        next_index = next_index + 1;
+        match instruction {
+            InstructionV1::CallMethod(CallMethod {
+                address: DynamicGlobalAddress::Static(global_address),
+                method_name,
+                args,
+            }) => {
+                let args_bytes = manifest_encode(&args).unwrap();
+                match method_name.as_str() {
+                    "lock_fee" => (),
+                    "withdraw" if global_address.is_account() => {
+                        let input = manifest_decode::<AccountWithdrawManifestInput>(&args_bytes)
+                            .map_err(|_| {
+                                ResponseError::from(ApiError::InvalidManifestInstruction)
+                                    .with_details("Invalid withdraw instruction")
+                            })?;
+                        let resource_adddress = &match input.resource_address {
+                            ManifestResourceAddress::Static(resource_address) => resource_address,
+                            ManifestResourceAddress::Named(_) => {
+                                return Err(ResponseError::from(ApiError::NamedAddressNotSupported)
+                                    .with_details("Named address is not supported"))
+                            }
+                        };
+
+                        operations.push(to_mesh_api_operation_no_fee(
+                            mapping_context,
+                            database,
+                            operations.len() as i64,
+                            None,
+                            global_address,
+                            resource_adddress,
+                            -input.amount.clone(),
+                        )?);
+                        withdraw_input = Some((*resource_adddress, input.amount));
+                    }
+                    // Below assumes that previous operation was Withdraw and whole withdraw amount
+                    // shall be deposited to the global address
+                    "try_deposit_batch_or_abort"
+                        if global_address.is_account() && withdraw_input.is_some() =>
+                    {
+                        let (resource_address, amount) = withdraw_input.unwrap();
+                        if let Ok(_input) = manifest_decode::<
+                            AccountTryDepositBatchOrAbortManifestInput,
+                        >(&args_bytes)
+                        {
+                            operations.push(to_mesh_api_operation_no_fee(
+                                mapping_context,
+                                database,
+                                operations.len() as i64,
+                                None,
+                                global_address,
+                                &resource_address,
+                                amount,
+                            )?);
+                        } else {
+                            return Err(ResponseError::from(ApiError::InvalidManifestInstruction)
+                                .with_details("Invalid try_deposit_batch_or_abort instruction"));
+                        }
+                    }
+                    _ => {
+                        return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                            .with_details(format!("Unrecognized instruction: {:?}", instruction)));
+                    }
+                }
+            }
+            InstructionV1::TakeFromWorktop(TakeFromWorktop {
+                resource_address,
+                amount,
+            }) if next_index < instructions.len() => {
+                instruction = &instructions[next_index];
+                next_index = next_index + 1;
+
+                match instruction {
+                    InstructionV1::CallMethod(CallMethod {
+                        address: DynamicGlobalAddress::Static(global_address),
+                        method_name,
+                        args,
+                    }) if method_name.eq("try_deposit_or_abort") && global_address.is_account() => {
+                        if let Ok(_input) = manifest_decode::<AccountTryDepositOrAbortManifestInput>(
+                            &manifest_encode(&args).unwrap(),
+                        ) {
+                            operations.push(to_mesh_api_operation_no_fee(
+                                mapping_context,
+                                database,
+                                operations.len() as i64,
+                                None,
+                                global_address,
+                                resource_address,
+                                *amount,
+                            )?);
+                        } else {
+                            return Err(ResponseError::from(ApiError::InvalidManifestInstruction)
+                                .with_details("Invalid try_deposit_or_abort instruction"));
+                        }
+                    }
+                    _ => {
+                        return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                            .with_details(format!("Unrecognized instruction: {:?}", instruction)));
+                    }
+                }
+                withdraw_input = None;
+            }
+            _ => {
+                return Err(ResponseError::from(ApiError::UnrecognizedInstruction)
+                    .with_details(format!("Unrecognized instruction: {:?}", instruction)));
+            }
+        }
+    }
+
+    Ok(operations)
 }

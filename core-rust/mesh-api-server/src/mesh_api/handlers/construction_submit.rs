@@ -6,19 +6,20 @@ pub(crate) async fn handle_construction_submit(
 ) -> Result<Json<models::TransactionIdentifierResponse>, ResponseError> {
     assert_matching_network(&request.network_identifier, &state.network)?;
 
-    let (raw, intent_hash) = RawNotarizedTransaction::from_hex(&request.signed_transaction)
-        .ok()
-        .and_then(|raw| {
-            let tx = raw.prepare(PreparationSettings::latest_ref());
-            tx.map(|tx| (raw, tx)).ok()
-        })
-        .and_then(|(raw, tx)| Some((raw, tx.hashes().transaction_intent_hash)))
-        .ok_or(
-            ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
-                "Invalid transaction: {}",
-                request.signed_transaction
-            )),
-        )?;
+    let raw = RawNotarizedTransaction::from_hex(&request.signed_transaction).map_err(|_| {
+        ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
+            "Invalid transaction hex: {}",
+            &request.signed_transaction
+        ))
+    })?;
+
+    let intent_hash = raw
+        .prepare(PreparationSettings::latest_ref())
+        .map_err(|err| {
+            ResponseError::from(ApiError::InvalidTransaction)
+                .with_details(format!("Failed to prepare user transaction: {:?}", err))
+        })?
+        .transaction_intent_hash();
 
     let mempool_add_result = match state.state_manager.mempool_manager.add_and_trigger_relay(
         MempoolAddSource::MeshApi,

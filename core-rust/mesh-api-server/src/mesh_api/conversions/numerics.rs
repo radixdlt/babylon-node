@@ -52,3 +52,66 @@ pub fn to_mesh_api_amount(
 
     Ok(models::Amount::new(value.attos().to_string(), currency))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_amount_extraction_decimals() {
+        let extraction_context = ExtractionContext::new(&NetworkDefinition::localnet());
+        let mapping_context = MappingContext::new(&NetworkDefinition::localnet());
+
+        let xrd_str = to_api_resource_address(&mapping_context, &XRD).unwrap();
+
+        for decimals in 0..18 {
+            let currency = models::Currency {
+                symbol: xrd_str.clone(),
+                decimals,
+                metadata: None,
+            };
+
+            let mesh_api_amount = to_mesh_api_amount(dec!(200), currency).unwrap();
+
+            assert_eq!(
+                extract_amount(&extraction_context, &mesh_api_amount).unwrap(),
+                (XRD, dec!(200))
+            );
+        }
+    }
+
+    #[test]
+    fn test_amount_extraction_amounts() {
+        let extraction_context = ExtractionContext::new(&NetworkDefinition::localnet());
+        let mapping_context = MappingContext::new(&NetworkDefinition::localnet());
+
+        let xrd_str = to_api_resource_address(&mapping_context, &XRD).unwrap();
+
+        let currency = models::Currency {
+            symbol: xrd_str.clone(),
+            decimals: 1,
+            metadata: None,
+        };
+
+        let amount = dec!(200.1);
+        let mesh_api_amount = to_mesh_api_amount(amount, currency).unwrap();
+        assert_eq!(
+            extract_amount(&extraction_context, &mesh_api_amount).unwrap(),
+            (XRD, amount)
+        );
+
+        let currency = models::Currency {
+            symbol: xrd_str.clone(),
+            decimals: 2,
+            metadata: None,
+        };
+
+        // Surplus decimals are truncated.
+        // In fact, decimal mismatch should never be observable.
+        let mesh_api_amount = to_mesh_api_amount(dec!(200.027), currency).unwrap();
+        assert_eq!(
+            extract_amount(&extraction_context, &mesh_api_amount).unwrap(),
+            (XRD, dec!(200.02))
+        );
+    }
+}

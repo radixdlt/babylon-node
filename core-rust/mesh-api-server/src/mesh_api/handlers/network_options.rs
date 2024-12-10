@@ -8,7 +8,41 @@ pub(crate) async fn handle_network_options(
 
     let database = state.state_manager.database.snapshot();
 
-    let mut proof_iter = database.get_proof_iter(StateVersion::pre_genesis());
+    let timestamp_start_index = database
+        .get_proof_iter(StateVersion::pre_genesis())
+        .find_map(|p| -> Option<Result<i64, MappingError>> {
+            // Observed that some timestamp are 0 or 1
+            if p.ledger_header.proposer_timestamp_ms > 1 {
+                Some(to_mesh_api_block_index_from_state_version(
+                    p.ledger_header.state_version,
+                ))
+            } else {
+                None
+            }
+        })
+        .transpose()?;
+
+    let ledger_header = read_current_ledger_header(database.deref());
+    let previous_state_version = ledger_header.state_version.previous().map_err(|_| {
+        ResponseError::from(ApiError::ParentBlockNotAvailable).with_details(format!(
+            "Parent block not found for state version {}",
+            ledger_header.state_version.number()
+        ))
+    })?;
+
+    // Attempt to scope at previous state version to check if state history is available
+    let historical_balance_lookup = match database.scoped_at(Some(previous_state_version)) {
+        Ok(_) => true,
+        Err(StateHistoryError::StateHistoryDisabled) => false,
+        Err(err) => {
+            return Err(
+                ResponseError::from(ApiError::GetStateHistoryError).with_details(format!(
+                    "Error checking if historical balances enabled, {:?}",
+                    err
+                )),
+            )
+        }
+    };
 
     // See https://docs.cdp.coinbase.com/mesh/docs/models#networkoptionsresponse for field
     // definitions
@@ -25,18 +59,8 @@ pub(crate) async fn handle_network_options(
                 .map(|o| o.to_string())
                 .collect(),
             errors: list_available_api_errors(),
-            historical_balance_lookup: false,
-            timestamp_start_index: proof_iter.find_map(|p| {
-                // Observed that some timestamp are 0 or 1
-                if p.ledger_header.proposer_timestamp_ms > 1 {
-                    Some(
-                        to_mesh_api_block_index_from_state_version(p.ledger_header.state_version)
-                            .unwrap(),
-                    )
-                } else {
-                    None
-                }
-            }),
+            historical_balance_lookup,
+            timestamp_start_index,
             // This is for native RPC calls. Not needed for now.
             call_methods: vec![],
             balance_exemptions: vec![],
