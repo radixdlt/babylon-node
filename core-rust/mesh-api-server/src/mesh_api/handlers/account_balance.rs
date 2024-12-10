@@ -90,10 +90,7 @@ pub(crate) async fn handle_account_balance(
 // to get.
 fn get_all_balances<'a>(
     mapping_context: &MappingContext,
-    database: &VersionScopedDatabase<
-        'a,
-        impl Deref<Target = <StateManagerDatabase<DirectRocks> as Snapshottable<'a>>::Snapshot>,
-    >,
+    database: &impl SubstateDatabase,
     component_address: &ComponentAddress,
 ) -> Result<Vec<models::Amount>, MappingError> {
     let component_dump = dump_component_state(database, *component_address);
@@ -127,7 +124,7 @@ fn get_all_balances<'a>(
 
 fn get_requested_balances(
     mapping_context: &MappingContext,
-    database: &dyn SubstateDatabase,
+    database: &impl SubstateDatabase,
     component_address: &ComponentAddress,
     resource_addresses: &[ResourceAddress],
 ) -> Result<Vec<models::Amount>, ResponseError> {

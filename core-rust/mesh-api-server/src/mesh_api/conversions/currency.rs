@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 pub fn to_mesh_api_currency_from_resource_address(
     mapping_context: &MappingContext,
-    database: &dyn SubstateDatabase,
+    database: &impl SubstateDatabase,
     resource_address: &ResourceAddress,
 ) -> Result<models::Currency, MappingError> {
     let resource_node_id = resource_address.as_node_id();

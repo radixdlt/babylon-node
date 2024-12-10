@@ -18,7 +18,7 @@ pub fn extract_component_address(
 
 pub(crate) fn extract_resource_address_from_currency(
     extraction_context: &ExtractionContext,
-    database: &dyn SubstateDatabase,
+    database: &impl SubstateDatabase,
     currency: &models::Currency,
 ) -> Result<ResourceAddress, ExtractionError> {
     // currency.symbol field keeps bech32-encoded resource address
