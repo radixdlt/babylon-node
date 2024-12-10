@@ -33,7 +33,7 @@ impl From<MeshApiOperationStatus> for models::OperationStatus {
 
 pub fn to_mesh_api_operation_no_fee(
     mapping_context: &MappingContext,
-    database: &ActualStateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     index: i64,
     status: Option<MeshApiOperationStatus>,
     account_address: &GlobalAddress,
@@ -64,7 +64,7 @@ pub fn to_mesh_api_operation_no_fee(
 
 pub fn to_mesh_api_operation_fee_payment(
     mapping_context: &MappingContext,
-    database: &ActualStateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     index: i64,
     account_address: &GlobalAddress,
     amount: Decimal,
@@ -88,7 +88,7 @@ pub fn to_mesh_api_operation_fee_payment(
 
 pub fn to_mesh_api_operations(
     mapping_context: &MappingContext,
-    database: &ActualStateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     state_version: StateVersion,
 ) -> Result<Vec<models::Operation>, MappingError> {
     let local_execution = database
@@ -164,7 +164,7 @@ pub fn to_mesh_api_operations(
 /// Uses the [`SubstateNodeAncestryStore`] (from the given DB) to transform the input
 /// `vault ID -> payment` map into a `global address -> balance change` map.
 fn resolve_global_fee_balance_changes(
-    database: &ActualStateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
     fee_source: &FeeSource,
 ) -> Result<IndexMap<GlobalAddress, Decimal>, MappingError> {
     let paying_vaults = &fee_source.paying_vaults;
@@ -188,7 +188,7 @@ fn resolve_global_fee_balance_changes(
 pub fn to_mesh_api_operations_from_instructions_v1(
     instructions: &[InstructionV1],
     mapping_context: &MappingContext,
-    database: &ActualStateManagerDatabase,
+    database: &StateManagerDatabase<impl ReadableRocks>,
 ) -> Result<Vec<models::Operation>, ResponseError> {
     let mut operations = Vec::new();
     let mut next_index = 0;

@@ -6,7 +6,7 @@ pub(crate) async fn handle_block_transaction(
 ) -> Result<Json<models::BlockTransactionResponse>, ResponseError> {
     assert_matching_network(&request.network_identifier, &state.network)?;
 
-    let database = state.state_manager.database.access_direct();
+    let database = state.state_manager.database.snapshot();
     let mapping_context = MappingContext::new(&state.network);
 
     let state_version = extract_state_version_from_mesh_api_block_identifier(

@@ -57,7 +57,7 @@ pub(crate) async fn handle_mempool_transaction(
         }
     };
 
-    let database = state.state_manager.database.access_direct();
+    let database = state.state_manager.database.snapshot();
     let operations = to_mesh_api_operations_from_instructions_v1(
         &instructions,
         &mapping_context,

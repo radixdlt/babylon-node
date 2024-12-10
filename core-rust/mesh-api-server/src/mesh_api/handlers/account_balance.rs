@@ -15,7 +15,7 @@ pub(crate) async fn handle_account_balance(
     )
     .map_err(|err| err.into_response_error("account_identifier"))?;
 
-    let database = state.state_manager.database.access_direct();
+    let database = state.state_manager.database.snapshot();
     let state_version = if let Some(block_identifier) = request.block_identifier {
         extract_state_version_from_mesh_api_partial_block_identifier(
             database.deref(),
