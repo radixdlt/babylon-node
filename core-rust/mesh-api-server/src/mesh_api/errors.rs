@@ -31,8 +31,8 @@ pub(crate) enum ApiError {
     InvalidNumberOfSignatures,
     #[strum(serialize = "Invalid transaction")]
     InvalidTransaction,
-    #[strum(serialize = "Invalid Withdraw instruction")]
-    InvalidWithdrawInstruction,
+    #[strum(serialize = "Invalid manifest instruction")]
+    InvalidManifestInstruction,
     #[strum(serialize = "Named address not supported")]
     NamedAddressNotSupported,
     #[strum(serialize = "Instruction is not recognized")]
@@ -51,6 +51,8 @@ pub(crate) enum ApiError {
     InvalidBlockIdentifier,
     #[strum(serialize = "Submit transaction error")]
     SubmitTransactionError,
+    #[strum(serialize = "Get state history error")]
+    GetStateHistoryError,
 }
 
 impl From<ApiError> for ResponseError {

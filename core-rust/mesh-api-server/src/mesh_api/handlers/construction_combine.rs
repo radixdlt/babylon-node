@@ -18,15 +18,20 @@ pub(crate) async fn handle_construction_combine(
         );
     };
 
-    let intent = RawTransactionIntent::from_hex(&request.unsigned_transaction)
-        .ok()
-        .and_then(|x| IntentV1::from_raw(&x).ok())
-        .ok_or(
-            ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
-                "Invalid unsigned transaction: {}",
-                &request.unsigned_transaction
-            )),
-        )?;
+    let raw = RawTransactionIntent::from_hex(&request.unsigned_transaction).map_err(|_| {
+        ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
+            "Invalid transaction hex: {}",
+            &request.unsigned_transaction
+        ))
+    })?;
+
+    let intent = IntentV1::from_raw(&raw).map_err(|err| {
+        ResponseError::from(ApiError::InvalidTransaction).with_details(format!(
+            "Failed to create transaction intent v1 from raw: {:?}",
+            err
+        ))
+    })?;
+
     let tx = NotarizedTransactionV1 {
         signed_intent: SignedIntentV1 {
             intent,

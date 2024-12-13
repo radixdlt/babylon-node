@@ -31,6 +31,14 @@ pub(crate) async fn handle_block(
                 state_version.number()
             ))
         })?;
+    let previous_transaction_identifiers = database
+        .get_committed_transaction_identifiers(previous_state_version)
+        .ok_or_else(|| {
+            ResponseError::from(ApiError::TransactionNotFound).with_details(format!(
+                "Failed fetching transaction identifiers for state version {}",
+                previous_state_version.number()
+            ))
+        })?;
 
     let operations = to_mesh_api_operations(&mapping_context, database.deref(), state_version)?;
 
@@ -48,12 +56,20 @@ pub(crate) async fn handle_block(
     // see https://docs.cdp.coinbase.com/mesh/docs/models#block
     let block = models::Block {
         block_identifier: Box::new(to_mesh_api_block_identifier_from_state_version(
-            database.deref(),
             state_version,
+            &transaction_identifiers
+                .resultant_ledger_hashes
+                .transaction_root,
+            &transaction_identifiers.resultant_ledger_hashes.receipt_root,
         )?),
         parent_block_identifier: Box::new(to_mesh_api_block_identifier_from_state_version(
-            database.deref(),
             previous_state_version,
+            &previous_transaction_identifiers
+                .resultant_ledger_hashes
+                .transaction_root,
+            &previous_transaction_identifiers
+                .resultant_ledger_hashes
+                .receipt_root,
         )?),
         timestamp: transaction_identifiers.proposer_timestamp_ms,
         transactions: vec![transaction],
