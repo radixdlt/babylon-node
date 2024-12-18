@@ -113,11 +113,11 @@ fn get_all_balances<'a>(
         .into_iter()
         .map(|(resource_address, balance)| {
             let currency = to_mesh_api_currency_from_resource_address(
-                &mapping_context,
+                mapping_context,
                 database,
                 &resource_address,
             )?;
-            Ok(to_mesh_api_amount(balance, currency)?)
+            to_mesh_api_amount(balance, currency)
         })
         .collect::<Result<Vec<_>, MappingError>>()
 }
@@ -129,7 +129,7 @@ fn get_requested_balances(
     resource_addresses: &[ResourceAddress],
 ) -> Result<Vec<models::Amount>, ResponseError> {
     resource_addresses
-        .into_iter()
+        .iter()
         .map(|resource_address| {
             let balance = {
                 let encoded_key = scrypto_encode(resource_address).expect("Impossible Case!");
@@ -160,9 +160,9 @@ fn get_requested_balances(
             };
 
             let currency = to_mesh_api_currency_from_resource_address(
-                &mapping_context,
+                mapping_context,
                 database,
-                &resource_address,
+                resource_address,
             )?;
             Ok(to_mesh_api_amount(balance, currency)?)
         })

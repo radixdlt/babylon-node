@@ -115,7 +115,7 @@ pub fn to_mesh_api_operations(
     for entity in &fee_payment_computation.relevant_entities {
         if entity.is_account() {
             if let Some(fee_balance_changes) =
-                fee_payment_computation.fee_balance_changes.get(&entity)
+                fee_payment_computation.fee_balance_changes.get(entity)
             {
                 for amount in fee_balance_changes
                     .iter()
@@ -139,7 +139,7 @@ pub fn to_mesh_api_operations(
             }
 
             if let Some(non_fee_balance_changes) =
-                fee_payment_computation.non_fee_balance_changes.get(&entity)
+                fee_payment_computation.non_fee_balance_changes.get(entity)
             {
                 for (resource_address, amount) in non_fee_balance_changes {
                     let operation = to_mesh_api_operation_no_fee(
@@ -196,7 +196,7 @@ pub fn to_mesh_api_operations_from_instructions_v1(
 
     while next_index < instructions.len() {
         let mut instruction = &instructions[next_index];
-        next_index = next_index + 1;
+        next_index += 1;
         match instruction {
             InstructionV1::CallMethod(CallMethod {
                 address: DynamicGlobalAddress::Static(global_address),
@@ -227,7 +227,7 @@ pub fn to_mesh_api_operations_from_instructions_v1(
                             None,
                             global_address,
                             resource_adddress,
-                            -input.amount.clone(),
+                            -input.amount,
                         )?);
                         withdraw_input = Some((*resource_adddress, input.amount));
                     }
@@ -266,7 +266,7 @@ pub fn to_mesh_api_operations_from_instructions_v1(
                 amount,
             }) if next_index < instructions.len() => {
                 instruction = &instructions[next_index];
-                next_index = next_index + 1;
+                next_index += 1;
 
                 match instruction {
                     InstructionV1::CallMethod(CallMethod {

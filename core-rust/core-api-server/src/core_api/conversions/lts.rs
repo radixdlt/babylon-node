@@ -171,7 +171,7 @@ fn resolve_fungible_balance_changes(
         // First - calculate the deprecated/duplicated total balance change
         let deprecated_fee_payment_balance_change = fee_payment_computation
             .fee_balance_changes
-            .get(&entity)
+            .get(entity)
             .map(|fee_changes| {
                 let total_fee_payment_balance_change = fee_changes
                     .iter()
@@ -194,11 +194,11 @@ fn resolve_fungible_balance_changes(
             .transpose()?
             .flatten();
         output.push(models::LtsEntityFungibleBalanceChanges {
-            entity_address: to_api_global_address(context, &entity)?,
+            entity_address: to_api_global_address(context, entity)?,
             fee_balance_change: deprecated_fee_payment_balance_change,
             fee_balance_changes: fee_payment_computation
                 .fee_balance_changes
-                .get(&entity)
+                .get(entity)
                 .map(|fee_balance_changes| {
                     fee_balance_changes
                         .iter()
@@ -219,7 +219,7 @@ fn resolve_fungible_balance_changes(
                 .unwrap_or_default(),
             non_fee_balance_changes: fee_payment_computation
                 .non_fee_balance_changes
-                .get(&entity)
+                .get(entity)
                 .map(|non_fee_balance_changes| {
                     non_fee_balance_changes
                         .iter()
