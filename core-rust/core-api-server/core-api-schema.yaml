@@ -147,7 +147,7 @@ tags:
 
       User transactions are formed of a core "intent", which is then signed by 0+ signatories, before being notarized. The output is called a notarized payload.
       It is this notarized transaction payload which is submitted to the network.
-      
+
       For most users, this construction process will generally happen in their Radix Wallet. If you wish to construct transactions programmatically or offline,
       you will need to integrate the Radix Engine Toolkit into your application for construction and finalization.
 
@@ -171,7 +171,7 @@ tags:
       ## State Model
 
       The Radix Engine State Model can be thought of as a forest of state sub-trees.
-      A state sub-tree consists of "entities". These entities have an ID, and 0 or more "substates" at keys underneath them. 
+      A state sub-tree consists of "entities". These entities have an ID, and 0 or more "substates" at keys underneath them.
       These substates are typed, and can own other entities, forming a tree of ownership.
 
       Each state sub-tree has a root entity, and a single Bech32M Global Address, with a human-readable-prefix (and prefix byte) matching the root entity type.
@@ -181,7 +181,7 @@ tags:
   - name: Construction
     x-displayName: Transaction Construction
     x-traitTag: true # Don't display endpoints under this tag
-    description: |      
+    description: |
       To construct and submit a transaction using the LTS endpoints:
 
       * Query `/lts/transaction/construction` to retrieve the current epoch (according to your node).
@@ -840,13 +840,13 @@ paths:
       summary: Stream Proofs
       description: |
         Returns a stream of proofs committed to the node's ledger.
-        
+
         NOTE: This endpoint may return different results on different nodes:
         * Each node may persist different subset of signatures on a given proofs, as long as enough
         of the validator set has signed.
         * Inside an epoch, different nodes may receive and persist / keep different proofs, subject to
         constraints on gaps between proofs.
-        
+
         Proofs during an epoch can also be garbage collected by the node after the fact. Therefore
         proofs may disappear from this stream.
 
@@ -858,7 +858,7 @@ paths:
         * All end-of-epoch proofs (from epoch number)
         * All end-of-epoch proofs triggering a protocol update
         * All node-injected proofs enacting genesis or a protocol update (for protocol update name, from state version)
-        
+
         The end-of-epoch proofs can be used to "trustlessly" verify the validator set for a given epoch.
         By tracking the fact that validators for epoch N sign the next validator set for epoch N + 1,
         this chain of proofs can be used to provide proof of the current validator set from a hardcoded
@@ -1611,7 +1611,7 @@ components:
           maximum: 4294967295
           description: |
             An integer between `0` and `2^32 - 1`, chosen to allow a unique intent to be created (to enable submitting an otherwise identical/duplicate intent).
-  
+
             As of Cuttlefish and V2 transaction models, this is now referred to in documentation as the `intent_discriminator`.
         notary_public_key:
           $ref: "#/components/schemas/PublicKey"
@@ -2650,7 +2650,7 @@ components:
           type: string
           description: |
             A decimal string-encoded 64-bit signed integer, marking the unix timestamp in seconds.
-            
+
             Note: this field accurately represents the full range of possible on-ledger values (i.e.
             `-2^63 <= seconds < 2^63`). This is contrary to the `InstantMs` type used in other
             places of this API.
@@ -2660,7 +2660,7 @@ components:
             The RFC 3339 / ISO 8601 string representation of the timestamp. Will always use "Z"
             (denoting UTC) and a second-precision (i.e. *skipping* the `.000` milliseconds part).
             E.g.: `2023-01-26T18:30:09Z`.
-            
+
             Note: This field will *not* be present if the actual on-ledger `unix_timestamp_seconds`
             value is outside the basic range supported by the RFC 3339 / ISO 8601 standard, which
             starts at year 1583 (i.e. the beginning of the Gregorian calendar) and ends at year
@@ -5663,8 +5663,8 @@ components:
         effective_epoch_start:
           description: |
             The effective time the epoch started. A drift-free measure, used to work out when the
-            epoch should ideally end. 
-            
+            epoch should ideally end.
+
             Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
             to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
             clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
@@ -5675,7 +5675,7 @@ components:
             The actual time the epoch started. Not used by any logic, but the difference between
             this and the effective start gives a measure of the time it took for the end-of-epoch
             to be noticed.
-            
+
             Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
             to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
             clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
@@ -5794,7 +5794,7 @@ components:
           description: |
             The latest round proposer's timestamp.
             An honest quorum of validators keeps this aligned with wall-clock time, and non-decreasing.
-            
+
             Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
             to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
             clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
@@ -6241,7 +6241,7 @@ components:
           description: |
             The latest round proposer's timestamp (rounded down to the current minute).
             This is provided so that the client can detect if the node is synced up or not.
-            
+
             Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
             to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
             clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
@@ -6783,7 +6783,7 @@ components:
           description: |
             If present, this field indicates the entity contributed to the payment of the fee.
             The change in balance will always be negative.
-            NOTE: This property is deprecated but kept for backwards compatibility. This entry is duplicated in 
+            NOTE: This property is deprecated but kept for backwards compatibility. This entry is duplicated in
             `fee_balance_changes`.
         fee_balance_changes:
           type: array
@@ -8042,7 +8042,7 @@ components:
       properties:
         radix_engine_toolkit_receipt:
           type: boolean
-          description: | 
+          description: |
             This flag controls whether the preview response will include a Radix Engine Toolkit serializable
             receipt or not. If not provided, this defaults to `false` and no toolkit receipt is provided in
             the response.
@@ -8052,7 +8052,6 @@ components:
         - at_ledger_state
         - encoded_receipt
         - receipt
-        - instruction_resource_changes
         - logs
       properties:
         at_ledger_state:
@@ -8060,13 +8059,13 @@ components:
           description: A summarized state of the ledger on top of which the preview was performed.
         encoded_receipt:
           type: string
-          description: | 
+          description: |
             The hex-sbor-encoded receipt.
 
-            This field is deprecated and will be removed from the API with the release of the next 
-            protocol update, cuttlefish. This field was provided primarily for use with the Radix 
-            Engine Toolkit and its execution summary functionality. If you still wish to use this 
-            functionality update your Radix Engine Toolkit and use the receipt provided in the 
+            This field is deprecated and will be removed from the API with the release of the next
+            protocol update, cuttlefish. This field was provided primarily for use with the Radix
+            Engine Toolkit and its execution summary functionality. If you still wish to use this
+            functionality update your Radix Engine Toolkit and use the receipt provided in the
             `radix_engine_toolkit_receipt` field of this response.
           deprecated: true
         receipt:
@@ -8077,17 +8076,24 @@ components:
             An optional field which is only provided if the `radix_engine_toolkit_receipt`
             flag is set to true when requesting a transaction preview from the API.
 
-            This receipt is primarily intended for use with the toolkit and may contain information 
-            that is already available in the receipt provided in the `receipt` field of this 
+            This receipt is primarily intended for use with the toolkit and may contain information
+            that is already available in the receipt provided in the `receipt` field of this
             response.
 
-            A typical client of this API is not expected to use this receipt. The primary clients 
-            this receipt is intended for is the Radix wallet or any client that needs to perform 
+            A typical client of this API is not expected to use this receipt. The primary clients
+            this receipt is intended for is the Radix wallet or any client that needs to perform
             execution summaries on their transactions.
         instruction_resource_changes:
           type: array
+          description: |
+            This object holds changes in resource balances for all vaults within affected
+            accounts/components for each instruction.
+
+            This field is deprecated (and not required) as of the Dugong release and may be removed
+            from the API in the future.
           items:
             $ref: "#/components/schemas/InstructionResourceChanges"
+          deprecated: true
         logs:
           type: array
           items:
@@ -8117,7 +8123,7 @@ components:
           description: |
             If enabled, each manifest processor's auth zone will be given a simulated proof of
             every signature, which can be used to pass signature access rules.
-            
+
             This can be used to preview transactions even if the required signatures are not
             known ahead of time.
 
@@ -8130,7 +8136,7 @@ components:
             If enabled, the various runtime epoch-related verifications are skipped:
             - The `start_epoch_inclusive` and `end_epoch_exclusive` parameters, if specified, are ignored.
             - The duplicate intent checks (which rely on the expiry epoch) are also ignored.
-            
+
             However, if the start and end epoch are provided, they must still be statically valid.
             We recommend using a value of `start_epoch_inclusive = 1` and `end_epoch_exclusive = 2` in this
             case.
@@ -8138,13 +8144,13 @@ components:
         disable_auth_checks:
           description: |
             If enabled, all authorization checks are skipped during execution.
-            
+
             This could be used to e.g.:
             * Preview protocol update style transactions.
             * Mint resources for previewing trades with resources you don't own.
               If doing this, be warned: only resources which were potentially mintable/burnable
               at creation time will be mintable/burnable, due to feature flags on the resource.
-            
+
             Warning: this mode of operation is quite a departure from normal operation:
             * Calculated fees will likely be lower than a standard execution.
             * This mode can subtly break invariants some dApp code might rely on, or result in unexpected
@@ -8179,19 +8185,19 @@ components:
       properties:
         core_api_receipt:
           type: boolean
-          description: | 
+          description: |
             This flag controls whether the preview response will include a Core API receipt or not.
             If not provided, this defaults to `false` and no core api receipt is provided in
             the response.
         radix_engine_toolkit_receipt:
           type: boolean
-          description: | 
+          description: |
             This flag controls whether the preview response will include a Radix Engine Toolkit serializable
             receipt or not. If not provided, this defaults to `false` and no toolkit receipt is provided in
             the response.
         logs:
           type: boolean
-          description: | 
+          description: |
             This flag controls whether the preview response will include execution logs.
             If not provided, this defaults to `false` and no logs will be provided in the response.
     PreviewTransactionType:
@@ -8260,12 +8266,12 @@ components:
             An optional field which is only provided if the `radix_engine_toolkit_receipt`
             flag is set to true in the `options` property of the request.
 
-            This receipt is primarily intended for use with the toolkit and may contain information 
-            that is already available in the receipt provided in the `receipt` field of this 
+            This receipt is primarily intended for use with the toolkit and may contain information
+            that is already available in the receipt provided in the `receipt` field of this
             response.
 
-            A typical client of this API is not expected to use this receipt. The primary clients 
-            this receipt is intended for is the Radix wallet or any client that needs to perform 
+            A typical client of this API is not expected to use this receipt. The primary clients
+            this receipt is intended for is the Radix wallet or any client that needs to perform
             execution summaries on their transactions.
         logs:
           type: array
@@ -8938,7 +8944,7 @@ components:
           $ref: '#/components/schemas/InstantMs'
           description: |
             The round proposer's timestamp.
-            
+
             Note: in abnormal cases (e.g. Byzantine network quorum), this on-ledger field may be set
             to an arbitrary, extreme value allowed by 64-bit signed integer. The API will still
             clamp the timestamp to `0 <= ms <= 100000000000000 (== 10^14)`, which translates to
