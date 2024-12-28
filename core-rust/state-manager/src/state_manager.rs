@@ -263,15 +263,12 @@ impl StateManager {
                     NonZeroUsize::new(10000).unwrap(),
                 ));
 
-        let committability_validator =
-            Arc::new(
-                CommittabilityValidator::new(
-                    database.clone(),
-                    execution_configurator.clone(),
-                    transaction_validator.clone(),
-                    formatter.clone(),
-                ),
-            );
+        let committability_validator = Arc::new(CommittabilityValidator::new(
+            database.clone(),
+            execution_configurator.clone(),
+            transaction_validator.clone(),
+            formatter.clone(),
+        ));
         let mempool_manager = Arc::new(match mempool_relay_dispatcher {
             None => MempoolManager::new_for_testing(
                 mempool,

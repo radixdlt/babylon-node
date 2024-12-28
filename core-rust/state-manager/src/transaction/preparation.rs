@@ -569,13 +569,14 @@ impl Preparator {
                 timestamp: pending_transaction_timestamp,
             };
 
-            self.mempool_manager.observe_pending_transaction_execution_attempt(
-                TransactionMetadata {
-                    user_transaction_hashes: pending_transaction_result.user_transaction_hashes,
-                    end_epoch_exclusive: pending_transaction_result.end_epoch_exclusive,
-                },
-                attempt,
-            );
+            self.mempool_manager
+                .observe_pending_transaction_execution_attempt(
+                    TransactionMetadata {
+                        user_transaction_hashes: pending_transaction_result.user_transaction_hashes,
+                        end_epoch_exclusive: pending_transaction_result.end_epoch_exclusive,
+                    },
+                    attempt,
+                );
         }
 
         self.vertex_prepare_metrics.update(

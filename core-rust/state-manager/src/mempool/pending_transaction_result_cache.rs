@@ -346,19 +346,16 @@ impl RetryFrom {
         multiplier_range: core::ops::Range<f32>,
     ) -> Self {
         Self::calculated_or_never(|| {
-            let multiplier: f32 = 2.0_f32.powf(exponent).clamp(multiplier_range.start, multiplier_range.end);
+            let multiplier: f32 = 2.0_f32
+                .powf(exponent)
+                .clamp(multiplier_range.start, multiplier_range.end);
             let delay = Duration::try_from_secs_f32(base_delay.as_secs_f32() * multiplier).ok()?;
             Some(RetryFrom::FromTime(from.checked_add(delay)?))
         })
     }
 
-    fn after_fixed_delay(
-        from: SystemTime,
-        delay: Duration,
-    ) -> Self {
-        Self::calculated_or_never(|| {
-            Some(RetryFrom::FromTime(from.checked_add(delay)?))
-        })
+    fn after_fixed_delay(from: SystemTime, delay: Duration) -> Self {
+        Self::calculated_or_never(|| Some(RetryFrom::FromTime(from.checked_add(delay)?)))
     }
 
     fn after_instant(instant: Instant) -> Self {
@@ -370,8 +367,7 @@ impl RetryFrom {
             // Add one more second so we don't risk retrying before the timestamp
             // on ledger has updated
             let unix_seconds = unix_seconds.checked_add(1)?;
-            let at_time = SystemTime::UNIX_EPOCH
-                .checked_add(Duration::from_secs(unix_seconds))?;
+            let at_time = SystemTime::UNIX_EPOCH.checked_add(Duration::from_secs(unix_seconds))?;
             Some(RetryFrom::FromTime(at_time))
         })
     }
@@ -542,7 +538,8 @@ impl PendingTransactionRecord {
                     } => {
                         // Previous rejections increase the exponent
                         // and previous non-rejections decrease it by half as much
-                        let exponent = (previous_rejection_count as f32) - ((previous_non_rejection_count as f32) / 2f32);
+                        let exponent = (previous_rejection_count as f32)
+                            - ((previous_non_rejection_count as f32) / 2f32);
                         // The resultant value is base_delay * multiplier where the multiplier
                         // is 2^exponent and then clamped within this range
                         let multiplier_range = 0.5f32..100f32;
@@ -554,12 +551,8 @@ impl PendingTransactionRecord {
                         )
                     }
                     RejectionPermanence::Temporary {
-                        retry: RetrySettings::FromProposerTimestamp {
-                            proposer_timestamp,
-                        },
-                    } => {
-                        RetryFrom::after_instant(proposer_timestamp)
-                    }
+                        retry: RetrySettings::FromProposerTimestamp { proposer_timestamp },
+                    } => RetryFrom::after_instant(proposer_timestamp),
                     RejectionPermanence::PermanentForPayload
                     | RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => {
                         // If RejectionPermanence was Permanent, this has already been handled
@@ -619,7 +612,10 @@ impl PendingTransactionResultCache {
         metadata: TransactionMetadata,
         attempt: TransactionAttempt,
     ) -> PendingTransactionRecord {
-        let TransactionMetadata { user_transaction_hashes, end_epoch_exclusive } = metadata;
+        let TransactionMetadata {
+            user_transaction_hashes,
+            end_epoch_exclusive,
+        } = metadata;
         let existing_record = self
             .pending_transaction_records
             .get_mut(&user_transaction_hashes.notarized_transaction_hash);
@@ -1345,7 +1341,10 @@ mod tests {
         end_epoch_exclusive: Epoch,
     ) -> TransactionMetadata {
         TransactionMetadata {
-            user_transaction_hashes: user_hashes(transaction_intent_hash, notarized_transaction_hash),
+            user_transaction_hashes: user_hashes(
+                transaction_intent_hash,
+                notarized_transaction_hash,
+            ),
             end_epoch_exclusive,
         }
     }

@@ -230,10 +230,7 @@ impl MempoolManager {
         for candidate_transaction in candidate_transactions {
             let executable = &candidate_transaction.transaction.executable;
             let user_hashes = &candidate_transaction.transaction.hashes;
-            let metadata = TransactionMetadata::read_from_user_executable(
-                executable,
-                user_hashes,
-            );
+            let metadata = TransactionMetadata::read_from_user_executable(executable, user_hashes);
 
             let attempt = self.committability_validator.check_for_rejection(
                 executable,
@@ -294,7 +291,9 @@ impl MempoolManager {
         force_recalculate: bool,
     ) -> Result<Arc<MempoolTransaction>, MempoolAddError> {
         // STEP 1 - We prepare the transaction to check it's in the right structure and so we have hashes to work with
-        let prepared = match self.committability_validator.prepare_from_raw(&raw_transaction)
+        let prepared = match self
+            .committability_validator
+            .prepare_from_raw(&raw_transaction)
         {
             Ok(prepared) => prepared,
             Err(prepare_error) => {
@@ -331,7 +330,10 @@ impl MempoolManager {
             ForceRecalculation::IfCachedAsValid
         };
         let (record, check_result) = self
-            .read_cached_committability_of_submitted_transaction_or_recalculate(prepared, force_recalculation);
+            .read_cached_committability_of_submitted_transaction_or_recalculate(
+                prepared,
+                force_recalculation,
+            );
 
         // STEP 4 - We check if the result should mean we add the transaction to our mempool
         let PendingExecutedTransaction {
@@ -362,7 +364,7 @@ impl MempoolManager {
 
     /// Reads the transaction rejection status from the cache, else calculates it fresh, using
     /// the [`CommittabilityValidator`]. The result is stored in the cache.
-    /// 
+    ///
     /// If the transaction is freshly rejected, the caller should perform additional cleanup,
     /// e.g. removing the transaction from the mempool.
     fn read_cached_committability_of_submitted_transaction_or_recalculate(
@@ -372,8 +374,12 @@ impl MempoolManager {
     ) -> (PendingTransactionRecord, CheckMetadata) {
         let current_time = SystemTime::now();
 
-        if let ShouldRecalculate::No(record) =
-            self.should_recalculate_submitted_transaction_committability(&prepared, current_time, force_recalculate)
+        if let ShouldRecalculate::No(record) = self
+            .should_recalculate_submitted_transaction_committability(
+                &prepared,
+                current_time,
+                force_recalculate,
+            )
         {
             return (record, CheckMetadata::Cached);
         }
@@ -390,7 +396,8 @@ impl MempoolManager {
                     &user_hashes,
                     current_time,
                 );
-                let record = self.pending_transaction_result_cache
+                let record = self
+                    .pending_transaction_result_cache
                     .write()
                     .track_transaction_result(metadata, attempt);
                 (
@@ -408,13 +415,11 @@ impl MempoolManager {
                     against_state: AtState::Static,
                     timestamp: current_time,
                 };
-                let record = self.pending_transaction_result_cache
+                let record = self
+                    .pending_transaction_result_cache
                     .write()
                     .track_transaction_result(metadata, attempt);
-                (
-                    record,
-                    CheckMetadata::Fresh(StaticValidation::Invalid),
-                )
+                (record, CheckMetadata::Fresh(StaticValidation::Invalid))
             }
         }
     }
@@ -430,7 +435,8 @@ impl MempoolManager {
         }
 
         // Even though we only want to read the cache here, the LRU structs require a write lock
-        let record_from_cache = self.pending_transaction_result_cache
+        let record_from_cache = self
+            .pending_transaction_result_cache
             .write()
             .get_pending_transaction_record(prepared.hashes());
 
@@ -464,7 +470,9 @@ impl MempoolManager {
         let mut mempool = self.mempool.write();
 
         mempool.observe_pending_execution_result(
-            &transaction_metadata.user_transaction_hashes.notarized_transaction_hash,
+            &transaction_metadata
+                .user_transaction_hashes
+                .notarized_transaction_hash,
             &attempt,
         );
         pending_cache.track_transaction_result(transaction_metadata, attempt);

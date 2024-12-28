@@ -31,7 +31,7 @@ pub(crate) async fn handle_transaction_parse(
         response_mode: request.response_mode.unwrap_or(ResponseMode::Full),
         validation_mode: request.validation_mode.unwrap_or(ValidationMode::_Static),
         transaction_validator: *state.state_manager.transaction_validator.read(),
-        committability_validator: &*state.state_manager.committability_validator,
+        committability_validator: &state.state_manager.committability_validator,
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);
