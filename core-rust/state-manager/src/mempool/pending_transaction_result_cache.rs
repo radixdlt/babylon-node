@@ -616,10 +616,10 @@ impl PendingTransactionResultCache {
     /// Note - the invalid_from_epoch only needs to be provided if the attempt is not a permanent rejection
     pub fn track_transaction_result(
         &mut self,
-        user_transaction_hashes: UserTransactionHashes,
-        invalid_from_epoch: Option<Epoch>,
+        metadata: TransactionMetadata,
         attempt: TransactionAttempt,
     ) -> PendingTransactionRecord {
+        let TransactionMetadata { user_transaction_hashes, end_epoch_exclusive } = metadata;
         let existing_record = self
             .pending_transaction_records
             .get_mut(&user_transaction_hashes.notarized_transaction_hash);
@@ -631,7 +631,7 @@ impl PendingTransactionResultCache {
             return record.clone();
         }
 
-        let new_record = PendingTransactionRecord::new(invalid_from_epoch, attempt);
+        let new_record = PendingTransactionRecord::new(Some(end_epoch_exclusive), attempt);
 
         // If it's a permanent rejection, then:
         // - It could be statically invalid
@@ -908,6 +908,64 @@ impl PendingTransactionResultCache {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct TransactionMetadata {
+    pub user_transaction_hashes: UserTransactionHashes,
+    pub end_epoch_exclusive: Epoch,
+}
+
+impl TransactionMetadata {
+    pub fn read_from_user_executable(
+        executable: &ExecutableTransaction,
+        user_hashes: &UserTransactionHashes,
+    ) -> Self {
+        Self {
+            user_transaction_hashes: user_hashes.clone(),
+            end_epoch_exclusive: executable
+                .overall_epoch_range()
+                .expect("User executable transactions should have an epoch range")
+                .end_epoch_exclusive,
+        }
+    }
+
+    pub fn read_from_prepared(prepared: &PreparedUserTransaction) -> Self {
+        Self {
+            user_transaction_hashes: prepared.hashes(),
+            end_epoch_exclusive: match prepared {
+                #[allow(deprecated)]
+                PreparedUserTransaction::V1(prepared) => {
+                    prepared
+                        .signed_intent
+                        .intent
+                        .header
+                        .inner
+                        .end_epoch_exclusive
+                }
+                PreparedUserTransaction::V2(prepared) => {
+                    let transaction_intent = &prepared.signed_intent.transaction_intent;
+
+                    let root_intent_expiry_epoch = transaction_intent
+                        .root_intent_core
+                        .header
+                        .inner
+                        .end_epoch_exclusive;
+                    let non_root_intent_expiry_epochs = transaction_intent
+                        .non_root_subintents
+                        .subintents
+                        .iter()
+                        .map(|subintent| subintent.intent_core.header.inner.end_epoch_exclusive);
+
+                    // Unwrapping as we know it's non-empty
+                    std::iter::once(root_intent_expiry_epoch)
+                        .chain(non_root_intent_expiry_epochs)
+                        .min()
+                        .unwrap()
+                }
+            },
+        }
+    }
+}
+
 struct CommittedIntentRecord {
     state_version: StateVersion,
     notarized_transaction_hash: NotarizedTransactionHash,
@@ -976,18 +1034,15 @@ mod tests {
 
         // Start by adding 3 payloads against first intent hash. These all fit in, but cache is full
         cache.track_transaction_result(
-            user_hashes(intent_hash_1, payload_hash_1),
-            None,
+            transaction_metadata(intent_hash_1, payload_hash_1, Epoch::of(0)),
             example_attempt_1.clone(),
         );
         cache.track_transaction_result(
-            user_hashes(intent_hash_1, payload_hash_2),
-            Some(Epoch::of(0)),
+            transaction_metadata(intent_hash_1, payload_hash_2, Epoch::of(0)),
             example_attempt_2.clone(),
         );
         cache.track_transaction_result(
-            user_hashes(intent_hash_1, payload_hash_3),
-            None,
+            transaction_metadata(intent_hash_1, payload_hash_3, Epoch::of(0)),
             example_attempt_1.clone(),
         );
         assert_eq!(
@@ -999,8 +1054,7 @@ mod tests {
 
         // Now add another rejection - the first rejection (intent_1, payload_1, reason_1) should drop out
         cache.track_transaction_result(
-            user_hashes(intent_hash_2, payload_hash_4),
-            None,
+            transaction_metadata(intent_hash_2, payload_hash_4, Epoch::of(0)),
             example_attempt_1.clone(),
         );
         assert_eq!(
@@ -1044,13 +1098,11 @@ mod tests {
         // So (intent_1, payload_3, reason_1) and (intent_2, payload_4, reason_1) should drop out instead
         cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_2));
         cache.track_transaction_result(
-            user_hashes(intent_hash_3, payload_hash_5),
-            None,
+            transaction_metadata(intent_hash_3, payload_hash_5, Epoch::of(0)),
             example_attempt_1.clone(),
         );
         cache.track_transaction_result(
-            user_hashes(intent_hash_3, payload_hash_6),
-            None,
+            transaction_metadata(intent_hash_3, payload_hash_6, Epoch::of(0)),
             example_attempt_1,
         );
         assert_eq!(
@@ -1176,8 +1228,7 @@ mod tests {
 
         // Permanent Rejection
         cache.track_transaction_result(
-            user_hashes(intent_hash_1, payload_hash_1),
-            None,
+            transaction_metadata(intent_hash_1, payload_hash_1, Epoch::of(50)),
             attempt_with_permanent_rejection,
         );
         let record =
@@ -1190,8 +1241,7 @@ mod tests {
 
         // Temporary Rejection
         cache.track_transaction_result(
-            user_hashes(intent_hash_1, payload_hash_2),
-            Some(Epoch::of(50)),
+            transaction_metadata(intent_hash_1, payload_hash_2, Epoch::of(50)),
             attempt_with_temporary_rejection,
         );
         // A little in future, a temporary rejection is not ready for recalculation
@@ -1212,8 +1262,7 @@ mod tests {
 
         // No rejection
         cache.track_transaction_result(
-            user_hashes(intent_hash_1, payload_hash_3),
-            Some(Epoch::of(50)),
+            transaction_metadata(intent_hash_1, payload_hash_3, Epoch::of(50)),
             attempt_with_no_rejection,
         );
 
@@ -1235,8 +1284,7 @@ mod tests {
 
         // Temporary Rejection with recalculation from epoch 10
         cache.track_transaction_result(
-            user_hashes(intent_hash_2, payload_hash_4),
-            Some(Epoch::of(50)),
+            transaction_metadata(intent_hash_2, payload_hash_4, Epoch::of(50)),
             attempt_with_rejection_until_epoch_10,
         );
 
@@ -1263,13 +1311,12 @@ mod tests {
     fn track_transaction_result_does_not_panic_on_lots_of_failures() {
         let mut cache = create_subject(1, 1, 1);
 
-        let transaction_hashes = user_hashes(intent_hash(1), user_payload_hash(1));
+        let metadata = transaction_metadata(intent_hash(1), user_payload_hash(1), Epoch::of(50));
         let mut latest_attempt = SystemTime::now();
 
         for _ in 0..100 {
             cache.track_transaction_result(
-                transaction_hashes.clone(),
-                Some(Epoch::of(50)),
+                metadata.clone(),
                 temporary_error_attempt(latest_attempt),
             );
             latest_attempt += Duration::from_secs(1);
@@ -1289,6 +1336,17 @@ mod tests {
                 state_version: StateVersion::pre_genesis(),
             }),
             timestamp: attempt_timestamp,
+        }
+    }
+
+    fn transaction_metadata(
+        transaction_intent_hash: TransactionIntentHash,
+        notarized_transaction_hash: NotarizedTransactionHash,
+        end_epoch_exclusive: Epoch,
+    ) -> TransactionMetadata {
+        TransactionMetadata {
+            user_transaction_hashes: user_hashes(transaction_intent_hash, notarized_transaction_hash),
+            end_epoch_exclusive,
         }
     }
 
