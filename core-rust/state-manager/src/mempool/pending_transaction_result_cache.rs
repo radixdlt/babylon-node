@@ -1234,6 +1234,39 @@ mod tests {
             .should_recalculate(current_epoch, little_in_future));
     }
 
+    #[test]
+    fn track_transaction_result_does_not_panic_on_lots_of_failures() {
+        let mut cache = create_subject(1, 1, 1);
+
+        let transaction_hashes = user_hashes(intent_hash(1), user_payload_hash(1));
+        let mut latest_attempt = SystemTime::now();
+
+        for _ in 0..100 {
+            cache.track_transaction_result(
+                transaction_hashes.clone(),
+                Some(Epoch::of(50)),
+                temporary_error_attempt(latest_attempt),
+            );
+            latest_attempt += Duration::from_secs(1);
+        }
+    }
+
+    fn temporary_error_attempt(attempt_timestamp: SystemTime) -> TransactionAttempt {
+        TransactionAttempt {
+            rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
+                ExecutionRejectionReason::BootloadingError(
+                    BootloadingError::FailedToApplyDeferredCosts(CostingError::FeeReserveError(
+                        FeeReserveError::Overflow,
+                    )),
+                ),
+            ))),
+            against_state: AtState::Specific(AtSpecificState::Committed {
+                state_version: StateVersion::pre_genesis(),
+            }),
+            timestamp: attempt_timestamp,
+        }
+    }
+
     fn user_hashes(
         transaction_intent_hash: TransactionIntentHash,
         notarized_transaction_hash: NotarizedTransactionHash,
