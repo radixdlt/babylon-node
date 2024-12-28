@@ -5,7 +5,6 @@ use std::{
     collections::hash_map::Entry,
     fmt,
     num::NonZeroUsize,
-    ops::Add,
     time::{Duration, SystemTime},
 };
 
@@ -339,6 +338,49 @@ pub enum RetryFrom {
     Whenever,
 }
 
+impl RetryFrom {
+    fn exponential_backoff(
+        from: SystemTime,
+        base_delay: Duration,
+        exponent: f32,
+        multiplier_range: core::ops::Range<f32>,
+    ) -> Self {
+        Self::calculated_or_never(|| {
+            let multiplier: f32 = 2.0_f32.powf(exponent).clamp(multiplier_range.start, multiplier_range.end);
+            let delay = Duration::try_from_secs_f32(base_delay.as_secs_f32() * multiplier).ok()?;
+            Some(RetryFrom::FromTime(from.checked_add(delay)?))
+        })
+    }
+
+    fn after_fixed_delay(
+        from: SystemTime,
+        delay: Duration,
+    ) -> Self {
+        Self::calculated_or_never(|| {
+            Some(RetryFrom::FromTime(from.checked_add(delay)?))
+        })
+    }
+
+    fn after_instant(instant: Instant) -> Self {
+        let Instant {
+            seconds_since_unix_epoch,
+        } = instant;
+        Self::calculated_or_never(|| {
+            let unix_seconds = u64::try_from(seconds_since_unix_epoch).ok()?;
+            // Add one more second so we don't risk retrying before the timestamp
+            // on ledger has updated
+            let unix_seconds = unix_seconds.checked_add(1)?;
+            let at_time = SystemTime::UNIX_EPOCH
+                .checked_add(Duration::from_secs(unix_seconds))?;
+            Some(RetryFrom::FromTime(at_time))
+        })
+    }
+
+    fn calculated_or_never(calculate: impl FnOnce() -> Option<Self>) -> Self {
+        calculate().unwrap_or(RetryFrom::Never)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PendingExecutedTransaction {
     pub executable: ExecutableTransaction,
@@ -498,38 +540,25 @@ impl PendingTransactionRecord {
                     RejectionPermanence::Temporary {
                         retry: RetrySettings::AfterDelay { base_delay },
                     } => {
-                        // Use exponential back-off.
-                        // Previous rejections increase the exponent, previous non-rejections decrease it by half as much
-                        let base: f32 = 2.0;
-                        let exponent: f32 = (previous_rejection_count as f32)
-                            - ((previous_non_rejection_count as f32) / 2f32);
-                        let multiplier: f32 = base.powf(exponent);
-
-                        let delay = base_delay.mul_f32(multiplier).min(MAX_RECALCULATION_DELAY);
-
-                        RetryFrom::FromTime(attempt.timestamp.add(delay))
+                        // Previous rejections increase the exponent
+                        // and previous non-rejections decrease it by half as much
+                        let exponent = (previous_rejection_count as f32) - ((previous_non_rejection_count as f32) / 2f32);
+                        // The resultant value is base_delay * multiplier where the multiplier
+                        // is 2^exponent and then clamped within this range
+                        let multiplier_range = 0.5f32..100f32;
+                        RetryFrom::exponential_backoff(
+                            attempt.timestamp,
+                            base_delay,
+                            exponent,
+                            multiplier_range,
+                        )
                     }
                     RejectionPermanence::Temporary {
-                        retry:
-                            RetrySettings::FromProposerTimestamp {
-                                proposer_timestamp:
-                                    Instant {
-                                        seconds_since_unix_epoch,
-                                    },
-                            },
+                        retry: RetrySettings::FromProposerTimestamp {
+                            proposer_timestamp,
+                        },
                     } => {
-                        u64::try_from(seconds_since_unix_epoch)
-                            .ok()
-                            // Add one more second so we don't risk retrying before the timestamp on ledger has updated
-                            .and_then(|seconds_since_unix_epoch| {
-                                seconds_since_unix_epoch.checked_add(1)
-                            })
-                            .and_then(|retry_in_seconds| {
-                                SystemTime::UNIX_EPOCH
-                                    .checked_add(Duration::from_secs(retry_in_seconds))
-                            })
-                            .map(RetryFrom::FromTime)
-                            .unwrap_or(RetryFrom::Never)
+                        RetryFrom::after_instant(proposer_timestamp)
                     }
                     RejectionPermanence::PermanentForPayload
                     | RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => {
@@ -540,19 +569,15 @@ impl PendingTransactionRecord {
             }
             None => {
                 // Transaction was not rejected
-                // Use a flat delay to check it's still not rejected again soon (eg to catch a fee-vault now being out of money)
-                let delay = NON_REJECTION_RECALCULATION_DELAY;
-
-                RetryFrom::FromTime(attempt.timestamp.add(delay))
+                // Use a flat delay to check it's still not rejected again soon
+                // (e.g. to catch a fee-vault now being out of money)
+                RetryFrom::after_fixed_delay(attempt.timestamp, Duration::from_secs(120))
             }
         };
 
         self.retry_from = new_retry_from;
     }
 }
-
-const NON_REJECTION_RECALCULATION_DELAY: Duration = Duration::from_secs(120);
-const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
 
 pub struct PendingTransactionResultCache {
     pending_transaction_records: LruCache<
@@ -1094,8 +1119,8 @@ mod tests {
         let recently_committed_intents_limit = 1;
 
         let start = SystemTime::now();
-        let far_in_future = start.add(Duration::from_secs(u32::MAX as u64));
-        let little_in_future = start.add(Duration::from_secs(1));
+        let far_in_future = start + Duration::from_secs(u32::MAX as u64);
+        let little_in_future = start + Duration::from_secs(1);
 
         let mut cache = create_subject(rejection_limit, recently_committed_intents_limit, 1);
 

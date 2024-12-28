@@ -226,7 +226,7 @@ impl MempoolManager {
         };
 
         for candidate_transaction in candidate_transactions {
-            // invoking the check automatically removes the transaction when rejected
+            // Invoking the check automatically removes the transaction when rejected
             self.cached_committability_validator
                 .check_for_rejection_validated(
                     &candidate_transaction.transaction.executable,
