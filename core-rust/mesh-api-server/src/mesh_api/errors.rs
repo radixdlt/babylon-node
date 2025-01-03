@@ -223,7 +223,7 @@ pub(crate) fn assert_matching_network(
         );
     } else if network_identifier.sub_network_identifier.is_some() {
         return Err(ResponseError::from(ApiError::InvalidNetwork)
-            .with_details(format!("Invalid network - subnetworks not supported",)));
+            .with_details("Invalid network - subnetworks not supported".to_string()));
     }
     Ok(())
 }

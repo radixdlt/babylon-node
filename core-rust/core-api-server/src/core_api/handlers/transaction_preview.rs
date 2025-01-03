@@ -155,7 +155,7 @@ fn to_api_response(
                     ),
                 )?),
                 radix_engine_toolkit_receipt: toolkit_receipt,
-                instruction_resource_changes,
+                instruction_resource_changes: Some(instruction_resource_changes),
                 logs,
             }
         }
@@ -168,7 +168,7 @@ fn to_api_response(
                 reject_result,
             )?),
             radix_engine_toolkit_receipt: toolkit_receipt,
-            instruction_resource_changes: vec![],
+            instruction_resource_changes: Some(vec![]),
             logs: vec![],
         },
         TransactionResult::Abort(_) => {
