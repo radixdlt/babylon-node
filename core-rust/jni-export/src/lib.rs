@@ -93,4 +93,7 @@ fn export_extern_functions() {
 
     // engine-state-api-server
     engine_state_api_server::jni::export_extern_functions();
+
+    // mesh-api-server
+    mesh_api_server::jni::export_extern_functions();
 }

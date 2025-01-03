@@ -64,6 +64,7 @@
 
 package com.radixdlt.monitoring;
 
+import io.netty.util.internal.StringUtil;
 import java.io.IOException;
 import java.util.*;
 
@@ -100,9 +101,9 @@ public record ApplicationVersion(String branch, String commit, String display, S
       if (is != null) {
         var p = new Properties();
         p.load(is);
-        branch = p.getProperty("VERSION_BRANCH", branch);
-        commit = p.getProperty("VERSION_COMMIT", commit);
-        display = p.getProperty("VERSION_DISPLAY", display);
+        branch = propertyWithFallback(p, "VERSION_BRANCH", branch);
+        commit = propertyWithFallback(p, "VERSION_COMMIT", commit);
+        display = propertyWithFallback(p, "VERSION_DISPLAY", display);
         Map<String, String> map = new HashMap<>();
         for (var key : p.stringPropertyNames()) {
           var mapKey = key.split("_", 2)[1].toLowerCase(Locale.US);
@@ -115,5 +116,14 @@ public record ApplicationVersion(String branch, String commit, String display, S
       // Ignore exception
     }
     return new ApplicationVersion(branch, commit, display, string);
+  }
+
+  private static String propertyWithFallback(
+      Properties properties, String propertyName, String fallback) {
+    var value = properties.getProperty(propertyName);
+    if (StringUtil.isNullOrEmpty(value)) {
+      return fallback;
+    }
+    return value;
   }
 }
