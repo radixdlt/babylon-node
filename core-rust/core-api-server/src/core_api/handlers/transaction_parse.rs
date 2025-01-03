@@ -25,14 +25,13 @@ pub(crate) async fn handle_transaction_parse(
     let bytes =
         from_hex(request.payload_hex).map_err(|err| err.into_response_error("payload_hex"))?;
 
-    let read_commitability_validator = state.state_manager.committability_validator.read();
     let context = ParseContext {
         mapping_context: MappingContext::new(&state.network)
             .with_transaction_formats(&request.transaction_format_options),
         response_mode: request.response_mode.unwrap_or(ResponseMode::Full),
         validation_mode: request.validation_mode.unwrap_or(ValidationMode::_Static),
         transaction_validator: *state.state_manager.transaction_validator.read(),
-        committability_validator: read_commitability_validator.deref(),
+        committability_validator: &state.state_manager.committability_validator,
     };
 
     let parse_mode = request.parse_mode.unwrap_or(ParseMode::Any);

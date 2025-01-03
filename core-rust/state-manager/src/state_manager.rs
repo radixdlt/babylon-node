@@ -170,7 +170,7 @@ pub struct StateManager {
     pub database: Arc<DbLock<ActualStateManagerDatabase>>,
     pub mempool_manager: Arc<MempoolManager>,
     pub transaction_validator: Arc<RwLock<TransactionValidator>>,
-    pub committability_validator: Arc<RwLock<CommittabilityValidator>>,
+    pub committability_validator: Arc<CommittabilityValidator>,
     pub transaction_previewer: Arc<TransactionPreviewer>,
     pub preparator: Arc<Preparator>,
     pub committer: Arc<Committer>,
@@ -263,30 +263,24 @@ impl StateManager {
                     NonZeroUsize::new(10000).unwrap(),
                 ));
 
-        let committability_validator =
-            Arc::new(lock_factory.named("committability_validator").new_rwlock(
-                CommittabilityValidator::new(
-                    database.clone(),
-                    execution_configurator.clone(),
-                    transaction_validator.clone(),
-                    formatter.clone(),
-                ),
-            ));
-        let cached_committability_validator = CachedCommittabilityValidator::new(
+        let committability_validator = Arc::new(CommittabilityValidator::new(
             database.clone(),
-            committability_validator.clone(),
-            pending_transaction_result_cache,
-        );
+            execution_configurator.clone(),
+            transaction_validator.clone(),
+            formatter.clone(),
+        ));
         let mempool_manager = Arc::new(match mempool_relay_dispatcher {
             None => MempoolManager::new_for_testing(
                 mempool,
-                cached_committability_validator,
+                pending_transaction_result_cache,
+                committability_validator.clone(),
                 metrics_registry,
             ),
             Some(mempool_relay_dispatcher) => MempoolManager::new(
                 mempool,
                 mempool_relay_dispatcher,
-                cached_committability_validator,
+                pending_transaction_result_cache,
+                committability_validator.clone(),
                 metrics_registry,
             ),
         });
