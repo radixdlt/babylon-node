@@ -8089,6 +8089,9 @@ components:
             This object holds changes in resource balances for all vaults within affected
             accounts/components for each instruction.
 
+            NOTE: This field should not be relied upon for a comprehensive view of balance changes
+            (eg., it does not include recalls). Instead, the receipt balance changes should be used.
+
             This field is deprecated (and not required) as of the Dugong release and may be removed
             from the API in the future.
           items:
