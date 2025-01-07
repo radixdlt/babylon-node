@@ -114,7 +114,7 @@ pub fn extract_radix_account_address_from_account_identifier(
 ) -> Result<ComponentAddress, ExtractionError> {
     if account_identifier.sub_account.is_some() {
         return Err(ExtractionError::InvalidAccount {
-            message: format!("Sub accounts not supported"),
+            message: "Sub accounts not supported".to_string(),
         });
     }
     let component_address =

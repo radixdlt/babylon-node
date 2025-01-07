@@ -28,10 +28,10 @@ pub(crate) async fn handle_mempool_transaction(
             )),
         );
     } else {
-        payload_hashes.get(0).unwrap()
+        payload_hashes.first().unwrap()
     };
 
-    let user_transaction = match mempool.get_mempool_payload(&notarized_transaction_hash) {
+    let user_transaction = match mempool.get_mempool_payload(notarized_transaction_hash) {
         Some(transaction) => {
             // Transaction is known to be executable, so it is safe to unwrap here
             transaction.raw.into_typed().unwrap()
@@ -53,7 +53,7 @@ pub(crate) async fn handle_mempool_transaction(
 
         UserTransaction::V2(_) => {
             return Err(ResponseError::from(ApiError::InvalidTransaction)
-                .with_details(format!("Transaction V2 not supported")))
+                .with_details("Transaction V2 not supported".to_string()))
         }
     };
 

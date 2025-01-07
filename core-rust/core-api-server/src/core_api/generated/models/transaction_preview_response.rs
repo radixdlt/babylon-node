@@ -15,28 +15,29 @@
 pub struct TransactionPreviewResponse {
     #[serde(rename = "at_ledger_state")]
     pub at_ledger_state: Box<crate::core_api::generated::models::LedgerStateSummary>,
-    /// The hex-sbor-encoded receipt.  This field is deprecated and will be removed from the API with the release of the next  protocol update, cuttlefish. This field was provided primarily for use with the Radix  Engine Toolkit and its execution summary functionality. If you still wish to use this  functionality update your Radix Engine Toolkit and use the receipt provided in the  `radix_engine_toolkit_receipt` field of this response. 
+    /// The hex-sbor-encoded receipt.  This field is deprecated and will be removed from the API with the release of the next protocol update, cuttlefish. This field was provided primarily for use with the Radix Engine Toolkit and its execution summary functionality. If you still wish to use this functionality update your Radix Engine Toolkit and use the receipt provided in the `radix_engine_toolkit_receipt` field of this response. 
     #[serde(rename = "encoded_receipt")]
     pub encoded_receipt: String,
     #[serde(rename = "receipt")]
     pub receipt: Box<crate::core_api::generated::models::TransactionReceipt>,
-    /// An optional field which is only provided if the `radix_engine_toolkit_receipt` flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information  that is already available in the receipt provided in the `receipt` field of this  response.  A typical client of this API is not expected to use this receipt. The primary clients  this receipt is intended for is the Radix wallet or any client that needs to perform  execution summaries on their transactions. 
+    /// An optional field which is only provided if the `radix_engine_toolkit_receipt` flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information that is already available in the receipt provided in the `receipt` field of this response.  A typical client of this API is not expected to use this receipt. The primary clients this receipt is intended for is the Radix wallet or any client that needs to perform execution summaries on their transactions. 
     #[serde(rename = "radix_engine_toolkit_receipt", skip_serializing_if = "Option::is_none")]
     pub radix_engine_toolkit_receipt: Option<serde_json::Value>,
-    #[serde(rename = "instruction_resource_changes")]
-    pub instruction_resource_changes: Vec<crate::core_api::generated::models::InstructionResourceChanges>,
+    /// This object holds changes in resource balances for all vaults within affected accounts/components for each instruction.  This field is deprecated (and not required) as of the Dugong release and may be removed from the API in the future. 
+    #[serde(rename = "instruction_resource_changes", skip_serializing_if = "Option::is_none")]
+    pub instruction_resource_changes: Option<Vec<crate::core_api::generated::models::InstructionResourceChanges>>,
     #[serde(rename = "logs")]
     pub logs: Vec<crate::core_api::generated::models::TransactionPreviewResponseLogsInner>,
 }
 
 impl TransactionPreviewResponse {
-    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, encoded_receipt: String, receipt: crate::core_api::generated::models::TransactionReceipt, instruction_resource_changes: Vec<crate::core_api::generated::models::InstructionResourceChanges>, logs: Vec<crate::core_api::generated::models::TransactionPreviewResponseLogsInner>) -> TransactionPreviewResponse {
+    pub fn new(at_ledger_state: crate::core_api::generated::models::LedgerStateSummary, encoded_receipt: String, receipt: crate::core_api::generated::models::TransactionReceipt, logs: Vec<crate::core_api::generated::models::TransactionPreviewResponseLogsInner>) -> TransactionPreviewResponse {
         TransactionPreviewResponse {
             at_ledger_state: Box::new(at_ledger_state),
             encoded_receipt,
             receipt: Box::new(receipt),
             radix_engine_toolkit_receipt: None,
-            instruction_resource_changes,
+            instruction_resource_changes: None,
             logs,
         }
     }
