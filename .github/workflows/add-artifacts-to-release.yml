@@ -7,7 +7,7 @@ on:
 jobs:
   setup_version_properties:
     name: Setup version properties
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       VERSION_BRANCH: ${{ steps.setup_version_properties.outputs.VERSION_BRANCH }}
       VERSION_BUILD: ${{ steps.setup_version_properties.outputs.VERSION_BUILD }}
@@ -37,11 +37,13 @@ jobs:
             target: aarch64-apple-darwin
             artifact: 'libcorerust.dylib'
             zipname: 'arch-darwin-aarch64'
-          - os: ubuntu-latest
+            # We use ubuntu-22.04 rather than ubuntu-latest to get a fixed GLIBC dependency
+            # We can update this when we update our minimum supported linux version
+          - os: ubuntu-22.04 # Fix GLIBC
             target: x86_64-unknown-linux-gnu
             artifact: 'libcorerust.so'
             zipname: 'arch-linux-x86_64'
-          - os: ubuntu-latest
+          - os: ubuntu-22.04 # Fix GLIBC
             target: aarch64-unknown-linux-gnu
             zipname: 'arch-linux-aarch64'
             artifact: 'libcorerust.so'
@@ -86,7 +88,7 @@ jobs:
         run: |
           rustup toolchain install stable-gnu
           rustup set default-host ${{ matrix.target }}
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-22.04' # Fix GLIBC
         name: Build dependencies ubuntu
         run: |
           sudo apt-get update -y && sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
@@ -112,7 +114,7 @@ jobs:
       - setup_version_properties
     permissions:
       contents: write
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-22.04' # Fix GLIBC
     continue-on-error: true
     strategy:
       matrix:
@@ -160,7 +162,7 @@ jobs:
     name: Build and Upload Application Binary
     permissions:
       contents: write
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04 # Fix GLIBC
     needs:
       - setup_version_properties
     environment: publish-artifacts
@@ -203,7 +205,7 @@ jobs:
   snyk-sbom:
     if: github.event_name == 'release'
     name: SBOM
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # Fix GLIBC
     permissions: write-all
     steps:
       - uses: RDXWorks-actions/checkout@main

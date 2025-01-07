@@ -439,8 +439,8 @@ impl Preparator {
                                 user_hashes.clone(),
                             ));
                             pending_transaction_results.push(PendingTransactionResult {
-                                user_hashes: user_hashes.clone(),
-                                invalid_at_epoch: prepared_details.end_epoch_exclusive,
+                                user_transaction_hashes: user_hashes.clone(),
+                                end_epoch_exclusive: prepared_details.end_epoch_exclusive,
                                 rejection_reason: Some(error.into()),
                             });
                         }
@@ -495,8 +495,8 @@ impl Preparator {
                                 user_hashes.clone(),
                             ));
                             pending_transaction_results.push(PendingTransactionResult {
-                                user_hashes,
-                                invalid_at_epoch,
+                                user_transaction_hashes: user_hashes,
+                                end_epoch_exclusive: invalid_at_epoch,
                                 rejection_reason: None,
                             });
                             match success {
@@ -531,8 +531,8 @@ impl Preparator {
                 }) => {
                     let error_message = format!("{:?}", &result.reason);
                     pending_transaction_results.push(PendingTransactionResult {
-                        user_hashes: user_hashes.clone(),
-                        invalid_at_epoch,
+                        user_transaction_hashes: user_hashes.clone(),
+                        end_epoch_exclusive: invalid_at_epoch,
                         rejection_reason: Some(MempoolRejectionReason::FromExecution(Box::new(
                             result.reason,
                         ))),
@@ -569,11 +569,14 @@ impl Preparator {
                 timestamp: pending_transaction_timestamp,
             };
 
-            self.mempool_manager.observe_pending_execution_result(
-                pending_transaction_result.user_hashes,
-                Some(pending_transaction_result.invalid_at_epoch),
-                attempt,
-            );
+            self.mempool_manager
+                .observe_pending_transaction_execution_attempt(
+                    TransactionMetadata {
+                        user_transaction_hashes: pending_transaction_result.user_transaction_hashes,
+                        end_epoch_exclusive: pending_transaction_result.end_epoch_exclusive,
+                    },
+                    attempt,
+                );
         }
 
         self.vertex_prepare_metrics.update(
@@ -650,7 +653,7 @@ pub struct PreparedScenarioMetadata {
 }
 
 struct PendingTransactionResult {
-    pub user_hashes: UserTransactionHashes,
-    pub invalid_at_epoch: Epoch,
+    pub user_transaction_hashes: UserTransactionHashes,
+    pub end_epoch_exclusive: Epoch,
     pub rejection_reason: Option<MempoolRejectionReason>,
 }
