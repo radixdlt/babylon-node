@@ -229,7 +229,7 @@ jobs:
       pull-requests: read
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@main
     with:
-      aws_dockerhub_secret: github-actions/common/dockerhub-credentials
+      aws_dockerhub_secret: github-actions/common/dockerhub-credentials-read-only
       amd_meta_data_json: ${{needs.build_push_container_private.outputs.json}}
     secrets:
       role-to-assume: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
