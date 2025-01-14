@@ -233,6 +233,41 @@ jobs:
           # Might be set to warn for debugging purposes. Warning, log file will be huge.
           RADIXDLT_LOG_LEVEL: error
         run: ./gradlew clean runTargetedIntegrationTests --info --refresh-dependencies --parallel
+  mesh-api-test-suite:
+    name: Run Mesh API tests
+    runs-on: selfhosted-ubuntu-22.04-16-cores
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - name: Cache Gradle packages
+        uses: RDXWorks-actions/cache@main
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Build Node
+        run: ./gradlew build
+      - name: Run Node in the background
+        env:
+          # This is to skip keygen step
+          RADIXDLT_NODE_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=
+        run: |
+          echo "db.historical_substate_values.enable=true" >> core/default.config
+          ./gradlew :core:run --info &
+      - name: Wait for 2 minutes
+        run: sleep 2m
+      - name: Install mesh-cli
+        run: curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/master/scripts/install.sh | sh -s
+      - name: Run Data API tests
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:data
+      - name: Run Construction API tests
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:construction
+      - name: Run Coinbase-spec tests
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:spec
   cross-xwin:
     name: Cross compile to Windows
     runs-on: ubuntu-latest
