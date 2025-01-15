@@ -59,7 +59,7 @@ public class TransactionPreviewResponse {
   private Object radixEngineToolkitReceipt;
 
   public static final String JSON_PROPERTY_INSTRUCTION_RESOURCE_CHANGES = "instruction_resource_changes";
-  private List<InstructionResourceChanges> instructionResourceChanges = new ArrayList<>();
+  private List<InstructionResourceChanges> instructionResourceChanges = null;
 
   public static final String JSON_PROPERTY_LOGS = "logs";
   private List<TransactionPreviewResponseLogsInner> logs = new ArrayList<>();
@@ -99,13 +99,13 @@ public class TransactionPreviewResponse {
   }
 
    /**
-   * The hex-sbor-encoded receipt.  This field is deprecated and will be removed from the API with the release of the next  protocol update, cuttlefish. This field was provided primarily for use with the Radix  Engine Toolkit and its execution summary functionality. If you still wish to use this  functionality update your Radix Engine Toolkit and use the receipt provided in the  &#x60;radix_engine_toolkit_receipt&#x60; field of this response. 
+   * The hex-sbor-encoded receipt.  This field is deprecated and will be removed from the API with the release of the next protocol update, cuttlefish. This field was provided primarily for use with the Radix Engine Toolkit and its execution summary functionality. If you still wish to use this functionality update your Radix Engine Toolkit and use the receipt provided in the &#x60;radix_engine_toolkit_receipt&#x60; field of this response. 
    * @return encodedReceipt
    * @deprecated
   **/
   @Deprecated
   @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "The hex-sbor-encoded receipt.  This field is deprecated and will be removed from the API with the release of the next  protocol update, cuttlefish. This field was provided primarily for use with the Radix  Engine Toolkit and its execution summary functionality. If you still wish to use this  functionality update your Radix Engine Toolkit and use the receipt provided in the  `radix_engine_toolkit_receipt` field of this response. ")
+  @ApiModelProperty(required = true, value = "The hex-sbor-encoded receipt.  This field is deprecated and will be removed from the API with the release of the next protocol update, cuttlefish. This field was provided primarily for use with the Radix Engine Toolkit and its execution summary functionality. If you still wish to use this functionality update your Radix Engine Toolkit and use the receipt provided in the `radix_engine_toolkit_receipt` field of this response. ")
   @JsonProperty(JSON_PROPERTY_ENCODED_RECEIPT)
   @JsonInclude(value = JsonInclude.Include.ALWAYS)
 
@@ -153,11 +153,11 @@ public class TransactionPreviewResponse {
   }
 
    /**
-   * An optional field which is only provided if the &#x60;radix_engine_toolkit_receipt&#x60; flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information  that is already available in the receipt provided in the &#x60;receipt&#x60; field of this  response.  A typical client of this API is not expected to use this receipt. The primary clients  this receipt is intended for is the Radix wallet or any client that needs to perform  execution summaries on their transactions. 
+   * An optional field which is only provided if the &#x60;radix_engine_toolkit_receipt&#x60; flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information that is already available in the receipt provided in the &#x60;receipt&#x60; field of this response.  A typical client of this API is not expected to use this receipt. The primary clients this receipt is intended for is the Radix wallet or any client that needs to perform execution summaries on their transactions. 
    * @return radixEngineToolkitReceipt
   **/
   @javax.annotation.Nullable
-  @ApiModelProperty(value = "An optional field which is only provided if the `radix_engine_toolkit_receipt` flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information  that is already available in the receipt provided in the `receipt` field of this  response.  A typical client of this API is not expected to use this receipt. The primary clients  this receipt is intended for is the Radix wallet or any client that needs to perform  execution summaries on their transactions. ")
+  @ApiModelProperty(value = "An optional field which is only provided if the `radix_engine_toolkit_receipt` flag is set to true when requesting a transaction preview from the API.  This receipt is primarily intended for use with the toolkit and may contain information that is already available in the receipt provided in the `receipt` field of this response.  A typical client of this API is not expected to use this receipt. The primary clients this receipt is intended for is the Radix wallet or any client that needs to perform execution summaries on their transactions. ")
   @JsonProperty(JSON_PROPERTY_RADIX_ENGINE_TOOLKIT_RECEIPT)
   @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
@@ -179,18 +179,23 @@ public class TransactionPreviewResponse {
   }
 
   public TransactionPreviewResponse addInstructionResourceChangesItem(InstructionResourceChanges instructionResourceChangesItem) {
+    if (this.instructionResourceChanges == null) {
+      this.instructionResourceChanges = new ArrayList<>();
+    }
     this.instructionResourceChanges.add(instructionResourceChangesItem);
     return this;
   }
 
    /**
-   * Get instructionResourceChanges
+   * This object holds changes in resource balances for all vaults within affected accounts/components for each instruction.  This field is deprecated (and not required) as of the Dugong release and may be removed from the API in the future. 
    * @return instructionResourceChanges
+   * @deprecated
   **/
-  @javax.annotation.Nonnull
-  @ApiModelProperty(required = true, value = "")
+  @Deprecated
+  @javax.annotation.Nullable
+  @ApiModelProperty(value = "This object holds changes in resource balances for all vaults within affected accounts/components for each instruction.  This field is deprecated (and not required) as of the Dugong release and may be removed from the API in the future. ")
   @JsonProperty(JSON_PROPERTY_INSTRUCTION_RESOURCE_CHANGES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
 
   public List<InstructionResourceChanges> getInstructionResourceChanges() {
     return instructionResourceChanges;
@@ -198,7 +203,7 @@ public class TransactionPreviewResponse {
 
 
   @JsonProperty(JSON_PROPERTY_INSTRUCTION_RESOURCE_CHANGES)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
+  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setInstructionResourceChanges(List<InstructionResourceChanges> instructionResourceChanges) {
     this.instructionResourceChanges = instructionResourceChanges;
   }

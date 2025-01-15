@@ -11,6 +11,7 @@
 > _Please remove this section once you confirm you follow its guidance._
 
 ## Summary
+
 <!--
 > [!TIP]
 > 
@@ -22,6 +23,7 @@
 -->
 
 ## Testing
+
 <!--
 > [!TIP]
 > 
@@ -29,6 +31,7 @@
 -->
 
 ## Changelog
+
 <!--
 > [!TIP]
 >
