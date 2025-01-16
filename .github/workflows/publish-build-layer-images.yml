@@ -1,0 +1,206 @@
+name: Publish build layer images
+
+on:
+  workflow_dispatch:
+    inputs:
+      docker_tag:
+        description: "Docker tag to be published"
+
+permissions:
+  packages: write
+  pull-requests: write
+  id-token: write
+  contents: read
+
+jobs:
+  build_rust_amd64:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-16-cores-selfhosted
+      environment: "release"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node-build-layers"
+      tag: ${{ inputs.docker_tag }}-rust
+      context: "."
+      dockerfile: "Dockerfile"
+      target: "babylon-node-build-layers"
+      platforms: "linux/amd64"
+      provenance: "false"
+      scan_image: true
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: true
+      use_gh_remote_cache: true
+      cache_tag_suffix: amd64
+      flavor: |
+        suffix=-amd64
+    secrets:
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  build_rust_arm64:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: selfhosted-ubuntu-22.04-arm
+      environment: "release"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node-build-layers"
+      tag: ${{ inputs.docker_tag }}-rust
+      context: "."
+      dockerfile: "Dockerfile"
+      target: "babylon-node-build-layers"
+      platforms: "linux/arm64"
+      provenance: "false"
+      scan_image: false
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: true
+      use_gh_remote_cache: true
+      cache_tag_suffix: arm64
+      flavor: |
+        suffix=-arm64
+    secrets:
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  join_rust_multiarch_image:
+    name: Join multiarch image
+    needs:
+      - build_rust_amd64
+      - build_rust_arm64
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@main
+    with:
+      aws_dockerhub_secret: github-actions/rdxworks/dockerhub-images/release-credentials
+      amd_meta_data_json: ${{needs.build_rust_amd64.outputs.json}}
+    secrets:
+      role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  build_java_amd64:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-16-cores-selfhosted
+      environment: "release"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node-build-layers"
+      tag: ${{ inputs.docker_tag }}-java
+      context: "."
+      dockerfile: "Dockerfile"
+      target: "babylon-node-build-layers"
+      platforms: "linux/amd64"
+      provenance: "false"
+      scan_image: true
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: true
+      use_gh_remote_cache: true
+      cache_tag_suffix: amd64
+      flavor: |
+        suffix=-amd64
+    secrets:
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  build_java_arm64:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: selfhosted-ubuntu-22.04-arm
+      environment: "release"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node-build-layers"
+      tag: ${{ inputs.docker_tag }}-java
+      context: "."
+      dockerfile: "Dockerfile"
+      target: "babylon-node-build-layers"
+      platforms: "linux/arm64"
+      provenance: "false"
+      scan_image: false
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: true
+      use_gh_remote_cache: true
+      cache_tag_suffix: arm64
+      flavor: |
+        suffix=-arm64
+    secrets:
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  join_java_multiarch_image:
+    name: Join multiarch image
+    needs:
+      - build_java_amd64
+      - build_java_arm64
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@main
+    with:
+      aws_dockerhub_secret: github-actions/rdxworks/dockerhub-images/release-credentials
+      amd_meta_data_json: ${{needs.build_java_amd64.outputs.json}}
+    secrets:
+      role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  build_app_amd64:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: ubuntu-16-cores-selfhosted
+      environment: "release"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node-build-layers"
+      tag: ${{ inputs.docker_tag }}-app
+      context: "."
+      dockerfile: "Dockerfile"
+      target: "babylon-node-build-layers"
+      platforms: "linux/amd64"
+      provenance: "false"
+      scan_image: true
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: true
+      use_gh_remote_cache: true
+      cache_tag_suffix: amd64
+      flavor: |
+        suffix=-amd64
+    secrets:
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  build_app_arm64:
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
+    with:
+      runs_on: selfhosted-ubuntu-22.04-arm
+      environment: "release"
+      image_registry: "docker.io"
+      image_organization: "radixdlt"
+      image_name: "babylon-node-build-layers"
+      tag: ${{ inputs.docker_tag }}-app
+      context: "."
+      dockerfile: "Dockerfile"
+      target: "babylon-node-build-layers"
+      platforms: "linux/arm64"
+      provenance: "false"
+      scan_image: false
+      snyk_target_ref: ${{ github.ref_name }}
+      enable_dockerhub: true
+      use_gh_remote_cache: true
+      cache_tag_suffix: arm64
+      flavor: |
+        suffix=-arm64
+    secrets:
+      role_to_assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
+
+  join_app_multiarch_image:
+    name: Join multiarch image
+    needs:
+      - build_app_amd64
+      - build_app_arm64
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: read
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@main
+    with:
+      aws_dockerhub_secret: github-actions/rdxworks/dockerhub-images/release-credentials
+      amd_meta_data_json: ${{needs.build_app_amd64.outputs.json}}
+    secrets:
+      role-to-assume: ${{ secrets.DOCKERHUB_RELEASER_ROLE }}
