@@ -25,19 +25,19 @@ RUN apt-get update \
     ca-certificates \
     build-essential=12.9 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u7 \
+    curl=7.88.1-10+deb12u8 \
     g++-aarch64-linux-gnu \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.14-1~deb12u2 \
+    libssl-dev=3.0.15-1~deb12u1 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
-  && sh rustup.sh -y --default-toolchain 1.77.2
+  && sh rustup.sh -y --default-toolchain 1.81.0
 
 ENV PATH="$PATH:/root/.cargo/bin"
 

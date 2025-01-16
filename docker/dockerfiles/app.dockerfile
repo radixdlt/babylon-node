@@ -32,9 +32,9 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.12+7-2~deb12u1 \
+    openjdk-17-jdk=17.0.13+11-2~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
-    curl=7.88.1-10+deb12u7 \
+    curl=7.88.1-10+deb12u8 \
     gettext-base=0.21-12 \
     daemontools=1:0.76-8.1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-4911
