@@ -68,6 +68,20 @@ COPY --from=library-build-stage /artifacts/libcorerust.so /
 FROM scratch AS java-container
 COPY --from=java-build-stage /radixdlt/core/build/distributions /
 
+# =================================================================================================
+# LAYER: library-builder-local
+# This layer is just used for local building in development via `local-cached-rust-build.yaml`.
+# Specifically - the Rust isn't built as part of the image, instead the CMD of the image is to do the build.
+# It allows us to use volumes at runtime to cache the build dependencies and artifacts.
+# =================================================================================================
+FROM radixdlt/babylon-node-build-layers:${IMAGE_VERSION}-rust AS library-builder-local
+
+WORKDIR /app
+
+COPY docker/build_scripts/cargo_local_build.sh /opt/radixdlt/cargo_local_build.sh
+
+COPY core-rust ./
+
 FROM radixdlt/babylon-node-build-layers:${IMAGE_VERSION}-app AS app-container
 
 # Copy in the application artifacts
