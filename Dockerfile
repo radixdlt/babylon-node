@@ -1,6 +1,6 @@
 ARG IMAGE_VERSION=v1.3.0
 
-FROM radixdlt/babylon-node-build-layers:${IMAGE_VERSION}-java AS java-container
+FROM radixdlt/babylon-node-build-layers:${IMAGE_VERSION}-java AS java-build-stage
 
 WORKDIR /radixdlt
 
@@ -44,7 +44,7 @@ RUN cd core/build/distributions && \
     cp *.jar /artifacts && \
     cp core /artifacts
 
-FROM radixdlt/babylon-node-build-layers:${IMAGE_VERSION}-rust AS rust-container
+FROM radixdlt/babylon-node-build-layers:${IMAGE_VERSION}-rust AS library-build-stage
 
 WORKDIR /app
 
@@ -54,11 +54,25 @@ RUN mkdir -p /artifacts && \
     /root/.cargo/bin/cargo build --profile=release && \
     cp target/release/libcorerust.so /artifacts/libcorerust.so
 
-FROM radixdlt/babylon-node-build-layers:${IMAGE_VERSION}-app AS main
+# =================================================================================================
+# LAYER: library-container
+# A layer containing just the built library at the root: /libcorerust.so
+# =================================================================================================
+FROM scratch AS library-container
+COPY --from=library-build-stage /artifacts/libcorerust.so /
+
+# =================================================================================================
+# LAYER: java-container
+# Exports only the java application artifacts from the java-build-stage
+# =================================================================================================
+FROM scratch AS java-container
+COPY --from=java-build-stage /radixdlt/core/build/distributions /
+
+FROM radixdlt/babylon-node-build-layers:${IMAGE_VERSION}-app AS app-container
 
 # Copy in the application artifacts
-COPY --from=java-container /artifacts/*.jar /opt/radixdlt/lib/
-COPY --from=java-container /artifacts/core /opt/radixdlt/bin/core
-COPY --from=rust-container /artifacts/libcorerust.so /usr/lib/jni/libcorerust.so
+COPY --from=java-build-stage /artifacts/*.jar /opt/radixdlt/lib/
+COPY --from=java-build-stage /artifacts/core /opt/radixdlt/bin/core
+COPY --from=library-build-stage /artifacts/libcorerust.so /usr/lib/jni/libcorerust.so
 
 RUN chmod +x /opt/radixdlt/bin/core
