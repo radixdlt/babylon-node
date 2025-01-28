@@ -15,3 +15,6 @@
 # SECURITY-SENSITIVE
 /.github/ @radixdlt/protocol-security-approvers
 *.lock @radixdlt/protocol-security-approvers
+
+# API INTERFACES
+*api-schema.yaml @radixdlt/interfaces-github-approvers

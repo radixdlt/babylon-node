@@ -5,6 +5,7 @@ members = [
     "core-api-server",
     "engine-state-api-server",
     "state-manager",
+    "mesh-api-server"
 ]
 resolver = "2"
 
@@ -15,7 +16,7 @@ resolver = "2"
 # ================================================================
 #
 # To make builds reproducible, we must specify a fixed tag below, not a branch.
-# 
+#
 # Go to your checkout of `radixdlt-scrypto`, then run the following:
 #  $ git checkout <relevant-branch>
 #  $ git pull
@@ -26,18 +27,18 @@ resolver = "2"
 # Then use tag="release_name-BLAH" in the below dependencies.
 # =================================================================
 
-sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337", features = ["serde"] }
-radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337" }
-radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337" }
-radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337", features = ["serde"] }
-radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337" }
-radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337" }
-radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337" }
-radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337" }
-radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337" }
-radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337", features = ["serde"] }
-radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337", features = ["serde"] }
-radix-engine-toolkit-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "cuttlefish-c3aa4337" }
+sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6", features = ["serde"] }
+radix-transactions = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6" }
+radix-transaction-scenarios = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6" }
+radix-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6", features = ["serde"] }
+radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6" }
+radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6" }
+radix-substate-store-impls = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6" }
+radix-substate-store-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6" }
+radix-substate-store-queries = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6" }
+radix-rust = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6", features = ["serde"] }
+radix-blueprint-schema-init = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6", features = ["serde"] }
+radix-engine-toolkit-common = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "develop-d6b146e6" }
 
 itertools = { version = "=0.10.5" }
 jni = { version = "=0.19.0" }
@@ -59,6 +60,11 @@ tower = { version = "=0.4.13" }
 tower-http = { version = "=0.4.3", features = ["catch-panic"]}
 hyper = { version = "=0.14.27", features = ["server", "http1"] }
 paste = { version = "=1.0.14", default-features = false }
+strum = { version = "=0.24.1", features = ["derive"] }
+strum_macros = { version = "=0.24.3" }
+convert_case = { version = "=0.6.0" }
+regex = { version = "=1.9.3"}
+lazy_static = { version = "=1.4.0" }
 
 [profile.dev]
 opt-level = 3

@@ -4,7 +4,6 @@
 FROM debian:12.1-slim
 WORKDIR /app
 
-
 # The installed versions are fixed to create an immutable build.
 # Availability of fixed version is subject to change.
 # The latest available version can be found at these links.

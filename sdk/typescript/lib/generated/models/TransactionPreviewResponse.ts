@@ -53,10 +53,10 @@ export interface TransactionPreviewResponse {
     /**
      * The hex-sbor-encoded receipt.
      * 
-     * This field is deprecated and will be removed from the API with the release of the next 
-     * protocol update, cuttlefish. This field was provided primarily for use with the Radix 
-     * Engine Toolkit and its execution summary functionality. If you still wish to use this 
-     * functionality update your Radix Engine Toolkit and use the receipt provided in the 
+     * This field is deprecated and will be removed from the API with the release of the next
+     * protocol update, cuttlefish. This field was provided primarily for use with the Radix
+     * Engine Toolkit and its execution summary functionality. If you still wish to use this
+     * functionality update your Radix Engine Toolkit and use the receipt provided in the
      * `radix_engine_toolkit_receipt` field of this response.
      * @type {string}
      * @memberof TransactionPreviewResponse
@@ -73,23 +73,28 @@ export interface TransactionPreviewResponse {
      * An optional field which is only provided if the `radix_engine_toolkit_receipt`
      * flag is set to true when requesting a transaction preview from the API.
      * 
-     * This receipt is primarily intended for use with the toolkit and may contain information 
-     * that is already available in the receipt provided in the `receipt` field of this 
+     * This receipt is primarily intended for use with the toolkit and may contain information
+     * that is already available in the receipt provided in the `receipt` field of this
      * response.
      * 
-     * A typical client of this API is not expected to use this receipt. The primary clients 
-     * this receipt is intended for is the Radix wallet or any client that needs to perform 
+     * A typical client of this API is not expected to use this receipt. The primary clients
+     * this receipt is intended for is the Radix wallet or any client that needs to perform
      * execution summaries on their transactions.
      * @type {object}
      * @memberof TransactionPreviewResponse
      */
     radix_engine_toolkit_receipt?: object;
     /**
+     * This object holds changes in resource balances for all vaults within affected
+     * accounts/components for each instruction.
      * 
+     * This field is deprecated (and not required) as of the Dugong release and may be removed
+     * from the API in the future.
      * @type {Array<InstructionResourceChanges>}
      * @memberof TransactionPreviewResponse
+     * @deprecated
      */
-    instruction_resource_changes: Array<InstructionResourceChanges>;
+    instruction_resource_changes?: Array<InstructionResourceChanges>;
     /**
      * 
      * @type {Array<TransactionPreviewResponseLogsInner>}
@@ -106,7 +111,6 @@ export function instanceOfTransactionPreviewResponse(value: object): boolean {
     isInstance = isInstance && "at_ledger_state" in value;
     isInstance = isInstance && "encoded_receipt" in value;
     isInstance = isInstance && "receipt" in value;
-    isInstance = isInstance && "instruction_resource_changes" in value;
     isInstance = isInstance && "logs" in value;
 
     return isInstance;
@@ -126,7 +130,7 @@ export function TransactionPreviewResponseFromJSONTyped(json: any, ignoreDiscrim
         'encoded_receipt': json['encoded_receipt'],
         'receipt': TransactionReceiptFromJSON(json['receipt']),
         'radix_engine_toolkit_receipt': !exists(json, 'radix_engine_toolkit_receipt') ? undefined : json['radix_engine_toolkit_receipt'],
-        'instruction_resource_changes': ((json['instruction_resource_changes'] as Array<any>).map(InstructionResourceChangesFromJSON)),
+        'instruction_resource_changes': !exists(json, 'instruction_resource_changes') ? undefined : ((json['instruction_resource_changes'] as Array<any>).map(InstructionResourceChangesFromJSON)),
         'logs': ((json['logs'] as Array<any>).map(TransactionPreviewResponseLogsInnerFromJSON)),
     };
 }
@@ -144,7 +148,7 @@ export function TransactionPreviewResponseToJSON(value?: TransactionPreviewRespo
         'encoded_receipt': value.encoded_receipt,
         'receipt': TransactionReceiptToJSON(value.receipt),
         'radix_engine_toolkit_receipt': value.radix_engine_toolkit_receipt,
-        'instruction_resource_changes': ((value.instruction_resource_changes as Array<any>).map(InstructionResourceChangesToJSON)),
+        'instruction_resource_changes': value.instruction_resource_changes === undefined ? undefined : ((value.instruction_resource_changes as Array<any>).map(InstructionResourceChangesToJSON)),
         'logs': ((value.logs as Array<any>).map(TransactionPreviewResponseLogsInnerToJSON)),
     };
 }
