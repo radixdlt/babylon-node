@@ -10,16 +10,11 @@ on:
       - main
       - release\/*
 
-jobs:
-  cancel_running_workflows:
-    name: Cancel running workflows
-    runs-on: ubuntu-22.04
-    steps:
-      - name: cancel running workflows
-        uses: RDXWorks-actions/cancel-workflow-action@main
-        with:
-          access_token: ${{ github.token }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
   build_deb:
     name: Build debian package
     runs-on: selfhosted-ubuntu-22.04-16-cores
@@ -140,7 +135,7 @@ jobs:
       packages: write
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-latest
+      runs_on: ubuntu-16-cores-selfhosted
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "private-babylon-node"
@@ -229,7 +224,7 @@ jobs:
       pull-requests: read
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/join-docker-images-all-tags.yml@main
     with:
-      aws_dockerhub_secret: github-actions/common/dockerhub-credentials
+      aws_dockerhub_secret: github-actions/common/dockerhub-credentials-read-only
       amd_meta_data_json: ${{needs.build_push_container_private.outputs.json}}
     secrets:
       role-to-assume: "arn:aws:iam::308190735829:role/gh-common-secrets-read-access"
@@ -246,7 +241,7 @@ jobs:
       packages: write
     uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/docker-build.yml@main
     with:
-      runs_on: ubuntu-latest
+      runs_on: ubuntu-16-cores-selfhosted
       image_registry: "docker.io"
       image_organization: "radixdlt"
       image_name: "babylon-node"
