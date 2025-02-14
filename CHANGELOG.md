@@ -46,6 +46,7 @@
 
 > Headline features that might be called out in the node release overviews
 
+* Various engine updates - please see the [engine CHANGELOG](https://github.com/radixdlt/radixdlt-scrypto/blob/develop/CHANGELOG.md).
 * *Pending...*
 
 ### Breaking changes
@@ -58,7 +59,7 @@
 
 > Other incidental features or changes which shouldn't break existing integrations, but are worthy of mention to node-runners or other interested parties.
 
-* *Pending...*
+* A new scenario, `radiswap_v2` will run immediately after `Dugong` enactment on test networks, to demonstrate blueprint linking.
 
 # v1.3.x - [Cuttlefish](https://docs.radixdlt.com/docs/cuttlefish)
 

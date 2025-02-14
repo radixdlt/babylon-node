@@ -87,6 +87,7 @@ public record ProtocolConfig(
   public static final String BOTTLENOSE_PROTOCOL_VERSION_NAME = "bottlenose";
   public static final String CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME = "cuttlefish";
   public static final String CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME = "cuttlefish-part2";
+  public static final String DUGONG_PROTOCOL_VERSION_NAME = "dugong";
 
   public static ImmutableList<String> VERSION_NAMES =
       ImmutableList.of(
@@ -94,7 +95,8 @@ public record ProtocolConfig(
           ANEMONE_PROTOCOL_VERSION_NAME,
           BOTTLENOSE_PROTOCOL_VERSION_NAME,
           CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME,
-          CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME);
+          CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME,
+          DUGONG_PROTOCOL_VERSION_NAME);
 
   public static final String LATEST_PROTOCOL_VERSION_NAME =
       VERSION_NAMES.get(VERSION_NAMES.size() - 1);
