@@ -19,7 +19,7 @@ impl<'a> SubstateOverlayIterator<'a> {
     }
 }
 
-impl<'a> Iterator for SubstateOverlayIterator<'a> {
+impl Iterator for SubstateOverlayIterator<'_> {
     type Item = PartitionEntry;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -86,8 +86,8 @@ impl<'m, M> MapSubstateNodeAncestryStore<'m, M> {
     }
 }
 
-impl<'m, M: MapLike<NodeId, SubstateNodeAncestryRecord>> SubstateNodeAncestryStore
-    for MapSubstateNodeAncestryStore<'m, M>
+impl<M: MapLike<NodeId, SubstateNodeAncestryRecord>> SubstateNodeAncestryStore
+    for MapSubstateNodeAncestryStore<'_, M>
 {
     fn get_ancestry(&self, node_id: &NodeId) -> Option<SubstateNodeAncestryRecord> {
         self.map.get(node_id).cloned()
@@ -108,8 +108,8 @@ impl<'s, U, O> StagedSubstateNodeAncestryStore<'s, U, O> {
     }
 }
 
-impl<'s, U: SubstateNodeAncestryStore, O: SubstateNodeAncestryStore> SubstateNodeAncestryStore
-    for StagedSubstateNodeAncestryStore<'s, U, O>
+impl<U: SubstateNodeAncestryStore, O: SubstateNodeAncestryStore> SubstateNodeAncestryStore
+    for StagedSubstateNodeAncestryStore<'_, U, O>
 {
     fn batch_get_ancestry<'a>(
         &self,

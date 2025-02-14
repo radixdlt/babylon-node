@@ -309,7 +309,7 @@ impl<'s, D: Snapshottable<'s>> DbLock<D> {
     /// do not leave database inconsistent.
     // TODO(future enhancement): also provide something like `lock_snapshot_unlock()`, which would
     // not need the "writes are atomic+consistent" assumption?
-    pub fn snapshot(&'s self) -> impl Deref<Target = D::Snapshot> + '_ {
+    pub fn snapshot(&'s self) -> impl Deref<Target = D::Snapshot> + 's {
         LockGuard::new(
             || OwnedDeref {
                 owned: self.database.snapshot(),

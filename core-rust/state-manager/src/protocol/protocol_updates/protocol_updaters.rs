@@ -157,7 +157,7 @@ pub struct WrappedProtocolUpdateBatchGenerator<'a> {
     engine_batch_generator: Box<dyn ProtocolUpdateBatchGenerator + 'a>,
 }
 
-impl<'a> NodeProtocolUpdateBatchGenerator for WrappedProtocolUpdateBatchGenerator<'a> {
+impl NodeProtocolUpdateBatchGenerator for WrappedProtocolUpdateBatchGenerator<'_> {
     fn batch_name(&self) -> &str {
         self.engine_batch_generator.batch_name()
     }
@@ -369,7 +369,7 @@ impl<'a> NodeBatchGenerator<'a> {
     }
 }
 
-impl<'a> NodeProtocolUpdateBatchGenerator for NodeBatchGenerator<'a> {
+impl NodeProtocolUpdateBatchGenerator for NodeBatchGenerator<'_> {
     fn batch_name(&self) -> &str {
         &self.name
     }

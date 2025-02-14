@@ -212,9 +212,9 @@ pub enum RetrySettings {
 impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolRejectionReason {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {
@@ -467,26 +467,26 @@ impl PendingTransactionRecord {
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
-    ) -> Result<PendingExecutedTransaction, MempoolAddRejection> {
+    ) -> Result<PendingExecutedTransaction, Box<MempoolAddRejection>> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
-            return Err(MempoolAddRejection {
+            return Err(Box::new(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
                 against_state: permanent_rejection.against_state,
                 retry_from: self.retry_from,
                 was_cached: check.was_cached(),
                 invalid_from_epoch: self.intent_invalid_from_epoch,
-            });
+            }));
         }
         if let Some(rejection_reason) = self.latest_attempt.rejection {
             // Regardless of whether it was a rejection against committed or prepared state,
             // let's block it from coming into our mempool for a while
-            return Err(MempoolAddRejection {
+            return Err(Box::new(MempoolAddRejection {
                 reason: rejection_reason,
                 against_state: self.latest_attempt.against_state,
                 retry_from: self.retry_from,
                 was_cached: check.was_cached(),
                 invalid_from_epoch: self.intent_invalid_from_epoch,
-            });
+            }));
         }
         match check {
             CheckMetadata::Cached => {

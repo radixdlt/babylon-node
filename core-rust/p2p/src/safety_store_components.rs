@@ -85,16 +85,18 @@ define_single_versioned! {
 
 /// Safety state components. Note that these structs are intended only for proper encoding/deconding
 /// of the safety state. They may repeat existing structs defined elsewhere.
-
+///
 /// Timestamp of the various safety state components.
-// At present it's just an alias for i64. Later we may want to replace it with struct using crono crate and
-// do something like shown below to transparently convert to/from internal representation
-// (once there will be real usage at Rust side).
-// #[sbor(
-//     as_type = "i64",
-//     as_ref = "self.timestamp()",
-//     from_value = "Self(DateTime::from_timestamp(value, 0))"
-// )]
+/// At present it's just an alias for i64. Later we may want to replace it with struct using crono crate and
+/// do something like shown below to transparently convert to/from internal representation
+/// (once there will be real usage at Rust side).
+/// ```rust,ignore
+/// #[sbor(
+///     as_type = "i64",
+///     as_ref = "self.timestamp()",
+///     from_value = "Self(DateTime::from_timestamp(value, 0))"
+/// )]
+/// ```
 type SafetyStateTimestamp = i64;
 
 #[derive(Debug, Clone, ScryptoSbor)]

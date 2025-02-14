@@ -64,6 +64,7 @@
 
 use crate::prelude::*;
 
+#[allow(clippy::large_enum_variant)]
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
     Reject(ProcessedRejectResult),
@@ -134,10 +135,10 @@ impl ProcessedTransactionReceipt {
     pub fn expect_commit_or_reject(
         &self,
         description: &impl Display,
-    ) -> Result<&ProcessedCommitResult, ProcessedRejectResult> {
+    ) -> Result<&ProcessedCommitResult, &ProcessedRejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
-            ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),
+            ProcessedTransactionReceipt::Reject(reject) => Err(reject),
             ProcessedTransactionReceipt::Abort(abort) => {
                 panic!("Transaction {} was aborted: {:?}", description, abort)
             }
@@ -550,15 +551,15 @@ impl<'s, S, K, N> CollectingAccuTreeStore<'s, S, K, N> {
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<K, N>, K, N> ReadableAccuTreeStore<K, N>
-    for CollectingAccuTreeStore<'s, S, K, N>
+impl<S: ReadableAccuTreeStore<K, N>, K, N> ReadableAccuTreeStore<K, N>
+    for CollectingAccuTreeStore<'_, S, K, N>
 {
     fn get_tree_slice(&self, key: &K) -> Option<TreeSlice<N>> {
         self.readable_delegate.get_tree_slice(key)
     }
 }
 
-impl<'s, S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'s, S, K, N> {
+impl<S, K, N> WriteableAccuTreeStore<K, N> for CollectingAccuTreeStore<'_, S, K, N> {
     fn put_tree_slice(&mut self, key: K, slice: TreeSlice<N>) {
         if self.diff.is_some() {
             panic!("slice already collected")
@@ -595,15 +596,13 @@ impl<'s, S: ReadableStateTreeStore> CollectingTreeStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'s, S> {
+impl<S: ReadableTreeStore> ReadableTreeStore for CollectingTreeStore<'_, S> {
     fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.readable_delegate.get_node(key)
     }
 }
 
-impl<'s, S: SubstateDatabase + ConfigurableDatabase> WriteableTreeStore
-    for CollectingTreeStore<'s, S>
-{
+impl<S: SubstateDatabase + ConfigurableDatabase> WriteableTreeStore for CollectingTreeStore<'_, S> {
     fn insert_node(&self, key: StoredTreeNodeKey, node: TreeNode) {
         self.diff.borrow_mut().new_nodes.push((key, node));
     }

@@ -298,7 +298,7 @@ pub struct ProtocolUpdateBatchDetails<'a> {
     pub start_state_identifiers: StartStateIdentifiers,
 }
 
-impl<'a> ProtocolUpdateBatchDetails<'a> {
+impl ProtocolUpdateBatchDetails<'_> {
     fn is_final_batch_group(&self) -> bool {
         self.batch_group_index == self.total_batch_groups - 1
     }

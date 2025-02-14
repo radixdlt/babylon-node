@@ -28,7 +28,7 @@ pub struct EngineStateMetaLoader<'s, S: SubstateDatabase> {
     pub non_instantiated_node_ids: IndexSet<NodeId>,
 }
 
-impl<'s, S: SubstateDatabase> EngineStateMetaLoader<'s, S> {
+impl<S: SubstateDatabase> EngineStateMetaLoader<'_, S> {
     /// Loads metadata on the given blueprint.
     pub fn load_blueprint_meta(
         &self,
