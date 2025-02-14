@@ -253,7 +253,13 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Build and run node in the background
+      - name: Pre-build node
+        # We pre-build the node so that running it is fast in the below job, which means
+        # we can use the wait 2 minutes trick to wait for it to boot up so that we can
+        # move on to executing the API tests
+        run: ./gradlew :core:assemble
+      - name: Run node in the background
+        # We run the node in the background so we can run the CLI tests against it
         env:
           # This is to skip keygen step
           RADIXDLT_NODE_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=
@@ -261,6 +267,7 @@ jobs:
           echo "db.historical_substate_values.enable=true" >> core/default.config
           ./gradlew :core:run --info &
       - name: Wait for 2 minutes
+        # This should be enough time for the node to boot up, as we have built it already
         run: sleep 2m
       - name: Install mesh-cli
         run: curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/master/scripts/install.sh | sh -s

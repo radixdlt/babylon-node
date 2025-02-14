@@ -208,7 +208,8 @@ public final class CuttlefishProtocolUpdateTest {
                   .get()
                   .getNewValue()
                   .getSubstateData();
-      assertEquals(ProtocolConfig.CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME, latestStatus.getProtocolVersion());
+      assertEquals(
+          ProtocolConfig.CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME, latestStatus.getProtocolVersion());
       assertEquals(ProtocolUpdateStatusType.COMPLETE, latestStatus.getUpdateStatus().getType());
     }
   }
