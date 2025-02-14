@@ -253,9 +253,7 @@ jobs:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
-      - name: Build Node
-        run: ./gradlew build
-      - name: Run Node in the background
+      - name: Build and run node in the background
         env:
           # This is to skip keygen step
           RADIXDLT_NODE_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=

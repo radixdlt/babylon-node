@@ -208,12 +208,7 @@ public final class CuttlefishProtocolUpdateTest {
                   .get()
                   .getNewValue()
                   .getSubstateData();
-      // This assertion ensures that:
-      // * The testnet_protocol_config is in line with the ProtocolConfig.VERSION_NAMES
-      // * It should be that:
-      //   * testnet_protocol_config is set to run the latest protocol update automatically
-      //   * ProtocolConfig.VERSION_NAMES includes the latest protocol update
-      assertEquals(ProtocolConfig.LATEST_PROTOCOL_VERSION_NAME, latestStatus.getProtocolVersion());
+      assertEquals(ProtocolConfig.CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME, latestStatus.getProtocolVersion());
       assertEquals(ProtocolUpdateStatusType.COMPLETE, latestStatus.getUpdateStatus().getType());
     }
   }
