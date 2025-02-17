@@ -98,14 +98,14 @@ public final class StandardHostIp {
     } else if (configuredHostIps.size() == 0) {
       final var networkQueryResult = NetworkQueryHostIp.create(properties).queryNetworkHosts();
 
-      if (networkQueryResult.maybeHostIp().isPresent()) {
+      if (networkQueryResult.conclusiveHostIp().isPresent()) {
         // All good, we have an IP address from network query
         log.info(
             "Host's public IP address has been acquired from an external oracle (services queried:"
                 + " {}). Consider setting a `network.host_ip` property instead to lessen reliance"
                 + " on external services.",
-            networkQueryResult.hostsQueried());
-        return networkQueryResult.maybeHostIp().orElseThrow();
+            networkQueryResult.individualQueryResults());
+        return networkQueryResult.conclusiveHostIp().orElseThrow();
       } else {
         throw new RuntimeException(
             String.format(
@@ -113,7 +113,7 @@ public final class StandardHostIp {
                     + "Make sure you set your `network.host_ip` property. "
                     + "An attempt was made to acquire it from an external oracle, "
                     + "but that also failed (services queried: %s).",
-                networkQueryResult.hostsQueried()));
+                networkQueryResult.individualQueryResults()));
       }
     } else {
       // We've got a configured IP and possibly also an IP address from an external oracle
@@ -134,7 +134,7 @@ public final class StandardHostIp {
       } else {
         // Non-local address was configured, so let's query the oracle and see if it matches
         final var networkQueryResult = NetworkQueryHostIp.create(properties).queryNetworkHosts();
-        if (networkQueryResult.maybeHostIp().stream()
+        if (networkQueryResult.conclusiveHostIp().stream()
             .anyMatch(hostIpFromNetwork -> !hostIpFromNetwork.equals(configuredHostIp))) {
           log.warn(
               "An IP address that was configured for this node ({}) differs from a public IP "
@@ -143,8 +143,8 @@ public final class StandardHostIp {
                   + "Make sure your `network.host_ip` property or "
                   + "`RADIXDLT_HOST_IP_ADDRESS` environment variable are set correctly.",
               configuredHostIp,
-              networkQueryResult.maybeHostIp().orElseThrow(),
-              networkQueryResult.hostsQueried());
+              networkQueryResult.conclusiveHostIp().orElseThrow(),
+              networkQueryResult.individualQueryResults());
         }
 
         log.info("Using a configured host IP address: {}", configuredHostIp);

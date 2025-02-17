@@ -4,9 +4,9 @@ use crate::protocol::*;
 use ProtocolUpdateEnactmentCondition::*;
 
 pub fn mainnet_protocol_config() -> ProtocolConfig {
-    // See config_printer.rs
+    // See config_printer.rs > print_calculated_protocol_config_code()
     ProtocolConfig::new_with_triggers(hashmap! {
-        ANEMONE_PROTOCOL_VERSION => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::anemone() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "anemone"
             // READINESS_SIGNAL: "220e2a4a4e86e3e6000000000anemone"
@@ -25,7 +25,7 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
                 },
             ],
         },
-        BOTTLENOSE_PROTOCOL_VERSION => EnactAtStartOfEpochIfValidatorsReady {
+        ProtocolVersionName::bottlenose() => EnactAtStartOfEpochIfValidatorsReady {
             // =================================================================
             // PROTOCOL_VERSION: "bottlenose"
             // READINESS_SIGNAL: "86894b9104afb73a000000bottlenose"
@@ -43,6 +43,28 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
                     required_consecutive_completed_epochs_of_support: 4032, // estimated: 2 weeks
                 },
             ],
+        },
+        ProtocolVersionName::cuttlefish_part1() => EnactAtStartOfEpochIfValidatorsReady {
+            // =================================================================
+            // PROTOCOL_VERSION: "cuttlefish"
+            // READINESS_SIGNAL: "96e00440adafe5e2000000cuttlefish"
+            // =================================================================
+            // The below estimates are based off:
+            // - Calculating relative to epoch 150729
+            // - Using that epoch 150729 started at 2024-11-13T01:18:58.703Z
+            // - Assuming epoch length will be 5 mins
+            // =================================================================
+            lower_bound_inclusive: Epoch::of(158682), // estimated: 2024-12-10T16:03:58.703Z
+            upper_bound_exclusive: Epoch::of(161562), // estimated: 2024-12-20T16:03:58.703Z
+            readiness_thresholds: vec![
+                SignalledReadinessThreshold {
+                    required_ratio_of_stake_supported: dec!(0.75),
+                    required_consecutive_completed_epochs_of_support: 4032, // estimated: 2 weeks
+                },
+            ],
+        },
+        ProtocolVersionName::cuttlefish_part2() => EnactImmediatelyAfterEndOfProtocolUpdate {
+            trigger_after: ProtocolVersionName::cuttlefish_part1(),
         },
     })
 }

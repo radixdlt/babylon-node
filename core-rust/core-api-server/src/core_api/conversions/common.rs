@@ -1,5 +1,4 @@
-use crate::engine_prelude::*;
-use state_manager::{LedgerStateSummary, StateVersion};
+use crate::prelude::*;
 
 use crate::core_api::handlers::to_api_epoch_round;
 use crate::core_api::*;
@@ -165,7 +164,7 @@ pub fn to_api_ledger_header_summary(
         }),
         proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(
             state_summary.proposer_timestamp_ms,
-        )?),
+        )),
     })
 }
 

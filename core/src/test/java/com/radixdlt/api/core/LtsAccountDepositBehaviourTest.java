@@ -125,7 +125,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
                       .allowsTryDeposit(true)));
 
       // Follow-up: deposit some actual XRD into that account
-      getApiHelper()
+      getCoreApiHelper()
           .submitAndWaitForSuccess(test, Manifest.depositFromFaucet(accountAddress), List.of());
 
       // Act: this time also pass some dummy badge to be checked

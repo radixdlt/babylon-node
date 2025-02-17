@@ -66,7 +66,6 @@ package com.radixdlt.utils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorId;
@@ -118,7 +117,7 @@ public class SerializerTestDataGenerator {
   public static BFTHeader randomBFTHeader() {
     return new BFTHeader(
         randomRound(),
-        HashCode.fromLong(random.nextLong()),
+        HashUtils.random256(),
         LedgerHeader.create(
             Math.abs(random.nextLong()),
             randomRound(),

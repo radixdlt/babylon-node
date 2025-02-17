@@ -104,7 +104,7 @@ public final class REv2RejectMultipleIntentsTest {
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
                 false,
-                SafetyRecoveryConfig.BERKELEY_DB,
+                SafetyRecoveryConfig.REAL,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2()

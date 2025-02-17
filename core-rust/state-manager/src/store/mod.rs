@@ -62,24 +62,20 @@
  * permissions under this License.
  */
 
+use crate::prelude::*;
+
+pub use rocks_db::{ActualStateManagerDatabase, StateManagerDatabase};
+pub use traits::*;
+
 mod codecs;
+pub mod column_families;
 pub mod historical_state;
 pub mod jmt_gc;
 pub mod proofs_gc;
 pub mod rocks_db;
-pub mod traits;
-mod typed_cf_api;
+mod traits;
 
-use crate::store::traits::measurement::MeasurableDatabase;
-use crate::RawDbMetrics;
-use node_common::locks::DbLock;
-use prometheus::Registry;
-use rocks_db::ActualStateManagerDatabase;
-use sbor::{Categorize, Decode, Encode};
-use std::sync::Arc;
-pub use traits::DatabaseConfig;
-
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
+#[derive(Debug, Clone, Sbor)]
 pub struct DatabaseBackendConfig {
     pub rocks_db_path: String,
 }
@@ -94,7 +90,7 @@ impl RawDbMetricsCollector {
     /// Creates a collector measuring the given DB and updating the metrics in the given registry.
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
-        metric_registry: &Registry,
+        metric_registry: &MetricRegistry,
     ) -> Self {
         Self {
             database,

@@ -1,8 +1,4 @@
-use crate::core_api::*;
-use state_manager::store::traits::{
-    CommittedTransactionBundle, ConfigurableDatabase, IterableTransactionStore, QueryableProofStore,
-};
-use std::ops::Deref;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(

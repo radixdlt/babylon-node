@@ -1,21 +1,12 @@
-use crate::engine_prelude::*;
-use node_common::locks::DbLock;
-use std::sync::Arc;
+use crate::prelude::*;
 
-use crate::historical_state::{StateHistoryError, VersionScopingSupport};
-
-use crate::rocks_db::ActualStateManagerDatabase;
-use crate::transaction::*;
-use crate::{
-    GlobalBalanceSummary, LedgerStateChanges, LedgerStateSummary, PreviewRequest,
-    ProcessedCommitResult, StateVersion,
-};
+use historical_state::{StateHistoryError, VersionScopingSupport};
 
 /// A transaction preview runner.
 pub struct TransactionPreviewer {
     database: Arc<DbLock<ActualStateManagerDatabase>>,
     execution_configurator: Arc<ExecutionConfigurator>,
-    validation_config: ValidationConfig,
+    transaction_validator: Arc<RwLock<TransactionValidator>>,
 }
 
 pub struct ProcessedPreviewResult {
@@ -35,17 +26,38 @@ impl TransactionPreviewer {
     pub fn new(
         database: Arc<DbLock<ActualStateManagerDatabase>>,
         execution_configurator: Arc<ExecutionConfigurator>,
-        validation_config: ValidationConfig,
+        transaction_validator: Arc<RwLock<TransactionValidator>>,
     ) -> Self {
         Self {
             database,
             execution_configurator,
-            validation_config,
+            transaction_validator,
         }
     }
 }
 
 impl TransactionPreviewer {
+    pub fn preview_executable(
+        &self,
+        preview_executable: ExecutableTransaction,
+        disable_auth: bool,
+        requested_state_version: Option<StateVersion>,
+    ) -> Result<ProcessedPreviewResult, PreviewerError> {
+        // Note: we need to access a snapshot even if running against historical version, since we
+        // do not want JMT GC to interfere.
+        let database = self
+            .database
+            .snapshot()
+            .scoped_at(requested_state_version)?;
+
+        Ok(self.process_transaction(
+            &database,
+            disable_auth,
+            database.at_ledger_state(),
+            preview_executable,
+        ))
+    }
+
     /// Executes the transaction compiled from the given request in a preview mode.
     pub fn preview(
         &self,
@@ -63,40 +75,15 @@ impl TransactionPreviewer {
 
         let intent = self.create_intent(preview_request, base_ledger_state.epoch);
 
-        let validator = NotarizedTransactionValidator::new(self.validation_config);
-        let validated = validator
+        let validated = self
+            .transaction_validator
+            .read()
             .validate_preview_intent_v1(intent)
             .map_err(PreviewError::TransactionValidationError)?;
-        let transaction_logic = self
-            .execution_configurator
-            .wrap_preview_transaction(&validated);
+        let disable_auth = validated.flags.disable_auth;
+        let executable = validated.create_executable();
 
-        let receipt = transaction_logic.execute_on(&database);
-        let (state_changes, global_balance_summary) = match &receipt.result {
-            TransactionResult::Commit(commit) => {
-                let state_changes = ProcessedCommitResult::compute_ledger_state_changes(
-                    &database,
-                    &commit.state_updates,
-                );
-                let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
-                    &database,
-                    &state_changes,
-                    &commit.state_update_summary.vault_balance_changes,
-                );
-                (state_changes, global_balance_update.global_balance_summary)
-            }
-            _ => (
-                LedgerStateChanges::default(),
-                GlobalBalanceSummary::default(),
-            ),
-        };
-
-        Ok(ProcessedPreviewResult {
-            base_ledger_state,
-            receipt,
-            state_changes,
-            global_balance_summary,
-        })
+        Ok(self.process_transaction(&database, disable_auth, base_ledger_state, executable))
     }
 
     fn create_intent(
@@ -119,17 +106,24 @@ impl TransactionPreviewer {
         let notary_public_key = notary_public_key.unwrap_or_else(|| {
             PublicKey::Secp256k1(Secp256k1PrivateKey::from_u64(2).unwrap().public_key())
         });
+        let (max_epoch_range, network_id) = {
+            let validator = self.transaction_validator.read();
+            (
+                validator.config().max_epoch_range,
+                validator.network_id().unwrap(),
+            )
+        };
         let start_epoch_inclusive = start_epoch_inclusive.unwrap_or(at_epoch);
         let end_epoch_exclusive = end_epoch_exclusive.unwrap_or_else(|| {
             start_epoch_inclusive
-                .after(self.validation_config.max_epoch_range)
+                .after(max_epoch_range)
                 .expect("currently calculated max end epoch is outside of valid range")
         });
         let (instructions, blobs) = manifest.for_intent();
         PreviewIntentV1 {
             intent: IntentV1 {
                 header: TransactionHeaderV1 {
-                    network_id: self.validation_config.network_id,
+                    network_id,
                     start_epoch_inclusive,
                     end_epoch_exclusive,
                     nonce,
@@ -143,6 +137,46 @@ impl TransactionPreviewer {
             },
             signer_public_keys,
             flags,
+        }
+    }
+
+    fn process_transaction(
+        &self,
+        database: &(impl SubstateDatabase + SubstateNodeAncestryStore),
+        disable_auth: bool,
+        base_ledger_state: LedgerStateSummary,
+        executable: ExecutableTransaction,
+    ) -> ProcessedPreviewResult {
+        let transaction_logic = self
+            .execution_configurator
+            .wrap_preview_transaction(&executable, disable_auth);
+
+        let receipt = transaction_logic.execute_on(database);
+
+        let (state_changes, global_balance_summary) = match &receipt.result {
+            TransactionResult::Commit(commit) => {
+                let state_changes = ProcessedCommitResult::compute_ledger_state_changes(
+                    database,
+                    &commit.state_updates,
+                );
+                let global_balance_update = ProcessedCommitResult::compute_global_balance_update(
+                    database,
+                    &state_changes,
+                    &commit.state_update_summary.vault_balance_changes,
+                );
+                (state_changes, global_balance_update.global_balance_summary)
+            }
+            _ => (
+                LedgerStateChanges::default(),
+                GlobalBalanceSummary::default(),
+            ),
+        };
+
+        ProcessedPreviewResult {
+            base_ledger_state,
+            receipt,
+            state_changes,
+            global_balance_summary,
         }
     }
 }
@@ -161,22 +195,16 @@ impl From<StateHistoryError> for PreviewerError {
 
 #[cfg(test)]
 mod tests {
-
-    use crate::engine_prelude::*;
-    use crate::{PreviewRequest, StateManagerConfig};
-
-    use crate::test::create_state_manager;
+    use super::*;
+    use crate::test::create_bootstrapped_state_manager;
 
     #[test]
     fn test_preview_processed_substate_changes() {
         let tmp = tempfile::tempdir().unwrap();
-        let state_manager = create_state_manager(StateManagerConfig::new_for_testing(
-            tmp.path().to_str().unwrap(),
-        ));
-
-        state_manager
-            .system_executor
-            .execute_genesis_for_unit_tests_with_default_config();
+        let state_manager = create_bootstrapped_state_manager(
+            StateManagerConfig::new_for_testing(tmp.path().to_str().unwrap()),
+            BabylonSettings::test_default(),
+        );
 
         let preview_manifest = ManifestBuilder::new().lock_fee_from_faucet().build();
 

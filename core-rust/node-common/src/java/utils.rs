@@ -62,15 +62,9 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
+use crate::jni_prelude::*;
 use std::panic;
 use std::panic::AssertUnwindSafe;
-
-use crate::java::structure::{StructFromJava, StructToJava};
-
-use crate::java::result::JavaResult;
 
 pub fn jni_jbytearray_to_vector(env: &JNIEnv, jbytearray: jbyteArray) -> JavaResult<Vec<u8>> {
     Ok(env.convert_byte_array(jbytearray)?)
@@ -91,7 +85,7 @@ pub fn jni_slice_to_jbytearray(env: &JNIEnv, slice: &[u8]) -> jbyteArray {
 }
 
 /// A convenience method for a `jni_call()` which uses SBOR codec for its argument and result.
-pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
+pub fn jni_sbor_coded_call<Args: ScryptoDecode + ScryptoDescribe, Response: ScryptoEncode>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
     method: impl FnOnce(Args) -> Response,
@@ -101,7 +95,10 @@ pub fn jni_sbor_coded_call<Args: ScryptoDecode, Response: ScryptoEncode>(
 
 /// A convenience method for a `jni_call()` which uses SBOR codec for its argument and its
 /// potentially-erroneous result.
-pub fn jni_sbor_coded_fallible_call<Args: ScryptoDecode, Response: ScryptoEncode>(
+pub fn jni_sbor_coded_fallible_call<
+    Args: ScryptoDecode + ScryptoDescribe,
+    Response: ScryptoEncode,
+>(
     env: &JNIEnv,
     encoded_request: jbyteArray,
     method: impl FnOnce(Args) -> JavaResult<Response>,

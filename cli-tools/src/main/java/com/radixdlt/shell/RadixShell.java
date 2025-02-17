@@ -178,7 +178,7 @@ public final class RadixShell {
         dataDir = new File(Files.createTempDirectory("radix-shell-node-").toString());
       }
 
-      customProperties.build().forEach((k, v) -> properties.set(k, v));
+      customProperties.build().forEach(properties::set);
 
       properties.set("db.location", dataDir.toString());
 
@@ -203,7 +203,7 @@ public final class RadixShell {
       if (properties.get("network.genesis_data", "").isEmpty()) {
         final var encodedGenesisData =
             NodeSborCodecs.encode(
-                GenesisData.testingWithSingleValidator(),
+                GenesisData.withSingleValidatorForRadixShell(),
                 NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
         final var compressedGenesisData = Compress.compress(encodedGenesisData);
         final var genesisDataBase64 = Base64.getEncoder().encodeToString(compressedGenesisData);

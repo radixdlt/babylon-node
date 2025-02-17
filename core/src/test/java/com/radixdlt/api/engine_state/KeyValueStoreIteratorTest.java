@@ -137,7 +137,7 @@ public final class KeyValueStoreIteratorTest extends DeterministicEngineStateApi
       final var intentHash =
           getCoreApiHelper()
               .submitAndWaitForSuccess(test, Manifest.newRandomAccount(), List.of())
-              .intentHash();
+              .transactionIntentHash();
 
       // iterate over the only key in that KV-Store
       final var allKeys =

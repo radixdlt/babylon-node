@@ -1,15 +1,4 @@
-use std::collections::{HashMap, HashSet};
-
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::{
-    AlreadyCommittedError, DetailedTransactionOutcome, MempoolRejectionReason, StateVersion,
-};
-
-use state_manager::mempool::pending_transaction_result_cache::PendingTransactionRecord;
-use state_manager::query::StateManagerSubstateQueries;
-use state_manager::store::traits::*;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_transaction_status(
@@ -21,14 +10,13 @@ pub(crate) async fn handle_transaction_status(
     let mapping_context = MappingContext::new_for_uncommitted_data(&state.network);
     let extraction_context = ExtractionContext::new(&state.network);
 
-    let intent_hash = extract_intent_hash(&extraction_context, request.intent_hash)
+    let intent_hash = extract_transaction_intent_hash(&extraction_context, request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
-    let pending_transaction_result_cache =
-        state.state_manager.pending_transaction_result_cache.read();
-    let mut known_pending_payloads =
-        pending_transaction_result_cache.peek_all_known_payloads_for_intent(&intent_hash);
-    drop(pending_transaction_result_cache);
+    let mut known_pending_payloads = state
+        .state_manager
+        .mempool_manager
+        .all_known_pending_payloads_for_intent(&intent_hash);
 
     let database = state.state_manager.database.snapshot();
 
@@ -57,11 +45,10 @@ pub(crate) async fn handle_transaction_status(
     });
 
     if let Some(txn_state_version) = txn_state_version_opt {
-        let identifiers = database
+        let hashes = database
             .get_committed_transaction_identifiers(txn_state_version)
             .expect("Txn identifiers are missing")
-            .payload
-            .typed;
+            .transaction_hashes;
 
         let local_detailed_outcome = database
             .get_committed_local_transaction_execution(txn_state_version)
@@ -69,13 +56,13 @@ pub(crate) async fn handle_transaction_status(
             .outcome;
         drop(database);
 
-        let user_identifiers = identifiers
-            .user()
+        let user_hashes = hashes
+            .as_user()
             .expect("Only user transactions should be able to be looked up by intent hash");
-        let notarized_transaction_hash = user_identifiers.notarized_transaction_hash;
+        let notarized_transaction_hash = user_hashes.notarized_transaction_hash;
 
         // Remove the committed payload from the rejection list if it's present
-        known_pending_payloads.remove(notarized_transaction_hash);
+        known_pending_payloads.remove(&notarized_transaction_hash);
 
         let (intent_status, payload_status, outcome, error_message) = match local_detailed_outcome {
             DetailedTransactionOutcome::Success(_) => (
@@ -88,17 +75,17 @@ pub(crate) async fn handle_transaction_status(
                 models::TransactionIntentStatus::CommittedFailure,
                 models::TransactionPayloadStatus::CommittedFailure,
                 "FAILURE",
-                Some(error.render()),
+                Some(error.to_string(&mapping_context)),
             ),
         };
 
         let committed_payload = models::TransactionPayloadDetails {
             payload_hash: to_api_notarized_transaction_hash(
-                user_identifiers.notarized_transaction_hash,
+                &user_hashes.notarized_transaction_hash,
             ),
             payload_hash_bech32m: to_api_hash_bech32m(
                 &mapping_context,
-                user_identifiers.notarized_transaction_hash,
+                &user_hashes.notarized_transaction_hash,
             )?,
             state_version: Some(to_api_state_version(txn_state_version)?),
             status: payload_status,
@@ -110,7 +97,7 @@ pub(crate) async fn handle_transaction_status(
             &mapping_context,
             known_pending_payloads,
             txn_state_version,
-            notarized_transaction_hash,
+            &notarized_transaction_hash,
         )?);
 
         return Ok(Json(models::TransactionStatusResponse {
@@ -121,12 +108,13 @@ pub(crate) async fn handle_transaction_status(
         }));
     }
 
-    let mempool = state.state_manager.mempool.read();
-    let mempool_payloads_hashes = mempool.get_notarized_transaction_hashes_for_intent(&intent_hash);
-    drop(mempool);
+    let mempool_payload_hashes = state
+        .state_manager
+        .mempool_manager
+        .get_mempool_payload_hashes_for_intent(&intent_hash);
 
-    if !mempool_payloads_hashes.is_empty() {
-        let mempool_payloads = mempool_payloads_hashes
+    if !mempool_payload_hashes.is_empty() {
+        let mempool_payloads = mempool_payload_hashes
             .iter()
             .map(|payload_hash| {
                 Ok(models::TransactionPayloadDetails {
@@ -139,7 +127,7 @@ pub(crate) async fn handle_transaction_status(
             })
             .collect::<Result<Vec<_>, MappingError>>()?;
 
-        let mempool_payloads_hashes: HashSet<_> = mempool_payloads_hashes.into_iter().collect();
+        let mempool_payloads_hashes: HashSet<_> = mempool_payload_hashes.into_iter().collect();
 
         let known_payloads_not_in_mempool = known_pending_payloads
             .into_iter()
@@ -215,20 +203,22 @@ fn map_rejected_payloads_due_to_known_commit(
         .into_iter()
         .map(|(notarized_transaction_hash, transaction_record)| {
             let error_string_to_use = transaction_record
-                .most_applicable_status()
-                .map(|reason| reason.to_string())
+                .most_applicable_rejection()
+                .map(|reason| reason.to_string(context))
                 // Note: in theory, we should not see the "no rejection" for any transaction here,
                 // since we only enter this method after seeing their intent hash committed by a
                 // different payload. However, the cache update happens asynchronously after the
                 // commit, and we may see a "not-yet-updated" entry - luckily, in such case, we can
                 // precisely tell the transaction's status ourselves:
                 .unwrap_or_else(|| {
-                    MempoolRejectionReason::AlreadyCommitted(AlreadyCommittedError {
-                        notarized_transaction_hash,
-                        committed_state_version,
-                        committed_notarized_transaction_hash: *committed_notarized_transaction_hash,
-                    })
-                    .to_string()
+                    MempoolRejectionReason::TransactionIntentAlreadyCommitted(
+                        AlreadyCommittedError {
+                            committed_state_version,
+                            committed_notarized_transaction_hash:
+                                *committed_notarized_transaction_hash,
+                        },
+                    )
+                    .to_string(context)
                 });
             Ok(models::TransactionPayloadDetails {
                 payload_hash: to_api_notarized_transaction_hash(&notarized_transaction_hash),
@@ -248,17 +238,18 @@ fn map_pending_payloads_not_in_mempool(
     known_payloads_not_in_mempool
         .into_iter()
         .map(|(payload_hash, transaction_record)| {
-            Ok(match transaction_record.most_applicable_status() {
+            let attempt = transaction_record.most_applicable_status();
+            Ok(match attempt.rejection.as_ref() {
                 Some(reason) => models::TransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),
                     payload_hash_bech32m: to_api_hash_bech32m(context, &payload_hash)?,
                     state_version: None,
-                    status: if reason.is_permanent_for_payload() {
+                    status: if attempt.marks_permanent_rejection_for_payload() {
                         models::TransactionPayloadStatus::PermanentlyRejected
                     } else {
                         models::TransactionPayloadStatus::TransientlyRejected
                     },
-                    error_message: Some(reason.to_string()),
+                    error_message: Some(reason.to_string(context)),
                 },
                 None => models::TransactionPayloadDetails {
                     payload_hash: to_api_notarized_transaction_hash(&payload_hash),

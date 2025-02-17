@@ -198,7 +198,7 @@ public class RemoteSyncServiceTest {
     when(proof.stateVersion()).thenReturn(2L);
     final LedgerProofBundle latestProofs = mock(LedgerProofBundle.class);
     when(latestProofs.primaryProof()).thenReturn(proof);
-    when(ledgerUpdate.committedProof()).thenReturn(latestProofs);
+    when(ledgerUpdate.committedProofBundle()).thenReturn(latestProofs);
 
     when(this.localSyncService.getSyncState())
         .thenReturn(

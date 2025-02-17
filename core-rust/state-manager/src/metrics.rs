@@ -62,26 +62,13 @@
  * permissions under this License.
  */
 
-use std::cmp::min;
+use crate::prelude::*;
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
-use crate::limits::VertexLimitsExceeded;
-use crate::transaction::{LeaderRoundCounter, RawLedgerTransaction};
-use crate::{ProcessedCommitResult, StateVersion, ValidatorId};
-use node_common::config::limits::*;
-use node_common::locks::{LockFactory, Mutex};
-use node_common::metrics::*;
 use prometheus::{
     Gauge, GaugeVec, Histogram, IntCounter, IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
 };
-
-use crate::engine_prelude::*;
-use crate::protocol::{
-    PendingProtocolUpdateState, ProtocolState, ProtocolUpdateEnactmentCondition,
-};
-use crate::store::traits::measurement::CategoryDbVolumeStatistic;
-use crate::traits::QueryableProofStore;
 
 pub struct LedgerMetrics {
     address_encoder: AddressBech32Encoder, // for label rendering only
@@ -150,7 +137,7 @@ impl LedgerMetrics {
                     "committed_transactions_size",
                     "Size in bytes of committed transactions.",
                 ),
-                higher_resolution_for_lower_values_buckets_for_limit(MAX_TRANSACTION_SIZE),
+                higher_resolution_for_lower_values_buckets_for_limit(PreparationSettings::latest().max_ledger_payload_length),
             )
             .registered_at(registry),
             execution_cost_units_consumed: new_histogram(
@@ -324,7 +311,7 @@ pub struct TransactionMetricsData {
 impl TransactionMetricsData {
     pub fn new(raw: &RawLedgerTransaction, commit_result: &ProcessedCommitResult) -> Self {
         TransactionMetricsData {
-            size: raw.0.len(),
+            size: raw.len(),
             fee_summary: commit_result
                 .local_receipt
                 .local_execution
@@ -400,9 +387,15 @@ impl ProtocolMetrics {
         instance
     }
 
-    pub fn update(&self, protocol_state: &ProtocolState, epoch_change_event: &EpochChangeEvent) {
+    pub fn update(
+        &self,
+        protocol_state: &ProtocolState,
+        epoch_change_event: Option<&EpochChangeEvent>,
+    ) {
         self.update_state_based_metrics(protocol_state);
-        self.update_epoch_change_based_metrics(epoch_change_event);
+        if let Some(epoch_change_event) = epoch_change_event {
+            self.update_epoch_change_based_metrics(epoch_change_event);
+        }
     }
 
     /// Updates the metrics that are based on ProtocolState (pending, enacted updates)
@@ -417,7 +410,9 @@ impl ProtocolMetrics {
         self.pending_update_upper_bound_epoch.reset();
         self.enacted_protocol_update_state_version.reset();
 
-        for pending_protocol_update in protocol_state.pending_protocol_updates.iter() {
+        for (protocol_name, pending_protocol_update) in
+            protocol_state.pending_protocol_updates.iter()
+        {
             let protocol_update = &pending_protocol_update.protocol_update;
             match &pending_protocol_update.protocol_update.enactment_condition {
                 ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochIfValidatorsReady {
@@ -428,13 +423,13 @@ impl ProtocolMetrics {
                     let readiness_signal_name = protocol_update.readiness_signal_name();
                     self.pending_update_lower_bound_epoch
                         .with_two_labels(
-                            protocol_update.next_protocol_version.to_string(),
+                            protocol_name.to_string(),
                             readiness_signal_name.to_string(),
                         )
                         .set(lower_bound_inclusive.number() as i64);
                     self.pending_update_upper_bound_epoch
                         .with_two_labels(
-                            protocol_update.next_protocol_version.to_string(),
+                            protocol_name.to_string(),
                             readiness_signal_name.to_string(),
                         )
                         .set(upper_bound_exclusive.number() as i64);
@@ -447,7 +442,7 @@ impl ProtocolMetrics {
                             {
                                 self.pending_update_threshold_required_ratio
                                     .with_four_labels(
-                                        protocol_update.next_protocol_version.to_string(),
+                                        protocol_name.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
                                         threshold
@@ -459,7 +454,7 @@ impl ProtocolMetrics {
                                     ));
                                 self.pending_update_threshold_required_consecutive_epochs
                                     .with_four_labels(
-                                        protocol_update.next_protocol_version.to_string(),
+                                        protocol_name.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
                                         threshold
@@ -472,7 +467,7 @@ impl ProtocolMetrics {
                                     );
                                 self.pending_update_threshold_current_consecutive_epochs
                                     .with_four_labels(
-                                        protocol_update.next_protocol_version.to_string(),
+                                        protocol_name.to_string(),
                                         readiness_signal_name.to_string(),
                                         index.to_string(),
                                         threshold
@@ -490,17 +485,16 @@ impl ProtocolMetrics {
                 }
                 ProtocolUpdateEnactmentCondition::EnactAtStartOfEpochUnconditionally(epoch) => {
                     self.pending_update_lower_bound_epoch
-                        .with_two_labels(
-                            protocol_update.next_protocol_version.to_string(),
-                            "".to_string(),
-                        )
+                        .with_two_labels(protocol_name.to_string(), "".to_string())
                         .set(epoch.number() as i64);
                     self.pending_update_upper_bound_epoch
-                        .with_two_labels(
-                            protocol_update.next_protocol_version.to_string(),
-                            "".to_string(),
-                        )
+                        .with_two_labels(protocol_name.to_string(), "".to_string())
                         .set(epoch.number() as i64 + 1);
+                }
+                ProtocolUpdateEnactmentCondition::EnactImmediatelyAfterEndOfProtocolUpdate {
+                    ..
+                } => {
+                    // Don't add any metrics for these triggers, as the previous update will have them
                 }
             }
         }
@@ -681,7 +675,6 @@ impl MetricLabel for ConsensusRoundResolution {
 pub enum VertexPrepareStopReason {
     ProposalComplete,
     EpochChange,
-    ProtocolUpdate,
     LimitExceeded(VertexLimitsExceeded),
 }
 
@@ -692,7 +685,6 @@ impl MetricLabel for VertexPrepareStopReason {
         match self {
             VertexPrepareStopReason::ProposalComplete => "ProposalComplete",
             VertexPrepareStopReason::EpochChange => "EpochChange",
-            VertexPrepareStopReason::ProtocolUpdate => "ProtocolUpdate",
             VertexPrepareStopReason::LimitExceeded(limit_exceeded) => match limit_exceeded {
                 VertexLimitsExceeded::TransactionsCount => "TransactionsCountLimitReached",
                 VertexLimitsExceeded::TransactionsSize => "TransactionsSizeLimitReached",
@@ -889,18 +881,22 @@ impl OverallLedgerHealthFactor {
     }
 
     /// Calculates the current value of the overall ledger health factor.
+    ///
     /// This is a proper fraction representation, where:
     /// - 0.0 means "critically unhealthy",
     /// - 1.0 means "fully healthy",
     /// - intermediate fractions mean some level of warning.
+    ///
     /// Implementation wise, the result depends on the "syncing rate" and "proposal reliability".
     fn calculate(&self) -> f64 {
         self.syncing_factor() * self.proposal_reliability_factor()
     }
 
     /// Calculates the health factor part related to ledger-syncing.
+    ///
     /// If the ledger is synced (i.e. the latest committed proposer timestamp is close to the
     /// wall-clock), then the result is "fully healthy" (i.e. 1.0).
+    ///
     /// Otherwise, the health factor depends on the proposer timestamp's progress rate (see
     /// [`HEALTHY_PROPOSER_TIMESTAMP_PROGRESS_RATE`] and [`MIN_PROPOSER_TIMESTAMP_PROGRESS_RATE`]).
     fn syncing_factor(&self) -> f64 {
@@ -934,7 +930,7 @@ impl OverallLedgerHealthFactor {
 
 /// A simplified "overall ledger health" (see [`OverallLedgerHealthFactor::syncing_factor()`]).
 /// This enum is meant to be surfaced from a `/system/health` API.
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub enum LedgerStatus {
     /// Ledger is fully synced, i.e. the last committed proposer timestamp is closer than
     /// [`SYNCED_LEDGER_MAX_DELAY_SEC`] to wallclock.
@@ -949,7 +945,7 @@ pub enum LedgerStatus {
 
 /// A recent statistic on a number of successful/missed proposals.
 /// This information is meant to be surfaced from a `/system/health` API.
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct RecentSelfProposalMissStatistic {
     /// A number of missed proposals among [`recent_proposals_tracked_count`] most recent ones.
     missed_count: u64,

@@ -127,6 +127,18 @@ public final class ConsensusMonitors {
     };
   }
 
+  public static Module liveness(
+      long allowedStartUpDuration, TimeUnit startUpTimeUnit, long duration, TimeUnit timeUnit) {
+    return new AbstractModule() {
+      @ProvidesIntoMap
+      @MonitorKey(Monitor.CONSENSUS_LIVENESS)
+      TestInvariant livenessInvariant(NodeEvents nodeEvents) {
+        return new LivenessInvariant(
+            nodeEvents, allowedStartUpDuration, startUpTimeUnit, duration, timeUnit);
+      }
+    };
+  }
+
   public static Module safety() {
     return new AbstractModule() {
       @ProvidesIntoMap

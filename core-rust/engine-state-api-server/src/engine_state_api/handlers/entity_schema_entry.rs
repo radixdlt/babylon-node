@@ -1,8 +1,4 @@
-use crate::engine_state_api::*;
-
-use crate::engine_prelude::*;
-
-use state_manager::historical_state::VersionScopingSupport;
+use crate::prelude::*;
 
 pub(crate) async fn handle_entity_schema_entry(
     state: State<EngineStateApiState>,
@@ -26,7 +22,10 @@ pub(crate) async fn handle_entity_schema_entry(
         .snapshot()
         .scoped_at(requested_state_version)?;
 
-    let data_loader = EngineStateDataLoader::new(&database);
+    let loader_factory = EngineStateLoaderFactory::new(state.network.clone(), &database)
+        .ensure_instantiated(&node_id);
+    let data_loader = loader_factory.create_data_loader();
+
     let versioned_schema_data = data_loader.load_schema(&SchemaReference {
         node_id,
         schema_hash,

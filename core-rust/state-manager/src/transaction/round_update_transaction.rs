@@ -1,6 +1,4 @@
-use crate::engine_prelude::*;
-
-use crate::{LedgerHeader, RoundHistory, ValidatorId};
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct RoundUpdateTransactionV1 {
@@ -227,7 +225,7 @@ impl LeaderRoundCountersBuilder {
 }
 
 /// A set of counters of rounds led by a concrete leader.
-#[derive(Default, Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Default, Clone, Debug, ScryptoSbor)]
 pub struct LeaderRoundCounter {
     pub successful: usize,
     pub missed_by_fallback: usize,

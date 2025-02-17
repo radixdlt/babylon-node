@@ -62,16 +62,9 @@
  * permissions under this License.
  */
 
+use crate::prelude::*;
 use std::mem::size_of;
 use std::ops::Range;
-
-use crate::engine_prelude::*;
-
-use crate::store::traits::indices::CreationId;
-use crate::store::traits::scenario::ScenarioSequenceNumber;
-use crate::store::typed_cf_api::*;
-use crate::transaction::RawLedgerTransaction;
-use crate::StateVersion;
 
 #[derive(Default)]
 pub struct StateVersionDbCodec {}
@@ -123,11 +116,11 @@ pub struct RawLedgerTransactionDbCodec {}
 
 impl DbCodec<RawLedgerTransaction> for RawLedgerTransactionDbCodec {
     fn encode(&self, value: &RawLedgerTransaction) -> Vec<u8> {
-        value.0.to_vec()
+        value.as_slice().to_vec()
     }
 
     fn decode(&self, bytes: &[u8]) -> RawLedgerTransaction {
-        RawLedgerTransaction(bytes.to_vec())
+        RawLedgerTransaction::from_slice(bytes)
     }
 }
 
@@ -260,7 +253,7 @@ impl DbCodec<StoredTreeNodeKey> for StoredTreeNodeKeyDbCodec {
 impl BoundedDbCodec for StoredTreeNodeKeyDbCodec {
     fn upper_bound_encoding(&self) -> Vec<u8> {
         // Note: here we use knowledge of `encode_key()`'s internals: it puts the state version
-        // first. Additionally we need to assume that maximum state version is never reached.
+        // first. Additionally, we need to assume that maximum state version is never reached.
         encode_key(&StoredTreeNodeKey::new(
             Version::MAX,
             NibblePath::new_even(vec![]),

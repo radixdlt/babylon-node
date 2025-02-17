@@ -77,7 +77,7 @@ import com.radixdlt.genesis.GenesisData;
 import com.radixdlt.identifiers.Address;
 import com.radixdlt.lang.Option;
 import com.radixdlt.rev2.*;
-import com.radixdlt.transactions.IntentHash;
+import com.radixdlt.transactions.TransactionIntentHash;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -98,7 +98,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       // Single NF mint
       var tx1Result =
           getSingleCommittedTransactionOutcome(
-              getApiHelper()
+              getCoreApiHelper()
                   .submitAndWaitForSuccess(
                       test,
                       Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -112,7 +112,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       // Transient token is not reported
       var tx2Result =
           getSingleCommittedTransactionOutcome(
-              getApiHelper()
+              getCoreApiHelper()
                   .submitAndWaitForSuccess(
                       test,
                       Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -123,7 +123,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       // Multiple NF mint
       var tx3Result =
           getSingleCommittedTransactionOutcome(
-              getApiHelper()
+              getCoreApiHelper()
                   .submitAndWaitForSuccess(
                       test,
                       Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -138,7 +138,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       // Multiple NF burn
       var tx4Result =
           getSingleCommittedTransactionOutcome(
-              getApiHelper()
+              getCoreApiHelper()
                   .submitAndWaitForSuccess(
                       test,
                       Manifest.mintNonFungiblesThenWithdrawAndBurnSome(
@@ -178,7 +178,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       var tx1Result =
           getSingleCommittedTransactionOutcome(
-              getApiHelper()
+              getCoreApiHelper()
                   .submitAndWaitForSuccess(
                       test, Manifest.depositFromFaucet(account1Address), List.of()));
       assertThat(tx1Result.getResultantAccountFungibleBalances())
@@ -187,7 +187,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       var tx2Result =
           getSingleCommittedTransactionOutcome(
-              getApiHelper()
+              getCoreApiHelper()
                   .submitAndWaitForSuccess(
                       test, Manifest.depositFromFaucet(account2Address), List.of()));
       assertThat(tx2Result.getResultantAccountFungibleBalances())
@@ -199,7 +199,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       account2ExpectedAmount += tx3Amount;
       var tx3Result =
           getSingleCommittedTransactionOutcome(
-              getApiHelper()
+              getCoreApiHelper()
                   .submitAndWaitForSuccess(
                       test,
                       Manifest.transferBetweenAccountsFeeFromFaucet(
@@ -216,7 +216,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       var tx4Result =
           getSingleCommittedTransactionOutcome(
-              getApiHelper()
+              getCoreApiHelper()
                   .submitAndWaitForSuccess(
                       test,
                       Manifest.transferBetweenAccountsFeeFromFaucet(
@@ -284,17 +284,17 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       var account2AddressStr = account2Address.encode(networkDefinition);
 
       var account1FaucetClaim =
-          getApiHelper()
+          getCoreApiHelper()
               .submitAndWaitForSuccess(
                   test, Manifest.depositFromFaucet(account1Address), List.of());
       var account2FaucetClaim =
-          getApiHelper()
+          getCoreApiHelper()
               .submitAndWaitForSuccess(
                   test, Manifest.depositFromFaucet(account2Address), List.of());
 
       var account1SelfXrdTransferAmount = 1L;
       var account1SelfXrdTransfer =
-          getApiHelper()
+          getCoreApiHelper()
               .submitAndWaitForSuccess(
                   test,
                   Manifest.transferBetweenAccountsFeeFromSender(
@@ -306,7 +306,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       var account1ToAccount2XrdTransferWithFeeFromAccount1Amount = 5;
       var account1ToAccount2XrdTransferWithFeeFromAccount1 =
-          getApiHelper()
+          getCoreApiHelper()
               .submitAndWaitForSuccess(
                   test,
                   Manifest.transferBetweenAccountsFeeFromSender(
@@ -318,7 +318,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       var account1ToAccount2XrdTransferWithFeeFromAccount2Amount = 31;
       var account1ToAccount2XrdTransferWithFeeFromAccount2 =
-          getApiHelper()
+          getCoreApiHelper()
               .submitAndWaitForSuccess(
                   test,
                   Manifest.transferBetweenAccountsFeeFromReceiver(
@@ -330,7 +330,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
 
       var account1ToAccount2XrdTransferWithFeeFromFaucetAmount = 6;
       var account1ToAccount2XrdTransferWithFeeFromFaucet =
-          getApiHelper()
+          getCoreApiHelper()
               .submitAndWaitForSuccess(
                   test,
                   Manifest.transferBetweenAccountsFeeFromFaucet(
@@ -343,18 +343,18 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       validateAccountTransactions(
           account1Address,
           List.of(
-              account1FaucetClaim.intentHash(),
-              account1SelfXrdTransfer.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromAccount1.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromAccount2.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromFaucet.intentHash()));
+              account1FaucetClaim.transactionIntentHash(),
+              account1SelfXrdTransfer.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount1.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount2.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromFaucet.transactionIntentHash()));
       validateAccountTransactions(
           account2Address,
           List.of(
-              account2FaucetClaim.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromAccount1.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromAccount2.intentHash(),
-              account1ToAccount2XrdTransferWithFeeFromFaucet.intentHash()));
+              account2FaucetClaim.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount1.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromAccount2.transactionIntentHash(),
+              account1ToAccount2XrdTransferWithFeeFromFaucet.transactionIntentHash()));
 
       var faucetFreeXrdAmount = 10000L;
       assertNonFeeXrdBalanceChange(
@@ -473,7 +473,8 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   }
 
   private void validateAccountTransactions(
-      ComponentAddress accountAddress, List<IntentHash> intentHashes) throws Exception {
+      ComponentAddress accountAddress, List<TransactionIntentHash> transactionIntentHashes)
+      throws Exception {
     var accountOutcomesResponse =
         getLtsApi()
             .ltsStreamAccountTransactionOutcomesPost(
@@ -483,7 +484,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
                     .limit(1000)
                     .accountAddress(addressing.encode(accountAddress)));
     var outcomes = accountOutcomesResponse.getCommittedTransactionOutcomes();
-    assertThat(outcomes.size()).isEqualTo(intentHashes.size());
+    assertThat(outcomes.size()).isEqualTo(transactionIntentHashes.size());
     for (var i = 0; i < outcomes.size(); i++) {
       var outcome = outcomes.get(i);
       if (outcome.getStatus() != LtsCommittedTransactionStatus.SUCCESS) {
@@ -491,7 +492,8 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
       }
       var transactionIdentifiers = outcome.getUserTransactionIdentifiers();
       assertThat(transactionIdentifiers).isNotNull();
-      assertThat(transactionIdentifiers.getIntentHash()).isEqualTo(intentHashes.get(i).hex());
+      assertThat(transactionIdentifiers.getIntentHash())
+          .isEqualTo(transactionIntentHashes.get(i).hex());
     }
   }
 }

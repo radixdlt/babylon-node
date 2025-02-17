@@ -1,18 +1,11 @@
-use axum::body::BoxBody;
-use axum::http::Uri;
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
-};
+use crate::prelude::*;
 use std::any::Any;
 
 use hyper::StatusCode;
 
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use state_manager::historical_state::StateHistoryError;
 use tower_http::catch_panic::ResponseForPanic;
-use tracing::{debug, error, info, trace, warn, Level};
 
 use super::models;
 
@@ -89,7 +82,7 @@ impl TraceId {
 
 #[derive(Debug, Clone)]
 pub struct ErrorResponseEvent {
-    pub level: Level,
+    pub level: LogLevel,
     pub error: models::ErrorResponse,
     pub internal_message: String,
 }
@@ -117,11 +110,11 @@ impl IntoResponse for ResponseError {
     }
 }
 
-fn resolve_level(status_code: StatusCode) -> Level {
+fn resolve_level(status_code: StatusCode) -> LogLevel {
     if status_code.is_server_error() {
-        Level::WARN
+        LogLevel::WARN
     } else {
-        Level::DEBUG
+        LogLevel::DEBUG
     }
 }
 
@@ -139,11 +132,11 @@ pub async fn emit_error_response_event(uri: Uri, response: Response) -> Response
             internal_message,
         } = event;
         match *level {
-            Level::TRACE => trace!(path = uri.path(), error = debug(error), internal_message),
-            Level::DEBUG => debug!(path = uri.path(), error = debug(error), internal_message),
-            Level::INFO => info!(path = uri.path(), error = debug(error), internal_message),
-            Level::WARN => warn!(path = uri.path(), error = debug(error), internal_message),
-            Level::ERROR => error!(path = uri.path(), error = debug(error), internal_message),
+            LogLevel::TRACE => trace!(path = uri.path(), error = debug(error), internal_message),
+            LogLevel::DEBUG => debug!(path = uri.path(), error = debug(error), internal_message),
+            LogLevel::INFO => info!(path = uri.path(), error = debug(error), internal_message),
+            LogLevel::WARN => warn!(path = uri.path(), error = debug(error), internal_message),
+            LogLevel::ERROR => error!(path = uri.path(), error = debug(error), internal_message),
         }
     }
     response

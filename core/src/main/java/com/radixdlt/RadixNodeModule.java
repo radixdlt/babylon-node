@@ -69,6 +69,7 @@ import com.google.inject.AbstractModule;
 import com.radixdlt.addressing.Addressing;
 import com.radixdlt.api.CoreApiServerModule;
 import com.radixdlt.api.EngineStateApiServerModule;
+import com.radixdlt.api.MeshApiServerModule;
 import com.radixdlt.api.prometheus.PrometheusApiModule;
 import com.radixdlt.api.system.SystemApiModule;
 import com.radixdlt.config.SelfValidatorAddressConfig;
@@ -98,7 +99,7 @@ import com.radixdlt.p2p.capability.LedgerSyncCapability;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.rev2.modules.*;
-import com.radixdlt.store.NodeStorageLocationFromPropertiesModule;
+import com.radixdlt.store.StorageLocationFromPropertiesModule;
 import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.transaction.LedgerSyncLimitsConfig;
 import com.radixdlt.utils.BooleanUtils;
@@ -119,12 +120,14 @@ public final class RadixNodeModule extends AbstractModule {
   private static final int DEFAULT_ENGINE_STATE_API_PORT = 3336;
   private static final int DEFAULT_SYSTEM_API_PORT = 3334;
   private static final int DEFAULT_PROMETHEUS_API_PORT = 3335;
+  private static final int DEFAULT_MESH_API_PORT = 3337;
 
   // APIs are only exposed on localhost by default
   private static final String DEFAULT_CORE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_ENGINE_STATE_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_SYSTEM_API_BIND_ADDRESS = "127.0.0.1";
   private static final String DEFAULT_PROMETHEUS_API_BIND_ADDRESS = "127.0.0.1";
+  private static final String DEFAULT_MESH_API_BIND_ADDRESS = "127.0.0.1";
 
   private final RuntimeProperties properties;
   private final Network network;
@@ -258,7 +261,11 @@ public final class RadixNodeModule extends AbstractModule {
 
     // Ledger Sync
     final long syncPatience = properties.get("sync.patience", 5000L);
-    install(new SyncServiceModule(SyncRelayConfig.of(syncPatience, 10, 3000L)));
+    final int syncStatusCheckMaxPeers = properties.get("sync.status_check.max_peers", 10);
+    final long syncStatusInterval = properties.get("sync.status_check.interval_ms", 3000L);
+    install(
+        new SyncServiceModule(
+            SyncRelayConfig.of(syncPatience, syncStatusCheckMaxPeers, syncStatusInterval)));
 
     // Epochs - Consensus
     install(new EpochsConsensusModule());
@@ -266,7 +273,7 @@ public final class RadixNodeModule extends AbstractModule {
     install(new EpochsSyncModule());
 
     // Storage directory
-    install(new NodeStorageLocationFromPropertiesModule());
+    install(new StorageLocationFromPropertiesModule());
     // State Computer
     var mempoolMaxMemory =
         properties.get(
@@ -304,8 +311,6 @@ public final class RadixNodeModule extends AbstractModule {
             enableAccountChangeIndex,
             enableHistoricalSubstateValues,
             enableEntityListingIndices);
-
-    install(new REv2LedgerInitializerModule(genesisProvider));
 
     var vertexMaxTransactionCount =
         properties.get(
@@ -394,6 +399,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     install(
         REv2StateManagerModule.create(
+            genesisProvider,
             ProposalLimitsConfig.from(vertexLimitsConfig),
             vertexLimitsConfig,
             databaseConfig,
@@ -402,10 +408,13 @@ public final class RadixNodeModule extends AbstractModule {
             ledgerProofsGcConfig,
             ledgerSyncLimitsConfig,
             protocolConfig,
-            ScenariosExecutionConfig.resolveForNetwork(network)));
+            ScenariosExecutionConfig.ALL_FOR_NETWORK));
+
+    // Persistence
+    install(new PersistentSafetyStateStoreModule());
+    install(new AddressBookModule());
 
     // Recovery
-    install(new BerkeleySafetyStoreModule());
     install(new EpochsSafetyRecoveryModule());
     install(new REv2LedgerRecoveryModule());
     install(new REv2ConsensusRecoveryModule());
@@ -436,6 +445,16 @@ public final class RadixNodeModule extends AbstractModule {
     final var engineStateApiPort =
         properties.get("api.engine_state.port", DEFAULT_ENGINE_STATE_API_PORT);
     install(new EngineStateApiServerModule(engineStateApiBindAddress, engineStateApiPort));
+
+    final var meshApiBindAddress =
+        properties.get("api.mesh.bind_address", DEFAULT_MESH_API_BIND_ADDRESS);
+    final var meshApiPort = properties.get("api.mesh.port", DEFAULT_MESH_API_PORT);
+    // Install MeshAPI server module only if it is enabled
+    if (properties.get("api.mesh.enabled", false)) {
+      install(
+          new MeshApiServerModule(
+              meshApiBindAddress, meshApiPort, ApplicationVersion.INSTANCE.display()));
+    }
 
     final var systemApiBindAddress =
         properties.get("api.system.bind_address", DEFAULT_SYSTEM_API_BIND_ADDRESS);

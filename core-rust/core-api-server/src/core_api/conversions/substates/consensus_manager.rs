@@ -2,6 +2,7 @@ use super::super::*;
 use super::*;
 use crate::core_api::models;
 use crate::engine_prelude::*;
+use crate::prelude::*;
 
 pub fn to_api_registered_validators_by_stake_index_entry_substate(
     context: &MappingContext,
@@ -18,7 +19,7 @@ pub fn to_api_registered_validators_by_stake_index_entry_substate(
         divided_stake,
         validator_address,
     } = key.clone().into_full_content();
-    Ok(index_substate_versioned!(
+    Ok(index_substate_single_versioned!(
         substate,
         ConsensusManagerRegisteredValidatorsByStakeIndexEntry,
         models::ActiveValidatorKey {
@@ -39,7 +40,7 @@ pub fn to_api_current_validator_set_substate(
     context: &MappingContext,
     substate: &ConsensusManagerCurrentValidatorSetFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ConsensusManagerFieldCurrentValidatorSet,
         CurrentValidatorSetSubstate { validator_set } => {
@@ -57,7 +58,7 @@ pub fn to_api_current_proposal_statistic_substate(
     _context: &MappingContext,
     substate: &ConsensusManagerCurrentProposalStatisticFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ConsensusManagerFieldCurrentProposalStatistic,
         CurrentProposalStatisticSubstate {
@@ -80,7 +81,7 @@ pub fn to_api_validator_rewards_substate(
     context: &MappingContext,
     substate: &ConsensusManagerValidatorRewardsFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ConsensusManagerFieldValidatorRewards,
         ValidatorRewardsSubstate {
@@ -129,7 +130,7 @@ pub fn to_api_validator_state_substate(
     context: &MappingContext,
     substate: &ValidatorStateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ValidatorFieldState,
         ValidatorState {
@@ -210,7 +211,7 @@ pub fn to_api_validator_protocol_update_readiness_signal_substate(
     _context: &MappingContext,
     substate: &ValidatorProtocolUpdateReadinessSignalFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ValidatorFieldProtocolUpdateReadinessSignal,
         ValidatorProtocolUpdateReadinessSignalSubstate {
@@ -226,7 +227,7 @@ pub fn to_api_consensus_manager_state_substate(
     context: &MappingContext,
     substate: &ConsensusManagerStateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ConsensusManagerFieldState,
         ConsensusManagerSubstate {
@@ -243,10 +244,10 @@ pub fn to_api_consensus_manager_state_substate(
             is_started: *started,
             effective_epoch_start: Box::new(to_api_clamped_instant_from_epoch_milli(
                 *effective_epoch_start_milli,
-            )?),
+            )),
             actual_epoch_start: Box::new(to_api_clamped_instant_from_epoch_milli(
                 *actual_epoch_start_milli,
-            )?),
+            )),
             current_leader: current_leader
                 .as_ref()
                 .map(|validator_index| to_api_active_validator_index(*validator_index))
@@ -259,7 +260,7 @@ pub fn to_api_consensus_manager_config_substate(
     substate: &ConsensusManagerConfigurationFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
     let usd_price_in_xrd = Decimal::try_from(USD_PRICE_IN_XRD).unwrap();
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ConsensusManagerFieldConfig,
         ConsensusManagerConfigSubstate {
@@ -325,12 +326,12 @@ pub fn to_api_epoch_change_condition(
 pub fn to_api_current_time_substate(
     substate: &ConsensusManagerProposerMilliTimestampFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ConsensusManagerFieldCurrentTime,
         ProposerMilliTimestampSubstate { epoch_milli },
         Value {
-            proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(*epoch_milli)?),
+            proposer_timestamp: Box::new(to_api_clamped_instant_from_epoch_milli(*epoch_milli)),
         }
     ))
 }
@@ -338,13 +339,13 @@ pub fn to_api_current_time_substate(
 pub fn to_api_current_time_rounded_to_minutes_substate(
     substate: &ConsensusManagerProposerMinuteTimestampFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         ConsensusManagerFieldCurrentTimeRoundedToMinutes,
         ProposerMinuteTimestampSubstate { epoch_minute },
         Value {
             proposer_timestamp_rounded_down_to_minute: Box::new(
-                to_api_clamped_instant_from_epoch_milli(i64::from(*epoch_minute) * 60 * 1000)?,
+                to_api_clamped_instant_from_epoch_milli(i64::from(*epoch_minute) * 60 * 1000),
             ),
         }
     ))

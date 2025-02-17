@@ -80,8 +80,16 @@ public final class Address {
     return virtualAccountAddress(publicKey.getBytes());
   }
 
+  public static ComponentAddress virtualIdentityAddress(ECDSASecp256k1PublicKey publicKey) {
+    return virtualIdentityAddress(publicKey.getBytes());
+  }
+
   public static ComponentAddress virtualAccountAddress(byte[] publicKeyBytes) {
     return virtualAccountAddressFunc.call(publicKeyBytes);
+  }
+
+  public static ComponentAddress virtualIdentityAddress(byte[] publicKeyBytes) {
+    return virtualIdentityAddressFunc.call(publicKeyBytes);
   }
 
   public static ResourceAddress globalFungible(byte[] addressBytesWithoutEntityId) {
@@ -92,6 +100,11 @@ public final class Address {
       Natives.builder(Address::nativeVirtualAccountAddress).build(new TypeToken<>() {});
 
   private static native byte[] nativeVirtualAccountAddress(byte[] requestPayload);
+
+  private static final Natives.Call1<byte[], ComponentAddress> virtualIdentityAddressFunc =
+      Natives.builder(Address::nativeVirtualIdentityAddress).build(new TypeToken<>() {});
+
+  private static native byte[] nativeVirtualIdentityAddress(byte[] requestPayload);
 
   private static final Natives.Call1<byte[], ResourceAddress> globalFungibleFunc =
       Natives.builder(Address::nativeGlobalFungible).build(new TypeToken<>() {});

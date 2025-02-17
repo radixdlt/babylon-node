@@ -224,7 +224,12 @@ public final class EntityInfoTest extends DeterministicEngineStateApiTestBase {
       assertThat(collectionsNames)
           .isEqualTo(List.of("resource_vault", "resource_preference", "authorized_depositor"));
 
-      assertThat(objectInfo.getAttachedModules()).isEmpty();
+      final var attachedModuleIds =
+          Lists.transform(
+              objectInfo.getAttachedModules(),
+              ObjectEntityInfoAllOfAttachedModules::getAttachedModuleId);
+      assertThat(attachedModuleIds)
+          .isEqualTo(List.of(AttachedModuleId.ROLEASSIGNMENT, AttachedModuleId.METADATA));
 
       final var wellKnownAddresses = getCoreApiHelper().getWellKnownAddresses();
       assertThat(objectInfo.getBlueprintReference())

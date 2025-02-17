@@ -128,8 +128,8 @@ public class MockedSyncServiceModule extends AbstractModule {
     return new EventProcessorOnDispatch<>(
         LedgerUpdate.class,
         update -> {
-          // We must skip protocol update proofs here (`trimProtocolUpdate`)
-          final var proof = update.committedProof().trimProtocolUpdate();
+          // We must skip protocol update proofs here
+          final var proof = update.committedProofBundle().latestRoundOrEpochChangeProof();
           long stateVersion = proof.stateVersion();
           long firstVersion =
               stateVersion - update.committedNonProtocolUpdateTransactions().size() + 1;

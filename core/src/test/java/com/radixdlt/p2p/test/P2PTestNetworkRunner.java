@@ -74,10 +74,13 @@ import com.radixdlt.consensus.LedgerHeader;
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
+import com.radixdlt.consensus.safety.BerkeleySafetyStateStore;
+import com.radixdlt.consensus.safety.PersistentSafetyStateStore;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.crypto.ECKeyOps;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.environment.Environment;
+import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.StartProcessorOnRunner;
 import com.radixdlt.environment.deterministic.DeterministicProcessor;
 import com.radixdlt.environment.deterministic.network.ControlledDispatcher;
@@ -94,6 +97,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.*;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPersistence;
+import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
 import com.radixdlt.p2p.capability.Capabilities;
 import com.radixdlt.p2p.transport.PeerOutboundBootstrap;
 import com.radixdlt.protocol.NewestProtocolVersion;
@@ -101,7 +105,9 @@ import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.serialization.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ProtocolState;
+import com.radixdlt.store.BerkeleyDbDefaults;
 import com.radixdlt.utils.properties.RuntimeProperties;
+import com.sleepycat.je.EnvironmentConfig;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Function;
@@ -188,6 +194,27 @@ public final class P2PTestNetworkRunner {
       throws ParseException {
     final var properties = RuntimeProperties.fromCommandLineArgs(new String[] {});
     return Guice.createInjector(
+        new AbstractModule() {
+
+          // FIXME: Replacing implementation with the RocksDB version does not work out of the box
+          // because NodeRustEnvironment can't
+          // be properly instantiated (error on Rust side).
+          @Override
+          protected void configure() {
+            bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
+            bind(PersistentSafetyStateStore.class).to(BerkeleySafetyStateStore.class);
+
+            var binder = Multibinder.newSetBinder(binder(), NodeAutoCloseable.class);
+            binder.addBinding().to(PersistentSafetyStateStore.class);
+            binder.addBinding().to(AddressBookPersistence.class);
+          }
+
+          @Provides
+          @Singleton
+          EnvironmentConfig environmentConfig(RuntimeProperties properties) {
+            return BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties);
+          }
+        },
         Modules.override(new P2PModule(properties))
             .with(
                 new AbstractModule() {
@@ -265,10 +292,7 @@ public final class P2PTestNetworkRunner {
   }
 
   public void cleanup() {
-    this.nodes.forEach(
-        node -> {
-          node.injector.getInstance(AddressBookPersistence.class).close();
-        });
+    this.nodes.forEach(node -> node.injector.getInstance(AddressBookPersistence.class).close());
   }
 
   public RadixNodeUri getUri(int nodeIndex) {

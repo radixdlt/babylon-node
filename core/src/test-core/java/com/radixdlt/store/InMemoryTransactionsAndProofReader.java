@@ -99,8 +99,8 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   public EventProcessor<LedgerUpdate> updateProcessor() {
     return update -> {
       synchronized (lock) {
-        // We must skip protocol update proofs here (`trimProtocolUpdate`)
-        final var proof = update.committedProof().trimProtocolUpdate();
+        // We must skip protocol update proofs here
+        final var proof = update.committedProofBundle().latestRoundOrEpochChangeProof();
         final var transactions = update.committedNonProtocolUpdateTransactions();
         final var latestStateVersion = proof.stateVersion();
         long firstVersion = latestStateVersion - transactions.size() + 1;
@@ -116,7 +116,7 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
             .nextEpoch()
             .ifPresent(nextEpoch -> this.store.epochProofs.put(nextEpoch.epoch().toLong(), proof));
 
-        this.store.latestProof = Optional.of(update.committedProof());
+        this.store.latestProof = Optional.of(update.committedProofBundle());
       }
     };
   }

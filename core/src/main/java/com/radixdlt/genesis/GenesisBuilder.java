@@ -79,11 +79,19 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 public final class GenesisBuilder {
-
   public static GenesisData createTestGenesisWithSingleValidator(
       ECDSASecp256k1PublicKey validator,
       Decimal initialStake,
       GenesisConsensusManagerConfig.Builder builder) {
+    return createTestGenesisWithSingleValidatorAndFaucetSupply(
+        validator, initialStake, builder, GenesisData.DEFAULT_TEST_FAUCET_SUPPLY);
+  }
+
+  public static GenesisData createTestGenesisWithSingleValidatorAndFaucetSupply(
+      ECDSASecp256k1PublicKey validator,
+      Decimal initialStake,
+      GenesisConsensusManagerConfig.Builder builder,
+      Decimal faucetSupply) {
     final var validatorsAndStakesChunks =
         prepareValidatorsAndStakesChunksStakingFromValidatorPublicKeyAccount(
             ImmutableList.of(tuple(validator, initialStake)));
@@ -92,7 +100,7 @@ public final class GenesisBuilder {
         0,
         builder.build(),
         ImmutableList.of(validatorsAndStakesChunks.first(), validatorsAndStakesChunks.last()),
-        GenesisData.DEFAULT_TEST_FAUCET_SUPPLY,
+        faucetSupply,
         GenesisData.NO_SCENARIOS);
   }
 

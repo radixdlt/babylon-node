@@ -75,7 +75,9 @@ import com.radixdlt.api.core.generated.models.StreamProofsRequest;
 import com.radixdlt.api.engine_state.generated.models.*;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.harness.predicates.NodesPredicate;
+import com.radixdlt.identifiers.Address;
 import com.radixdlt.rev2.Manifest;
 import java.util.List;
 import java.util.Map;
@@ -114,6 +116,26 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
                               "kind", "I32",
                               "type_name", "ProposerMinuteTimestampSubstate",
                               "value", "0"))));
+    }
+  }
+
+  @Test
+  public void engine_state_api_returns_object_field_for_uninstantiated_entity() throws Exception {
+    try (var test = buildRunningServerTest(defaultConfig())) {
+      test.suppressUnusedWarning();
+
+      final var uninstantiatedAccountAddress =
+          Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
+
+      final var response =
+          getObjectsApi()
+              .objectFieldPost(
+                  new ObjectFieldRequest()
+                      .entityAddress(uninstantiatedAccountAddress.encode(networkDefinition))
+                      .fieldName("deposit_rule"));
+
+      // we only care that some object is returned (the default):
+      assertThat(response.getContent().getProgrammaticJson()).isInstanceOf(Map.class);
     }
   }
 
@@ -172,34 +194,38 @@ public final class ObjectFieldTest extends DeterministicEngineStateApiTestBase {
               .entityAddress(wellKnownAddresses.getConsensusManager())
               .fieldName("state");
 
+      final long currentStateVersion = 123;
+      final long olderStateVersion = 119;
+      final long evenOlderStateVersion = 110;
+
       // Progress to a known version and capture Epoch and Round:
-      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(23));
+      test.runUntilState(NodesPredicate.anyAtOrOverStateVersion(currentStateVersion));
       final var epochRoundAtCurrentVersion =
           parseEpochRound(getObjectsApi().objectFieldPost(baseRequest).getContent());
 
       // Assert on a slightly-older historical Epoch + Round:
-      final var epochRoundAtVersion19 =
+      final var epochRoundAtOlderStateVersion =
           parseEpochRound(
               getObjectsApi()
                   .objectFieldPost(
                       baseRequest.atLedgerState(
                           new VersionLedgerStateSelector()
-                              .stateVersion(19L)
+                              .stateVersion(olderStateVersion)
                               .type(LedgerStateSelectorType.BYSTATEVERSION)))
                   .getContent());
-      assertThat(epochRoundAtVersion19).isLessThan(epochRoundAtCurrentVersion);
+      assertThat(epochRoundAtOlderStateVersion).isLessThan(epochRoundAtCurrentVersion);
 
       // Assert on even older historical state:
-      final var epochRoundAtVersion10 =
+      final var epochRoundAtEvenOlderStateVersion =
           parseEpochRound(
               getObjectsApi()
                   .objectFieldPost(
                       baseRequest.atLedgerState(
                           new VersionLedgerStateSelector()
-                              .stateVersion(10L)
+                              .stateVersion(evenOlderStateVersion)
                               .type(LedgerStateSelectorType.BYSTATEVERSION)))
                   .getContent());
-      assertThat(epochRoundAtVersion10).isLessThan(epochRoundAtVersion19);
+      assertThat(epochRoundAtEvenOlderStateVersion).isLessThan(epochRoundAtOlderStateVersion);
     }
   }
 

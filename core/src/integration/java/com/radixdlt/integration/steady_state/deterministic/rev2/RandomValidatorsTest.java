@@ -118,7 +118,7 @@ public final class RandomValidatorsTest {
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerWithSyncRelay(
                     StateComputerConfig.rev2()

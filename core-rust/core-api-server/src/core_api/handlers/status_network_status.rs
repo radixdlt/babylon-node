@@ -1,10 +1,4 @@
-use crate::core_api::*;
-
-use crate::engine_prelude::*;
-
-use state_manager::query::TransactionIdentifierLoader;
-use state_manager::store::traits::*;
-use state_manager::{LedgerHashes, LedgerProof, LedgerStateSummary, StateVersion};
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -65,10 +59,10 @@ pub(crate) async fn handle_status_network_status(
                 }))
             })
             .transpose()?,
-        current_state_identifier: Some(Box::new(to_api_committed_state_identifiers(
+        current_state_identifier: Box::new(to_api_committed_state_identifiers(
             current_state_version,
             &current_ledger_hashes,
-        )?)),
+        )?),
         current_epoch_round: database
             .get_latest_proof()
             .map(|proof| -> Result<_, MappingError> {

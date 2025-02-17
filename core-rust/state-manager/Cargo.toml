@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 node-common = { path = "../node-common" }
+# Eventually this should be removed, but we need to move JNINodeRustEnvironment to other place firts.
+p2p = { path = "../p2p" }
 
 sbor = { workspace = true }
 radix-transactions = { workspace = true }
@@ -27,7 +29,6 @@ blake2 = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
 
-rocksdb = { version = "=0.21.0" }
 lru = { version = "=0.8.1", default-features = false }
 slotmap = { version = "=1.0.6" }
 im = { version = "=15.1.0" }

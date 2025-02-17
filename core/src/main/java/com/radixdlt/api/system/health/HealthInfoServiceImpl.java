@@ -126,7 +126,7 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
               final var selfAddress = selfValidatorId.getValidatorAddress();
               final var selfSignal =
                   this.rustStateReader.getValidatorProtocolUpdateReadinessSignal(selfAddress);
-              return protocolState.pendingProtocolUpdates().stream()
+              return protocolState.pendingProtocolUpdates().values().stream()
                   .collect(
                       Collectors.toMap(
                           p -> p.protocolUpdateTrigger().nextProtocolVersion(),
@@ -152,7 +152,7 @@ public final class HealthInfoServiceImpl implements HealthInfoService {
             })
         .orElseGet(
             () ->
-                protocolState.pendingProtocolUpdates().stream()
+                protocolState.pendingProtocolUpdates().values().stream()
                     .collect(
                         Collectors.toMap(
                             p -> p.protocolUpdateTrigger().nextProtocolVersion(),

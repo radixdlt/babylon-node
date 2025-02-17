@@ -208,6 +208,6 @@ public final class StatelessComputer implements StateComputerLedger.StateCompute
       LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
     var ledgerUpdate = this.generateLedgerUpdate(ledgerExtension);
     ledgerUpdateDispatcher.dispatch(ledgerUpdate);
-    return ledgerUpdate.committedProof();
+    return ledgerUpdate.committedProofBundle();
   }
 }

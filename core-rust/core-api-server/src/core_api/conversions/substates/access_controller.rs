@@ -7,7 +7,7 @@ pub fn to_api_access_controller_substate(
     context: &MappingContext,
     substate: &AccessControllerV2StateFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_multi_versioned!(
         substate,
         AccessControllerFieldState,
         AccessControllerV2Substate {
@@ -73,7 +73,6 @@ pub fn to_api_access_controller_substate(
                         )?),
                         allow_timed_recovery_after: timed_recovery_allowed_after
                             .map(to_api_scrypto_instant)
-                            .transpose()?
                             .map(Box::new),
                     }))
                 }

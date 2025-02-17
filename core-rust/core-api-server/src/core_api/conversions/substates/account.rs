@@ -7,7 +7,7 @@ pub fn to_api_account_state_substate(
     _context: &MappingContext,
     substate: &AccountDepositRuleFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         AccountFieldState,
         AccountSubstate {
@@ -36,7 +36,7 @@ pub fn to_api_account_vault_entry(
             })
         ))
     );
-    Ok(key_value_store_mandatory_substate_versioned!(
+    Ok(key_value_store_mandatory_substate_single_versioned!(
         substate,
         AccountVaultEntry,
         models::ResourceKey {
@@ -63,7 +63,7 @@ pub fn to_api_account_resource_preference_entry(
             )
         ))
     );
-    Ok(key_value_store_optional_substate_versioned!(
+    Ok(key_value_store_optional_substate_single_versioned!(
         substate,
         AccountResourcePreferenceEntry,
         models::ResourceKey {
@@ -93,7 +93,7 @@ pub fn to_api_account_authorized_depositor_entry(
             )
         ))
     );
-    Ok(key_value_store_optional_substate_versioned!(
+    Ok(key_value_store_optional_substate_single_versioned!(
         substate,
         AccountAuthorizedDepositorEntry,
         models::AuthorizedDepositorKey {

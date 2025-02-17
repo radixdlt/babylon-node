@@ -66,6 +66,7 @@ package com.radixdlt.protocol;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.rev2.NetworkDefinition;
 import com.radixdlt.sbor.Natives;
@@ -78,21 +79,24 @@ public final class RustProtocolUpdate {
 
   public RustProtocolUpdate(Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
     final var timer = metrics.stateManager().nativeCall();
-    applyProtocolUpdateFunc =
-        Natives.builder(nodeRustEnvironment, RustProtocolUpdate::applyProtocolUpdate)
+    applyKnownPendingProtocolUpdateFunc =
+        Natives.builder(nodeRustEnvironment, RustProtocolUpdate::applyKnownPendingProtocolUpdate)
             .measure(
-                timer.label(new Metrics.MethodId(RustProtocolUpdate.class, "applyProtocolUpdate")))
+                timer.label(
+                    new Metrics.MethodId(
+                        RustProtocolUpdate.class, "applyKnownPendingProtocolUpdate")))
             .build(new TypeToken<>() {});
   }
 
-  public ProtocolUpdateResult applyProtocolUpdate(String protocolVersionName) {
-    return this.applyProtocolUpdateFunc.call(protocolVersionName);
+  public ProtocolUpdateResult applyKnownPendingProtocolUpdate() {
+    return this.applyKnownPendingProtocolUpdateFunc.call(Tuple.tuple());
   }
 
-  private static native byte[] applyProtocolUpdate(
+  private static native byte[] applyKnownPendingProtocolUpdate(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
-  private final Natives.Call1<String, ProtocolUpdateResult> applyProtocolUpdateFunc;
+  private final Natives.Call1<Tuple.Tuple0, ProtocolUpdateResult>
+      applyKnownPendingProtocolUpdateFunc;
 
   public static String readinessSignalName(ProtocolUpdateTrigger protocolUpdateTrigger) {
     return readinessSignalNameFunc.call(protocolUpdateTrigger);

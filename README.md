@@ -8,6 +8,12 @@ To run a node against our latest test environment, install docker and run `./tes
 
 Also check out the [Babylon documentation for exchanges and integrators](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
 
+## Branching
+
+The default branch for this repository is `develop`, which typically includes unreleased code.
+
+To look at the currently live code, use the corresponding release tag or `release/<protocol-update>` branch for the correct [protocol update](https://docs.radixdlt.com/docs/protocol-updates).
+
 ## Subdirectories
 
 Here we have:

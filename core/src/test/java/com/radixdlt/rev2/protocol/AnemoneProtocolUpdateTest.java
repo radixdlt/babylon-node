@@ -74,6 +74,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.api.CoreApiHelper;
 import com.radixdlt.api.core.generated.api.StreamApi;
 import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.environment.EventDispatcher;
@@ -98,7 +99,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class AnemoneProtocolUpdateTest {
-  private static final String PROTOCOL_VERSION_NAME = ProtocolUpdateTrigger.ANEMONE;
+  private static final String PROTOCOL_VERSION_NAME = ProtocolConfig.ANEMONE_PROTOCOL_VERSION_NAME;
   private static final long PROTOCOL_UPDATE_EPOCH = 4L;
 
   // Enact anemone at fixed epoch 4
@@ -120,7 +121,7 @@ public final class AnemoneProtocolUpdateTest {
             new FunctionalRadixNodeModule(
                 FunctionalRadixNodeModule.NodeStorageConfig.tempFolder(folder),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 FunctionalRadixNodeModule.ConsensusConfig.of(1000),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2()
@@ -176,7 +177,7 @@ public final class AnemoneProtocolUpdateTest {
       assertEquals(
           PROTOCOL_VERSION_NAME,
           postProtocolUpdateProof
-              .closestProtocolUpdateInitProofOnOrBefore()
+              .latestProofWhichInitiatedOneOrMoreProtocolUpdates()
               .unwrap()
               .ledgerHeader()
               .nextProtocolVersion()
@@ -196,7 +197,7 @@ public final class AnemoneProtocolUpdateTest {
 
   @Test
   public void core_api_streams_anemone_flash_transactions() throws Exception {
-    final var coreApiHelper = new ProtocolUpdateTestUtils.CoreApiHelper();
+    final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(coreApiHelper.module())) {
       // Start a single node network and run until protocol update:
       test.startAllNodes();
@@ -226,7 +227,18 @@ public final class AnemoneProtocolUpdateTest {
               .map(txn -> ((FlashLedgerTransaction) txn.getLedgerTransaction()).getName())
               .toList());
 
-      ProtocolUpdateTestUtils.verifyFlashTransactionReceipts(committedFlashTransactions);
+      // We filter out "anemone-validator-fee-fix" because it's a no-op on inttestnet
+      var transactionsToVerify =
+          committedFlashTransactions.stream()
+              .filter(
+                  txn ->
+                      !((FlashLedgerTransaction) txn.getLedgerTransaction())
+                          .getName()
+                          .equals("anemone-validator-fee-fix"))
+              .toList();
+
+      // Now verify the transactions
+      ProtocolUpdateTestUtils.verifyFlashTransactionReceipts(transactionsToVerify);
     }
   }
 }

@@ -86,7 +86,7 @@ public final class InMemorySystemInfo {
       ProtocolState initialProtocolState) {
     this.rustStateReader = rustStateReader;
     final var latestEpochChange =
-        latestProof.closestEpochProofOnOrBefore().ledgerHeader().nextEpoch().unwrap();
+        latestProof.latestProofWhichInitiatedAnEpochChange().ledgerHeader().nextEpoch().unwrap();
     this.state =
         new InMemorySystemInfoState(
             initialProtocolState,
@@ -112,7 +112,7 @@ public final class InMemorySystemInfo {
 
   public EventProcessor<LedgerUpdate> ledgerUpdateEventProcessor() {
     return update -> {
-      final var committedProof = update.committedProof();
+      final var committedProof = update.committedProofBundle();
       final var maybeNextEpoch = committedProof.primaryProof().ledgerHeader().nextEpoch();
       this.state =
           new InMemorySystemInfoState(

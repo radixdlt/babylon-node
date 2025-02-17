@@ -67,11 +67,11 @@ package com.radixdlt.p2p.hostip;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.net.HostAndPort;
+import com.radixdlt.lang.Result;
 import com.radixdlt.utils.properties.RuntimeProperties;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -81,7 +81,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import okhttp3.*;
+import java.util.stream.Collectors;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -92,22 +94,23 @@ import org.apache.logging.log4j.Logger;
 final class NetworkQueryHostIp {
   private static final Logger log = LogManager.getLogger();
 
-  public record Result(Optional<HostIp> maybeHostIp, ImmutableList<URL> hostsQueried) {}
+  public record VotedResult(
+      Optional<HostIp> conclusiveHostIp,
+      ImmutableMap<String, Result<HostIp, IOException>> individualQueryResults) {}
 
   @VisibleForTesting static final String QUERY_URLS_PROPERTY = "network.host_ip_query_urls";
 
   @VisibleForTesting
-  static final ImmutableList<URL> DEFAULT_QUERY_URLS =
+  static final ImmutableList<String> DEFAULT_QUERY_URLS =
       ImmutableList.of(
-          makeurl("https://checkip.amazonaws.com/"),
-          makeurl("https://ipv4.icanhazip.com/"),
-          makeurl("https://myexternalip.com/raw"),
-          makeurl("https://ipecho.net/plain"),
-          makeurl("https://ifconfig.me"),
-          makeurl("https://www.trackip.net/ip"),
-          makeurl("https://ifconfig.co/ip"));
+          "https://checkip.amazonaws.com/",
+          "https://ipv4.icanhazip.com/",
+          "https://myexternalip.com/raw",
+          "https://ipecho.net/plain",
+          "https://www.trackip.net/ip",
+          "https://ifconfig.co/ip");
 
-  static NetworkQueryHostIp create(Collection<URL> urls) {
+  static NetworkQueryHostIp create(Collection<String> urls) {
     return new NetworkQueryHostIp(urls);
   }
 
@@ -116,18 +119,20 @@ final class NetworkQueryHostIp {
     if (urlsProperty == null || urlsProperty.trim().isEmpty()) {
       return create(DEFAULT_QUERY_URLS);
     }
-    ImmutableList<URL> urls =
-        Arrays.asList(urlsProperty.split(",")).stream()
-            .map(NetworkQueryHostIp::makeurl)
-            .collect(ImmutableList.toImmutableList());
+    ImmutableList<String> urls =
+        Arrays.asList(urlsProperty.split(",")).stream().collect(ImmutableList.toImmutableList());
     return create(urls);
   }
 
-  private final List<URL> hosts;
+  private final List<String> hosts;
   private final OkHttpClient okHttpClient;
-  private final Supplier<Result> result = Suppliers.memoize(this::get);
+  private final Supplier<VotedResult> result = Suppliers.memoize(this::get);
 
-  NetworkQueryHostIp(Collection<URL> urls) {
+  NetworkQueryHostIp() {
+    this(DEFAULT_QUERY_URLS);
+  }
+
+  NetworkQueryHostIp(Collection<String> urls) {
     if (urls.isEmpty()) {
       throw new IllegalArgumentException("At least one URL must be specified");
     }
@@ -139,62 +144,78 @@ final class NetworkQueryHostIp {
     return this.hosts.size();
   }
 
-  public Result queryNetworkHosts() {
+  List<String> hosts() {
+    return this.hosts;
+  }
+
+  public VotedResult queryNetworkHosts() {
     return result.get();
   }
 
-  Result get() {
-    return publicIp((count() + 1) / 2); // Round up
-  }
-
-  Result publicIp(int threshold) {
+  VotedResult get() {
     // Make sure we don't DoS the first one on the list
-    Collections.shuffle(this.hosts);
-    log.debug("Using hosts {}", this.hosts);
-    final Map<HostAndPort, AtomicInteger> ips = Maps.newHashMap();
-    final ImmutableList.Builder<URL> hostsQueried = ImmutableList.builder();
-    for (URL url : this.hosts) {
-      HostAndPort q = query(url);
-      if (q != null) {
-        hostsQueried.add(url);
-        int newValue = ips.computeIfAbsent(q, k -> new AtomicInteger()).incrementAndGet();
-        if (newValue >= threshold) {
-          log.debug("Found address {}", q);
-          return new Result(Optional.of(new HostIp(q.getHost())), hostsQueried.build());
+    Collections.shuffle(this.hosts());
+    log.debug("Using hosts {}", this.hosts());
+    final Map<HostIp, AtomicInteger> successCounts = Maps.newHashMap();
+    final ImmutableMap.Builder<String, Result<HostIp, IOException>> queryResults =
+        ImmutableMap.builder();
+    int maxCount = 0;
+    Optional<HostIp> maxResult = Optional.empty();
+    for (String url : this.hosts()) {
+      final Result<HostIp, IOException> result = query(url);
+      queryResults.put(url, result);
+      if (result.isSuccess()) {
+        int newCount =
+            successCounts
+                .computeIfAbsent(result.unwrap(), k -> new AtomicInteger())
+                .incrementAndGet();
+        if (newCount > maxCount) {
+          maxCount = newCount;
+          maxResult = result.toOptional();
         }
       }
     }
-    log.debug("No suitable address found");
-    return new Result(Optional.empty(), hostsQueried.build());
-  }
-
-  HostAndPort query(URL url) {
-    try {
-      final var response =
-          okHttpClient
-              .newCall(
-                  new Request.Builder()
-                      .url(url)
-                      .header(
-                          "User-Agent", "curl/7.58.0") // User agent is required by some services
-                      .header(
-                          "Accept", "*/*") // Similarly, this seems to be required by some services
-                      .get()
-                      .build())
-              .execute();
-      return HostAndPort.fromHost(response.body().string().trim());
-    } catch (Exception ex) {
-      // We don't want any single query to throw an uncaught exception
-      // (e.g. if they return an invalid response), so we're just catching all here.
-      return null;
+    if (successCounts.isEmpty()) {
+      log.warn(
+          "Attempts to resolve this node's public IP address with external resolution services"
+              + " failed at every attempt. Perhaps this node cannot connect to the internet?");
     }
+    if (successCounts.size() > 1) {
+      String votes =
+          successCounts.keySet().stream()
+              .map(key -> key + "=" + successCounts.get(key))
+              .collect(Collectors.joining(", ", "{", "}"));
+      log.warn(
+          String.format(
+              "Attempts to resolve this node's public IP address with external resolution services"
+                  + " resulted in more than one distinct IP address. The node will continue by"
+                  + " using the most common: %s. The full list of resolved addresses is: %s",
+              maxResult.get(), votes));
+    }
+    return new VotedResult(maxResult, queryResults.build());
   }
 
-  private static URL makeurl(String s) {
+  Result<HostIp, IOException> query(String url) {
     try {
-      return new URL(s);
-    } catch (MalformedURLException ex) {
-      throw new IllegalStateException("While constructing URL for " + s, ex);
+      // Some services simply require the headers we set here:
+      final var request =
+          new Request.Builder()
+              .url(url)
+              .header("User-Agent", "Mozilla/5.0")
+              .header("Accept", "text/plain,text/html")
+              .header("Accept-Encoding", "deflate,gzip,identity")
+              .header("Accept-Language", "en-GB,en-US")
+              .get()
+              .build();
+      final var call = okHttpClient.newCall(request);
+      try (var response = call.execute()) {
+        if (!response.isSuccessful()) {
+          return Result.error(new IOException("Not a success: %s".formatted(response)));
+        }
+        return Result.success(new HostIp(response.body().string().trim()));
+      }
+    } catch (IOException ex) {
+      return Result.error(ex);
     }
   }
 }

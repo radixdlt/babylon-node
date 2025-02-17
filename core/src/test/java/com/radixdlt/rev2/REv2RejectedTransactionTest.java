@@ -119,7 +119,7 @@ public final class REv2RejectedTransactionTest {
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
                 epochs,
-                SafetyRecoveryConfig.BERKELEY_DB,
+                SafetyRecoveryConfig.REAL,
                 ConsensusConfig.of(1000),
                 LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2()

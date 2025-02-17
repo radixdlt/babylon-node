@@ -50,7 +50,7 @@ Example `core/java-binary/*.jar`
 ```
 docker build  . \
     -t radixdlt/babylon-node:local-test-core \
-    --target binary-container \
+    --target java-container \
     --output ./outputs
 ls outputs 
 core-SNAPSHOT-<BRANCH>-<GITSHA10>.tgz 

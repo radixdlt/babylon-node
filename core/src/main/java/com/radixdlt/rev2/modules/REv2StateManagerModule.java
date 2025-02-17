@@ -77,6 +77,7 @@ import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -100,10 +101,9 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.io.File;
 
 public final class REv2StateManagerModule extends AbstractModule {
-
+  private final GenesisProvider genesisProvider;
   private final ProposalLimitsConfig proposalLimitsConfig;
   private final Option<VertexLimitsConfig> vertexLimitsConfigOpt;
   private final DatabaseConfig databaseConfig;
@@ -117,6 +117,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final ScenariosExecutionConfig scenariosExecutionConfig;
 
   private REv2StateManagerModule(
+      GenesisProvider genesisProvider,
       ProposalLimitsConfig proposalLimitsConfig,
       Option<VertexLimitsConfig> vertexLimitsConfigOpt,
       DatabaseConfig databaseConfig,
@@ -128,6 +129,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       ProtocolConfig protocolConfig,
       boolean noFees,
       ScenariosExecutionConfig scenariosExecutionConfig) {
+    this.genesisProvider = genesisProvider;
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
     this.databaseConfig = databaseConfig;
@@ -142,6 +144,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   public static REv2StateManagerModule create(
+      GenesisProvider genesisProvider,
       ProposalLimitsConfig proposalLimitsConfig,
       VertexLimitsConfig vertexLimitsConfig,
       DatabaseConfig databaseConfig,
@@ -152,6 +155,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       ProtocolConfig protocolConfig,
       ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
+        genesisProvider,
         proposalLimitsConfig,
         Option.some(vertexLimitsConfig),
         databaseConfig,
@@ -166,6 +170,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   }
 
   public static REv2StateManagerModule createForTesting(
+      GenesisProvider genesisProvider,
       ProposalLimitsConfig proposalLimitsConfig,
       DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
@@ -177,6 +182,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       boolean noFees,
       ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
+        genesisProvider,
         proposalLimitsConfig,
         Option.none(),
         databaseConfig,
@@ -204,10 +210,10 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          DatabaseBackendConfig databaseBackendConfig(
+          @NodeStorageLocation
+          DatabaseBackendConfig stateManagerDatabaseBackendConfig(
               @NodeStorageLocation String nodeStorageLocation) {
-            return new DatabaseBackendConfig(
-                new File(nodeStorageLocation, "state_manager").getPath());
+            return new DatabaseBackendConfig(nodeStorageLocation);
           }
 
           @Provides
@@ -216,16 +222,17 @@ public final class REv2StateManagerModule extends AbstractModule {
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
               FatalPanicHandler fatalPanicHandler,
               Network network,
-              DatabaseBackendConfig databaseBackendConfig,
+              @NodeStorageLocation DatabaseBackendConfig nodeDatabaseBackendConfig,
               DatabaseConfig databaseConfig) {
             return new NodeRustEnvironment(
+                genesisProvider,
                 mempoolRelayDispatcher,
                 fatalPanicHandler,
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
                     vertexLimitsConfigOpt,
-                    databaseBackendConfig,
+                    nodeDatabaseBackendConfig,
                     databaseConfig,
                     getLoggingConfig(),
                     stateTreeGcConfig,
@@ -269,6 +276,27 @@ public final class REv2StateManagerModule extends AbstractModule {
           REv2TransactionAndProofStore transactionAndProofStore(
               Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
             return new REv2TransactionAndProofStore(metrics, nodeRustEnvironment);
+          }
+
+          @Provides
+          @Singleton
+          REv2LedgerInitializerToken initializeLedger(TransactionsAndProofReader reader) {
+            // In the past, genesis was run manually when a particular guice module initialized.
+            // This made the "has genesis run" question quite implicit, so the
+            // REv2LedgerInitializerToken was created to allow adding an explicit dependency
+            // on genesis running for a test to run.
+            //
+            // As of Cuttlefish, the ledger is initialized when the RustEnvironment is created.
+            // And pretty much everything requires the RustEnvironment. But we have kept the
+            // `REv2LedgerInitializerToken` around for explicit inclusion if required.
+            //
+            // In particular, the TransactionsAndProofReader requires the RustEnvironment,
+            // so genesis must been executed by this point.
+            var postGenesisEpochProof = reader.getPostGenesisEpochProof();
+            if (postGenesisEpochProof.isEmpty()) {
+              throw new IllegalStateException("Genesis was unexpectedly not run on start-up.");
+            }
+            return new REv2LedgerInitializerToken(postGenesisEpochProof.get());
           }
 
           @Provides

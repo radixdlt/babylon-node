@@ -78,7 +78,7 @@ public sealed interface MempoolError {
         codecs -> EnumCodec.fromPermittedRecordSubclasses(MempoolError.class, codecs));
   }
 
-  record PriorityThresholdNotMet(Option<UInt32> minTipPercentageRequired, UInt32 tipPercentage)
+  record PriorityThresholdNotMet(Option<UInt32> minTipBasisPointsRequired, UInt32 tipBasisPoints)
       implements MempoolError {}
 
   record Duplicate(HashCode notarizedTransactionHash) implements MempoolError {}

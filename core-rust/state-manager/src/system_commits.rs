@@ -62,15 +62,14 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::transaction::*;
-use crate::*;
+use crate::prelude::*;
 
 pub struct SystemCommitRequestFactory {
     pub epoch: Epoch,
     pub timestamp: i64,
     pub state_version: StateVersion,
     pub proof_origin: LedgerProofOrigin,
+    pub batch_situation: BatchSituation,
 }
 
 impl SystemCommitRequestFactory {
@@ -78,11 +77,12 @@ impl SystemCommitRequestFactory {
     /// By default, all system transactions are required to be successful (which is later checked by
     /// the commit logic). However, this may be customized, e.g. for the Scenarios' case (see
     /// [`SystemCommitRequest::require_committed_successes()`]).
-    pub fn create(&mut self, prepare_result: SystemPrepareResult) -> SystemCommitRequest {
+    pub fn create(mut self, prepare_result: SystemPrepareResult) -> SystemCommitRequest {
         let SystemPrepareResult {
             committed_transactions,
             ledger_hashes,
             next_epoch,
+            next_protocol_version,
         } = prepare_result;
         if committed_transactions.is_empty() {
             panic!("cannot commit an empty batch of system transactions");
@@ -93,12 +93,18 @@ impl SystemCommitRequestFactory {
             .expect("Invalid next state version!");
         SystemCommitRequest {
             transactions: committed_transactions,
-            proof: self.create_proof(ledger_hashes, next_epoch),
+            proof: self.create_proof(ledger_hashes, next_epoch, next_protocol_version),
             require_committed_successes: true,
+            batch_situation: self.batch_situation.clone(),
         }
     }
 
-    fn create_proof(&self, hashes: LedgerHashes, next_epoch: Option<NextEpoch>) -> LedgerProof {
+    fn create_proof(
+        &self,
+        hashes: LedgerHashes,
+        next_epoch: Option<NextEpoch>,
+        next_protocol_version: Option<ProtocolVersionName>,
+    ) -> LedgerProof {
         LedgerProof {
             ledger_header: LedgerHeader {
                 epoch: self.epoch,
@@ -108,7 +114,7 @@ impl SystemCommitRequestFactory {
                 consensus_parent_round_timestamp_ms: self.timestamp,
                 proposer_timestamp_ms: self.timestamp,
                 next_epoch,
-                next_protocol_version: None,
+                next_protocol_version,
             },
             origin: self.proof_origin.clone(),
         }
@@ -117,31 +123,34 @@ impl SystemCommitRequestFactory {
 
 /// An input to [`SystemCommitRequestFactory::create()`].
 pub struct SystemPrepareResult {
-    pub committed_transactions: Vec<RawAndValidatedTransaction>,
+    pub committed_transactions: Vec<ProcessedLedgerTransaction>,
     pub ledger_hashes: LedgerHashes,
     pub next_epoch: Option<NextEpoch>,
+    pub next_protocol_version: Option<ProtocolVersionName>,
 }
 
 impl SystemPrepareResult {
     /// Creates an instance for committing the given pre-validated transactions, using the current
     /// end-state of the given series executor.
     pub fn from_committed_series(
-        committed_transactions: Vec<RawAndValidatedTransaction>,
-        series_executor: TransactionSeriesExecutor<impl Sized>,
+        committed_transactions: Vec<ProcessedLedgerTransaction>,
+        end_state: StateTrackerEndState,
     ) -> Self {
         Self {
             committed_transactions,
-            ledger_hashes: *series_executor.latest_ledger_hashes(),
-            next_epoch: series_executor.epoch_change().map(|event| event.into()),
+            ledger_hashes: end_state.ledger_hashes,
+            next_epoch: end_state.epoch_change.map(|event| event.into()),
+            next_protocol_version: end_state.next_protocol_version,
         }
     }
 }
 
 /// An output from [`SystemCommitRequestFactory::create()`].
 pub struct SystemCommitRequest {
-    pub transactions: Vec<RawAndValidatedTransaction>,
+    pub transactions: Vec<ProcessedLedgerTransaction>,
     pub proof: LedgerProof,
     pub require_committed_successes: bool,
+    pub batch_situation: BatchSituation,
 }
 
 impl SystemCommitRequest {
@@ -152,7 +161,8 @@ impl SystemCommitRequest {
     }
 }
 
-pub struct RawAndValidatedTransaction {
+pub struct ProcessedLedgerTransaction {
     pub raw: RawLedgerTransaction,
-    pub validated: ValidatedLedgerTransaction,
+    pub executable: LedgerExecutable,
+    pub hashes: LedgerTransactionHashes,
 }
