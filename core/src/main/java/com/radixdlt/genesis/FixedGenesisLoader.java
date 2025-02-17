@@ -74,7 +74,7 @@ public final class FixedGenesisLoader {
     return switch (fixedNetworkGenesis) {
       case FixedNetworkGenesis.Constant constant -> {
         try {
-          yield new WrappedByteArray(Compress.uncompress(constant.compressedGenesisData().value()));
+          yield Compress.uncompress(constant.compressedGenesisData());
         } catch (IOException e) {
           throw new RuntimeException("Failed to load fixed network genesis from resources", e);
         }

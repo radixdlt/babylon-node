@@ -327,7 +327,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               // doesn't carry a commit. Otherwise, the vertex store state is
               // already persisted alongside the commit, so no need to repeat it here.
               if (update.committedVertices().isEmpty()) {
-                persistentVertexStore.save(update.serializedVertexStoreState().value());
+                persistentVertexStore.save(update.serializedVertexStoreState());
               }
             };
           }
@@ -336,16 +336,14 @@ public final class REv2StateManagerModule extends AbstractModule {
           @ProcessOnDispatch
           EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update ->
-                persistentVertexStore.save(update.serializedVertexStoreState().value());
+            return update -> persistentVertexStore.save(update.serializedVertexStoreState());
           }
 
           @ProvidesIntoSet
           @ProcessOnDispatch
           EventProcessor<BFTRebuildUpdate> onRebuildUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update ->
-                persistentVertexStore.save(update.serializedVertexStoreState().value());
+            return update -> persistentVertexStore.save(update.serializedVertexStoreState());
           }
         });
 

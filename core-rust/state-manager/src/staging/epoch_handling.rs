@@ -188,8 +188,8 @@ struct EpochScopedAccuTreeStore<'s, S> {
     epoch_start_state_version: StateVersion,
 }
 
-impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usize, N>
-    for EpochScopedAccuTreeStore<'s, S>
+impl<S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usize, N>
+    for EpochScopedAccuTreeStore<'_, S>
 {
     fn get_tree_slice(&self, epoch_tree_size: &usize) -> Option<TreeSlice<N>> {
         let end_state_version = self
@@ -200,8 +200,8 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usi
     }
 }
 
-impl<'s, S: WriteableAccuTreeStore<StateVersion, N>, N> WriteableAccuTreeStore<usize, N>
-    for EpochScopedAccuTreeStore<'s, S>
+impl<S: WriteableAccuTreeStore<StateVersion, N>, N> WriteableAccuTreeStore<usize, N>
+    for EpochScopedAccuTreeStore<'_, S>
 {
     fn put_tree_slice(&mut self, epoch_tree_size: usize, slice: TreeSlice<N>) {
         let end_state_version = self

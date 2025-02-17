@@ -769,7 +769,7 @@ impl<'r> RocksDBCommittedTransactionBundleIterator<'r> {
     }
 }
 
-impl<'r> Iterator for RocksDBCommittedTransactionBundleIterator<'r> {
+impl Iterator for RocksDBCommittedTransactionBundleIterator<'_> {
     type Item = CommittedTransactionBundle;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1623,9 +1623,8 @@ impl<R: WriteableRocks> RestoreDecember2023LostSubstates for StateManagerDatabas
 
             // Substates were deleted on the transition to epoch 51817 so no need to restore
             // substates if the current epoch has not reached this epoch yet.
-            self.get_latest_epoch_proof().map_or(false, |p| {
-                p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
-            })
+            self.get_latest_epoch_proof()
+                .is_some_and(|p| p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817)
         } else {
             // For other networks, we can calculate the "problem" epoch from theoretical principles:
             let (Some(first_proof), Some(latest_epoch_proof)) =

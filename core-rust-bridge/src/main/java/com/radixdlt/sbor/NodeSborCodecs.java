@@ -97,6 +97,7 @@ import com.radixdlt.transactions.*;
 import com.radixdlt.utils.UInt16;
 import com.radixdlt.utils.UInt32;
 import com.radixdlt.utils.UInt64;
+import com.radixdlt.utils.WrappedByteArray;
 
 public final class NodeSborCodecs {
   private static final ScryptoSbor sbor = createSborForStateManager();
@@ -121,6 +122,7 @@ public final class NodeSborCodecs {
   }
 
   public static void registerCodecsWithCodecMap(CodecMap codecMap) {
+    WrappedByteArray.registerCodec(codecMap);
     UInt16.registerCodec(codecMap);
     UInt32.registerCodec(codecMap);
     UInt64.registerCodec(codecMap);

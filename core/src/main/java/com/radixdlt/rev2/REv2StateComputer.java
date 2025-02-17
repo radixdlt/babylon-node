@@ -293,7 +293,7 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
         new CommitRequest(
             ledgerExtension.transactions(),
             proof,
-            serializedVertexStoreState.map(WrappedByteArray::value),
+            serializedVertexStoreState,
             Option.from(selfValidatorId));
 
     final var result = stateComputer.commit(commitRequest);

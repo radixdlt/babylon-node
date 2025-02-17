@@ -36,13 +36,13 @@ pub(crate) async fn handle_lts_transaction_status(
         .filter_map(|p| p.1.intent_invalid_from_epoch)
         .next();
 
-    let intent_is_permanently_rejected = invalid_from_epoch.map_or(false, |invalid_from_epoch| {
-        current_epoch >= invalid_from_epoch
-    }) || known_pending_payloads.iter().any(|p| {
-        p.1.earliest_permanent_rejection
-            .as_ref()
-            .map_or(false, |r| r.marks_permanent_rejection_for_intent())
-    });
+    let intent_is_permanently_rejected = invalid_from_epoch
+        .is_some_and(|invalid_from_epoch| current_epoch >= invalid_from_epoch)
+        || known_pending_payloads.iter().any(|p| {
+            p.1.earliest_permanent_rejection
+                .as_ref()
+                .is_some_and(|r| r.marks_permanent_rejection_for_intent())
+        });
 
     if let Some(txn_state_version) = txn_state_version_opt {
         let hashes = database

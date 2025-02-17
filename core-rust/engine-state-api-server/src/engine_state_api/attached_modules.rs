@@ -29,7 +29,7 @@ pub struct ObjectRoyaltyLoader<'s, S: SubstateDatabase> {
     pub data_loader: EngineStateDataLoader<'s, S>,
 }
 
-impl<'s, S: SubstateDatabase> ObjectRoyaltyLoader<'s, S> {
+impl<S: SubstateDatabase> ObjectRoyaltyLoader<'_, S> {
     /// Returns Package and Component royalty amounts for all methods of the given object.
     pub fn load_method_amounts(
         &self,
@@ -95,7 +95,7 @@ pub struct ObjectRoleAssignmentLoader<'s, S: SubstateDatabase> {
     pub data_loader: EngineStateDataLoader<'s, S>,
 }
 
-impl<'s, S: SubstateDatabase> ObjectRoleAssignmentLoader<'s, S> {
+impl<S: SubstateDatabase> ObjectRoleAssignmentLoader<'_, S> {
     /// Loads full information from the [`ModuleId::RoleAssignment`] module:
     /// - the Owner rule and updater,
     /// - the role-to-rule assignment for all roles defined by the object and its attached modules.
@@ -247,7 +247,7 @@ pub struct ObjectMetadataLoader<'s, S: SubstateDatabase> {
     pub loader: EngineStateDataLoader<'s, S>,
 }
 
-impl<'s, S: SubstateDatabase> ObjectMetadataLoader<'s, S> {
+impl<S: SubstateDatabase> ObjectMetadataLoader<'_, S> {
     /// Returns an iterator of keys within the Metadata module attached to the given object,
     /// starting at the given key.
     pub fn iter_keys(

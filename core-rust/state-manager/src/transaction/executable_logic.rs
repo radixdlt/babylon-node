@@ -182,7 +182,7 @@ pub enum ConfiguredExecutable<'a> {
     },
 }
 
-impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
+impl<S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'_> {
     fn execute_on(self, store: &S) -> TransactionReceipt {
         match self {
             ConfiguredExecutable::SystemFlash { state_updates } => {

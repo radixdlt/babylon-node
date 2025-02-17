@@ -68,14 +68,14 @@ import com.radixdlt.lang.Option;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.transactions.RawLedgerTransaction;
-import java.util.Arrays;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 import java.util.Objects;
 
 public record CommitRequest(
     List<RawLedgerTransaction> transactions,
     LedgerProof proof,
-    Option<byte[]> postCommitVertexStoreBytes,
+    Option<WrappedByteArray> postCommitVertexStoreBytes,
     // TODO(after removing validator resolution from genesis): it should be possible to inject this
     // field to the Rust StateManager's constructor instead of passing it in every commit request.
     // It is only needed for metrics calculation.
@@ -93,19 +93,13 @@ public record CommitRequest(
     CommitRequest that = (CommitRequest) o;
     return Objects.equals(transactions, that.transactions)
         && Objects.equals(proof, that.proof)
-        && Arrays.equals(
-            postCommitVertexStoreBytes.or((byte[]) null),
-            that.postCommitVertexStoreBytes.or((byte[]) null))
+        && Objects.equals(postCommitVertexStoreBytes, that.postCommitVertexStoreBytes)
         && Objects.equals(selfValidatorId, that.selfValidatorId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        transactions,
-        proof,
-        Arrays.hashCode(postCommitVertexStoreBytes.or((byte[]) null)),
-        selfValidatorId);
+    return Objects.hash(transactions, proof, postCommitVertexStoreBytes, selfValidatorId);
   }
 
   @Override
@@ -115,7 +109,7 @@ public record CommitRequest(
             CommitRequest.class.getSimpleName(),
             transactions,
             proof,
-            postCommitVertexStoreBytes.map(bytes -> bytes.length),
+            postCommitVertexStoreBytes.map(WrappedByteArray::size),
             selfValidatorId);
   }
 }

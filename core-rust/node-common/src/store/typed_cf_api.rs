@@ -99,9 +99,9 @@ impl<'r, R: WriteableRocks> BufferedWriteSupport<'r, R> {
     }
 }
 
-impl<'r, R: WriteableRocks> WriteSupport for BufferedWriteSupport<'r, R> {}
+impl<R: WriteableRocks> WriteSupport for BufferedWriteSupport<'_, R> {}
 
-impl<'r, R: WriteableRocks> BufferedWriteSupport<'r, R> {
+impl<R: WriteableRocks> BufferedWriteSupport<'_, R> {
     /// Writes the batch to the RocksDB and flips the internal buffer.
     fn flush(&self) {
         let write_batch = self.buffer.flip();
@@ -116,7 +116,7 @@ impl<'r, R: WriteableRocks> BufferedWriteSupport<'r, R> {
     }
 }
 
-impl<'r, R: WriteableRocks> Drop for BufferedWriteSupport<'r, R> {
+impl<R: WriteableRocks> Drop for BufferedWriteSupport<'_, R> {
     fn drop(&mut self) {
         self.flush();
     }
@@ -205,9 +205,7 @@ impl<'r, 'w, CF: TypedCf, R: ReadableRocks, W: WriteSupport> TypedCfApi<'r, 'w, 
     }
 }
 
-impl<'r, 'w, CF: TypedCf, R: WriteableRocks>
-    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
-{
+impl<'r, CF: TypedCf, R: WriteableRocks> TypedCfApi<'r, '_, CF, R, BufferedWriteSupport<'r, R>> {
     /// Upserts the new value at the given key.
     pub fn put(&self, key: &CF::Key, value: &CF::Value) {
         self.write_support.buffer.put(
@@ -225,8 +223,8 @@ impl<'r, 'w, CF: TypedCf, R: WriteableRocks>
     }
 }
 
-impl<'r, 'w, KC: BoundedDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
-    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+impl<'r, KC: BoundedDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
+    TypedCfApi<'r, '_, CF, R, BufferedWriteSupport<'r, R>>
 {
     /// Deletes all entries.
     pub fn delete_all(&self) {
@@ -246,8 +244,8 @@ impl<'r, 'w, KC: BoundedDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
     }
 }
 
-impl<'r, 'w, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
-    TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+impl<'r, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: WriteableRocks>
+    TypedCfApi<'r, '_, CF, R, BufferedWriteSupport<'r, R>>
 {
     /// Deletes all the entries from the given group.
     pub fn delete_group(&self, group: &KC::Group) {
@@ -265,13 +263,12 @@ impl<'r, 'w, KC: GroupPreservingDbCodec, CF: TypedCf<KeyCodec = KC>, R: Writeabl
 #[allow(dead_code)]
 impl<
         'r,
-        'w,
         K,
         KC: OrderPreservingDbCodec + DbCodec<K>,
         CF: TypedCf<Key = K, KeyCodec = KC>,
         R: ReadableRocks,
         W: WriteSupport,
-    > TypedCfApi<'r, 'w, CF, R, W>
+    > TypedCfApi<'r, '_, CF, R, W>
 {
     /// Gets the entry of the least key.
     pub fn get_first(&self) -> Option<(CF::Key, CF::Value)> {
@@ -365,12 +362,11 @@ impl<
 
 impl<
         'r,
-        'w,
         K,
         KC: OrderPreservingDbCodec + DbCodec<K>,
         CF: TypedCf<Key = K, KeyCodec = KC>,
         R: WriteableRocks,
-    > TypedCfApi<'r, 'w, CF, R, BufferedWriteSupport<'r, R>>
+    > TypedCfApi<'r, '_, CF, R, BufferedWriteSupport<'r, R>>
 {
     /// Deletes all the entries from the given key range.
     /// Follows the classic convention of "from inclusive, to exclusive".
@@ -385,13 +381,12 @@ impl<
 
 impl<
         'r,
-        'w,
         K,
         KC: IntraGroupOrderPreservingDbCodec<K> + DbCodec<K>,
         CF: TypedCf<Key = K, KeyCodec = KC>,
         R: ReadableRocks,
         W: WriteSupport,
-    > TypedCfApi<'r, 'w, CF, R, W>
+    > TypedCfApi<'r, '_, CF, R, W>
 {
     /// Returns an iterator starting at the given key (inclusive) and traversing over (potentially)
     /// all the entries remaining *in this element's group*, in the requested direction.

@@ -119,7 +119,7 @@ pub struct TransactionSeriesExecutor<'s, S> {
     engine_receipt_capture: CaptureSupport<TransactionReceipt>,
 }
 
-impl<'s, S> TransactionSeriesExecutor<'s, S>
+impl<S> TransactionSeriesExecutor<'_, S>
 where
     S: ReadableStore + QueryableProofStore + TransactionIdentifierLoader,
 {
@@ -199,7 +199,7 @@ where
     }
 }
 
-impl<'s, S> TransactionSeriesExecutor<'s, S> {
+impl<S> TransactionSeriesExecutor<'_, S> {
     /// Configures this executor to clone and capture the raw [`TransactionReceipt`] of the single
     /// next executed transaction. After the `execute_*()` call, the receipt can be collected using
     /// [`Self::retrieve_captured_engine_receipt()`].
