@@ -123,14 +123,14 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.metrics = Objects.requireNonNull(metrics);
     this.config = Objects.requireNonNull(config);
 
-    resetToState(initialState, serializeState(initialState));
+    resetToState(initialState);
   }
 
   public int getCurrentSerializedSizeBytes() {
     return currentSerializedSizeBytes;
   }
 
-  private void resetToState(VertexStoreState state, WrappedByteArray serializedState) {
+  private void resetToState(VertexStoreState state) {
     this.rootVertex = state.getRoot();
     this.highQC = state.getHighQC();
     this.vertices.clear();
@@ -142,7 +142,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
       this.vertexChildren.put(vertexWithHash.vertex().getParentVertexId(), vertexWithHash.hash());
     }
 
-    trackCurrentStateSize(serializedState);
+    recordHighQcOrVertexChange();
   }
 
   @Override
@@ -170,7 +170,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     }
 
     // Reset the vertex store to the new state
-    resetToState(vertexStoreState, serializedVertexStoreState);
+    resetToState(vertexStoreState);
 
     // Insert the executed vertices, since we've already executed them.
     // Note that the vertices aren't re-executed at boot. See comment at `getExecutedVertex`
@@ -220,22 +220,24 @@ public final class VertexStoreJavaImpl implements VertexStore {
     metrics.bft().vertexStore().vertexCount().set(vertices.size());
 
     if (isHighQC || committedUpdate.isPresent()) {
-      // We have either received a new highQc, or some vertices
-      // were committed, or both.
-      final var state = getState();
-      final var serializedVertexStoreState = serializeState(state);
-      // Note that inserting a QC can increase the size of the vertex store above the limit (e.g. if
-      // it doesn't
-      // commit any vertices and carries more signatures than our previous highest QC), but
-      // its size is small enough (compared to vertices) that we're accepting this corner case.
-      this.trackCurrentStateSize(serializedVertexStoreState);
+      // We have either received a new highQc, or some vertices were committed, or both.
+      final var serializedVertexStoreState = recordHighQcOrVertexChange();
 
       return new VertexStore.InsertQcResult.Inserted(
-          state.getHighQC(), serializedVertexStoreState, committedUpdate);
+          highQC(), serializedVertexStoreState, committedUpdate);
     } else {
       // This wasn't our new high QC and nothing has been committed
       return new VertexStore.InsertQcResult.Ignored();
     }
+  }
+
+  private WrappedByteArray recordHighQcOrVertexChange() {
+    final var state = getState();
+    final var serializedState = serializeState(state);
+    this.currentSerializedSizeBytes = serializedState.size();
+    metrics.bft().vertexStore().byteSize().set(this.currentSerializedSizeBytes);
+    metrics.bft().vertexStore().vertexCount().set(vertices.size());
+    return serializedState;
   }
 
   /**
@@ -270,15 +272,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
   public InsertTcResult insertTimeoutCertificate(TimeoutCertificate timeoutCertificate) {
     if (timeoutCertificate.getRound().gt(highQC().getHighestRound())) {
       this.highQC = this.highQC.withHighestTC(timeoutCertificate);
-
-      final var state = getState();
-      final var serializedVertexStoreState = serializeState(state);
-      // Note that inserting a TC can increase the size of the vertex store above the limit
-      // (e.g. if it carries more signatures than our previous TC), but
-      // its size is small enough (compared to vertices) that we're accepting this corner case.
-      trackCurrentStateSize(serializedVertexStoreState);
-
-      return new InsertTcResult.Inserted(state.getHighQC(), serializedVertexStoreState);
+      final var serializedVertexStoreState = this.recordHighQcOrVertexChange();
+      return new InsertTcResult.Inserted(highQC(), serializedVertexStoreState);
     } else {
       return new InsertTcResult.Ignored();
     }
@@ -366,6 +361,12 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   private Result<BFTInsertUpdate, VertexInsertError> insertVertexInternal(
       VertexWithHash vertexWithHash) {
+    if (this.currentSerializedSizeBytes > config.maxSerializedSizeBytes()) {
+      // Can't fit any more vertices
+      metrics.bft().vertexStore().errorsDueToSizeLimit().inc();
+      return Result.error(VertexInsertError.VERTEX_STORE_SIZE_EXCEEDED);
+    }
+
     if (vertices.containsKey(vertexWithHash.hash())) {
       return Result.error(VertexInsertError.ALREADY_PRESENT);
     }
@@ -374,16 +375,6 @@ public final class VertexStoreJavaImpl implements VertexStore {
     if (!this.containsVertex(vertex.getParentVertexId())) {
       throw new MissingParentException(vertex.getParentVertexId());
     }
-
-    // Before we execute the vertex, let's check if we can fit it into the store...
-    final var postInsertState = getState().withVertex(vertexWithHash);
-    final var postInsertSerializedState = serializeState(postInsertState);
-    if (postInsertSerializedState.size() > config.maxSerializedSizeBytes()) {
-      // ...nope, it won't fit
-      metrics.bft().vertexStore().errorsDueToSizeLimit().inc();
-      return Result.error(VertexInsertError.VERTEX_STORE_SIZE_EXCEEDED);
-    }
-    // ...all good (size-wise), let's continue the insertion process.
 
     final var previous = getPathFromRoot(vertexWithHash.vertex().getParentVertexId());
     final var executedVertexOption = Option.from(ledger.prepare(previous, vertexWithHash));
@@ -394,13 +385,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
               vertices.put(executedVertex.getVertexHash(), executedVertex.getVertexWithHash());
               executedVertices.put(executedVertex.getVertexHash(), executedVertex);
               vertexChildren.put(executedVertex.getParentId(), executedVertex.getVertexHash());
+              final var serializedVertexStoreState = recordHighQcOrVertexChange();
 
-              // We've already calculated the post-insert state (and verified
-              // its size against the limit), so we can just use it here.
-              trackCurrentStateSize(postInsertSerializedState);
-
-              // Update the metrics
-              metrics.bft().vertexStore().vertexCount().set(vertices.size());
               final var vertexAndSiblings = vertexChildren.get(executedVertex.getParentId());
               if (vertexAndSiblings.size() > 1) {
                 metrics.bft().vertexStore().forks().inc();
@@ -409,7 +395,8 @@ public final class VertexStoreJavaImpl implements VertexStore {
                 metrics.bft().vertexStore().indirectParents().inc();
               }
 
-              return Result.success(new BFTInsertUpdate(executedVertex, postInsertSerializedState));
+              return Result.success(
+                  new BFTInsertUpdate(executedVertex, serializedVertexStoreState));
             })
         .orElse(Result.error(VertexInsertError.PREPARE_FAILED));
   }
@@ -512,13 +499,9 @@ public final class VertexStoreJavaImpl implements VertexStore {
     return Option.present(builder.build());
   }
 
-  private void trackCurrentStateSize(WrappedByteArray serializedVertexStoreState) {
-    this.currentSerializedSizeBytes = serializedVertexStoreState.size();
-    metrics.bft().vertexStore().byteSize().set(this.currentSerializedSizeBytes);
-  }
-
   private WrappedByteArray serializeState(VertexStoreState state) {
-    return new WrappedByteArray(serialization.toDson(state.toSerializable(), DsonOutput.Output.ALL));
+    return new WrappedByteArray(
+        serialization.toDson(state.toSerializable(), DsonOutput.Output.ALL));
   }
 
   @VisibleForTesting
