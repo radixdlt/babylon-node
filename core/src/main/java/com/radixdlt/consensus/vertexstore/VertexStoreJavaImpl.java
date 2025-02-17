@@ -518,7 +518,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
   }
 
   private WrappedByteArray serializeState(VertexStoreState state) {
-    return new WrappedByteArray(serialization.toDson(state.toSerialized(), DsonOutput.Output.ALL));
+    return new WrappedByteArray(serialization.toDson(state.toSerializable(), DsonOutput.Output.ALL));
   }
 
   @VisibleForTesting

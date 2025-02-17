@@ -220,8 +220,8 @@ public final class VertexStoreState {
         ImmutableSet.<VertexWithHash>builder().addAll(this.vertices).add(vertex).build());
   }
 
-  public SerializedVertexStoreState toSerialized() {
-    return new SerializedVertexStoreState(
+  public SerializableVertexStoreState toSerializable() {
+    return new SerializableVertexStoreState(
         this.highQC,
         this.root.vertex(),
         this.vertices.stream()
@@ -272,7 +272,7 @@ public final class VertexStoreState {
 
   /** Vertex Store State version which can be serialized. */
   @SerializerId2("store.vertices")
-  public static final class SerializedVertexStoreState {
+  public static final class SerializableVertexStoreState {
 
     @JsonProperty(SerializerConstants.SERIALIZER_NAME)
     @DsonOutput(DsonOutput.Output.ALL)
@@ -291,7 +291,7 @@ public final class VertexStoreState {
     private final HighQC highQC;
 
     @JsonCreator
-    public SerializedVertexStoreState(
+    public SerializableVertexStoreState(
         @JsonProperty(value = "high_qc", required = true) HighQC highQC,
         @JsonProperty(value = "root", required = true) Vertex root,
         @JsonProperty(value = "vertices")
@@ -326,7 +326,7 @@ public final class VertexStoreState {
         return true;
       }
 
-      return (o instanceof SerializedVertexStoreState other)
+      return (o instanceof SerializableVertexStoreState other)
           && Objects.equals(this.root, other.root)
           && Objects.equals(this.vertices, other.vertices)
           && Objects.equals(this.highQC, other.highQC);

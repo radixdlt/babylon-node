@@ -70,10 +70,10 @@ import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class SerializedVertexStoreStateTest {
+public class SerializableVertexStoreStateTest {
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(VertexStoreState.SerializedVertexStoreState.class)
+    EqualsVerifier.forClass(VertexStoreState.SerializableVertexStoreState.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }
