@@ -62,89 +62,7 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::protocol::ProtocolVersionName;
-use crate::{protocol::ProtocolState, CommitSummary, LedgerProof};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-
-use node_common::java::*;
-
-use crate::types::{CommitRequest, InvalidCommitRequestError, PrepareRequest, PrepareResult};
-
-use super::node_rust_environment::JNINodeRustEnvironment;
-
-//
-// JNI Interface
-//
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaGenesisData {
-    pub initial_epoch: Epoch,
-    pub initial_timestamp_ms: i64,
-    pub initial_config: JavaConsensusManagerConfig,
-    pub chunks: Vec<GenesisDataChunk>,
-    pub faucet_supply: Decimal,
-    pub scenarios_to_run: Vec<String>,
-}
-
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct JavaConsensusManagerConfig {
-    pub max_validators: u32,
-    pub epoch_min_round_count: u64,
-    pub epoch_max_round_count: u64,
-    pub epoch_target_duration_millis: u64,
-    pub num_unstake_epochs: u64,
-    pub total_emission_xrd_per_epoch: Decimal,
-    pub min_validator_reliability: Decimal,
-    pub num_owner_stake_units_unlock_epochs: u64,
-    pub num_fee_increase_delay_epochs: u64,
-    pub validator_creation_usd_cost: Decimal,
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_executeGenesis(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_fallible_call(
-        &env,
-        request_payload,
-        |raw_genesis_data: Vec<u8>| -> JavaResult<LedgerProof> {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            let genesis_data_hash = hash(&raw_genesis_data);
-            let genesis_data: JavaGenesisData = scrypto_decode(&raw_genesis_data)
-                .map_err(|err| JavaError(format!("Invalid genesis data {:?}", err)))?;
-            let config = genesis_data.initial_config;
-            let resultant_proof = state_computer.execute_genesis(
-                genesis_data.chunks,
-                genesis_data.initial_epoch,
-                ConsensusManagerConfig {
-                    max_validators: config.max_validators,
-                    epoch_change_condition: EpochChangeCondition {
-                        min_round_count: config.epoch_min_round_count,
-                        max_round_count: config.epoch_max_round_count,
-                        target_duration_millis: config.epoch_target_duration_millis,
-                    },
-                    num_unstake_epochs: config.num_unstake_epochs,
-                    total_emission_xrd_per_epoch: config.total_emission_xrd_per_epoch,
-                    min_validator_reliability: config.min_validator_reliability,
-                    num_owner_stake_units_unlock_epochs: config.num_owner_stake_units_unlock_epochs,
-                    num_fee_increase_delay_epochs: config.num_fee_increase_delay_epochs,
-                    validator_creation_usd_cost: config.validator_creation_usd_cost,
-                },
-                genesis_data.initial_timestamp_ms,
-                genesis_data_hash,
-                genesis_data.faucet_supply,
-                genesis_data.scenarios_to_run,
-            );
-            Ok(resultant_proof)
-        },
-    )
-}
+use crate::jni_prelude::*;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
@@ -157,8 +75,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
         &env,
         request_payload,
         |prepare_request: PrepareRequest| -> PrepareResult {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            state_computer.prepare(prepare_request)
+            JNINodeRustEnvironment::get_preparator(&env, j_node_rust_env).prepare(prepare_request)
         },
     )
 }
@@ -174,8 +91,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
         &env,
         request_payload,
         |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
-            let state_computer = JNINodeRustEnvironment::get_state_computer(&env, j_node_rust_env);
-            state_computer.commit(commit_request)
+            JNINodeRustEnvironment::get_committer(&env, j_node_rust_env).commit(commit_request)
         },
     )
 }
@@ -188,8 +104,8 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProto
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
-        let env = JNINodeRustEnvironment::get(&env, j_node_rust_env);
-        env.state_manager.newest_protocol_version()
+        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env)
+            .newest_protocol_version()
     })
 }
 
@@ -201,8 +117,7 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolSta
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
-        let env = JNINodeRustEnvironment::get(&env, j_node_rust_env);
-        env.state_manager.state_computer.protocol_state()
+        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env).current_protocol_state()
     })
 }
 

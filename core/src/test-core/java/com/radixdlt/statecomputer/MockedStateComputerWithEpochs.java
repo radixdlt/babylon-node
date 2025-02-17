@@ -80,6 +80,7 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputerPrepareResult;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -147,7 +148,7 @@ public final class MockedStateComputerWithEpochs implements StateComputer {
 
   @Override
   public LedgerProofBundle commit(
-      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+      LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
     return this.stateComputer.commit(ledgerExtension, serializedVertexStoreState);
   }
 }

@@ -101,8 +101,8 @@ public class PacemakerStateTest {
   @Before
   public void setUp() {
     when(proposerElection.getProposer(any())).thenReturn(BFTValidatorId.random());
-    RoundUpdate roundUpdate =
-        RoundUpdate.create(
+    var roundUpdate =
+        new RoundUpdate(
             Round.epochInitial(),
             mock(HighQC.class),
             BFTValidatorId.random(),
@@ -123,11 +123,11 @@ public class PacemakerStateTest {
     this.pacemakerState.processQC(highQCFor(Round.of(2)), highQcSource, certificateType);
 
     verify(roundUpdateSender, times(1))
-        .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(1))));
+        .dispatch(argThat(v -> v.currentRound().equals(Round.of(1))));
     verify(roundUpdateSender, times(1))
-        .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(2))));
+        .dispatch(argThat(v -> v.currentRound().equals(Round.of(2))));
     verify(roundUpdateSender, times(1))
-        .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(3))));
+        .dispatch(argThat(v -> v.currentRound().equals(Round.of(3))));
 
     this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verifyNoMoreInteractions(roundUpdateSender);
@@ -144,12 +144,12 @@ public class PacemakerStateTest {
 
     this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verify(roundUpdateSender, times(1))
-        .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(1))));
+        .dispatch(argThat(v -> v.currentRound().equals(Round.of(1))));
 
     when(highQC.getHighestRound()).thenReturn(Round.of(1));
     this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verify(roundUpdateSender, times(1))
-        .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(2))));
+        .dispatch(argThat(v -> v.currentRound().equals(Round.of(2))));
   }
 
   @Test
@@ -166,7 +166,7 @@ public class PacemakerStateTest {
 
     this.pacemakerState.processQC(highQC, highQcSource, certificateType);
     verify(roundUpdateSender, times(1))
-        .dispatch(argThat(v -> v.getCurrentRound().equals(Round.of(6))));
+        .dispatch(argThat(v -> v.currentRound().equals(Round.of(6))));
   }
 
   private HighQC highQCFor(Round round) {

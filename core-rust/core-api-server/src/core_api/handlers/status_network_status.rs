@@ -1,10 +1,4 @@
-use crate::core_api::*;
-
-use crate::engine_prelude::*;
-
-use state_manager::query::TransactionIdentifierLoader;
-use state_manager::store::traits::*;
-use state_manager::{LedgerHashes, LedgerHeader, LedgerProof, StateVersion};
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_status_network_status(
@@ -18,7 +12,7 @@ pub(crate) async fn handle_status_network_status(
     let (current_state_version, current_ledger_hashes) = database.get_top_ledger_hashes();
     let current_protocol_version = state
         .state_manager
-        .state_computer
+        .protocol_manager
         .current_protocol_version();
     Ok(Json(models::NetworkStatusResponse {
         pre_genesis_state_identifier: Box::new(to_api_committed_state_identifiers(
@@ -30,7 +24,7 @@ pub(crate) async fn handle_status_network_status(
             .map(|proof| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_epoch_round(
                     &mapping_context,
-                    &proof.ledger_header,
+                    &proof.ledger_header.into(),
                 )?))
             })
             .transpose()?,
@@ -65,16 +59,16 @@ pub(crate) async fn handle_status_network_status(
                 }))
             })
             .transpose()?,
-        current_state_identifier: Some(Box::new(to_api_committed_state_identifiers(
+        current_state_identifier: Box::new(to_api_committed_state_identifiers(
             current_state_version,
             &current_ledger_hashes,
-        )?)),
+        )?),
         current_epoch_round: database
             .get_latest_proof()
             .map(|proof| -> Result<_, MappingError> {
                 Ok(Box::new(to_api_epoch_round(
                     &mapping_context,
-                    &proof.ledger_header,
+                    &proof.ledger_header.into(),
                 )?))
             })
             .transpose()?,
@@ -84,7 +78,7 @@ pub(crate) async fn handle_status_network_status(
 
 pub fn to_api_epoch_round(
     context: &MappingContext,
-    ledger_header: &LedgerHeader,
+    ledger_header: &LedgerStateSummary,
 ) -> Result<models::EpochRound, MappingError> {
     Ok(models::EpochRound {
         epoch: to_api_epoch(context, ledger_header.epoch)?,

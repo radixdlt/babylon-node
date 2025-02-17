@@ -97,7 +97,7 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
 
     testNetworkRunner
         .getInstance(0, new Key<EventDispatcher<DiscoverPeers>>() {})
-        .dispatch(DiscoverPeers.create());
+        .dispatch(new DiscoverPeers());
 
     processForCount(10);
 
@@ -110,14 +110,14 @@ public final class PeerDiscoveryTest extends DeterministicP2PNetworkTest {
     setupTestRunner(1, defaultProperties());
 
     final var unexpectedSender = NodeId.fromPublicKey(PrivateKeys.ofNumeric(1).getPublicKey());
-    final var peersResponse =
-        PeersResponse.create(
-            ImmutableSet.of(
-                RadixNodeUri.fromPubKeyAndAddress(
-                    Network.INTEGRATIONTESTNET.getId(),
-                    ECKeyPair.generateNew().getPublicKey(),
-                    "127.0.0.1",
-                    1234)));
+    ImmutableSet<RadixNodeUri> peers =
+        ImmutableSet.of(
+            RadixNodeUri.fromPubKeyAndAddress(
+                Network.INTEGRATIONTESTNET.getId(),
+                ECKeyPair.generateNew().getPublicKey(),
+                "127.0.0.1",
+                1234));
+    final var peersResponse = new PeersResponse(peers);
 
     testNetworkRunner
         .getInstance(0, PeerDiscovery.class)

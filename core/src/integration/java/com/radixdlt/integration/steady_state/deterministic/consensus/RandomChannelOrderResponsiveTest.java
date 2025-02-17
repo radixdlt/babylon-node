@@ -79,7 +79,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
 import java.util.List;
 import java.util.Random;
@@ -106,11 +105,10 @@ public class RandomChannelOrderResponsiveTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes,
-                            MockedMempoolConfig.noMempool(),
-                            StateComputerConfig.ProposerElectionMode
-                                .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))));
+                        StateComputerConfig.mockedNoEpochs(numValidatorNodes)
+                            .withProposerElection(
+                                StateComputerConfig.ProposerElectionMode
+                                    .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))));
 
     test.startAllNodes();
     test.runUntilMessage(

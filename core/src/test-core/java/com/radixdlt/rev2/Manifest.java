@@ -145,6 +145,24 @@ public class Manifest {
             params.faucetLockFeeLine(), params.encode(componentAddress), methodName, rawArguments);
   }
 
+  public static Functions.Func1<Parameters, String> singleFunctionCall(
+      PackageAddress packageAddress,
+      String blueprintName,
+      String functionName,
+      String rawArguments) {
+    return (params) ->
+        String.format(
+            """
+            %s
+            CALL_FUNCTION Address("%s") "%s" "%s" %s;
+            """,
+            params.faucetLockFeeLine(),
+            params.encode(packageAddress),
+            blueprintName,
+            functionName,
+            rawArguments);
+  }
+
   public static Functions.Func1<Parameters, String> newRandomAccount() {
     var address = Address.virtualAccountAddress(ECKeyPair.generateNew().getPublicKey());
     return depositFromFaucet(address);

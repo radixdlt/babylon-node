@@ -81,6 +81,11 @@ public final class ScryptoConstants {
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ResourceAddress>>() {})
           .call(Tuple.Tuple0.of());
 
+  public static final ResourceAddress RESOURCE_PACKAGE_ADDRESS =
+      Natives.builder(ScryptoConstants::getResourcePackage)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ResourceAddress>>() {})
+          .call(Tuple.Tuple0.of());
+
   public static final ComponentAddress CONSENSUS_MANAGER_COMPONENT_ADDRESS =
       Natives.builder(ScryptoConstants::getConsensusManagerComponentAddress)
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
@@ -96,6 +101,11 @@ public final class ScryptoConstants {
           .build(new TypeToken<Natives.Call1<Tuple.Tuple0, ComponentAddress>>() {})
           .call(Tuple.Tuple0.of());
 
+  public static final PackageAddress LOCKER_PACKAGE_ADDRESS =
+      Natives.builder(ScryptoConstants::getLockerPackageAddress)
+          .build(new TypeToken<Natives.Call1<Tuple.Tuple0, PackageAddress>>() {})
+          .call(Tuple.Tuple0.of());
+
   private static native byte[] getFaucetAddress(byte[] unused);
 
   private static native byte[] getXrdResourceAddress(byte[] unused);
@@ -103,4 +113,8 @@ public final class ScryptoConstants {
   private static native byte[] getConsensusManagerComponentAddress(byte[] unused);
 
   private static native byte[] getValidatorOwnerTokenResourceAddress(byte[] unused);
+
+  private static native byte[] getLockerPackageAddress(byte[] unused);
+
+  private static native byte[] getResourcePackage(byte[] unused);
 }

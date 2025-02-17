@@ -66,36 +66,20 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.epoch.EpochRound;
+import com.radixdlt.consensus.event.LocalEvent;
 
 /** A timeout which has occurred in the bft node */
-public final class EpochLocalTimeoutOccurrence {
-  private final long epoch;
-  private final LocalTimeoutOccurrence localTimeoutOccurrence;
-
-  public EpochLocalTimeoutOccurrence(long epoch, LocalTimeoutOccurrence localTimeoutOccurrence) {
-    this.epoch = epoch;
-    this.localTimeoutOccurrence = localTimeoutOccurrence;
-  }
-
+public record EpochLocalTimeoutOccurrence(long epoch, LocalTimeoutOccurrence occurrence)
+    implements LocalEvent {
   public EpochRound getEpochRound() {
-    return new EpochRound(epoch, localTimeoutOccurrence.getRound());
-  }
-
-  public LocalTimeoutOccurrence getBase() {
-    return localTimeoutOccurrence;
+    return new EpochRound(epoch, occurrence.round());
   }
 
   public BFTValidatorId getLeader() {
-    return localTimeoutOccurrence.getLeader();
+    return occurrence.leader();
   }
 
   public BFTValidatorId getNextLeader() {
-    return localTimeoutOccurrence.getNextLeader();
-  }
-
-  @Override
-  public String toString() {
-    return String.format(
-        "%s{epoch=%s event=%s}", this.getClass().getSimpleName(), epoch, localTimeoutOccurrence);
+    return occurrence.nextLeader();
   }
 }

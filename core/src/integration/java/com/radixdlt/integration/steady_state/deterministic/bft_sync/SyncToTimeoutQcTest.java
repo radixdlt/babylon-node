@@ -129,11 +129,10 @@ public class SyncToTimeoutQcTest {
                     FunctionalRadixNodeModule.ConsensusConfig.of(),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(10),
-                            EpochNodeWeightMapping.constant(NUM_NODES),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool(),
-                            StateComputerConfig.ProposerElectionMode
-                                .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))));
+                                10, EpochNodeWeightMapping.constant(NUM_NODES))
+                            .withProposerElection(
+                                StateComputerConfig.ProposerElectionMode
+                                    .WITH_ROTATE_ONCE_BUT_NO_SHUFFLE))));
 
     test.startAllNodes();
     test.runUntilMessage(DeterministicTest.roundUpdateOnNode(Round.of(2), 0), 10000);

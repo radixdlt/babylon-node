@@ -91,8 +91,11 @@ public final class TestStateReader {
             .build(new TypeToken<>() {});
     this.epochFunc =
         Natives.builder(nodeRustEnvironment, TestStateReader::epoch).build(new TypeToken<>() {});
-    this.leastStaleStateHashTreeVersionFunc =
-        Natives.builder(nodeRustEnvironment, TestStateReader::leastStaleStateHashTreeVersion)
+    this.historicalSubstateCountFunc =
+        Natives.builder(nodeRustEnvironment, TestStateReader::historicalSubstateCount)
+            .build(new TypeToken<>() {});
+    this.leastStaleStateTreeVersionFunc =
+        Natives.builder(nodeRustEnvironment, TestStateReader::leastStaleStateTreeVersion)
             .build(new TypeToken<>() {});
     this.countProofsWithinEpochFunc =
         Natives.builder(nodeRustEnvironment, TestStateReader::countProofsWithinEpoch)
@@ -143,10 +146,19 @@ public final class TestStateReader {
 
   private static native byte[] epoch(NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
-  private final Natives.Call1<Tuple.Tuple0, UInt64> leastStaleStateHashTreeVersionFunc;
+  private final Natives.Call1<Tuple.Tuple0, UInt64> historicalSubstateCountFunc;
 
-  public long getLeastStaleStateHashTreeVersion() {
-    return leastStaleStateHashTreeVersionFunc.call(Tuple.tuple()).toLong();
+  public long getHistoricalSubstateCount() {
+    return historicalSubstateCountFunc.call(Tuple.tuple()).toLong();
+  }
+
+  private static native byte[] historicalSubstateCount(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  private final Natives.Call1<Tuple.Tuple0, UInt64> leastStaleStateTreeVersionFunc;
+
+  public long getLeastStaleStateTreeVersion() {
+    return leastStaleStateTreeVersionFunc.call(Tuple.tuple()).toLong();
   }
 
   private static native byte[] countProofsWithinEpoch(
@@ -158,7 +170,7 @@ public final class TestStateReader {
     return countProofsWithinEpochFunc.call(UInt64.fromNonNegativeLong(epoch)).toLong();
   }
 
-  private static native byte[] leastStaleStateHashTreeVersion(
+  private static native byte[] leastStaleStateTreeVersion(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 
   private final Natives.Call1<ComponentAddress, ValidatorInfo> validatorInfoFunc;

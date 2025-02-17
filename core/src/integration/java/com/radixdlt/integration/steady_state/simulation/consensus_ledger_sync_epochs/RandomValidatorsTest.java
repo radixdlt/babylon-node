@@ -93,7 +93,7 @@ public class RandomValidatorsTest {
           .networkModules(NetworkOrdering.inOrder(), NetworkLatencies.fixed())
           .ledgerAndEpochsAndSync(
               ConsensusConfig.of(5000),
-              Round.of(3),
+              3,
               goodRandomEpochToNodesMapper(),
               syncRelayConfig) // TODO: investigate why this fails with Round.of(10)
           .numPhysicalNodes(numNodes)

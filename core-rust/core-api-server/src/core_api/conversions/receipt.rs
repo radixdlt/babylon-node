@@ -1,14 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use super::addressing::*;
-use crate::core_api::*;
-use crate::engine_prelude::*;
-
-use state_manager::{
-    ApplicationEvent, BySubstate, DetailedTransactionOutcome, LedgerStateChanges,
-    LocalTransactionReceipt, PartitionChangeAction, PartitionReference, ReadableRocks,
-    StateManagerDatabase, SubstateChangeAction, SubstateReference,
-};
+use crate::prelude::*;
 
 pub fn to_api_receipt(
     database: Option<&StateManagerDatabase<impl ReadableRocks>>,
@@ -23,7 +15,7 @@ pub fn to_api_receipt(
         DetailedTransactionOutcome::Failure(error) => (
             models::TransactionStatus::Failed,
             None,
-            Some(format!("{error:?}")),
+            Some(error.to_string(context)),
         ),
     };
 
@@ -153,7 +145,15 @@ pub fn to_api_substate_system_structure(
             models::SubstateSystemStructure::SystemFieldStructure {
                 field_kind: match field_kind {
                     SystemFieldKind::TypeInfo => models::SystemFieldKind::TypeInfo,
-                    SystemFieldKind::BootLoader => models::SystemFieldKind::BootLoader,
+                    SystemFieldKind::VmBoot => models::SystemFieldKind::VmBoot,
+                    SystemFieldKind::SystemBoot => models::SystemFieldKind::SystemBoot,
+                    SystemFieldKind::KernelBoot => models::SystemFieldKind::KernelBoot,
+                    SystemFieldKind::TransactionValidationConfiguration => {
+                        models::SystemFieldKind::TransactionValidationConfiguration
+                    }
+                    SystemFieldKind::ProtocolUpdateStatusSummary => {
+                        models::SystemFieldKind::ProtocolUpdateStatusSummary
+                    }
                 },
             }
         }
@@ -253,11 +253,11 @@ pub fn to_api_object_substate_type_reference(
 
 pub fn to_api_fully_scoped_type_id(
     context: &MappingContext,
-    fully_scoped_type_id: &FullyScopedTypeId<impl Into<NodeId> + Clone>,
+    fully_scoped_type_id: &FullyScopedTypeId<impl AsRef<NodeId>>,
 ) -> Result<models::FullyScopedTypeId, MappingError> {
     let FullyScopedTypeId(address, schema_hash, local_type_id) = fully_scoped_type_id;
     Ok(models::FullyScopedTypeId {
-        entity_address: to_api_entity_address(context, &address.clone().into())?,
+        entity_address: to_api_entity_address(context, address.as_ref())?,
         schema_hash: to_api_schema_hash(schema_hash),
         local_type_id: Box::new(to_api_local_type_id(context, local_type_id)?),
     })
@@ -554,10 +554,10 @@ impl StateMappingLookups {
         // Step 2 - Create the lookups from the database
         let mut blueprint_type_lookups = IndexMap::new();
         for (package_address, blueprint_name) in blueprints_to_fetch_types {
-            let definition = database.get_mapped::<SpreadPrefixKeyMapper, PackageBlueprintVersionDefinitionEntrySubstate>(
-                package_address.as_node_id(),
+            let definition = database.get_substate::<PackageBlueprintVersionDefinitionEntrySubstate>(
+                package_address,
                 PackagePartitionOffset::BlueprintVersionDefinitionKeyValue.as_main_partition(),
-                &SubstateKey::Map(scrypto_encode(&PackageBlueprintVersionDefinitionKeyPayload::from_content_source(
+                SubstateKey::Map(scrypto_encode(&PackageBlueprintVersionDefinitionKeyPayload::from_content_source(
                     BlueprintVersionKey::new_default(blueprint_name.clone())
                 )).unwrap()),
             ).ok_or_else(|| MappingError::CouldNotResolveRemoteGenericSubstitution {
@@ -572,7 +572,10 @@ impl StateMappingLookups {
                     package_address,
                     blueprint_name: blueprint_name.clone(),
                 },
-                definition.into_latest().interface.types,
+                definition
+                    .fully_update_and_into_latest_version()
+                    .interface
+                    .types,
             );
         }
         Ok(blueprint_type_lookups)
@@ -683,8 +686,9 @@ pub fn to_api_fee_summary(
 pub fn to_api_costing_parameters(
     _context: &MappingContext,
     engine_costing_parameters: &CostingParameters,
-    transaction_costing_parameters: &TransactionCostingParameters,
+    transaction_costing_parameters: &TransactionCostingParametersReceiptV2,
 ) -> Result<models::CostingParameters, MappingError> {
+    let tip_percentage_decimal: Decimal = transaction_costing_parameters.tip_proportion * 100;
     Ok(models::CostingParameters {
         execution_cost_unit_price: to_api_decimal(
             &engine_costing_parameters.execution_cost_unit_price,
@@ -704,7 +708,10 @@ pub fn to_api_costing_parameters(
         xrd_usd_price: to_api_decimal(&engine_costing_parameters.usd_price),
         xrd_storage_price: to_api_decimal(&engine_costing_parameters.state_storage_price),
         xrd_archive_storage_price: to_api_decimal(&engine_costing_parameters.archive_storage_price),
-        tip_percentage: to_api_u16_as_i32(transaction_costing_parameters.tip_percentage),
+        tip_percentage: tip_percentage_decimal.try_into().unwrap_or(i32::MAX),
+        tip_proportion: Some(to_api_decimal(
+            &transaction_costing_parameters.tip_proportion,
+        )),
     })
 }
 

@@ -66,49 +66,19 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTValidatorId;
 import com.radixdlt.consensus.bft.Round;
-import java.util.Objects;
+import com.radixdlt.consensus.event.LocalEvent;
 
 /** An actual occurrence (as opposed to a potential) of a local timeout */
-public final class LocalTimeoutOccurrence {
-  private final ScheduledLocalTimeout scheduledLocalTimeout;
-
-  public LocalTimeoutOccurrence(ScheduledLocalTimeout scheduledLocalTimeout) {
-    this.scheduledLocalTimeout = Objects.requireNonNull(scheduledLocalTimeout);
+public record LocalTimeoutOccurrence(ScheduledLocalTimeout timeout) implements LocalEvent {
+  public Round round() {
+    return timeout.round();
   }
 
-  public ScheduledLocalTimeout timeout() {
-    return scheduledLocalTimeout;
+  public BFTValidatorId leader() {
+    return timeout.roundUpdate().leader();
   }
 
-  public Round getRound() {
-    return scheduledLocalTimeout.round();
-  }
-
-  public BFTValidatorId getLeader() {
-    return scheduledLocalTimeout.roundUpdate().getLeader();
-  }
-
-  public BFTValidatorId getNextLeader() {
-    return scheduledLocalTimeout.roundUpdate().getNextLeader();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(scheduledLocalTimeout);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof LocalTimeoutOccurrence)) {
-      return false;
-    }
-
-    LocalTimeoutOccurrence other = (LocalTimeoutOccurrence) o;
-    return Objects.equals(scheduledLocalTimeout, other.scheduledLocalTimeout);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("%s{timeout=%s}", this.getClass().getSimpleName(), scheduledLocalTimeout);
+  public BFTValidatorId nextLeader() {
+    return timeout.roundUpdate().nextLeader();
   }
 }

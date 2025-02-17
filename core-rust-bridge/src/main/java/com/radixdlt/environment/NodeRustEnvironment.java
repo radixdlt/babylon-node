@@ -65,6 +65,7 @@
 package com.radixdlt.environment;
 
 import com.google.common.reflect.TypeToken;
+import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.mempool.MempoolRelayDispatcher;
 import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.transactions.RawNotarizedTransaction;
@@ -84,13 +85,16 @@ public final class NodeRustEnvironment implements AutoCloseable {
   @SuppressWarnings("unused")
   private final long rustNodeRustEnvironmentPointer = 0;
 
+  private final GenesisProvider genesisProvider;
   private final MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher;
   private final FatalPanicHandler fatalPanicHandler;
 
   public NodeRustEnvironment(
+      GenesisProvider genesisProvider,
       MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
       FatalPanicHandler fatalPanicHandler,
       StateManagerConfig config) {
+    this.genesisProvider = genesisProvider;
     this.mempoolRelayDispatcher = mempoolRelayDispatcher;
     this.fatalPanicHandler = fatalPanicHandler;
     final var encodedConfig =
@@ -115,6 +119,18 @@ public final class NodeRustEnvironment implements AutoCloseable {
   public void triggerMempoolRelay(byte[] notarizedTransactionPayload) {
     this.mempoolRelayDispatcher.dispatchRelay(
         RawNotarizedTransaction.create(notarizedTransactionPayload));
+  }
+
+  /** Lazily reads the genesis data. This method is called from Rust via JNI if required */
+  @SuppressWarnings("unused")
+  public byte[] readGenesisData() {
+    return this.genesisProvider.genesisData().value();
+  }
+
+  /** Lazily reads the genesis data hash. This method is called from Rust via JNI if required */
+  @SuppressWarnings("unused")
+  public byte[] readGenesisDataHash() {
+    return this.genesisProvider.genesisDataHash().asBytes();
   }
 
   /**

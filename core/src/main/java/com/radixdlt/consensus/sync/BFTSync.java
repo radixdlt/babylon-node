@@ -67,6 +67,7 @@ package com.radixdlt.consensus.sync;
 import static java.util.function.Predicate.not;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.consensus.*;
@@ -173,6 +174,7 @@ public final class BFTSync implements BFTSyncer {
 
   // FIXME: Remove this once sync is fixed
   private final RateLimiter syncRequestRateLimiter;
+  private final RateLimiter loggingRateLimiter = RateLimiter.create(1.0); // 1 per second
 
   public BFTSync(
       BFTValidatorId self,
@@ -243,8 +245,8 @@ public final class BFTSync implements BFTSyncer {
       return SyncResult.INVALID;
     }
 
-    return switch (vertexStore.insertQc(qc)) {
-      case VertexStore.InsertQcResult.Inserted inserted -> {
+    return switch (vertexStore.insertQuorumCertificate(qc)) {
+      case VertexStore.InsertQcResult.Inserted ignored -> {
         // QC was inserted, try TC too (as it can be higher), and then process a new highQC
         highQC.highestTC().map(vertexStore::insertTimeoutCertificate);
         this.pacemakerReducer.processQC(
@@ -260,7 +262,7 @@ public final class BFTSync implements BFTSyncer {
         }
         yield SyncResult.SYNCED;
       }
-      case VertexStore.InsertQcResult.VertexIsMissing vertexIsMissing -> {
+      case VertexStore.InsertQcResult.VertexIsMissing ignored -> {
         // QC is missing some vertices, sync up
         // TC (if present) is put aside for now (and reconsidered later, once QC is synced)
         log.trace("SYNC_TO_QC: Need sync: {}", highQC);
@@ -426,20 +428,32 @@ public final class BFTSync implements BFTSyncer {
     var syncRequestState = bftSyncing.getOrDefault(request, new SyncRequestState(authors, round));
 
     if (syncRequestState.syncIds.isEmpty()) {
+      var author = authors.get(0);
+
       if (this.syncRequestRateLimiter.tryAcquire()) {
-        VertexRequestTimeout scheduledTimeout = VertexRequestTimeout.create(request);
-        this.timeoutDispatcher.dispatch(scheduledTimeout, bftSyncPatienceMillis);
-        this.requestSender.dispatch(authors.get(0), request);
+        this.timeoutDispatcher.dispatch(new VertexRequestTimeout(request), bftSyncPatienceMillis);
+        this.requestSender.dispatch(author, request);
       } else {
-        log.warn(
-            String.format(
-                "RATE_LIMIT: Outbound BFT Sync request %s for round %s due to %s to %s was not sent"
-                    + " because we're over our %s/second rate limit on sync requests",
-                request, round, reason, authors.get(0), this.syncRequestRateLimiter.getRate()));
+        // Report issue. Once per second as info-level message, rest as debug
+        if (loggingRateLimiter.tryAcquire() && log.isInfoEnabled()) {
+          log.info(outboundRateLimitLogMessage(reason, round, author, request));
+        } else if (log.isDebugEnabled()) {
+          log.debug(outboundRateLimitLogMessage(reason, round, author, request));
+        }
       }
       this.bftSyncing.put(request, syncRequestState);
     }
     syncRequestState.syncIds.add(syncId);
+  }
+
+  private String outboundRateLimitLogMessage(
+      String reason, Round round, NodeId author, GetVerticesRequest request) {
+    return String.format(
+        """
+			RATE_LIMIT: Outbound BFT Sync request %s for round %s due to %s to %s was not sent\
+			 because we're over our %s/second rate limit on sync requests.
+			This can happen if a node has a temporarily flaky internet connection.""",
+        request, round, reason, author, this.syncRequestRateLimiter.getRate());
   }
 
   private void rebuildAndSyncQC(SyncState syncState) {
@@ -451,8 +465,8 @@ public final class BFTSync implements BFTSyncer {
     // TODO: check if there are any vertices which haven't been local sync processed yet
     if (requiresLedgerSync(syncState)) {
       syncState.fetched.sort(Comparator.comparing(v -> v.vertex().getRound()));
-      ImmutableList<VertexWithHash> nonRootVertices =
-          syncState.fetched.stream().skip(1).collect(ImmutableList.toImmutableList());
+      ImmutableSet<VertexWithHash> nonRootVertices =
+          syncState.fetched.stream().skip(1).collect(ImmutableSet.toImmutableSet());
 
       final var syncStateHighestCommittedQc = syncState.highQC.highestCommittedQC();
       final var syncStateHighestTc = syncState.highQC.highestTC();
@@ -490,11 +504,11 @@ public final class BFTSync implements BFTSyncer {
     log.debug(
         "SYNC_STATE: Processing vertices {} Round {} From {} LatestProof {}",
         syncState,
-        response.getVertices().get(0).vertex().getRound(),
+        response.vertices().get(0).vertex().getRound(),
         sender,
         this.latestProof);
 
-    syncState.fetched.addAll(response.getVertices());
+    syncState.fetched.addAll(response.vertices());
 
     final var commitHeader = syncState.processedQcCommit.committedHeader().getLedgerHeader();
     // TODO: verify actually extends rather than just state version comparison
@@ -523,7 +537,7 @@ public final class BFTSync implements BFTSyncer {
           localSyncRequestEventDispatcher.dispatch(
               new LocalSyncRequest(ofConensusQc.ledgerProof(), nodeIds));
         }
-        case ProcessedQcCommit.OfInitialEpochQc ofInitialEpochQc -> {
+        case ProcessedQcCommit.OfInitialEpochQc ignored -> {
           // BFTSync somehow decided it needs to ledger-sync
           // to a header that should already be committed (epoch initial).
           // This should never happen, but if by any chance it does,
@@ -536,7 +550,7 @@ public final class BFTSync implements BFTSyncer {
   }
 
   private void processVerticesResponseForQCSync(SyncState syncState, GetVerticesResponse response) {
-    final var vertexWithHash = response.getVertices().get(0);
+    final var vertexWithHash = response.vertices().get(0);
     final var vertex = vertexWithHash.vertex();
     syncState.fetched.addFirst(vertexWithHash);
 
@@ -614,7 +628,7 @@ public final class BFTSync implements BFTSyncer {
 
   private void processGetVerticesResponse(NodeId sender, GetVerticesResponse response) {
     final var allVerticesHaveValidQc =
-        response.getVertices().stream()
+        response.vertices().stream()
             .allMatch(v -> safetyRules.verifyQcAgainstTheValidatorSet(v.vertex().getQCToParent()));
 
     if (!allVerticesHaveValidQc) {
@@ -625,8 +639,8 @@ public final class BFTSync implements BFTSyncer {
 
     log.debug("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
-    var firstVertex = response.getVertices().get(0);
-    var requestInfo = new GetVerticesRequest(firstVertex.hash(), response.getVertices().size());
+    var firstVertex = response.vertices().get(0);
+    var requestInfo = new GetVerticesRequest(firstVertex.hash(), response.vertices().size());
     var syncRequestState = bftSyncing.remove(requestInfo);
 
     if (syncRequestState != null) {
@@ -652,7 +666,7 @@ public final class BFTSync implements BFTSyncer {
 
   // TODO: Verify headers match
   private void processLedgerUpdate(LedgerUpdate ledgerUpdate) {
-    this.latestProof = ledgerUpdate.committedProof();
+    this.latestProof = ledgerUpdate.committedProofBundle();
     final var header = REv2ToConsensus.ledgerHeader(latestProof.primaryProof().ledgerHeader());
     var listeners = this.ledgerSyncing.headMap(header, true).values();
     var listenersIterator = listeners.iterator();

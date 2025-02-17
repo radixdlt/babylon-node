@@ -1,10 +1,5 @@
-use crate::core_api::*;
-
-use crate::engine_prelude::*;
-use state_manager::store::traits::*;
-use state_manager::{
-    LedgerProof, LedgerProofOrigin, ReadableRocks, StateManagerDatabase, StateVersion,
-};
+use crate::core_api::handlers::to_api_ledger_proof;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_stream_proofs(
@@ -67,7 +62,7 @@ pub(crate) async fn handle_stream_proofs(
     let (page, continuation_token) = to_api_page(
         &mut proofs_iter,
         page_size,
-        |proof| handlers::to_api_ledger_proof(&mapping_context, proof),
+        |proof| to_api_ledger_proof(&mapping_context, proof),
         |proof| proof.ledger_header.state_version,
     )?;
 
@@ -160,7 +155,7 @@ fn extract_from_state_version(
         return Ok(StateVersion::pre_genesis());
     };
 
-    let from_state_version = extract_api_state_version(from_state_version)
+    let from_state_version = extract_state_version(from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let max_state_version = database.max_state_version();
@@ -189,7 +184,7 @@ fn extract_from_epoch(
     };
 
     let from_epoch =
-        extract_api_epoch(from_epoch).map_err(|err| err.into_response_error("from_epoch"))?;
+        extract_epoch(from_epoch).map_err(|err| err.into_response_error("from_epoch"))?;
 
     let max_new_epoch = database
         .max_completed_epoch()

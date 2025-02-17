@@ -62,13 +62,7 @@
  * permissions under this License.
  */
 
-use crate::accumulator_tree::slice_merger::AccuTreeSliceMerger;
-use crate::accumulator_tree::storage::{
-    AccuTreeStore, ReadableAccuTreeStore, TreeSlice, WriteableAccuTreeStore,
-};
-use crate::accumulator_tree::tree_builder::AccuTree;
-use crate::accumulator_tree::IsMerklizableHash;
-use crate::{AccuTreeDiff, CollectingAccuTreeStore, StateVersion};
+use crate::prelude::*;
 
 /// A factory of accu tree utilities operating under the "accu tree per epoch" approach (where the
 /// first leaf of the next epoch's tree is an auto-inserted root of the previous epoch's tree).
@@ -172,6 +166,7 @@ impl<'s, S: AccuTreeStore<StateVersion, N>, N: IsMerklizableHash> EpochAccuTreeB
     /// Appends the next leaf to the epoch's accu tree.
     /// This method will handle a special case of an epoch that was just started (which requires
     /// inserting the previous epoch's root as the first leaf of this epoch's tree).
+    #[allow(unused)]
     pub fn append(&mut self, new_leaf_hash: N) {
         self.append_batch(vec![new_leaf_hash]);
     }
@@ -193,8 +188,8 @@ struct EpochScopedAccuTreeStore<'s, S> {
     epoch_start_state_version: StateVersion,
 }
 
-impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usize, N>
-    for EpochScopedAccuTreeStore<'s, S>
+impl<S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usize, N>
+    for EpochScopedAccuTreeStore<'_, S>
 {
     fn get_tree_slice(&self, epoch_tree_size: &usize) -> Option<TreeSlice<N>> {
         let end_state_version = self
@@ -205,8 +200,8 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, N>, N> ReadableAccuTreeStore<usi
     }
 }
 
-impl<'s, S: WriteableAccuTreeStore<StateVersion, N>, N> WriteableAccuTreeStore<usize, N>
-    for EpochScopedAccuTreeStore<'s, S>
+impl<S: WriteableAccuTreeStore<StateVersion, N>, N> WriteableAccuTreeStore<usize, N>
+    for EpochScopedAccuTreeStore<'_, S>
 {
     fn put_tree_slice(&mut self, epoch_tree_size: usize, slice: TreeSlice<N>) {
         let end_state_version = self

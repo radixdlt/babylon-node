@@ -65,77 +65,45 @@
 package com.radixdlt.consensus.bft;
 
 /** Represents a BFT round/round used by the Pacemaker of a BFT instance */
-public final class Round implements Comparable<Round> {
+public record Round(long number) implements Comparable<Round> {
   private static final Round EPOCH_INITIAL_ROUND = Round.of(0L);
-  private final long roundNumber;
 
-  private Round(long roundNumber) {
-    if (roundNumber < 0) {
-      throw new IllegalArgumentException("roundNumber must be >= 0 but was " + roundNumber);
+  public Round {
+    if (number < 0) {
+      throw new IllegalArgumentException("roundNumber must be >= 0 but was " + number);
     }
-
-    this.roundNumber = roundNumber;
   }
 
   public boolean gte(Round other) {
-    return this.roundNumber >= other.roundNumber;
+    return this.number >= other.number;
   }
 
   public boolean gt(Round other) {
-    return this.roundNumber > other.roundNumber;
+    return this.number > other.number;
   }
 
   public boolean lt(Round other) {
-    return this.roundNumber < other.roundNumber;
+    return this.number < other.number;
   }
 
   public boolean lte(Round other) {
-    return this.roundNumber <= other.roundNumber;
+    return this.number <= other.number;
   }
 
   public Round previous() {
-    if (this.roundNumber == 0) {
+    if (this.number == 0) {
       throw new IllegalStateException("Round Underflow");
     }
 
-    return new Round(roundNumber - 1);
+    return new Round(number - 1);
   }
 
   public Round next() {
-    if (this.roundNumber == Long.MAX_VALUE) {
+    if (this.number == Long.MAX_VALUE) {
       throw new IllegalStateException("Round Overflow");
     }
 
-    return new Round(roundNumber + 1);
-  }
-
-  public long number() {
-    return this.roundNumber;
-  }
-
-  @Override
-  public int compareTo(Round otherRound) {
-    return Long.compare(this.roundNumber, otherRound.roundNumber);
-  }
-
-  @Override
-  public int hashCode() {
-    return Long.hashCode(roundNumber);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Round)) {
-      return false;
-    }
-
-    Round other = (Round) o;
-    return other.roundNumber == this.roundNumber;
-  }
-
-  @Override
-  public String toString() {
-    return Long.toString(this.roundNumber);
+    return new Round(number + 1);
   }
 
   public boolean isEpochInitial() {
@@ -146,7 +114,17 @@ public final class Round implements Comparable<Round> {
     return EPOCH_INITIAL_ROUND;
   }
 
-  public static Round of(long roundNumber) {
-    return new Round(roundNumber);
+  public static Round of(long number) {
+    return new Round(number);
+  }
+
+  @Override
+  public int compareTo(Round otherRound) {
+    return Long.compare(this.number, otherRound.number);
+  }
+
+  @Override
+  public String toString() {
+    return Long.toString(number);
   }
 }

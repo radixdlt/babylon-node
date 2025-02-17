@@ -76,8 +76,6 @@ public sealed interface GetSyncableTxnsAndProofError {
             EnumCodec.fromPermittedRecordSubclasses(GetSyncableTxnsAndProofError.class, codecs));
   }
 
-  record RefusedToServeGenesis(LedgerProof refusedProof) implements GetSyncableTxnsAndProofError {}
-
   record RefusedToServeProtocolUpdate(LedgerProof refusedProof)
       implements GetSyncableTxnsAndProofError {}
 

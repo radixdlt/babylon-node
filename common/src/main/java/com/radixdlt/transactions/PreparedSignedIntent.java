@@ -69,10 +69,12 @@ import com.radixdlt.sbor.codec.StructCodec;
 import java.util.Objects;
 
 public record PreparedSignedIntent(
-    byte[] signedIntentBytes, IntentHash intentHash, SignedIntentHash signedIntentHash) {
+    byte[] signedIntentBytes,
+    TransactionIntentHash transactionIntentHash,
+    SignedIntentHash signedIntentHash) {
   public PreparedSignedIntent {
     Objects.requireNonNull(signedIntentBytes);
-    Objects.requireNonNull(intentHash);
+    Objects.requireNonNull(transactionIntentHash);
     Objects.requireNonNull(signedIntentHash);
   }
 
@@ -83,7 +85,7 @@ public record PreparedSignedIntent(
   }
 
   public String hexIntentHash() {
-    return this.intentHash.hex();
+    return this.transactionIntentHash.hex();
   }
 
   public String hexSignedIntentHash() {

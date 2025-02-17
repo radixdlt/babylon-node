@@ -78,7 +78,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
 import java.util.Random;
 import org.junit.Test;
@@ -99,8 +98,7 @@ public class OneProposalTimeoutResponsiveTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(200L, 0L),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(numValidatorNodes))));
 
     test.startAllNodes();
     test.runUntilMessage(

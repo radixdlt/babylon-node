@@ -171,18 +171,15 @@ final class MessagePreprocessor {
 
       return Result.fromOptionalOrElseError(
           ofNullable(serialization.fromDson(uncompressed, Message.class)), IO_ERROR);
-    } catch (IOException e) {
-      log.error(
+    } catch (IOException ignored) {
+      var banDuration = Duration.ofMinutes(5);
+      log.warn(
           String.format(
-              "Failed to deserialize message from peer %s",
-              addressing.encodeNodeAddress(inboundMessage.source().getPublicKey())),
-          e);
+              "Failed to deserialize message from peer %s, so banning for %s",
+              addressing.encodeNodeAddress(inboundMessage.source().getPublicKey()), banDuration));
       peerControl
           .get()
-          .banPeer(
-              inboundMessage.source(),
-              Duration.ofMinutes(5),
-              "Failed to deserialize inbound message");
+          .banPeer(inboundMessage.source(), banDuration, "Failed to deserialize inbound message");
       return IO_ERROR.result();
     }
   }

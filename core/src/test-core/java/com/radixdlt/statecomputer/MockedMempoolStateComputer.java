@@ -78,6 +78,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.targeted.mempool.SimpleMempool;
 import com.radixdlt.transactions.RawNotarizedTransaction;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nullable;
@@ -137,7 +138,7 @@ public final class MockedMempoolStateComputer implements StateComputer {
 
   @Override
   public LedgerProofBundle commit(
-      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+      LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
     final var proof = this.stateComputer.commit(ledgerExtension, serializedVertexStoreState);
     this.mempool.handleTransactionsCommitted(
         ledgerExtension.transactions().stream()

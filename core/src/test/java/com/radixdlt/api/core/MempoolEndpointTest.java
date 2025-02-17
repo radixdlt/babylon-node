@@ -79,7 +79,7 @@ import org.junit.Test;
 public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_mempool_queries() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
 
       var transaction = TransactionBuilder.forTests().prepare();
@@ -104,7 +104,7 @@ public class MempoolEndpointTest extends DeterministicCoreApiTestBase {
                   .payloadHash(transaction.hexNotarizedTransactionHash())
                   .payloadHashBech32m(addressing.encode(transaction.notarizedTransactionHash()))
                   .intentHash(transaction.hexIntentHash())
-                  .intentHashBech32m(addressing.encode(transaction.intentHash())));
+                  .intentHashBech32m(addressing.encode(transaction.transactionIntentHash())));
 
       var mempoolTransactionByHex =
           getMempoolApi()

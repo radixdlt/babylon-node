@@ -62,28 +62,13 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::{DetailedTransactionOutcome, LedgerTransactionOutcome, StateVersion};
-use jni::objects::{JClass, JObject};
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-use std::ops::Deref;
-
-use crate::jni::node_rust_environment::JNINodeRustEnvironment;
-use crate::query::StateManagerSubstateQueries;
-use node_common::java::*;
-
-use crate::store::traits::{
-    gc::StateHashTreeGcStore, IterableProofStore, QueryableProofStore, QueryableTransactionStore,
-    SubstateNodeAncestryStore,
-};
-use crate::transaction::LedgerTransactionHash;
+use crate::jni_prelude::*;
 
 //
 // JNI Interface (for test purposes only)
 //
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 struct ExecutedTransaction {
     ledger_transaction_hash: LedgerTransactionHash,
     outcome: TransactionOutcomeJava,
@@ -92,19 +77,19 @@ struct ExecutedTransaction {
     transaction_bytes: Vec<u8>,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 struct TransactionDetails {
     new_component_addresses: IndexSet<ComponentAddress>,
     new_resource_addresses: IndexSet<ResourceAddress>,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub enum TransactionOutcomeJava {
     Success,
     Failure,
 }
 
-#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Debug, ScryptoSbor)]
 pub struct JavaValidatorInfo {
     pub stake_unit_resource: ResourceAddress,
     pub claim_resource: ResourceAddress,
@@ -132,21 +117,27 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_getTransactionAtSt
             let local_transaction_execution =
                 database.get_committed_local_transaction_execution(state_version)?;
 
+            let formatter = JNINodeRustEnvironment::get_formatter(&env, j_rust_global_context);
+
             Some(ExecutedTransaction {
-                ledger_transaction_hash: committed_identifiers.payload.ledger_transaction_hash,
+                ledger_transaction_hash: committed_identifiers
+                    .transaction_hashes
+                    .ledger_transaction_hash,
                 outcome: match committed_ledger_transaction_receipt.outcome {
                     LedgerTransactionOutcome::Success => TransactionOutcomeJava::Success,
                     LedgerTransactionOutcome::Failure => TransactionOutcomeJava::Failure,
                 },
                 error_message: match local_transaction_execution.outcome {
                     DetailedTransactionOutcome::Success(_) => None,
-                    DetailedTransactionOutcome::Failure(err) => Some(format!("{err:?}")),
+                    DetailedTransactionOutcome::Failure(error) => {
+                        Some(error.to_string(&*formatter))
+                    }
                 },
                 consensus_receipt_bytes: scrypto_encode(
                     &committed_ledger_transaction_receipt.get_consensus_receipt(),
                 )
                 .unwrap(),
-                transaction_bytes: committed_transaction.0,
+                transaction_bytes: committed_transaction.to_vec(),
             })
         },
     )
@@ -198,10 +189,10 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_componentXrdAmount
 
             // a quick fix for handling virtual accounts
             if database
-                .get_mapped::<SpreadPrefixKeyMapper, TypeInfoSubstate>(
+                .get_substate::<TypeInfoSubstate>(
                     node_id,
                     TYPE_INFO_FIELD_PARTITION,
-                    &TypeInfoField::TypeInfo.into(),
+                    TypeInfoField::TypeInfo,
                 )
                 .is_some()
             {
@@ -230,14 +221,14 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_validatorInfo(
             let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
             let validator_state = database
                 .snapshot()
-                .get_mapped::<SpreadPrefixKeyMapper, ValidatorStateFieldSubstate>(
-                    validator_address.as_node_id(),
+                .get_substate::<ValidatorStateFieldSubstate>(
+                    validator_address,
                     MAIN_BASE_PARTITION,
-                    &ValidatorField::State.into(),
+                    ValidatorField::State,
                 )
                 .unwrap()
                 .into_payload()
-                .into_latest();
+                .fully_update_and_into_latest_version();
 
             JavaValidatorInfo {
                 stake_unit_resource: validator_state.stake_unit_resource,
@@ -257,12 +248,12 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_epoch(
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let database = database.snapshot();
-        database.get_epoch().number()
+        database.get_epoch_and_round().0.number()
     })
 }
 
 #[no_mangle]
-extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHashTreeVersion(
+extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateTreeVersion(
     env: JNIEnv,
     _class: JClass,
     j_rust_global_context: JObject,
@@ -271,12 +262,28 @@ extern "system" fn Java_com_radixdlt_testutil_TestStateReader_leastStaleStateHas
     jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
         let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
         let least_stale_state_version = database
-            .access_direct() // the `get_stale_tree_parts_iter()` is inside a trait requiring writeability
+            .lock() // the `get_stale_tree_parts_iter()` is inside a trait requiring writeability
             .get_stale_tree_parts_iter()
             .next()
             .map(|(state_version, _)| state_version)
             .unwrap_or(StateVersion::pre_genesis());
         least_stale_state_version.number()
+    })
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_testutil_TestStateReader_historicalSubstateCount(
+    env: JNIEnv,
+    _class: JClass,
+    j_rust_global_context: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| -> u64 {
+        let database = JNINodeRustEnvironment::get_database(&env, j_rust_global_context);
+        let count = database
+            .lock()
+            .count_entries("associated_state_tree_values");
+        count.try_into().expect("count out of bounds")
     })
 }
 

@@ -99,7 +99,7 @@ public final class VertexStoreBFTSyncRequestProcessor
     metrics.bft().sync().requestsReceived().inc();
 
     log.debug("SYNC_VERTICES: Received GetVerticesRequest {}", request);
-    var verticesMaybe = vertexStore.getVertices(request.getVertexId(), request.getCount());
+    var verticesMaybe = vertexStore.getVertices(request.vertexId(), request.count());
     verticesMaybe.ifPresentOrElse(
         fetched -> {
           log.debug("SYNC_VERTICES: Sending Response {}", fetched);

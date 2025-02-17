@@ -1,6 +1,4 @@
-use crate::engine_prelude::*;
-
-use crate::core_api::models;
+use crate::prelude::*;
 
 pub struct MappingContext {
     pub network_definition: NetworkDefinition,
@@ -11,6 +9,14 @@ pub struct MappingContext {
     pub sbor_options: SborOptions,
     pub transaction_options: TransactionOptions,
     pub substate_options: SubstateOptions,
+}
+
+impl<'a> From<&'a MappingContext> for ScryptoValueDisplayContext<'a> {
+    fn from(val: &'a MappingContext) -> Self {
+        ScryptoValueDisplayContext {
+            address_bech32_encoder: Some(&val.address_encoder),
+        }
+    }
 }
 
 impl MappingContext {

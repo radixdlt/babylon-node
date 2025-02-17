@@ -64,31 +64,16 @@
 
 package com.radixdlt.sync.messages.remote;
 
-import com.radixdlt.messaging.ledgersync.StatusRequestMessage;
+import com.radixdlt.consensus.event.RemoteEvent;
 
 /**
  * A request to get the current status of a remote node. Node should respond with a StatusResponse
  * message.
  */
-public final class StatusRequest {
-
-  public static StatusRequest create() {
-    return new StatusRequest();
-  }
-
-  private StatusRequest() {}
-
-  @Override
-  public String toString() {
-    return String.format("%s{}", this.getClass().getSimpleName());
-  }
-
+public record StatusRequest() implements RemoteEvent {
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    return (o instanceof StatusRequestMessage);
+    return o instanceof StatusRequest;
   }
 
   @Override

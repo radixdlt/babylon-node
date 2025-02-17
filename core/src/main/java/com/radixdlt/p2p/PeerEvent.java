@@ -64,9 +64,10 @@
 
 package com.radixdlt.p2p;
 
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.p2p.transport.PeerChannel;
 
-public sealed interface PeerEvent {
+public sealed interface PeerEvent extends LocalEvent {
   record PeerConnected(PeerChannel channel) implements PeerEvent {}
 
   record PeerDisconnected(PeerChannel channel) implements PeerEvent {}

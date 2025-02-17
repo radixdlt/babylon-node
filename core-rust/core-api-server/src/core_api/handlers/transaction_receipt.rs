@@ -1,8 +1,5 @@
 use crate::core_api::handlers::to_api_committed_transaction;
-use crate::core_api::*;
-
-use state_manager::store::traits::*;
-use state_manager::transaction::*;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_transaction_receipt(
@@ -11,10 +8,11 @@ pub(crate) async fn handle_transaction_receipt(
 ) -> Result<Json<models::TransactionReceiptResponse>, ResponseError<()>> {
     assert_matching_network(&request.network, &state.network)?;
 
-    let mapping_context = MappingContext::new(&state.network);
+    let mapping_context = MappingContext::new(&state.network)
+        .with_transaction_formats(&request.transaction_format_options);
     let extraction_context = ExtractionContext::new(&state.network);
 
-    let intent_hash = extract_intent_hash(&extraction_context, request.intent_hash)
+    let intent_hash = extract_transaction_intent_hash(&extraction_context, request.intent_hash)
         .map_err(|err| err.into_response_error("intent_hash"))?;
 
     let database = state.state_manager.database.snapshot();

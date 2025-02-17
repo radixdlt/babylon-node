@@ -110,7 +110,7 @@ public class SyncUpPreprocessorTest {
     final var proposalHighQc = mock(HighQC.class);
     final var proposalHighestCommittedQc = mock(QuorumCertificate.class);
     final var proposalLedgerProof = mock(LedgerProofSyncStatusDto.class);
-    when(initialRoundUpdate.getCurrentRound()).thenReturn(Round.of(2));
+    when(initialRoundUpdate.currentRound()).thenReturn(Round.of(2));
     when(proposal.getAuthor())
         .thenReturn(
             BFTValidatorId.withKeyAndFakeDeterministicAddress(
@@ -128,7 +128,7 @@ public class SyncUpPreprocessorTest {
     this.syncUpPreprocessor.processProposal(proposal);
 
     final var newRoundUpdate = mock(RoundUpdate.class);
-    when(newRoundUpdate.getCurrentRound()).thenReturn(Round.of(4));
+    when(newRoundUpdate.currentRound()).thenReturn(Round.of(4));
     when(bftSyncer.syncToQC(any(), any(), any())).thenReturn(SyncResult.SYNCED);
 
     // we're going straight to v4, cached proposal should get processed

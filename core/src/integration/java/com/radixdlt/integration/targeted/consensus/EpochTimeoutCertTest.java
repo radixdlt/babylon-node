@@ -68,7 +68,6 @@ import static com.radixdlt.harness.deterministic.invariants.DeterministicMonitor
 
 import com.radixdlt.consensus.EpochNodeWeightMapping;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -87,7 +86,7 @@ import org.junit.Test;
  */
 public final class EpochTimeoutCertTest {
 
-  private static final long ROUNDS_PER_EPOCH = 100;
+  private static final int ROUNDS_PER_EPOCH = 100;
   private static final int NUM_NODES = 4;
 
   private DeterministicTest createTest() {
@@ -113,9 +112,7 @@ public final class EpochTimeoutCertTest {
                 FunctionalRadixNodeModule.ConsensusConfig.of(),
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.mockedWithEpochs(
-                        Round.of(ROUNDS_PER_EPOCH),
-                        EpochNodeWeightMapping.constant(NUM_NODES),
-                        new StateComputerConfig.MockedMempoolConfig.NoMempool()))));
+                        ROUNDS_PER_EPOCH, EpochNodeWeightMapping.constant(NUM_NODES)))));
   }
 
   public static Predicate<Timed<ControlledMessage>> proposalAtRound(long round) {
@@ -135,7 +132,7 @@ public final class EpochTimeoutCertTest {
       test.runUntilMessage(
           proposalAtRound(ROUNDS_PER_EPOCH + 2),
           true,
-          10 * NUM_NODES * NUM_NODES * ((int) ROUNDS_PER_EPOCH));
+          10 * NUM_NODES * NUM_NODES * ROUNDS_PER_EPOCH);
       // Run for a while more and verify that no byzantine issues occur
       test.runForCount(40000);
     }

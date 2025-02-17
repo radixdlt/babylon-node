@@ -8,6 +8,12 @@ To run a node against our latest test environment, install docker and run `./tes
 
 Also check out the [Babylon documentation for exchanges and integrators](https://docs.google.com/document/d/1cjc7_alyzIb2QQIGGn1PEpJyjrMRZYHq3VwkOXRP8J0).
 
+## Branching
+
+The default branch for this repository is `develop`, which typically includes unreleased code.
+
+To look at the currently live code, use the corresponding release tag or `release/<protocol-update>` branch for the correct [protocol update](https://docs.radixdlt.com/docs/protocol-updates).
+
 ## Subdirectories
 
 Here we have:
@@ -25,11 +31,6 @@ Here we have:
 - [docker](docker): An option for running a network of nodes locally. You can also use the "Run Single Validator" IntelliJ option.
 - [testnet-node](testnet-node): The easiest way to set up a development environment for integrators (check the [README](testnet-node/README.md))
 
-Until the Babylon engine is feature-compatible with Olympia, we are keeping around the Olympia engine for
-some of our tests.
-
-- [olympia-engine](olympia-engine): The Olympia Radix execution layer which provides a UTXO-based state machine
-
 ## Contribute
 
 Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions with the project.
@@ -37,12 +38,12 @@ See the [Contributing Guide](CONTRIBUTING.md) for more details on how to get inv
 
 ## Links
 
-| Link | Description |
-| :----- | :------ |
-[radixdlt.com](https://radixdlt.com/) | Radix DLT Homepage
-[docs-babylon.radixdlt.com](https://docs-babylon.radixdlt.com/) | Radix Babylon Technical Documentation
-[learn.radixdlt.com](https://learn.radixdlt.com/) | Radix Knowledge Base
-[discord invite](https://discord.com/invite/WkB2USt) | Radix Discord Server
+| Link                                                            | Description                           |
+|-----------------------------------------------------------------|---------------------------------------|
+| [radixdlt.com](https://radixdlt.com/)                           | Radix DLT Homepage                    |                   
+| [docs-babylon.radixdlt.com](https://docs-babylon.radixdlt.com/) | Radix Babylon Technical Documentation |
+| [learn.radixdlt.com](https://learn.radixdlt.com/)               | Radix Knowledge Base                  |
+| [discord invite](https://discord.com/invite/WkB2USt)            | Radix Discord Server                  |
 
 ## License
 

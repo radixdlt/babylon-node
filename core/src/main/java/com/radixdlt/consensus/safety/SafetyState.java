@@ -111,6 +111,11 @@ public final class SafetyState {
     this.lastVote = Objects.requireNonNull(lastVote);
   }
 
+  public static SafetyState create(
+      BFTValidatorId validatorId, Round lockedRound, Optional<Vote> lastVote) {
+    return new SafetyState(validatorId, lockedRound, lastVote);
+  }
+
   static class Builder {
     private final SafetyState original;
     private Round lockedRound;

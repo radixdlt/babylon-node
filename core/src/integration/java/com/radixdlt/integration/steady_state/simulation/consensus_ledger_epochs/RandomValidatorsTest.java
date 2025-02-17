@@ -143,9 +143,7 @@ public class RandomValidatorsTest {
                     ConsensusConfig.of(5000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(100),
-                            EpochNodeWeightMapping.constant(goodRandomEpochToNodesMapper()),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                            100, EpochNodeWeightMapping.constant(goodRandomEpochToNodesMapper())))))
             .build();
 
     final var checkResults = bftTest.run().awaitCompletion();
@@ -165,9 +163,7 @@ public class RandomValidatorsTest {
                     ConsensusConfig.of(5000),
                     FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                         StateComputerConfig.mockedWithEpochs(
-                            Round.of(100),
-                            EpochNodeWeightMapping.constant(badRandomEpochToNodesMapper()),
-                            new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                            100, EpochNodeWeightMapping.constant(badRandomEpochToNodesMapper())))))
             .build();
 
     final var checkResults = bftTest.run().awaitCompletion();

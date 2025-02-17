@@ -65,13 +65,15 @@
 use std::cmp::Ordering;
 use std::iter::Peekable;
 
-use crate::engine_prelude::*;
-use crate::staging::StateHashTreeDiff;
-
-use crate::transaction::*;
-use crate::{CommittedTransactionIdentifiers, LedgerProof, LocalTransactionReceipt, StateVersion};
+use crate::prelude::*;
+use crate::staging::StateTreeDiff;
 pub use commit::*;
+pub use extensions::*;
+pub use gc::*;
+pub use indices::*;
+pub use measurement::*;
 pub use proofs::*;
+pub use scenario::*;
 pub use substate::*;
 pub use transactions::*;
 pub use vertex::*;
@@ -82,19 +84,22 @@ pub enum DatabaseConfigValidationError {
     LocalTransactionExecutionIndexChanged,
 }
 
-/// Database flags required for initialization built from
-/// config file and environment variables.
-#[derive(Debug, Categorize, Encode, Decode, Clone)]
-pub struct DatabaseFlags {
+/// Database flags required for initialization built from config file and environment variables.
+#[derive(Debug, Clone, Sbor)]
+pub struct DatabaseConfig {
     pub enable_local_transaction_execution_index: bool,
     pub enable_account_change_index: bool,
+    pub enable_historical_substate_values: bool,
+    pub enable_entity_listing_indices: bool,
 }
 
-impl Default for DatabaseFlags {
+impl Default for DatabaseConfig {
     fn default() -> Self {
-        DatabaseFlags {
+        DatabaseConfig {
             enable_local_transaction_execution_index: true,
             enable_account_change_index: true,
+            enable_historical_substate_values: false,
+            enable_entity_listing_indices: true,
         }
     }
 }
@@ -104,15 +109,15 @@ impl Default for DatabaseFlags {
 /// just being initialized (when all of the fields are None) but also
 /// when new configurations are added - this is a cheap work around to
 /// limit future needed ledger wipes until we have a better solution.
-pub struct DatabaseFlagsState {
+pub struct DatabaseConfigState {
     pub local_transaction_execution_index_enabled: Option<bool>,
     pub account_change_index_enabled: Option<bool>,
 }
 
-impl DatabaseFlags {
+impl DatabaseConfig {
     pub fn validate(
         &self,
-        current_database_config: &DatabaseFlagsState,
+        current_database_config: &DatabaseConfigState,
     ) -> Result<(), DatabaseConfigValidationError> {
         if !self.enable_local_transaction_execution_index && self.enable_account_change_index {
             return Err(DatabaseConfigValidationError::AccountChangeIndexRequiresLocalTransactionExecutionIndex);
@@ -134,6 +139,22 @@ pub trait ConfigurableDatabase {
     fn is_account_change_index_enabled(&self) -> bool;
 
     fn is_local_transaction_execution_index_enabled(&self) -> bool;
+
+    fn are_entity_listing_indices_enabled(&self) -> bool;
+
+    /// Returns [`true`] if the Node should be storing historical Substate values (and if it can
+    /// handle historical state requests).
+    ///
+    /// The exact [`StateVersion`] from which the history is available can be obtained from
+    /// [`Self::get_first_stored_historical_state_version()`].
+    fn is_state_history_enabled(&self) -> bool;
+
+    /// Returns the first [`StateVersion`]s for which *historical* Substate values are currently
+    /// available in the database.
+    ///
+    /// This method assumes that [`Self::is_state_history_enabled()`] returned [`true`] and *panics*
+    /// otherwise.
+    fn get_first_stored_historical_state_version(&self) -> StateVersion;
 }
 
 #[derive(Debug, Clone)]
@@ -142,6 +163,12 @@ pub struct CommittedTransactionBundle {
     pub raw: RawLedgerTransaction,
     pub receipt: LocalTransactionReceipt,
     pub identifiers: CommittedTransactionIdentifiers,
+}
+
+#[derive(Debug, Clone)]
+pub struct LeafSubstateKeyAssociation {
+    pub tree_node_key: StoredTreeNodeKey,
+    pub substate_value: Vec<u8>,
 }
 
 pub mod vertex {
@@ -156,31 +183,36 @@ pub mod vertex {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedVertexStoreBlob => VertexStoreBlob = VertexStoreBlobV1
+        #[derive(Debug, Clone, ScryptoSbor)]
+        pub VersionedVertexStoreBlob(VertexStoreBlobVersions) => VertexStoreBlob = VertexStoreBlobV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_vertex_store_blob_cuttlefish.bin"
+            ))]
+        ]
     }
 
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct VertexStoreBlobV1(pub Vec<u8>);
 }
 
 pub mod substate {
     use super::*;
-    use std::slice;
-
-    use crate::SubstateReference;
 
     /// A low-level storage of [`SubstateNodeAncestryRecord`].
+    ///
     /// API note: this trait defines a simple "get by ID" method, and also a performance-driven
     /// batch method. Both provide default implementations (which mutually reduce one problem to the
     /// other). The implementer must choose to implement at least one of the methods, based on its
     /// nature (though implementing both rarely makes sense).
+    /// When in doubt, implementing the batch method should be the default.
     pub trait SubstateNodeAncestryStore {
         /// Returns the [`SubstateNodeAncestryRecord`] for the given [`NodeId`], or [`None`] if:
         /// - the `node_id` happens to be a root Node (since they do not have "ancestry");
         /// - or the `node_id` does not exist yet.
         fn get_ancestry(&self, node_id: &NodeId) -> Option<SubstateNodeAncestryRecord> {
-            let records = self.batch_get_ancestry(slice::from_ref(node_id));
+            let records = self.batch_get_ancestry([node_id]);
             if records.len() != 1 {
                 panic!(
                     "trait contract violated: expected a single result for {:?}, got {:?}",
@@ -204,12 +236,18 @@ pub mod substate {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedSubstateNodeAncestryRecord => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1
+        #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+        pub VersionedSubstateNodeAncestryRecord(SubstateNodeAncestryRecordVersions) => SubstateNodeAncestryRecord = SubstateNodeAncestryRecordV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_substate_node_ancestry_record_cuttlefish.bin"
+            ))]
+        ]
     }
 
     /// Ancestry information of a RE Node.
-    #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
     pub struct SubstateNodeAncestryRecordV1 {
         /// A substate owning the Node (i.e. its immediate parent).
         /// Note: this will always be present, since we do not need ancestry of root RE Nodes.
@@ -222,16 +260,20 @@ pub mod substate {
     /// A [`SubstateNodeAncestryRecord`] accompanied by a set of sibling [`NodeId`]s (which of
     /// course share the same parent).
     pub type KeyedSubstateNodeAncestryRecord = (Vec<NodeId>, SubstateNodeAncestryRecord);
+
+    /// A store of historical substate values associated with state hash tree's leaves.
+    /// See [`WriteableTreeStore::associate_substate_value()`].
+    ///
+    /// Note: this is *not* a "historical values" store, but only its lower-level source of values.
+    pub trait LeafSubstateValueStore {
+        /// Returns a value associated with the given leaf, or [`None`] if the leaf does not exist
+        /// or the historical state feature was not enabled during creation of the leaf.
+        fn get_associated_value(&self, global_key: &StoredTreeNodeKey) -> Option<DbSubstateValue>;
+    }
 }
 
 pub mod transactions {
     use super::*;
-
-    use crate::store::traits::CommittedTransactionBundle;
-    use crate::{
-        CommittedTransactionIdentifiers, LedgerHashes, LedgerTransactionReceipt,
-        LocalTransactionExecution, LocalTransactionReceipt,
-    };
 
     pub trait IterableTransactionStore {
         fn get_committed_transaction_bundle_iter(
@@ -316,6 +358,7 @@ pub mod proofs {
             max_payload_size_in_bytes: u32,
         ) -> Result<TxnsAndProof, GetSyncableTxnsAndProofError>;
         fn get_first_proof(&self) -> Option<LedgerProof>;
+        fn get_proof(&self, state_version: StateVersion) -> Option<LedgerProof>;
         fn get_post_genesis_epoch_proof(&self) -> Option<LedgerProof>;
         fn get_epoch_proof(&self, epoch: Epoch) -> Option<LedgerProof>;
         fn get_latest_proof(&self) -> Option<LedgerProof>;
@@ -328,15 +371,14 @@ pub mod proofs {
         fn get_latest_protocol_update_execution_proof(&self) -> Option<LedgerProof>;
     }
 
-    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Clone, Debug, ScryptoSbor)]
     pub struct TxnsAndProof {
         pub txns: Vec<RawLedgerTransaction>,
         pub proof: LedgerProof,
     }
 
-    #[derive(Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Clone, Debug, ScryptoSbor)]
     pub enum GetSyncableTxnsAndProofError {
-        RefusedToServeGenesis { refused_proof: Box<LedgerProof> },
         RefusedToServeProtocolUpdate { refused_proof: Box<LedgerProof> },
         NothingToServeAtTheGivenStateVersion,
         FailedToPrepareAResponseWithinLimits,
@@ -345,18 +387,17 @@ pub mod proofs {
 
 pub mod commit {
     use super::*;
-    use crate::accumulator_tree::storage::TreeSlice;
-    use crate::{ReceiptTreeHash, StateVersion, TransactionTreeHash};
 
     pub struct CommitBundle {
         pub transactions: Vec<CommittedTransactionBundle>,
         pub proof: LedgerProof,
         pub substate_store_update: SubstateStoreUpdate,
         pub vertex_store: Option<VertexStoreBlob>,
-        pub state_tree_update: HashTreeUpdate,
+        pub state_tree_update: StateTreeUpdate,
         pub transaction_tree_slice: TransactionAccuTreeSlice,
         pub receipt_tree_slice: ReceiptAccuTreeSlice,
         pub new_substate_node_ancestry_records: Vec<KeyedSubstateNodeAncestryRecord>,
+        pub new_leaf_substate_keys: Vec<LeafSubstateKeyAssociation>,
     }
 
     pub struct SubstateStoreUpdate {
@@ -387,6 +428,31 @@ pub mod commit {
                     node_updates,
                 );
             }
+        }
+
+        pub fn get_upserted_value(&self, key: &DbSubstateKey) -> Option<&DbSubstateValue> {
+            let (
+                DbPartitionKey {
+                    node_key,
+                    partition_num,
+                },
+                sort_key,
+            ) = key;
+            self.updates
+                .node_updates
+                .get(node_key)
+                .and_then(|node_update| node_update.partition_updates.get(partition_num))
+                .and_then(|partition_update| match partition_update {
+                    PartitionDatabaseUpdates::Delta { substate_updates } => substate_updates
+                        .get(sort_key)
+                        .and_then(|update| match update {
+                            DatabaseUpdate::Set(value) => Some(value),
+                            DatabaseUpdate::Delete => None,
+                        }),
+                    PartitionDatabaseUpdates::Reset {
+                        new_substate_values,
+                    } => new_substate_values.get(sort_key),
+                })
         }
 
         fn merge_in_node_updates(target: &mut NodeDatabaseUpdates, source: NodeDatabaseUpdates) {
@@ -420,7 +486,7 @@ pub mod commit {
                                     target_values.insert(sort_key, value);
                                 }
                                 DatabaseUpdate::Delete => {
-                                    let existed = target_values.remove(&sort_key).is_some();
+                                    let existed = target_values.swap_remove(&sort_key).is_some();
                                     if !existed {
                                         panic!("broken invariant: deleting non-existent substate");
                                     }
@@ -443,19 +509,25 @@ pub mod commit {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedStaleTreeParts => StaleTreeParts = StaleTreePartsV1
+        #[derive(Debug, Clone, ScryptoSbor)]
+        pub VersionedStaleTreeParts(StaleTreePartsVersions) => StaleTreeParts = StaleTreePartsV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_stale_tree_parts_cuttlefish.bin"
+            ))]
+        ]
     }
 
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct StaleTreePartsV1(pub Vec<StaleTreePart>);
 
-    pub struct HashTreeUpdate {
-        pub new_nodes: Vec<(NodeKey, TreeNode)>,
+    pub struct StateTreeUpdate {
+        pub new_nodes: Vec<(StoredTreeNodeKey, TreeNode)>,
         pub stale_tree_parts_at_state_version: Vec<(StateVersion, StaleTreeParts)>,
     }
 
-    impl HashTreeUpdate {
+    impl StateTreeUpdate {
         pub fn new() -> Self {
             Self {
                 new_nodes: Vec::new(),
@@ -463,7 +535,7 @@ pub mod commit {
             }
         }
 
-        pub fn from_single(at_state_version: StateVersion, diff: StateHashTreeDiff) -> Self {
+        pub fn from_single(at_state_version: StateVersion, diff: StateTreeDiff) -> Self {
             Self {
                 new_nodes: diff.new_nodes,
                 stale_tree_parts_at_state_version: vec![(
@@ -473,33 +545,45 @@ pub mod commit {
             }
         }
 
-        pub fn add(&mut self, at_state_version: StateVersion, diff: StateHashTreeDiff) {
+        pub fn add(&mut self, at_state_version: StateVersion, diff: StateTreeDiff) {
             self.new_nodes.extend(diff.new_nodes);
             self.stale_tree_parts_at_state_version
                 .push((at_state_version, StaleTreePartsV1(diff.stale_tree_parts)));
         }
     }
 
-    impl Default for HashTreeUpdate {
+    impl Default for StateTreeUpdate {
         fn default() -> Self {
             Self::new()
         }
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedTransactionAccuTreeSlice => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1
+        #[derive(Debug, Clone, ScryptoSbor)]
+        pub VersionedTransactionAccuTreeSlice(TransactionAccuTreeSliceVersions) => TransactionAccuTreeSlice = TransactionAccuTreeSliceV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_transaction_accu_tree_slice_cuttlefish.bin"
+            ))]
+        ]
     }
 
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct TransactionAccuTreeSliceV1(pub TreeSlice<TransactionTreeHash>);
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedReceiptAccuTreeSlice => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1
+        #[derive(Debug, Clone, ScryptoSbor)]
+        pub VersionedReceiptAccuTreeSlice(ReceiptAccuTreeSliceVersions) => ReceiptAccuTreeSlice = ReceiptAccuTreeSliceV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_receipt_accu_tree_slice_cuttlefish.bin"
+            ))]
+        ]
     }
 
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct ReceiptAccuTreeSliceV1(pub TreeSlice<ReceiptTreeHash>);
 
     pub trait CommitStore {
@@ -513,42 +597,45 @@ pub mod scenario {
     pub type ScenarioSequenceNumber = u32;
 
     define_single_versioned! {
-        #[derive(Debug, Clone, Categorize, Encode, Decode)]
-        pub enum VersionedExecutedGenesisScenario => ExecutedGenesisScenario = ExecutedGenesisScenarioV1
+        #[derive(Debug, Clone, Sbor)]
+        pub VersionedExecutedScenario(ExecutedScenarioVersions) => ExecutedScenario = ExecutedScenarioV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_executed_scenario_cuttlefish.bin"
+            ))]
+        ]
     }
 
-    #[derive(Debug, Clone, Categorize, Encode, Decode)]
-    pub struct ExecutedGenesisScenarioV1 {
+    #[derive(Debug, Clone, Sbor)]
+    pub struct ExecutedScenarioV1 {
         pub logical_name: String,
         pub committed_transactions: Vec<ExecutedScenarioTransaction>,
-        pub addresses: Vec<DescribedAddress>,
+        pub addresses: Vec<DescribedAddressRendering>,
     }
 
-    #[derive(Debug, Clone, Categorize, Encode, Decode)]
-    pub struct DescribedAddress {
+    #[derive(Debug, Clone, Sbor)]
+    pub struct DescribedAddressRendering {
         pub logical_name: String,
         pub rendered_address: String, // we store it pre-rendered, since `GlobalAddress` has no SBOR coding
     }
 
-    #[derive(Debug, Clone, Categorize, Encode, Decode)]
+    #[derive(Debug, Clone, Sbor)]
     pub struct ExecutedScenarioTransaction {
         pub logical_name: String,
         pub state_version: StateVersion,
-        pub intent_hash: IntentHash,
+        pub transaction_intent_hash: TransactionIntentHash,
     }
 
-    /// A store of testing-specific [`ExecutedGenesisScenario`], meant to be as separated as
-    /// possible from the production stores (e.g. the writes happening outside of the regular commit
-    /// batch write).
-    pub trait ExecutedGenesisScenarioStore {
-        /// Writes the given Scenario under a caller-managed sequence number (which means: it allows
-        /// overwriting, writing out-of-order, leaving gaps, etc.).
-        fn put_scenario(&self, number: ScenarioSequenceNumber, scenario: ExecutedGenesisScenario);
+    /// A store of testing-specific [`ExecutedScenario`], meant to be as separated as possible from
+    /// the production stores (e.g. the writes happening outside of the regular commit batch write).
+    pub trait ExecutedScenarioStore {
+        /// Writes the given Scenario under the next sequence number (auto-incremented).
+        fn put_next_scenario(&self, scenario: ExecutedScenario);
 
-        /// Returns all Scenarios written so far, ordered by their sequence numbers (but with no
-        /// guarantees regarding gaps; see [`put_scenario()`]'s contract).
+        /// Returns all Scenarios written so far, ordered by their sequence numbers.
         /// Performance note: this method assumes a small number of Scenarios.
-        fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedGenesisScenario)>;
+        fn list_all_scenarios(&self) -> Vec<(ScenarioSequenceNumber, ExecutedScenario)>;
     }
 }
 
@@ -572,6 +659,143 @@ pub mod extensions {
             from_state_version: StateVersion,
         ) -> Box<dyn Iterator<Item = StateVersion> + '_>;
     }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, Sbor)]
+        pub VersionedStateTreeAssociatedValuesStatus(StateTreeAssociatedValuesStatusVersions) => StateTreeAssociatedValuesStatus = StateTreeAssociatedValuesStatusV1
+    }
+
+    #[derive(Debug, Clone, Sbor)]
+    pub struct StateTreeAssociatedValuesStatusV1 {
+        /// The (inclusive) [`StateVersion`] from which the past Substate values are currently
+        /// present in the dedicated "historical" table.
+        ///
+        /// This value is initialized after the "state history" feature gets enabled (and finishes
+        /// its successful backfill). Then, every subsequent "state tree GC" run progresses it
+        /// forward appropriately.
+        pub historical_substate_values_available_from: StateVersion,
+    }
+}
+
+pub mod indices {
+    use super::*;
+    use std::ops::Range;
+
+    pub trait EntityListingIndex {
+        fn get_created_entity_iter(
+            &self,
+            entity_type: EntityType,
+            from_creation_id: Option<&CreationId>,
+        ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_>;
+
+        fn get_blueprint_entity_iter(
+            &self,
+            blueprint_id: &BlueprintId,
+            from_creation_id: Option<&CreationId>,
+        ) -> Box<dyn Iterator<Item = (CreationId, EntityBlueprintId)> + '_>;
+    }
+
+    /// A unique ID of an Entity, based on creation order.
+    #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Sbor)]
+    pub struct CreationId {
+        /// State version of the transaction which created the Entity (i.e. which created the first
+        /// Substate under this Entity).
+        pub state_version: StateVersion,
+
+        /// An index in a list of Entities created by a single transaction.
+        pub index_within_txn: u32,
+    }
+
+    impl CreationId {
+        /// Creates the least possible instance.
+        pub fn zero() -> Self {
+            Self {
+                state_version: StateVersion::pre_genesis(),
+                index_within_txn: 0,
+            }
+        }
+
+        /// Creates an ID, ensuring that the given index fits within `u32`.
+        pub fn new(state_version: StateVersion, index_within_txn: usize) -> Self {
+            Self {
+                state_version,
+                index_within_txn: index_within_txn.try_into().expect("unexpected index"),
+            }
+        }
+
+        /// Returns a [`Range`] guaranteed to cover all practically-occurring [`CreationId`]s.
+        pub fn full_range() -> Range<Self> {
+            // we need an exclusive upper bound, so:
+            let above_max = CreationId {
+                state_version: StateVersion::of(u64::MAX), // even if version that large is possible...
+                index_within_txn: u32::MAX, // ... then there is a limit on maximum entities created by a transaction
+            };
+            Self::zero()..above_max
+        }
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoSbor)]
+        pub VersionedEntityBlueprintId(EntityBlueprintIdVersions) => EntityBlueprintId = EntityBlueprintIdV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_entity_blueprint_id_cuttlefish.bin"
+            ))]
+        ]
+    }
+
+    /// An entity's ID and its blueprint reference.
+    /// This is a "technical" structure stored in one of the Entity-listing indices.
+    #[derive(Debug, Clone, ScryptoSbor)]
+    pub struct EntityBlueprintIdV1 {
+        /// Node ID.
+        pub node_id: NodeId,
+
+        /// Blueprint reference, present only for "Object" entities.
+        pub blueprint_id: Option<BlueprintId>,
+    }
+
+    impl EntityBlueprintIdV1 {
+        /// Creates an instance representing an entity of "Object" type.
+        pub fn of_object(object_node_id: NodeId, blueprint_id: BlueprintId) -> Self {
+            Self {
+                node_id: object_node_id,
+                blueprint_id: Some(blueprint_id),
+            }
+        }
+
+        /// Creates an instance representing an entity of "Key-Value Store" type.
+        pub fn of_kv_store(kv_store_node_id: NodeId) -> Self {
+            Self {
+                node_id: kv_store_node_id,
+                blueprint_id: None,
+            }
+        }
+    }
+
+    define_single_versioned! {
+        #[derive(Debug, Clone, ScryptoSbor)]
+        pub VersionedObjectBlueprintName(ObjectBlueprintNameVersions) => ObjectBlueprintName = ObjectBlueprintNameV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_object_blueprint_name_cuttlefish.bin"
+            ))]
+        ]
+    }
+
+    /// An Object's ID and its blueprint name.
+    /// This is a "technical" structure stored in one of the Entity-listing indices.
+    #[derive(Debug, Clone, ScryptoSbor)]
+    pub struct ObjectBlueprintNameV1 {
+        /// Node ID - guaranteed to *not* be a Key-Value Store.
+        pub node_id: NodeId,
+
+        /// The name alone of the Object's blueprint.
+        /// Package address is not needed here, since it is stored on the key's side of the index.
+        pub blueprint_name: String,
+    }
 }
 
 pub mod measurement {
@@ -583,6 +807,11 @@ pub mod measurement {
         /// Gets approximate data volume statistics per table/map/cf (i.e. a category of persisted
         /// items, however it is called by the specific database implementation).
         fn get_data_volume_statistics(&self) -> Vec<CategoryDbVolumeStatistic>;
+
+        /// Gets a number of entries stored in the given category.
+        ///
+        /// Note: this is an extremely inefficient method, meant only for test purposes.
+        fn count_entries(&self, category_name: &str) -> usize;
     }
 
     /// An approximate data volume statistic of a given category of persisted items.
@@ -636,24 +865,24 @@ pub mod measurement {
 
 pub mod gc {
     use super::*;
-    use crate::LedgerHeader;
 
-    /// A storage API tailored for the [`StateHashTreeGc`].
-    pub trait StateHashTreeGcStore {
+    /// A storage API tailored for the [`StateTreeGc`].
+    pub trait StateTreeGcStore {
         /// Returns an iterator of stale hash tree parts, ordered by the state version at which
         /// they became stale, ascending.
         fn get_stale_tree_parts_iter(
             &self,
         ) -> Box<dyn Iterator<Item = (StateVersion, StaleTreeParts)> + '_>;
 
-        /// Deletes a batch of state hash tree nodes.
-        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a NodeKey>);
+        /// Updates the metadata of the state history feature - but only if the given `available_from`
+        /// version is actually greater than the currently stored one.
+        fn progress_historical_substate_values_availability(&self, available_from: StateVersion);
 
-        /// Deletes a batch of stale hash tree parts' records.
-        fn batch_delete_stale_tree_part<'a>(
-            &self,
-            state_versions: impl IntoIterator<Item = &'a StateVersion>,
-        );
+        /// Deletes a batch of state hash tree nodes.
+        fn batch_delete_node<'a>(&self, keys: impl IntoIterator<Item = &'a StoredTreeNodeKey>);
+
+        /// Deletes all stale hash tree parts' records up to the given state version, *exclusive*.
+        fn delete_stale_tree_parts_up_to_version(&self, state_version: StateVersion);
     }
 
     /// A storage API tailored for the [`LedgerProofsGc`].
@@ -669,12 +898,18 @@ pub mod gc {
     }
 
     define_single_versioned! {
-        #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-        pub enum VersionedLedgerProofsGcProgress => LedgerProofsGcProgress = LedgerProofsGcProgressV1
+        #[derive(Debug, Clone, ScryptoSbor)]
+        pub VersionedLedgerProofsGcProgress(LedgerProofsGcProgressVersions) => LedgerProofsGcProgress = LedgerProofsGcProgressV1,
+        outer_attributes: [
+            #[derive(ScryptoSborAssertion)]
+            #[sbor_assert(backwards_compatible(
+                cuttlefish = "FILE:CF_SCHEMA_versioned_ledger_proofs_gc_progress_cuttlefish.bin"
+            ))]
+        ]
     }
 
     /// A state of the GC's progress.
-    #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+    #[derive(Debug, Clone, ScryptoSbor)]
     pub struct LedgerProofsGcProgressV1 {
         /// The last epoch pruned by the GC. The next run should start from the beginning of the
         /// next epoch.
@@ -715,7 +950,7 @@ impl<'a> TransactionAndProofIterator<'a> {
     }
 }
 
-impl<'a> Iterator for TransactionAndProofIterator<'a> {
+impl Iterator for TransactionAndProofIterator<'_> {
     type Item = (CommittedTransactionBundle, Option<LedgerProof>);
 
     fn next(&mut self) -> Option<Self::Item> {

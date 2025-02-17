@@ -65,8 +65,8 @@
 package com.radixdlt.api.system.health;
 
 import com.radixdlt.api.system.generated.models.PendingProtocolUpdate;
+import com.radixdlt.monitoring.InMemorySystemInfoState;
 import com.radixdlt.prometheus.RecentSelfProposalMissStatistic;
-import com.radixdlt.statecomputer.ProtocolState;
 import java.util.Map;
 
 public interface HealthInfoService {
@@ -74,7 +74,7 @@ public interface HealthInfoService {
 
   RecentSelfProposalMissStatistic recentSelfProposalMissStatistic();
 
-  ProtocolState protocolState();
-
   Map<String, PendingProtocolUpdate.ReadinessSignalStatusEnum> readinessSignalStatuses();
+
+  InMemorySystemInfoState systemInfoState();
 }

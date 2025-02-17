@@ -75,15 +75,16 @@ import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculatorConfig;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
-import com.radixdlt.environment.NoEpochsConsensusModule;
-import com.radixdlt.environment.NoEpochsSyncModule;
-import com.radixdlt.environment.NodeAutoCloseable;
+import com.radixdlt.environment.*;
+import com.radixdlt.genesis.GenesisBuilder;
+import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.genesis.RawGenesisDataWithHash;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.MockedLedgerModule;
 import com.radixdlt.ledger.MockedLedgerRecoveryModule;
 import com.radixdlt.mempool.*;
 import com.radixdlt.modules.StateComputerConfig.*;
+import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.modules.*;
 import com.radixdlt.statecomputer.MockedMempoolStateComputerModule;
 import com.radixdlt.statecomputer.MockedStateComputerModule;
@@ -124,7 +125,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
   public enum SafetyRecoveryConfig {
     MOCKED,
-    BERKELEY_DB,
+    REAL,
   }
 
   public static final class ConsensusConfig {
@@ -148,6 +149,10 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
       this.additionalRoundTimeIfProposalReceivedMs = additionalRoundTimeIfProposalReceivedMs;
       this.timeoutQuorumResolutionDelayMs = timeoutQuorumResolutionDelayMs;
       this.vertexStoreConfig = vertexStoreConfig;
+    }
+
+    public static ConsensusConfig testDefault() {
+      return ConsensusConfig.of(1000);
     }
 
     public static ConsensusConfig of(
@@ -302,9 +307,22 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
         false,
         SafetyRecoveryConfig.MOCKED,
         ConsensusConfig.of(),
-        LedgerConfig.stateComputerNoSync(
-            StateComputerConfig.mockedNoEpochs(
-                numValidators, new MockedMempoolConfig.NoMempool())));
+        LedgerConfig.stateComputerNoSync(StateComputerConfig.mockedNoEpochs(numValidators)));
+  }
+
+  public static FunctionalRadixNodeModule rev2Default(
+      int numValidators, int roundsPerEpoch, TemporaryFolder temporaryFolder) {
+    var genesis =
+        GenesisBuilder.createTestGenesisWithNumValidators(
+            numValidators,
+            Decimal.ofNonNegative(10000),
+            GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(roundsPerEpoch));
+    return new FunctionalRadixNodeModule(
+        NodeStorageConfig.tempFolder(temporaryFolder),
+        true,
+        FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
+        FunctionalRadixNodeModule.ConsensusConfig.testDefault(),
+        LedgerConfig.stateComputerNoSync(StateComputerConfig.rev2().withGenesis(genesis)));
   }
 
   public boolean supportsEpochs() {
@@ -329,7 +347,7 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
 
     switch (this.safetyRecoveryConfig) {
       case MOCKED -> install(new MockedSafetyStoreModule());
-      case BERKELEY_DB -> install(new BerkeleySafetyStoreModule());
+      case REAL -> install(new PersistentSafetyStateStoreModule());
     }
 
     // Consensus
@@ -420,24 +438,26 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
           case REv2StateComputerConfig rev2Config -> {
             final var genesisProvider =
                 RawGenesisDataWithHash.fromGenesisData(rev2Config.genesis());
-            install(new REv2LedgerInitializerModule(genesisProvider));
             install(new REv2LedgerRecoveryModule());
             install(new REv2ConsensusRecoveryModule());
+            install(new SystemInfoModule());
 
             switch (rev2Config.proposerConfig()) {
               case REV2ProposerConfig.Generated generated -> {
                 bind(ProposalGenerator.class).toInstance(generated.generator());
                 install(
                     REv2StateManagerModule.createForTesting(
+                        genesisProvider,
                         ProposalLimitsConfig.testDefaults(),
-                        rev2Config.databaseFlags(),
+                        rev2Config.databaseConfig(),
                         Option.none(),
                         rev2Config.debugLogging(),
-                        rev2Config.stateHashTreeGcConfig(),
+                        rev2Config.stateTreeGcConfig(),
                         rev2Config.ledgerProofsGcConfig(),
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
-                        rev2Config.noFees()));
+                        rev2Config.noFees(),
+                        rev2Config.scenariosExecutionConfig()));
               }
               case REV2ProposerConfig.Mempool mempool -> {
                 install(new MempoolRelayerModule(mempool.mempoolRelayerConfig()));
@@ -446,15 +466,17 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                 install(mempool.mempoolReceiverConfig().asModule());
                 install(
                     REv2StateManagerModule.createForTesting(
+                        genesisProvider,
                         mempool.proposalLimitsConfig(),
-                        rev2Config.databaseFlags(),
+                        rev2Config.databaseConfig(),
                         Option.some(mempool.mempoolConfig()),
                         rev2Config.debugLogging(),
-                        rev2Config.stateHashTreeGcConfig(),
+                        rev2Config.stateTreeGcConfig(),
                         rev2Config.ledgerProofsGcConfig(),
                         rev2Config.ledgerSyncLimitsConfig(),
                         rev2Config.protocolConfig(),
-                        rev2Config.noFees()));
+                        rev2Config.noFees(),
+                        rev2Config.scenariosExecutionConfig()));
               }
             }
           }

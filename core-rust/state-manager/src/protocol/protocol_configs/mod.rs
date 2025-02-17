@@ -9,7 +9,7 @@ use crate::engine_prelude::*;
 use crate::protocol::*;
 
 pub fn resolve_protocol_config(network: &NetworkDefinition) -> ProtocolConfig {
-    match network.logical_name.as_str() {
+    match network.logical_name.as_ref() {
         "mainnet" => mainnet_protocol_config::mainnet_protocol_config(),
         "stokenet" => stokenet_protocol_config::stokenet_protocol_config(),
         "dumunet" => dumunet_protocol_config::dumunet_protocol_config(),

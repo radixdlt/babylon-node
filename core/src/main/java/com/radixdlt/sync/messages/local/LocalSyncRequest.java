@@ -65,8 +65,10 @@
 package com.radixdlt.sync.messages.local;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 
 /** A request to sync ledger to a given target. */
-public record LocalSyncRequest(LedgerProof target, ImmutableList<NodeId> targetNodes) {}
+public record LocalSyncRequest(LedgerProof target, ImmutableList<NodeId> targetNodes)
+    implements LocalEvent {}

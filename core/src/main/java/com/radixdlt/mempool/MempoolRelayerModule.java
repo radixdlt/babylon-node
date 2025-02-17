@@ -96,7 +96,8 @@ public final class MempoolRelayerModule extends AbstractModule {
   private EventProducer<MempoolRelayTrigger> eventProducer(
       ScheduledEventDispatcher<MempoolRelayTrigger> dispatcher,
       @MempoolRelayerIntervalMs int mempoolRelayerIntervalMs) {
-    return new EventProducer<>(MempoolRelayTrigger::create, dispatcher, mempoolRelayerIntervalMs);
+    return new EventProducer<>(
+        () -> new MempoolRelayTrigger(), dispatcher, mempoolRelayerIntervalMs);
   }
 
   @ProvidesIntoSet

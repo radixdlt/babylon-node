@@ -64,9 +64,12 @@
 
 package com.radixdlt.harness.simulation.network;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.inject.Inject;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.environment.RemoteEventDispatcher;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.p2p.NodeId;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -76,7 +79,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -95,11 +97,11 @@ public class SimulationNetwork {
 
     private MessageInTransit(
         Object content, NodeId sender, NodeId receiver, long delay, long delayAfterPrevious) {
-      if (content instanceof RemoteEvent) {
+      if (content instanceof IncomingEvent) {
         throw new IllegalArgumentException("Message in transit should not be RemoteEvent");
       }
 
-      this.content = Objects.requireNonNull(content);
+      this.content = requireNonNull(content);
       this.sender = sender;
       this.receiver = receiver;
       this.delay = delay;
@@ -118,9 +120,11 @@ public class SimulationNetwork {
       return Maybe.empty();
     }
 
-    public <N, T> Maybe<RemoteEvent<NodeId, T>> remoteEvent(Class<T> eventClass) {
+    public <N, T extends RemoteEvent> Maybe<IncomingEvent<NodeId, T>> remoteEvent(
+        Class<T> eventClass) {
       if (!sender.equals(receiver) && eventClass.isInstance(content)) {
-        return Maybe.just(RemoteEvent.create(sender, eventClass.cast(content)));
+        return Maybe.just(
+            new IncomingEvent<>(requireNonNull(sender), requireNonNull(eventClass.cast(content))));
       }
 
       return Maybe.empty();
@@ -176,7 +180,7 @@ public class SimulationNetwork {
 
   @Inject
   public SimulationNetwork(ChannelCommunication channelCommunication) {
-    this.channelCommunication = Objects.requireNonNull(channelCommunication);
+    this.channelCommunication = requireNonNull(channelCommunication);
     this.receivedMessages =
         ReplaySubject.<MessageInTransit>createWithSize(1024) // To catch startup timing issues
             .toSerialized();
@@ -210,15 +214,17 @@ public class SimulationNetwork {
     }
 
     @Override
-    public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
+    public <T extends RemoteEvent> Flowable<IncomingEvent<NodeId, T>> remoteEvents(
+        Class<T> messageType) {
       return myMessages.flatMapMaybe(m -> m.remoteEvent(messageType));
     }
 
-    public <T> RemoteEventDispatcher<NodeId, T> remoteEventDispatcher(Class<T> eventClass) {
+    public <T extends RemoteEvent> RemoteEventDispatcher<NodeId, T> remoteEventDispatcher(
+        Class<T> eventClass) {
       return this::sendRemoteEvent;
     }
 
-    private <T> void sendRemoteEvent(NodeId node, T event) {
+    private <T extends RemoteEvent> void sendRemoteEvent(NodeId node, T event) {
       receivedMessages.onNext(MessageInTransit.newMessage(event, thisNode, node));
     }
   }

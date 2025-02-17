@@ -64,7 +64,7 @@
 
 package com.radixdlt.monitoring;
 
-import com.google.common.annotations.VisibleForTesting;
+import io.netty.util.internal.StringUtil;
 import java.io.IOException;
 import java.util.*;
 
@@ -84,7 +84,10 @@ public record ApplicationVersion(String branch, String commit, String display, S
   /**
    * Loads version information from the given resource properties file.
    *
-   * <p>Silently falls back to default "unknown" version indicators in case of any problems.
+   * <p>The version information is initially populated in
+   * .github/actions/setup-version-properties/action.yaml The environment variables are then added
+   * to the version.properties file in core/build.gradle, task: versionFile. Silently falls back to
+   * default "unknown" version indicators in case of any problems.
    *
    * @param resourceName Resource name.
    * @return Version information.
@@ -98,16 +101,16 @@ public record ApplicationVersion(String branch, String commit, String display, S
       if (is != null) {
         var p = new Properties();
         p.load(is);
-        branch = p.getProperty("VERSION_BRANCH", branch);
-        commit = p.getProperty("VERSION_COMMIT", commit);
-        display = p.getProperty("VERSION_DISPLAY", display);
+        branch = propertyWithFallback(p, "VERSION_BRANCH", branch);
+        commit = propertyWithFallback(p, "VERSION_COMMIT", commit);
+        display = propertyWithFallback(p, "VERSION_DISPLAY", display);
         Map<String, String> map = new HashMap<>();
         for (var key : p.stringPropertyNames()) {
           var mapKey = key.split("_", 2)[1].toLowerCase(Locale.US);
           var defaultValue = "unknown-" + mapKey;
           map.put(mapKey, p.getProperty(key, defaultValue));
         }
-        string = calculateVersionString(map);
+        string = display.replace('/', '~');
       }
     } catch (IOException e) {
       // Ignore exception
@@ -115,35 +118,12 @@ public record ApplicationVersion(String branch, String commit, String display, S
     return new ApplicationVersion(branch, commit, display, string);
   }
 
-  @VisibleForTesting
-  static String calculateVersionString(Map<String, String> details) {
-    if (isCleanTag(details)) {
-      return lastTag(details);
-    } else {
-      var version =
-          branchName(details) == null
-              ? "detached-head-" + gitHash(details)
-              : (lastTag(details) + "-" + branchName(details)).replace('/', '~')
-                  + "-"
-                  + gitHash(details);
-
-      return version;
+  private static String propertyWithFallback(
+      Properties properties, String propertyName, String fallback) {
+    var value = properties.getProperty(propertyName);
+    if (StringUtil.isNullOrEmpty(value)) {
+      return fallback;
     }
-  }
-
-  private static boolean isCleanTag(Map<String, String> details) {
-    return Objects.equals(details.get("tag"), details.get("last_tag"));
-  }
-
-  private static String lastTag(Map<String, String> details) {
-    return details.get("last_tag");
-  }
-
-  private static String gitHash(Map<String, String> details) {
-    return details.get("build");
-  }
-
-  private static String branchName(Map<String, String> details) {
-    return details.get("branch");
+    return value;
   }
 }

@@ -82,6 +82,7 @@ import com.radixdlt.rev2.REv2ToConsensus;
 import com.radixdlt.statecomputer.commit.CommitSummary;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -125,16 +126,16 @@ public final class MockedStateComputer implements StateComputer {
 
   @Override
   public LedgerProofBundle commit(
-      LedgerExtension ledgerExtension, Option<byte[]> serializedVertexStoreState) {
+      LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
     latestProof =
         new LedgerProofBundle(
             ledgerExtension.proof(),
             ledgerExtension.proof().ledgerHeader().nextEpoch().isPresent()
                 ? ledgerExtension.proof()
-                : latestProof.closestEpochProofOnOrBefore(),
+                : latestProof.latestProofWhichInitiatedAnEpochChange(),
             ledgerExtension.proof().ledgerHeader().nextProtocolVersion().isPresent()
                 ? Option.some(ledgerExtension.proof())
-                : latestProof.closestProtocolUpdateInitProofOnOrBefore(),
+                : latestProof.latestProofWhichInitiatedOneOrMoreProtocolUpdates(),
             Option.empty());
 
     final var maybeEpochChange =

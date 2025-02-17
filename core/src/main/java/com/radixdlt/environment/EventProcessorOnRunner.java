@@ -65,15 +65,16 @@
 package com.radixdlt.environment;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * An Event Processor registered to run on a runner.
+ * A local event processor registered to run on a runner.
  *
  * @param <T> The event class
  */
-public final class EventProcessorOnRunner<T> {
+public final class EventProcessorOnRunner<T extends LocalEvent> {
   private final String runnerName;
   private final Class<T> eventClass;
   private final TypeLiteral<T> typeLiteral;
@@ -119,17 +120,21 @@ public final class EventProcessorOnRunner<T> {
     return runnerName;
   }
 
-  public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
+  public <U extends LocalEvent> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
     if (eventClass != null && eventClass.isAssignableFrom(c)) {
-      return Optional.of((EventProcessor<U>) processor);
+      @SuppressWarnings("unchecked")
+      var eventProcessor = (EventProcessor<U>) processor;
+      return Optional.of(eventProcessor);
     }
 
     return Optional.empty();
   }
 
-  public <U> Optional<EventProcessor<U>> getProcessor(TypeLiteral<U> c) {
+  public <U extends LocalEvent> Optional<EventProcessor<U>> getProcessor(TypeLiteral<U> c) {
     if (c.equals(typeLiteral)) {
-      return Optional.of((EventProcessor<U>) processor);
+      @SuppressWarnings("unchecked")
+      var eventProcessor = (EventProcessor<U>) processor;
+      return Optional.of(eventProcessor);
     }
 
     return Optional.empty();

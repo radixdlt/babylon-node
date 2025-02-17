@@ -1,0 +1,22 @@
+codecov:
+  notify:
+    wait_for_ci: true
+  max_report_age: off
+  require_ci_to_pass: true
+comment:
+  behavior: default
+  layout: "reach, diff, flags, files"
+  show_carryforward_flags: false
+coverage:
+  precision: 1
+  range: 97...98 # red -> yellow (the inside range) -> green
+  status:
+    patch:
+      default:
+        target: auto
+        threshold: 80%
+        base: auto
+        only_pulls: true
+flag_management:
+  default_rules:
+    carryforward: true

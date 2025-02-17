@@ -1,0 +1,13 @@
+[package]
+name = "p2p"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+node-common = { path = "../node-common" }
+
+sbor = { workspace = true }
+radix-common = { workspace = true }
+
+# Non-Radix Engine Dependencies:
+jni = { workspace = true }

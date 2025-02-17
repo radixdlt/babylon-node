@@ -76,7 +76,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -102,8 +101,7 @@ public class OneProposalDropperResponsiveTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerMockedSync(
-                        StateComputerConfig.mockedNoEpochs(
-                            numValidatorNodes, MockedMempoolConfig.noMempool()))));
+                        StateComputerConfig.mockedNoEpochs(numValidatorNodes))));
 
     test.startAllNodes();
     test.runForCount(30_000);

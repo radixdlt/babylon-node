@@ -143,7 +143,7 @@ public final class EventLoggerModule extends AbstractModule {
                 t.getEpochRound().getRound().number(),
                 eventLoggerConfig.formatBftValidatorId().apply(t.getLeader()),
                 eventLoggerConfig.formatBftValidatorId().apply(t.getNextLeader()),
-                t.getBase().timeout().count()));
+                t.occurrence().timeout().count()));
   }
 
   @ProvidesIntoSet
@@ -157,10 +157,10 @@ public final class EventLoggerModule extends AbstractModule {
           logger.log(
               logLevel,
               "bft_nxtrnd{epoch={} round={} leader={} next_leader={}}",
-              u.getEpoch(),
+              u.epoch(),
               u.getEpochRound().getRound().number(),
-              eventLoggerConfig.formatBftValidatorId().apply(u.getRoundUpdate().getLeader()),
-              eventLoggerConfig.formatBftValidatorId().apply(u.getRoundUpdate().getNextLeader()));
+              eventLoggerConfig.formatBftValidatorId().apply(u.roundUpdate().leader()),
+              eventLoggerConfig.formatBftValidatorId().apply(u.roundUpdate().nextLeader()));
         });
   }
 
@@ -192,14 +192,13 @@ public final class EventLoggerModule extends AbstractModule {
         calculateLoggingLevel(ledgerUpdateLogLimiter, ledgerUpdate.epochChange()));
 
     ledgerUpdate.epochChange().ifPresent(epochChange -> logEpochChange(self, epochChange));
-    logProtocolUpdate(ledgerUpdate.committedProof());
+    logProtocolUpdate(ledgerUpdate.committedProofBundle());
 
     self.bftValidatorId()
         .ifPresent(
-            selfValidatorId -> {
-              logSelfMissedProposals(
-                  selfValidatorId, ledgerUpdate.commitSummary(), missedProposalsLogLimiter);
-            });
+            selfValidatorId ->
+                logSelfMissedProposals(
+                    selfValidatorId, ledgerUpdate.commitSummary(), missedProposalsLogLimiter));
   }
 
   private static void logEpochChange(SelfValidatorInfo self, EpochChange epochChange) {
@@ -225,11 +224,10 @@ public final class EventLoggerModule extends AbstractModule {
           proof.primaryProof().ledgerHeader().nextProtocolVersion().or(""),
           stateVersion,
           stateVersion);
-    } else if (proof.primaryProof().origin()
-        instanceof LedgerProofOrigin.ProtocolUpdate protocolUpdateOrigin) {
+    } else if (proof.primaryProof().origin() instanceof LedgerProofOrigin.ProtocolUpdate) {
       // Protocol update init proof must be present if latest proof is of ProtocolUpdate origin.
       final var protocolUpdateInitHeader =
-          proof.closestProtocolUpdateInitProofOnOrBefore().unwrap().ledgerHeader();
+          proof.latestProofWhichInitiatedOneOrMoreProtocolUpdates().unwrap().ledgerHeader();
       final var postProtocolUpdateHeader = proof.primaryProof().ledgerHeader();
       final var initStateVersion = protocolUpdateInitHeader.stateVersion().toLong();
       final var postStateVersion = postProtocolUpdateHeader.stateVersion().toLong();
@@ -249,7 +247,8 @@ public final class EventLoggerModule extends AbstractModule {
     }
 
     final var header =
-        REv2ToConsensus.ledgerHeader(ledgerUpdate.committedProof().primaryProof().ledgerHeader());
+        REv2ToConsensus.ledgerHeader(
+            ledgerUpdate.committedProofBundle().primaryProof().ledgerHeader());
     final var ledgerHashes = header.getHashes();
     logger.log(
         logLevel,

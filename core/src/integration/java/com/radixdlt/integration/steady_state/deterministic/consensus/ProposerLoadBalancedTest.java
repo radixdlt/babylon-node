@@ -68,10 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.bft.Round;
-import com.radixdlt.consensus.epoch.Epoched;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeout;
 import com.radixdlt.environment.deterministic.network.MessageMutator;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -82,7 +79,6 @@ import com.radixdlt.modules.FunctionalRadixNodeModule.LedgerConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.NodeStorageConfig;
 import com.radixdlt.modules.FunctionalRadixNodeModule.SafetyRecoveryConfig;
 import com.radixdlt.modules.StateComputerConfig;
-import com.radixdlt.modules.StateComputerConfig.MockedMempoolConfig;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.utils.UInt192;
 import java.util.List;
@@ -108,12 +104,9 @@ public class ProposerLoadBalancedTest {
                     SafetyRecoveryConfig.MOCKED,
                     ConsensusConfig.of(),
                     LedgerConfig.stateComputerNoSync(
-                        StateComputerConfig.mockedWithEpochs(
-                            Round.of(10000000),
-                            mapping,
-                            LedgerHashes.zero(),
-                            MockedMempoolConfig.noMempool(),
-                            StateComputerConfig.ProposerElectionMode.ONLY_WEIGHTED_BY_STAKE))));
+                        StateComputerConfig.mockedWithEpochs(10000000, mapping)
+                            .withProposerElection(
+                                StateComputerConfig.ProposerElectionMode.ONLY_WEIGHTED_BY_STAKE))));
     test.startAllNodes();
     test.runUntilMessage(
         DeterministicTest.hasReachedRound(Round.of(numRounds)),
@@ -127,9 +120,7 @@ public class ProposerLoadBalancedTest {
 
   private MessageMutator mutator() {
     return (message, queue) -> {
-      Object msg = message.message();
-      if (msg instanceof ScheduledLocalTimeout
-          || Epoched.isInstance(msg, ScheduledLocalTimeout.class)) {
+      if (MessageMutator.isScheduledLocalTimeout(message.message())) {
         return true;
       }
 

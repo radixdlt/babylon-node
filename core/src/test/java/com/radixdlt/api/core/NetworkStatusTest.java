@@ -68,24 +68,31 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.radixdlt.api.DeterministicCoreApiTestBase;
 import com.radixdlt.api.core.generated.models.NetworkStatusRequest;
+import com.radixdlt.protocol.ProtocolConfig;
 import org.junit.Test;
 
 public class NetworkStatusTest extends DeterministicCoreApiTestBase {
   @SuppressWarnings("DataFlowIssue")
   @Test
   public void test_core_api_status_response_at_startup() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
       final var response =
           getStatusApi()
               .statusNetworkStatusPost(new NetworkStatusRequest().network(networkLogicalName));
 
-      // Has ingested genesis on startup (expecting 5 genesis txns)
-      assertThat(response.getCurrentStateIdentifier().getStateVersion()).isEqualTo(5);
+      // Check that we've ingested genesis on startup...
+      assertThat(response.getCurrentStateIdentifier().getStateVersion()).isGreaterThanOrEqualTo(5);
       assertThat(response.getGenesisEpochRound().getEpoch()).isEqualTo(1);
       assertThat(response.getGenesisEpochRound().getRound()).isEqualTo(0);
       assertThat(response.getPostGenesisEpochRound().getEpoch()).isEqualTo(2);
       assertThat(response.getPostGenesisEpochRound().getRound()).isEqualTo(0);
+
+      // We also check that the default test configuration has enacted all protocol updates...
+      // This check also ensures that we keep our codebase in sync, as it ensures that
+      // `ProtocolConfig.VERSION_NAMES` is updated at the same time as `testnet_protocol_config`
+      assertThat(response.getCurrentProtocolVersion())
+          .isEqualTo(ProtocolConfig.LATEST_PROTOCOL_VERSION_NAME);
     }
   }
 }

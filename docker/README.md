@@ -12,6 +12,8 @@ From the repository root, run the following - replacing 2 with the number of val
 ./docker/scripts/rundocker.sh 2
 ```
 
+This script requires [`../core-rust`](../core-rust) to be compiled.
+
 ## The Dockerfile
 
 ![The structure of the docker image](babylon-node-docker-build.png)
@@ -48,7 +50,7 @@ Example `core/java-binary/*.jar`
 ```
 docker build  . \
     -t radixdlt/babylon-node:local-test-core \
-    --target binary-container \
+    --target java-container \
     --output ./outputs
 ls outputs 
 core-SNAPSHOT-<BRANCH>-<GITSHA10>.tgz 

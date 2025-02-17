@@ -7,7 +7,7 @@ pub fn to_api_component_royalty_substate(
     context: &MappingContext,
     substate: &ComponentRoyaltyAccumulatorFieldSubstate,
 ) -> Result<models::Substate, MappingError> {
-    Ok(field_substate_versioned!(
+    Ok(field_substate_single_versioned!(
         substate,
         RoyaltyModuleFieldState,
         ComponentRoyaltySubstate { royalty_vault },
@@ -32,7 +32,7 @@ pub fn to_api_component_method_royalty_substate(
             TypedRoyaltyModuleSubstateKey::RoyaltyMethodRoyaltyEntryKey(method_name)
         )
     );
-    Ok(key_value_store_optional_substate_versioned!(
+    Ok(key_value_store_optional_substate_single_versioned!(
         substate,
         RoyaltyModuleMethodRoyaltyEntry,
         models::MainMethodKey {

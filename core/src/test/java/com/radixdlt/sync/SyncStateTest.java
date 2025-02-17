@@ -77,6 +77,7 @@ import com.radixdlt.statecomputer.commit.LedgerHeader;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.statecomputer.commit.LedgerProofOrigin;
 import com.radixdlt.sync.messages.remote.StatusResponse;
+import java.util.List;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -89,8 +90,8 @@ public class SyncStateTest {
         .withGenericPrefabValues(Option.class, Option::some)
         .withPrefabValues(
             LedgerProofOrigin.class,
-            new LedgerProofOrigin.Genesis(HashUtils.random256()),
-            new LedgerProofOrigin.Genesis(HashUtils.random256()))
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()),
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()))
         .verify();
 
     EqualsVerifier.forClass(SyncState.SyncCheckState.class)
@@ -98,8 +99,8 @@ public class SyncStateTest {
         .withGenericPrefabValues(Option.class, Option::some)
         .withPrefabValues(
             LedgerProofOrigin.class,
-            new LedgerProofOrigin.Genesis(HashUtils.random256()),
-            new LedgerProofOrigin.Genesis(HashUtils.random256()))
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()),
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()))
         .verify();
 
     EqualsVerifier.forClass(SyncState.SyncingState.class)
@@ -107,8 +108,8 @@ public class SyncStateTest {
         .withGenericPrefabValues(Option.class, Option::some)
         .withPrefabValues(
             LedgerProofOrigin.class,
-            new LedgerProofOrigin.Genesis(HashUtils.random256()),
-            new LedgerProofOrigin.Genesis(HashUtils.random256()))
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()),
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()))
         .verify();
 
     EqualsVerifier.forClass(SyncState.PendingRequest.class)
@@ -116,8 +117,8 @@ public class SyncStateTest {
         .withGenericPrefabValues(Option.class, Option::some)
         .withPrefabValues(
             LedgerProofOrigin.class,
-            new LedgerProofOrigin.Genesis(HashUtils.random256()),
-            new LedgerProofOrigin.Genesis(HashUtils.random256()))
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()),
+            new LedgerProofOrigin.Consensus(HashUtils.random256(), List.of()))
         .verify();
   }
 

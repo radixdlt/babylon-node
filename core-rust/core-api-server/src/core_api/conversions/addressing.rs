@@ -1,6 +1,4 @@
-use crate::core_api::models;
-use crate::core_api::*;
-use crate::engine_prelude::*;
+use crate::prelude::*;
 use models::SubstateType;
 
 pub fn to_api_global_address(
@@ -65,16 +63,19 @@ pub fn to_api_entity_type(entity_type: EntityType) -> models::EntityType {
         EntityType::GlobalValidator => models::EntityType::GlobalValidator,
         EntityType::GlobalAccessController => models::EntityType::GlobalAccessController,
         EntityType::GlobalAccount => models::EntityType::GlobalAccount,
+        EntityType::GlobalAccountLocker => models::EntityType::GlobalAccountLocker,
         EntityType::GlobalIdentity => models::EntityType::GlobalIdentity,
         EntityType::GlobalGenericComponent => models::EntityType::GlobalGenericComponent,
-        EntityType::GlobalVirtualSecp256k1Account => {
+        EntityType::GlobalPreallocatedSecp256k1Account => {
             models::EntityType::GlobalVirtualSecp256k1Account
         }
-        EntityType::GlobalVirtualEd25519Account => models::EntityType::GlobalVirtualEd25519Account,
-        EntityType::GlobalVirtualSecp256k1Identity => {
+        EntityType::GlobalPreallocatedEd25519Account => {
+            models::EntityType::GlobalVirtualEd25519Account
+        }
+        EntityType::GlobalPreallocatedSecp256k1Identity => {
             models::EntityType::GlobalVirtualSecp256k1Identity
         }
-        EntityType::GlobalVirtualEd25519Identity => {
+        EntityType::GlobalPreallocatedEd25519Identity => {
             models::EntityType::GlobalVirtualEd25519Identity
         }
         EntityType::InternalFungibleVault => models::EntityType::InternalFungibleVault,
@@ -122,9 +123,35 @@ pub fn to_api_substate_id(
 
     let (substate_type, partition_kind) = match typed_substate_key {
         TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
-            BootLoaderField::Vm,
+            BootLoaderField::SystemBoot,
+        )) => (
+            SubstateType::BootLoaderModuleFieldSystemBoot,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+            BootLoaderField::VmBoot,
         )) => (
             SubstateType::BootLoaderModuleFieldVmBoot,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+            BootLoaderField::KernelBoot,
+        )) => (
+            SubstateType::BootLoaderModuleFieldKernelBoot,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::BootLoader(TypedBootLoaderSubstateKey::BootLoaderField(
+            BootLoaderField::TransactionValidationConfiguration,
+        )) => (
+            SubstateType::BootLoaderModuleFieldTransactionValidationConfiguration,
+            models::PartitionKind::Field,
+        ),
+        TypedSubstateKey::ProtocolUpdateStatus(
+            TypedProtocolUpdateStatusSubstateKey::ProtocolUpdateStatusField(
+                ProtocolUpdateStatusField::Summary,
+            ),
+        ) => (
+            SubstateType::ProtocolUpdateStatusModuleFieldSummary,
             models::PartitionKind::Field,
         ),
         TypedSubstateKey::TypeInfo(TypedTypeInfoSubstateKey::TypeInfoField(
@@ -347,8 +374,14 @@ pub fn to_api_substate_id(
             SubstateType::AccountAuthorizedDepositorEntry,
             models::PartitionKind::KeyValue,
         ),
+        TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccountLocker(
+            AccountLockerTypedSubstateKey::AccountClaimsKeyValueEntry(_),
+        )) => (
+            SubstateType::AccountLockerAccountClaimsEntry,
+            models::PartitionKind::KeyValue,
+        ),
         TypedSubstateKey::MainModule(TypedMainModuleSubstateKey::AccessController(
-            AccessControllerTypedSubstateKey::Field(AccessControllerField::State),
+            AccessControllerV2TypedSubstateKey::Field(AccessControllerV2Field::State),
         )) => (
             SubstateType::AccessControllerFieldState,
             models::PartitionKind::Field,
@@ -440,6 +473,7 @@ pub fn to_api_substate_id(
 
     let entity_module = match typed_substate_key {
         TypedSubstateKey::BootLoader(_) => models::EntityModule::BootLoader,
+        TypedSubstateKey::ProtocolUpdateStatus(_) => models::EntityModule::ProtocolUpdateStatus,
         TypedSubstateKey::TypeInfo(_) => models::EntityModule::TypeInfo,
         TypedSubstateKey::RoleAssignmentModule(_) => models::EntityModule::RoleAssignment,
         TypedSubstateKey::RoyaltyModule(_) => models::EntityModule::Royalty,
@@ -590,16 +624,23 @@ pub fn to_api_object_module_partition_kind(
                 AccessControllerPartitionOffset::Field => models::PartitionKind::Field,
             }
         }
-        EntityType::GlobalVirtualSecp256k1Account
-        | EntityType::GlobalVirtualEd25519Account
+        EntityType::GlobalPreallocatedSecp256k1Account
+        | EntityType::GlobalPreallocatedEd25519Account
         | EntityType::GlobalAccount => match AccountPartitionOffset::try_from(partition_offset)? {
             AccountPartitionOffset::Field => models::PartitionKind::Field,
             AccountPartitionOffset::ResourceVaultKeyValue => models::PartitionKind::KeyValue,
             AccountPartitionOffset::ResourcePreferenceKeyValue => models::PartitionKind::KeyValue,
             AccountPartitionOffset::AuthorizedDepositorKeyValue => models::PartitionKind::KeyValue,
         },
-        EntityType::GlobalVirtualSecp256k1Identity
-        | EntityType::GlobalVirtualEd25519Identity
+        EntityType::GlobalAccountLocker => {
+            match AccountLockerPartitionOffset::try_from(partition_offset)? {
+                AccountLockerPartitionOffset::AccountClaimsKeyValue => {
+                    models::PartitionKind::KeyValue
+                }
+            }
+        }
+        EntityType::GlobalPreallocatedSecp256k1Identity
+        | EntityType::GlobalPreallocatedEd25519Identity
         | EntityType::GlobalIdentity => Err(())?, // Identity doesn't have any substates
         EntityType::InternalFungibleVault => {
             match FungibleVaultPartitionOffset::try_from(partition_offset)? {

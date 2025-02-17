@@ -67,7 +67,6 @@ package com.radixdlt.integration.steady_state.simulation.consensus_ledger_epochs
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.EpochNodeWeightMapping;
-import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.harness.simulation.NetworkDroppers;
 import com.radixdlt.harness.simulation.NetworkLatencies;
 import com.radixdlt.harness.simulation.NetworkOrdering;
@@ -112,9 +111,7 @@ public class OneNodeNeverSendEpochResponseTest {
                   ConsensusConfig.of(1000),
                   FunctionalRadixNodeModule.LedgerConfig.stateComputerMockedSync(
                       StateComputerConfig.mockedWithEpochs(
-                          Round.of(4),
-                          EpochNodeWeightMapping.constant(randomEpochToNodesMapper()),
-                          new StateComputerConfig.MockedMempoolConfig.NoMempool()))))
+                          4, EpochNodeWeightMapping.constant(randomEpochToNodesMapper())))))
           .addTestModules(
               ConsensusMonitors.safety(),
               ConsensusMonitors.liveness(5, TimeUnit.SECONDS),

@@ -1,7 +1,4 @@
-use crate::engine_prelude::*;
-use ::transaction::model::PrepareError; // disambiguation needed because of a wide prelude
-
-use crate::{LedgerHeader, RoundHistory, ValidatorId};
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct RoundUpdateTransactionV1 {
@@ -149,9 +146,11 @@ impl PreparedRoundUpdateTransactionV1 {
                 costing_parameters: TransactionCostingParameters {
                     tip_percentage: 0,
                     free_credit_in_xrd: Decimal::ZERO,
+                    abort_when_loan_repaid: false,
                 },
                 pre_allocated_addresses: vec![],
             },
+            true,
         )
     }
 }
@@ -226,7 +225,7 @@ impl LeaderRoundCountersBuilder {
 }
 
 /// A set of counters of rounds led by a concrete leader.
-#[derive(Default, Clone, Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(Default, Clone, Debug, ScryptoSbor)]
 pub struct LeaderRoundCounter {
     pub successful: usize,
     pub missed_by_fallback: usize,

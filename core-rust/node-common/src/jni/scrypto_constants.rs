@@ -62,12 +62,7 @@
  * permissions under this License.
  */
 
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
-
-use crate::engine_prelude::*;
-use crate::java::utils::jni_sbor_coded_call;
+use crate::jni_prelude::*;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getXrdResourceAddress(
@@ -103,6 +98,24 @@ extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getValidatorOwnerToke
     request_payload: jbyteArray,
 ) -> jbyteArray {
     jni_sbor_coded_call(&env, request_payload, |_: ()| VALIDATOR_OWNER_BADGE)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getLockerPackageAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| LOCKER_PACKAGE)
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_rev2_ScryptoConstants_getResourcePackage(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(&env, request_payload, |_: ()| RESOURCE_PACKAGE)
 }
 
 pub fn export_extern_functions() {}

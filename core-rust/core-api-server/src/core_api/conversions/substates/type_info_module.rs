@@ -4,23 +4,6 @@ use crate::core_api::models;
 
 use crate::engine_prelude::*;
 
-pub fn to_api_vm_boot_substate(
-    _context: &MappingContext,
-    _state_mapping_lookups: &StateMappingLookups,
-    substate: &VmBoot,
-) -> Result<models::Substate, MappingError> {
-    let value = match substate {
-        VmBoot::V1 {
-            scrypto_v1_minor_version,
-        } => models::BootLoaderModuleFieldVmBootValue::new(*scrypto_v1_minor_version as i64),
-    };
-
-    Ok(models::Substate::BootLoaderModuleFieldVmBootSubstate {
-        is_locked: true,
-        value: Box::new(value),
-    })
-}
-
 pub fn to_api_type_info_substate(
     context: &MappingContext,
     state_mapping_lookups: &StateMappingLookups,

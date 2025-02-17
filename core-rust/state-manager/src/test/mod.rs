@@ -1,18 +1,44 @@
-use crate::engine_prelude::*;
-use crate::query::TransactionIdentifierLoader;
-use crate::traits::QueryableProofStore;
-use crate::{
-    CommitRequest, CommitSummary, LedgerHeader, LedgerProof, LedgerProofOrigin, PrepareRequest,
-    PrepareResult, RoundHistory, StateManager,
-};
+use crate::prelude::*;
+use node_common::scheduler::Scheduler;
 
-/// A bunch of test utils
+// A bunch of test utils
+
+pub fn create_bootstrapped_state_manager_with_rounds_per_epoch(
+    config: StateManagerConfig,
+    rounds_per_epoch: u64,
+) -> StateManager {
+    let epoch_change_condition = EpochChangeCondition {
+        min_round_count: rounds_per_epoch,
+        max_round_count: rounds_per_epoch,
+        target_duration_millis: 100000,
+    };
+    let consensus_config =
+        ConsensusManagerConfig::test_default().with_epoch_change_condition(epoch_change_condition);
+    let babylon_settings =
+        BabylonSettings::test_default().with_consensus_manager_config(consensus_config);
+    create_bootstrapped_state_manager(config, babylon_settings)
+}
+
+pub fn create_bootstrapped_state_manager(
+    config: StateManagerConfig,
+    babylon_settings: BabylonSettings,
+) -> StateManager {
+    let genesis_data = JavaGenesisData::new_from(babylon_settings, vec![]);
+    StateManager::new(
+        config,
+        None,
+        Arc::new(FixedGenesisDataResolver::new(genesis_data)),
+        &LockFactory::new("testing"),
+        &MetricRegistry::new(),
+        &Scheduler::new("testing"),
+    )
+}
 
 pub fn commit_round_updates_until_epoch(state_manager: &StateManager, epoch: Epoch) {
     loop {
         let (prepare_result, _) = prepare_and_commit_round_update(state_manager);
-        if let Some(next_protocol_version) = prepare_result.next_protocol_version {
-            state_manager.apply_protocol_update(&next_protocol_version);
+        if prepare_result.next_protocol_version.is_some() {
+            state_manager.apply_known_pending_protocol_updates();
         }
         if let Some(next_epoch) = prepare_result.next_epoch {
             if next_epoch.epoch == epoch {
@@ -42,7 +68,6 @@ pub fn prepare_and_commit_round_update(
         .address;
 
     let latest_non_protocol_update_proof = match &latest_proof.origin {
-        LedgerProofOrigin::Genesis { .. } => &latest_proof,
         LedgerProofOrigin::Consensus { .. } => &latest_proof,
         LedgerProofOrigin::ProtocolUpdate { .. } => &latest_epoch_proof,
     };
@@ -64,7 +89,7 @@ pub fn prepare_and_commit_round_update(
             )
         };
 
-    let prepare_result = state_manager.state_computer.prepare(PrepareRequest {
+    let prepare_result = state_manager.preparator.prepare(PrepareRequest {
         committed_ledger_hashes: top_identifiers.resultant_ledger_hashes,
         ancestor_transactions: vec![],
         ancestor_ledger_hashes: top_identifiers.resultant_ledger_hashes,
@@ -86,7 +111,7 @@ pub fn prepare_and_commit_round_update(
         .collect();
 
     let commit_result = state_manager
-        .state_computer
+        .committer
         .commit(CommitRequest {
             transactions: txns_to_commit,
             proof: LedgerProof {

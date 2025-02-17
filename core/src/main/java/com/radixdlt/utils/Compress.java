@@ -77,6 +77,10 @@ public class Compress {
     throw new UnsupportedOperationException("Utility class should not be instantiated.");
   }
 
+  public static WrappedByteArray compress(WrappedByteArray input) throws IOException {
+    return new WrappedByteArray(compress(input.value()));
+  }
+
   /**
    * Compresses input byte array into output byte array.
    *
@@ -91,6 +95,10 @@ public class Compress {
       os.flush();
       return out.toByteArray();
     }
+  }
+
+  public static WrappedByteArray uncompress(WrappedByteArray input) throws IOException {
+    return new WrappedByteArray(uncompress(input.value()));
   }
 
   /**

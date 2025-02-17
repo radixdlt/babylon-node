@@ -1,12 +1,8 @@
-use std::any::type_name;
-
-use crate::engine_prelude::*;
-use state_manager::store::traits::scenario::ScenarioSequenceNumber;
-use state_manager::StateVersion;
+use crate::prelude::*;
+use chrono::prelude::*;
+use std::ops::RangeInclusive;
 
 use crate::core_api::models;
-
-use super::*;
 
 // See the guidance in the top of the core-api-schema.yaml
 // These should be duplicated in the Open API schema along with the actual types
@@ -18,7 +14,7 @@ const MAX_API_ROUND: u64 = 10000000000;
 const MAX_API_STATE_VERSION: u64 = 100000000000000;
 const MIN_API_TIMESTAMP_MS: i64 = 0;
 const MAX_API_TIMESTAMP_MS: i64 = 100000000000000; // For comparison, current timestamp is 1673822843000 (about 1/100th the size)
-const MAX_API_GENESIS_SCENARIO_NUMBER: i32 = 1000000;
+const MAX_API_EXECUTED_SCENARIO_NUMBER: i32 = 1000000;
 const TEN_TRILLION: u64 = 10000000000;
 
 #[tracing::instrument(skip_all)]
@@ -124,17 +120,24 @@ pub fn to_api_index_as_i64(index: usize) -> Result<i64, MappingError> {
 }
 
 pub fn to_api_scenario_number(number: ScenarioSequenceNumber) -> Result<i32, MappingError> {
-    if number > MAX_API_GENESIS_SCENARIO_NUMBER as u32 {
+    if number > MAX_API_EXECUTED_SCENARIO_NUMBER as u32 {
         return Err(MappingError::IntegerError {
             message: format!(
-                "Genesis scenario sequence number must be <= {MAX_API_GENESIS_SCENARIO_NUMBER}"
+                "Executed scenario sequence number must be <= {MAX_API_EXECUTED_SCENARIO_NUMBER}"
             ),
         });
     }
     Ok(number as i32)
 }
 
-#[allow(dead_code)]
+pub fn to_api_i64_as_string(input: i64) -> String {
+    input.to_string()
+}
+
+pub fn to_api_usize_as_string(input: usize) -> String {
+    input.to_string()
+}
+
 pub fn to_api_u64_as_string(input: u64) -> String {
     input.to_string()
 }
@@ -150,40 +153,43 @@ pub fn to_unix_timestamp_ms(time: std::time::SystemTime) -> Result<i64, MappingE
     })
 }
 
-pub fn to_api_instant(instant: &Instant) -> Result<models::Instant, MappingError> {
-    to_api_instant_from_safe_timestamp(instant.seconds_since_unix_epoch.checked_mul(1000).ok_or(
-        MappingError::IntegerError {
-            message: "Timestamp must be representable as millis in i64".to_owned(),
-        },
-    )?)
-}
+/// A range of valid years accepted by the basic ISO 8601 (i.e. without extensions).
+///
+/// For those curious:
+/// - The beginning of this range is the start of a Gregorian calendar.
+/// - The end is simply the maximum fitting within 4 characters.
+const ISO_8601_YEAR_RANGE: RangeInclusive<i32> = 1583..=9999;
 
-pub fn to_api_instant_from_safe_timestamp(
-    timestamp_millis: i64,
-) -> Result<models::Instant, MappingError> {
-    if !(MIN_API_TIMESTAMP_MS..=MAX_API_TIMESTAMP_MS).contains(&timestamp_millis) {
-        return Err(MappingError::IntegerError {
-            message: format!("Timestamp ms must be >= 0 and <= {MAX_API_TIMESTAMP_MS}"),
-        });
+pub fn to_api_scrypto_instant(instant: &Instant) -> models::ScryptoInstant {
+    let timestamp_seconds = instant.seconds_since_unix_epoch;
+    let date_time = NaiveDateTime::from_timestamp_opt(timestamp_seconds, 0)
+        .filter(|date_time| ISO_8601_YEAR_RANGE.contains(&date_time.year()));
+    models::ScryptoInstant {
+        unix_timestamp_seconds: to_api_i64_as_string(timestamp_seconds),
+        date_time: date_time.map(to_second_precision_rfc3339_string),
     }
-    use chrono::prelude::*;
-    let date_time = NaiveDateTime::from_timestamp_millis(timestamp_millis)
-        .map(|d| {
-            DateTime::<Utc>::from_utc(d, Utc).to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
-        })
-        .ok_or_else(|| MappingError::IntegerError {
-            message: "Timestamp invalid when converted to DateTime".to_string(),
-        })?;
-
-    Ok(models::Instant {
-        unix_timestamp_ms: timestamp_millis,
-        date_time,
-    })
 }
 
-pub fn extract_api_state_version(
-    state_version_number: i64,
-) -> Result<StateVersion, ExtractionError> {
+pub fn to_api_clamped_instant_from_epoch_milli(timestamp_millis: i64) -> models::InstantMs {
+    let clamped_timestamp_millis =
+        timestamp_millis.clamp(MIN_API_TIMESTAMP_MS, MAX_API_TIMESTAMP_MS);
+    let date_time = NaiveDateTime::from_timestamp_millis(clamped_timestamp_millis)
+        .expect("it just got clamped to 100% supported range above");
+    models::InstantMs {
+        unix_timestamp_ms: clamped_timestamp_millis,
+        date_time: to_canonical_rfc3339_string(date_time),
+    }
+}
+
+fn to_canonical_rfc3339_string(date_time: NaiveDateTime) -> String {
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Millis, true)
+}
+
+fn to_second_precision_rfc3339_string(date_time: NaiveDateTime) -> String {
+    DateTime::<Utc>::from_utc(date_time, Utc).to_rfc3339_opts(SecondsFormat::Secs, true)
+}
+
+pub fn extract_state_version(state_version_number: i64) -> Result<StateVersion, ExtractionError> {
     if state_version_number < 1 {
         return Err(ExtractionError::InvalidInteger {
             message: "State version must be >= 1".to_owned(),
@@ -203,7 +209,7 @@ pub fn extract_api_state_version(
     ))
 }
 
-pub fn extract_api_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
+pub fn extract_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
     if epoch < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Epoch too low".to_owned(),
@@ -218,7 +224,7 @@ pub fn extract_api_epoch(epoch: i64) -> Result<Epoch, ExtractionError> {
 }
 
 #[allow(dead_code)]
-pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> {
+pub fn extract_u64_from_api_string(input: String) -> Result<u64, ExtractionError> {
     input
         .parse::<u64>()
         .map_err(|_| ExtractionError::InvalidInteger {
@@ -226,7 +232,7 @@ pub fn extract_api_u64_as_string(input: String) -> Result<u64, ExtractionError> 
         })
 }
 
-pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {
+pub fn extract_u32_from_api_i64(input: i64) -> Result<u32, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Is negative".to_owned(),
@@ -240,7 +246,7 @@ pub fn extract_api_u32_as_i64(input: i64) -> Result<u32, ExtractionError> {
     Ok(input.try_into().expect("Number invalid somehow"))
 }
 
-pub fn extract_api_u16_as_i32(input: i32) -> Result<u16, ExtractionError> {
+pub fn extract_u16_from_api_i32(input: i32) -> Result<u16, ExtractionError> {
     if input < 0 {
         return Err(ExtractionError::InvalidInteger {
             message: "Is negative".to_owned(),
@@ -254,88 +260,143 @@ pub fn extract_api_u16_as_i32(input: i32) -> Result<u16, ExtractionError> {
     Ok(input.try_into().expect("Number invalid somehow"))
 }
 
-pub trait PanickingOps: Sized {
-    fn add_or_panic(self, rhs: Self) -> Self;
-    fn sub_or_panic(self, rhs: Self) -> Self;
-    fn mul_or_panic(self, rhs: Self) -> Self;
-    fn div_or_panic(self, rhs: Self) -> Self;
-    fn neg_or_panic(self) -> Self;
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl<T> PanickingOps for T
-where
-    T: CheckedAdd<Output = T>
-        + CheckedSub<Output = T>
-        + CheckedDiv<Output = T>
-        + CheckedMul<Output = T>
-        + CheckedNeg<Output = T>
-        + Copy
-        + Display,
-{
-    fn add_or_panic(self, rhs: Self) -> Self {
-        op_or_panic(self, "+", rhs, self.checked_add(rhs))
-    }
-
-    fn sub_or_panic(self, rhs: Self) -> Self {
-        op_or_panic(self, "-", rhs, self.checked_sub(rhs))
-    }
-
-    fn mul_or_panic(self, rhs: Self) -> Self {
-        op_or_panic(self, "*", rhs, self.checked_mul(rhs))
-    }
-
-    fn div_or_panic(self, rhs: Self) -> Self {
-        op_or_panic(self, "/", rhs, self.checked_div(rhs))
-    }
-
-    fn neg_or_panic(self) -> Self {
-        if let Some(result) = self.checked_neg() {
-            result
-        } else {
-            panic!("result of -{} does not fit in {}", self, type_name::<T>());
-        }
-    }
-}
-
-pub trait PanickingSumIterator<E> {
-    fn sum_or_panic(self) -> E;
-}
-
-impl<T, E> PanickingSumIterator<E> for T
-where
-    T: Iterator<Item = E>,
-    E: Default + CheckedAdd<Output = E> + Copy + Display,
-{
-    fn sum_or_panic(self) -> E {
-        let mut result = E::default();
-        for (index, element) in self.enumerate() {
-            let sum = result.checked_add(element);
-            if let Some(sum) = sum {
-                result = sum;
-            } else {
-                panic!(
-                    "result of accumulating {}. element ({} + {}) does not fit in {}",
-                    index,
-                    result,
-                    element,
-                    type_name::<T>()
-                );
+    #[test]
+    fn api_scrypto_instant_supports_full_i64_range() {
+        // Sanity check (epoch):
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(0)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "0".to_string(),
+                date_time: Some("1970-01-01T00:00:00Z".to_string()),
             }
-        }
-        result
-    }
-}
+        );
 
-fn op_or_panic<T: Display>(left: T, op: &str, right: T, result: Option<T>) -> T {
-    if let Some(result) = result {
-        result
-    } else {
-        panic!(
-            "result of {} {} {} does not fit in {}",
-            left,
-            op,
-            right,
-            type_name::<T>()
+        // Slightly positive and negative:
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(1)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "1".to_string(),
+                date_time: Some("1970-01-01T00:00:01Z".to_string()),
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(-1)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-1".to_string(),
+                date_time: Some("1969-12-31T23:59:59Z".to_string()),
+            }
+        );
+
+        // The extremes of ISO8601:
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(253402300799)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "253402300799".to_string(),
+                date_time: Some("9999-12-31T23:59:59Z".to_string()),
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(-12212553600)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-12212553600".to_string(),
+                date_time: Some("1583-01-01T00:00:00Z".to_string()),
+            }
+        );
+
+        // Slightly outside the extremes of ISO8601:
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(253402300800)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "253402300800".to_string(),
+                date_time: None,
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(-12212553601)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-12212553601".to_string(),
+                date_time: None,
+            }
+        );
+
+        // The extremes of i64:
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(i64::MAX)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "9223372036854775807".to_string(),
+                date_time: None,
+            }
+        );
+        assert_eq!(
+            to_api_scrypto_instant(&Instant::new(i64::MIN)),
+            models::ScryptoInstant {
+                unix_timestamp_seconds: "-9223372036854775808".to_string(),
+                date_time: None,
+            }
+        );
+    }
+
+    #[test]
+    fn to_api_clamped_instant_from_epoch_milli_supports_full_i64_range() {
+        // Sanity check (epoch):
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(0),
+            models::InstantMs {
+                unix_timestamp_ms: 0,
+                date_time: "1970-01-01T00:00:00.000Z".to_string(),
+            }
+        );
+
+        // Slightly positive and negative:
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(1),
+            models::InstantMs {
+                unix_timestamp_ms: 1,
+                date_time: "1970-01-01T00:00:00.001Z".to_string(),
+            }
+        );
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(-1),
+            models::InstantMs {
+                unix_timestamp_ms: 0, // this is the reason for "clamped" in the name
+                date_time: "1970-01-01T00:00:00.000Z".to_string(),
+            }
+        );
+
+        // Our arbitrary 10^14 maximum, and what happens above it:
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(100000000000000),
+            models::InstantMs {
+                unix_timestamp_ms: 100000000000000,
+                date_time: "5138-11-16T09:46:40.000Z".to_string(),
+            }
+        );
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(100000000000001),
+            models::InstantMs {
+                unix_timestamp_ms: 100000000000000, // clamped as expected
+                date_time: "5138-11-16T09:46:40.000Z".to_string(),
+            }
+        );
+
+        // The extremes of i64:
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(i64::MAX),
+            models::InstantMs {
+                unix_timestamp_ms: 100000000000000,
+                date_time: "5138-11-16T09:46:40.000Z".to_string(),
+            }
+        );
+        assert_eq!(
+            to_api_clamped_instant_from_epoch_milli(i64::MIN),
+            models::InstantMs {
+                unix_timestamp_ms: 0,
+                date_time: "1970-01-01T00:00:00.000Z".to_string(),
+            }
         );
     }
 }

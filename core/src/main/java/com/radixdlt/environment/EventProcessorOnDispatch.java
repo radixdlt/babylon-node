@@ -64,32 +64,24 @@
 
 package com.radixdlt.environment;
 
-import java.util.Objects;
+import com.radixdlt.consensus.event.LocalEvent;
 import java.util.Optional;
 
 /**
- * A processor which is to process an event synchronously at time of dispatch
+ * A processor which is to process a local event synchronously at time of dispatch.
  *
  * @param <T> the class of the event
  */
-public final class EventProcessorOnDispatch<T> {
-  private final Class<T> eventClass;
-  private final EventProcessor<T> processor;
-
-  public EventProcessorOnDispatch(Class<T> eventClass, EventProcessor<T> processor) {
-    this.eventClass = Objects.requireNonNull(eventClass);
-    this.processor = Objects.requireNonNull(processor);
-  }
-
-  public <U> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
+public record EventProcessorOnDispatch<T extends LocalEvent>(
+    Class<T> eventClass, EventProcessor<T> processor) {
+  public <U extends LocalEvent> Optional<EventProcessor<U>> getProcessor(Class<U> c) {
     if (c.equals(eventClass)) {
-      return Optional.of((EventProcessor<U>) processor);
+      @SuppressWarnings("unchecked")
+      var eventProcessor = (EventProcessor<U>) processor;
+
+      return Optional.of(eventProcessor);
     }
 
     return Optional.empty();
-  }
-
-  public Class<T> getEventClass() {
-    return eventClass;
   }
 }

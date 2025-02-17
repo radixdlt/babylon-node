@@ -72,10 +72,11 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.event.RemoteEvent;
 import com.radixdlt.consensus.sync.GetVerticesErrorResponse;
 import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.consensus.sync.GetVerticesResponse;
-import com.radixdlt.environment.rx.RemoteEvent;
+import com.radixdlt.environment.rx.IncomingEvent;
 import com.radixdlt.environment.rx.RxRemoteDispatcher;
 import com.radixdlt.environment.rx.RxRemoteEnvironment;
 import com.radixdlt.mempool.MempoolAdd;
@@ -273,39 +274,44 @@ public final class MessagingModule extends AbstractModule {
       MessageCentralPeerDiscovery messageCentralPeerDiscovery) {
     return new RxRemoteEnvironment() {
       @Override
-      public <T> Flowable<RemoteEvent<NodeId, T>> remoteEvents(Class<T> messageType) {
+      public <T extends RemoteEvent> Flowable<IncomingEvent<NodeId, T>> remoteEvents(
+          Class<T> messageType) {
         if (messageType.equals(Vote.class)) {
-          return messageCentralBFT.remoteVotes().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralBFT.remoteVotes().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(Proposal.class)) {
-          return messageCentralBFT.remoteProposals().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralBFT.remoteProposals().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(GetVerticesRequest.class)) {
-          return messageCentralBFTSync.requests().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralBFTSync.requests().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(GetVerticesResponse.class)) {
-          return messageCentralBFTSync.responses().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralBFTSync.responses().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(GetVerticesErrorResponse.class)) {
-          return messageCentralBFTSync.errorResponses().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralBFTSync.errorResponses().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(MempoolAdd.class)) {
-          return messageCentralMempool.mempoolComands().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralMempool.mempoolComands().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(SyncRequest.class)) {
-          return messageCentralLedgerSync.syncRequests().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralLedgerSync.syncRequests().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(SyncResponse.class)) {
-          return messageCentralLedgerSync.syncResponses().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralLedgerSync.syncResponses().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(StatusRequest.class)) {
-          return messageCentralLedgerSync.statusRequests().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralLedgerSync.statusRequests().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(StatusResponse.class)) {
-          return messageCentralLedgerSync.statusResponses().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralLedgerSync.statusResponses().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(LedgerStatusUpdate.class)) {
           return messageCentralLedgerSync
               .ledgerStatusUpdates()
-              .map(m -> (RemoteEvent<NodeId, T>) m);
+              .map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(Ping.class)) {
-          return messageCentralPeerLiveness.pings().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralPeerLiveness.pings().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(Pong.class)) {
-          return messageCentralPeerLiveness.pongs().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralPeerLiveness.pongs().map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(GetPeers.class)) {
-          return messageCentralPeerDiscovery.getPeersEvents().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralPeerDiscovery
+              .getPeersEvents()
+              .map(m -> (IncomingEvent<NodeId, T>) m);
         } else if (messageType.equals(PeersResponse.class)) {
-          return messageCentralPeerDiscovery.peersResponses().map(m -> (RemoteEvent<NodeId, T>) m);
+          return messageCentralPeerDiscovery
+              .peersResponses()
+              .map(m -> (IncomingEvent<NodeId, T>) m);
         } else {
           throw new MessageNotSupported(messageType);
         }

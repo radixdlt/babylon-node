@@ -1,8 +1,4 @@
-use crate::core_api::*;
-use state_manager::store::traits::{
-    CommittedTransactionBundle, ConfigurableDatabase, IterableTransactionStore, QueryableProofStore,
-};
-use std::ops::Deref;
+use crate::prelude::*;
 
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_stream_transaction_outcomes(
@@ -12,7 +8,7 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
     assert_matching_network(&request.network, &state.network)?;
     let mapping_context = MappingContext::new(&state.network);
 
-    let from_state_version = extract_api_state_version(request.from_state_version)
+    let from_state_version = extract_state_version(request.from_state_version)
         .map_err(|err| err.into_response_error("from_state_version"))?;
 
     let limit: u64 = request

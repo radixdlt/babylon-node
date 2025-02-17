@@ -149,7 +149,7 @@ public final class RadixNodeBootstrapper {
             .map(Optional::get)
             .collect(ImmutableSet.toImmutableSet());
 
-    if (distinctGenesisHashes.size() == 0) {
+    if (distinctGenesisHashes.isEmpty()) {
       // No genesis was configured
       throw new RuntimeException(
           """

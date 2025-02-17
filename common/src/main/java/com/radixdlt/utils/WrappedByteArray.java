@@ -65,11 +65,19 @@
 package com.radixdlt.utils;
 
 import com.radixdlt.crypto.Hashable;
+import com.radixdlt.sbor.codec.CodecMap;
+import com.radixdlt.sbor.codec.CustomByteArrayCodec;
 import java.util.Arrays;
 import java.util.Base64;
 import org.bouncycastle.util.encoders.Hex;
 
 public record WrappedByteArray(byte[] value) implements Hashable {
+
+  public static void registerCodec(CodecMap codecMap) {
+    codecMap.register(
+        WrappedByteArray.class,
+        codecs -> new CustomByteArrayCodec<>(WrappedByteArray::value, WrappedByteArray::new));
+  }
 
   public static WrappedByteArray fromHexString(String hex) {
     return new WrappedByteArray(Hex.decode(hex));

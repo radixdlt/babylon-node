@@ -74,6 +74,7 @@ import com.radixdlt.consensus.sync.GetVerticesRequest;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.EventProcessorOnDispatch;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.environment.RemoteEventCapture;
 import com.radixdlt.p2p.NodeId;
 
 /** Module which manages node testing events for simulation */
@@ -92,10 +93,9 @@ public final class SimulationNodeEventsModule extends AbstractModule {
   }
 
   @ProvidesIntoSet
-  @ProcessOnDispatch
-  private EventProcessor<GetVerticesRequest> requestProcessor(
+  private RemoteEventCapture<GetVerticesRequest> getVerticesRequestCapture(
       @Self NodeId node, NodeEvents nodeEvents) {
-    return nodeEvents.processor(node, GetVerticesRequest.class);
+    return nodeEvents.remoteEventCapture(node, GetVerticesRequest.class);
   }
 
   @ProvidesIntoSet

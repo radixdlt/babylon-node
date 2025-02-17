@@ -62,9 +62,7 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::store::traits::*;
-use crate::{SubstateChangeAction, SubstateReference};
+use crate::prelude::*;
 use std::borrow::Borrow;
 use std::collections::hash_map::Entry;
 
@@ -262,7 +260,8 @@ impl NodeAncestryResolver {
                 }
             }
             for child in children {
-                if let Some(demoted_sets) = topmost_node_to_directly_owned_sets.remove(&child) {
+                if let Some(demoted_sets) = topmost_node_to_directly_owned_sets.swap_remove(&child)
+                {
                     other_node_to_directly_owned_sets.insert(child, demoted_sets);
                 } else {
                     other_node_to_directly_owned_sets.entry(child).or_default();

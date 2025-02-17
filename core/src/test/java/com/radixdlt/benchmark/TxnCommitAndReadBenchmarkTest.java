@@ -100,7 +100,7 @@ public final class TxnCommitAndReadBenchmarkTest extends DeterministicCoreApiTes
   @Test
   @Ignore("this test is meant to be run manually")
   public void test_txn_commit_and_read_time() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       final var stateComputer = test.getInstance(0, RustStateComputer.class);
 
       final var commitStopwatch = Stopwatch.createStarted();

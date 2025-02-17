@@ -65,6 +65,7 @@
 package com.radixdlt.ledger;
 
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.event.LocalEvent;
 import com.radixdlt.lang.Option;
 import com.radixdlt.statecomputer.ProtocolState;
 import com.radixdlt.statecomputer.commit.CommitSummary;
@@ -73,8 +74,9 @@ import java.util.List;
 
 public record LedgerUpdate(
     CommitSummary commitSummary,
-    LedgerProofBundle committedProof,
+    LedgerProofBundle committedProofBundle,
     Option<EpochChange> epochChange,
     ProtocolState resultantProtocolState,
     // Only used in tests
-    List<RawLedgerTransaction> committedNonProtocolUpdateTransactions) {}
+    List<RawLedgerTransaction> committedNonProtocolUpdateTransactions)
+    implements LocalEvent {}

@@ -71,13 +71,9 @@ import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
 import com.radixdlt.environment.*;
 import com.radixdlt.ledger.LedgerProofBundle;
-import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
-import com.radixdlt.p2p.PendingOutboundChannelsManager.PeerOutboundConnectionTimeout;
 import com.radixdlt.p2p.addressbook.AddressBook;
 import com.radixdlt.p2p.addressbook.AddressBookPeerControl;
-import com.radixdlt.p2p.addressbook.AddressBookPersistence;
-import com.radixdlt.p2p.addressbook.BerkeleyAddressBookStore;
 import com.radixdlt.p2p.discovery.SeedNodesConfigParser;
 import com.radixdlt.p2p.hostip.HostIp;
 import com.radixdlt.p2p.hostip.HostIpModule;
@@ -86,10 +82,8 @@ import com.radixdlt.p2p.transport.PeerOutboundBootstrapImpl;
 import com.radixdlt.p2p.transport.PeerServerBootstrap;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochIfValidatorsReady;
 import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactAtStartOfEpochUnconditionally;
-import com.radixdlt.serialization.Serialization;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition.EnactImmediatelyAfterEndOfProtocolUpdate;
 import com.radixdlt.statecomputer.ProtocolState;
-import com.radixdlt.store.BerkeleyDbDefaults;
-import com.radixdlt.store.NodeStorageLocation;
 import com.radixdlt.utils.properties.RuntimeProperties;
 
 public final class P2PModule extends AbstractModule {
@@ -112,7 +106,6 @@ public final class P2PModule extends AbstractModule {
     bind(PeersView.class).to(PeerManagerPeersView.class).in(Scopes.SINGLETON);
     bind(PeerControl.class).to(AddressBookPeerControl.class).in(Scopes.SINGLETON);
     bind(PeerOutboundBootstrap.class).to(PeerOutboundBootstrapImpl.class).in(Scopes.SINGLETON);
-    bind(AddressBookPersistence.class).to(BerkeleyAddressBookStore.class);
     bind(PeerServerBootstrap.class).in(Scopes.SINGLETON);
     bind(PendingOutboundChannelsManager.class).in(Scopes.SINGLETON);
     bind(PeerManager.class).in(Scopes.SINGLETON);
@@ -159,19 +152,6 @@ public final class P2PModule extends AbstractModule {
     return RadixNodeUri.fromPubKeyAndAddress(network.getId(), selfKey, host, port);
   }
 
-  @Provides
-  @Singleton
-  BerkeleyAddressBookStore addressBookStore(
-      Serialization serialization,
-      Metrics metrics,
-      @NodeStorageLocation String nodeStorageLocation) {
-    return new BerkeleyAddressBookStore(
-        serialization,
-        metrics,
-        nodeStorageLocation,
-        BerkeleyDbDefaults.createDefaultEnvConfigFromProperties(properties));
-  }
-
   /**
    * A start processor that unbans all peers if the node is booting within enactment bounds of an
    * upcoming protocol update. It is likely that any banned peers have been banned because the node
@@ -186,7 +166,7 @@ public final class P2PModule extends AbstractModule {
         () -> {
           final var initialEpoch = latestProof.primaryProof().ledgerHeader().epoch().toLong();
           final var shouldClearAllBans =
-              initialProtocolState.pendingProtocolUpdates().stream()
+              initialProtocolState.pendingProtocolUpdates().values().stream()
                   .anyMatch(
                       pendingProtocolUpdate ->
                           switch (pendingProtocolUpdate
@@ -204,6 +184,9 @@ public final class P2PModule extends AbstractModule {
                               // Clear if we're right before the update
                               yield initialEpoch == updateEpoch - 1;
                             }
+                            case EnactImmediatelyAfterEndOfProtocolUpdate ignored ->
+                            // Bans already cleared due to the preceding protocol update
+                            false;
                           });
           if (shouldClearAllBans) {
             addressBook.clearAllBans();

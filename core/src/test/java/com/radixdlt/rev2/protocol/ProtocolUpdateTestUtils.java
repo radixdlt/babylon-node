@@ -69,8 +69,10 @@ import static com.radixdlt.harness.predicates.NodesPredicate.allCommittedTransac
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.Streams;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.api.core.generated.models.*;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -85,8 +87,10 @@ import com.radixdlt.statecomputer.commit.NextEpoch;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.utils.PrivateKeys;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class ProtocolUpdateTestUtils {
   public static long runUntilNextEpoch(DeterministicTest test) {
@@ -121,7 +125,7 @@ public final class ProtocolUpdateTestUtils {
             .notaryIsSignatory(true)
             .prepare()
             .raw();
-    mempoolDispatcher.dispatch(MempoolAdd.create(signalReadinessTransaction));
+    mempoolDispatcher.dispatch(new MempoolAdd(List.of(signalReadinessTransaction)));
     test.runUntilState(allCommittedTransactionSuccess(signalReadinessTransaction));
     // Check that the state reader returns a correct value
     test.getNodeInjectors()
@@ -192,5 +196,45 @@ public final class ProtocolUpdateTestUtils {
                         epoch, readiness));
               }
             });
+  }
+
+  public static void verifyFlashTransactionReceipts(
+      List<CommittedTransaction> committedFlashTransactions) {
+    final var flashStateUpdates =
+        committedFlashTransactions.stream()
+            .map(txn -> (FlashLedgerTransaction) txn.getLedgerTransaction())
+            .map(FlashLedgerTransaction::getFlashedStateUpdates)
+            .toList();
+    final var receiptStateUpdates =
+        committedFlashTransactions.stream().map(txn -> txn.getReceipt().getStateUpdates()).toList();
+    Streams.forEachPair(
+        flashStateUpdates.stream(),
+        receiptStateUpdates.stream(),
+        (fromFlash, fromReceipt) -> {
+          // all deleted partitions specified by flash were really deleted:
+          assertEquals(fromFlash.getDeletedPartitions(), fromReceipt.getDeletedPartitions());
+
+          // substate values set by flash transactions end up as the receipt's created + updated:
+          final var setFromFlash =
+              fromFlash.getSetSubstates().stream()
+                  .collect(
+                      Collectors.toMap(
+                          FlashSetSubstate::getSubstateId, FlashSetSubstate::getValue));
+          final var setFromReceipt =
+              Streams.concat(
+                      fromReceipt.getCreatedSubstates().stream()
+                          .map(create -> Map.entry(create.getSubstateId(), create.getValue())),
+                      fromReceipt.getUpdatedSubstates().stream()
+                          .map(update -> Map.entry(update.getSubstateId(), update.getNewValue())))
+                  .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+          assertEquals(setFromFlash, setFromReceipt);
+
+          // and the same for deletes:
+          final var deletedFromReceipt =
+              fromReceipt.getDeletedSubstates().stream()
+                  .map(DeletedSubstate::getSubstateId)
+                  .toList();
+          assertEquals(fromFlash.getDeletedSubstates(), deletedFromReceipt);
+        });
   }
 }

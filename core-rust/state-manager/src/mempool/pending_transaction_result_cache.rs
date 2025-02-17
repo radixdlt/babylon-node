@@ -1,32 +1,34 @@
-use crate::engine_prelude::*;
-
-use crate::{
-    transaction::{CheckMetadata, StaticValidation},
-    CommittedUserTransactionIdentifiers, MempoolAddRejection, StateVersion,
-};
+use crate::prelude::*;
 
 use lru::LruCache;
 use std::{
-    collections::{hash_map::Entry, HashMap, HashSet},
+    collections::hash_map::Entry,
     fmt,
     num::NonZeroUsize,
-    ops::Add,
     time::{Duration, SystemTime},
 };
 
-pub type ExecutionRejectionReason = radix_engine::errors::RejectionReason;
+pub type ExecutionRejectionReason = RejectionReason;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MempoolRejectionReason {
-    AlreadyCommitted(AlreadyCommittedError),
+    TransactionIntentAlreadyCommitted(AlreadyCommittedError),
+    SubintentAlreadyFinalized(SubintentAlreadyFinalizedError),
     FromExecution(Box<ExecutionRejectionReason>),
     ValidationError(TransactionValidationError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AlreadyCommittedError {
-    pub notarized_transaction_hash: NotarizedTransactionHash,
     pub committed_state_version: StateVersion,
+    pub committed_notarized_transaction_hash: NotarizedTransactionHash,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SubintentAlreadyFinalizedError {
+    pub subintent_hash: SubintentHash,
+    pub committed_state_version: StateVersion,
+    pub committed_transaction_intent_hash: TransactionIntentHash,
     pub committed_notarized_transaction_hash: NotarizedTransactionHash,
 }
 
@@ -37,57 +39,64 @@ impl From<TransactionValidationError> for MempoolRejectionReason {
 }
 
 impl MempoolRejectionReason {
-    pub fn is_permanent_for_payload(&self) -> bool {
-        self.permanence().is_permanent_for_payload()
-    }
-
-    pub fn is_permanent_for_intent(&self) -> bool {
-        self.permanence().is_permanent_for_intent()
-    }
-
-    pub fn is_rejected_because_intent_already_committed(&self) -> bool {
+    pub fn is_from_execution(&self) -> bool {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(_) => true,
-            MempoolRejectionReason::FromExecution(rejection_reason) => match **rejection_reason {
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => false,
-                ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => false,
-                ExecutionRejectionReason::TransactionEpochNotYetValid { .. } => false,
-                ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => false,
-                ExecutionRejectionReason::IntentHashPreviouslyCommitted => true,
-                ExecutionRejectionReason::IntentHashPreviouslyCancelled => true,
-            },
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(_) => false,
+            MempoolRejectionReason::SubintentAlreadyFinalized(_) => false,
+            MempoolRejectionReason::FromExecution(_) => true,
             MempoolRejectionReason::ValidationError(_) => false,
         }
     }
 
-    pub fn already_committed_error(&self) -> Option<&AlreadyCommittedError> {
+    pub fn is_permanent_for_payload(&self, at_state: &AtState) -> bool {
+        if self.is_from_execution() && !at_state.can_mark_permanent_rejections() {
+            return false;
+        }
+        self.permanence().is_permanent_for_payload()
+    }
+
+    pub fn is_permanent_for_intent(&self, at_state: &AtState) -> bool {
+        if self.is_from_execution() && !at_state.can_mark_permanent_rejections() {
+            return false;
+        }
+        self.permanence().is_permanent_for_intent()
+    }
+
+    pub fn transaction_intent_already_committed_error(
+        &self,
+        at_state: &AtState,
+    ) -> Option<&AlreadyCommittedError> {
+        if !at_state.can_mark_permanent_rejections() {
+            return None;
+        }
+
         match self {
-            MempoolRejectionReason::AlreadyCommitted(error) => Some(error),
-            _ => None,
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(already_committed_error) => {
+                Some(already_committed_error)
+            }
+            MempoolRejectionReason::SubintentAlreadyFinalized(_) => None,
+            MempoolRejectionReason::FromExecution(_) => None,
+            MempoolRejectionReason::ValidationError(_) => None,
         }
     }
 
     pub fn permanence(&self) -> RejectionPermanence {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(_) => {
-                // This is permanent for the intent - because even other, non-committed transactions
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(_)
+            | MempoolRejectionReason::SubintentAlreadyFinalized(_) => {
+                // These are permanent for the intent - because even other, non-committed transactions
                 // of the same intent will fail with `ExecutionRejectionReason::IntentHashPreviouslyCommitted`
-                RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
             }
             MempoolRejectionReason::FromExecution(rejection_error) => match **rejection_error {
+                ExecutionRejectionReason::BootloadingError(_) => {
+                    RejectionPermanence::default_temporary()
+                }
                 ExecutionRejectionReason::SuccessButFeeLoanNotRepaid => {
-                    RejectionPermanence::Temporary {
-                        retry: RetrySettings::AfterDelay {
-                            base_delay: Duration::from_secs(2 * 60),
-                        },
-                    }
+                    RejectionPermanence::default_temporary()
                 }
                 ExecutionRejectionReason::ErrorBeforeLoanAndDeferredCostsRepaid(_) => {
-                    RejectionPermanence::Temporary {
-                        retry: RetrySettings::AfterDelay {
-                            base_delay: Duration::from_secs(2 * 60),
-                        },
-                    }
+                    RejectionPermanence::default_temporary()
                 }
                 ExecutionRejectionReason::TransactionEpochNotYetValid { valid_from, .. } => {
                     RejectionPermanence::Temporary {
@@ -95,13 +104,27 @@ impl MempoolRejectionReason {
                     }
                 }
                 ExecutionRejectionReason::TransactionEpochNoLongerValid { .. } => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                ExecutionRejectionReason::IntentHashPreviouslyCommitted => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                ExecutionRejectionReason::TransactionProposerTimestampNotYetValid {
+                    valid_from_inclusive,
+                    ..
+                } => RejectionPermanence::Temporary {
+                    retry: RetrySettings::FromProposerTimestamp {
+                        proposer_timestamp: valid_from_inclusive,
+                    },
+                },
+                ExecutionRejectionReason::TransactionProposerTimestampNoLongerValid { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                ExecutionRejectionReason::IntentHashPreviouslyCancelled => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                ExecutionRejectionReason::IntentHashPreviouslyCommitted(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
+                }
+                ExecutionRejectionReason::IntentHashPreviouslyCancelled(_) => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
+                }
+                ExecutionRejectionReason::SubintentsNotYetSupported => {
+                    RejectionPermanence::wait_for_protocol_update()
                 }
             },
             MempoolRejectionReason::ValidationError(validation_error) => match validation_error {
@@ -118,24 +141,18 @@ impl MempoolRejectionReason {
                     RejectionPermanence::PermanentForPayload
                 }
                 // The signature validity is a property of the payload, not the intent
-                TransactionValidationError::SignatureValidationError(_) => {
+                TransactionValidationError::SignatureValidationError { .. } => {
                     RejectionPermanence::PermanentForPayload
                 }
-                // This is permanent for the intent - because all intents share the same header
-                TransactionValidationError::HeaderValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                TransactionValidationError::TransactionVersionNotPermitted(_) => {
+                    RejectionPermanence::wait_for_protocol_update()
                 }
-                // This is permanent for the intent - because all intents share the same manifest
-                TransactionValidationError::IdValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                // The subintent structure is a property of the intent
+                TransactionValidationError::SubintentStructureError { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
-                // This is permanent for the intent - because all intents share the same manifest
-                TransactionValidationError::CallDataValidationError(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
-                }
-                // This is permanent for the intent - because all intents share the same manifest
-                TransactionValidationError::InvalidMessage(_) => {
-                    RejectionPermanence::PermanentForAnyPayloadWithThisIntent
+                TransactionValidationError::IntentValidationError { .. } => {
+                    RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
             },
         }
@@ -145,15 +162,33 @@ impl MempoolRejectionReason {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RejectionPermanence {
     PermanentForPayload,
-    PermanentForAnyPayloadWithThisIntent,
+    PermanentForAnyPayloadWithThisTransactionIntent,
     Temporary { retry: RetrySettings },
 }
 
 impl RejectionPermanence {
+    pub fn wait_for_protocol_update() -> Self {
+        // For want of something better, let's just wait for 5 minutes
+        Self::Temporary {
+            retry: RetrySettings::AfterDelay {
+                base_delay: Duration::from_secs(5 * 60),
+            },
+        }
+    }
+
+    pub fn default_temporary() -> Self {
+        // Wait 2 minutes in case things clear up
+        Self::Temporary {
+            retry: RetrySettings::AfterDelay {
+                base_delay: Duration::from_secs(2 * 60),
+            },
+        }
+    }
+
     pub fn is_permanent_for_payload(&self) -> bool {
         match self {
             RejectionPermanence::PermanentForPayload => true,
-            RejectionPermanence::PermanentForAnyPayloadWithThisIntent => true,
+            RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => true,
             RejectionPermanence::Temporary { .. } => false,
         }
     }
@@ -161,7 +196,7 @@ impl RejectionPermanence {
     pub fn is_permanent_for_intent(&self) -> bool {
         match self {
             RejectionPermanence::PermanentForPayload => false,
-            RejectionPermanence::PermanentForAnyPayloadWithThisIntent => true,
+            RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => true,
             RejectionPermanence::Temporary { .. } => false,
         }
     }
@@ -171,16 +206,26 @@ impl RejectionPermanence {
 pub enum RetrySettings {
     AfterDelay { base_delay: Duration },
     FromEpoch { epoch: Epoch },
+    FromProposerTimestamp { proposer_timestamp: Instant },
 }
 
-impl fmt::Display for MempoolRejectionReason {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolRejectionReason {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ScryptoValueDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
         match self {
-            MempoolRejectionReason::AlreadyCommitted(error) => {
+            MempoolRejectionReason::SubintentAlreadyFinalized(error) => {
+                write!(f, "Subintent already finalized: {error:?}")
+            }
+            MempoolRejectionReason::TransactionIntentAlreadyCommitted(error) => {
                 write!(f, "Already committed: {error:?}")
             }
             MempoolRejectionReason::FromExecution(rejection_error) => {
-                write!(f, "{rejection_error}")
+                rejection_error.contextual_format(f, context)
             }
             MempoolRejectionReason::ValidationError(validation_error) => {
                 write!(f, "Validation Error: {validation_error:?}")
@@ -202,7 +247,6 @@ impl fmt::Display for MempoolRejectionReason {
 /// the API can distinguish permanent rejections from non-permanent rejections.
 #[derive(Debug, Clone)]
 pub struct PendingTransactionRecord {
-    pub intent_hash: IntentHash,
     /// Only needs to be specified if the rejection isn't permanent
     pub intent_invalid_from_epoch: Option<Epoch>,
     pub latest_attempt: TransactionAttempt,
@@ -224,29 +268,23 @@ pub struct TransactionAttempt {
 
 impl TransactionAttempt {
     pub fn was_against_permanent_state(&self) -> bool {
-        match self.against_state {
-            AtState::Static => true,
-            AtState::Committed { .. } => true,
-            AtState::PendingPreparingVertices { .. } => false,
-        }
+        self.against_state.can_mark_permanent_rejections()
     }
 
     pub fn marks_permanent_rejection_for_payload(&self) -> bool {
-        if self.was_against_permanent_state() {
-            if let Some(rejection_reason) = &self.rejection {
-                return rejection_reason.is_permanent_for_payload();
-            }
+        if let Some(rejection_reason) = &self.rejection {
+            rejection_reason.is_permanent_for_payload(&self.against_state)
+        } else {
+            false
         }
-        false
     }
 
     pub fn marks_permanent_rejection_for_intent(&self) -> bool {
-        if self.was_against_permanent_state() {
-            if let Some(rejection_reason) = &self.rejection {
-                return rejection_reason.is_permanent_for_intent();
-            }
+        if let Some(rejection_reason) = &self.rejection {
+            rejection_reason.is_permanent_for_intent(&self.against_state)
+        } else {
+            false
         }
-        false
     }
 }
 
@@ -254,12 +292,42 @@ impl TransactionAttempt {
 pub enum AtState {
     // We might need this to be versioned by protocol update later...
     Static,
+    Specific(AtSpecificState),
+}
+
+impl AtState {
+    pub fn can_mark_permanent_rejections(&self) -> bool {
+        match self {
+            AtState::Static => true,
+            AtState::Specific(specific) => match specific {
+                AtSpecificState::Committed { .. } => true,
+                AtSpecificState::PendingPreparingVertices { .. } => false,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AtSpecificState {
     Committed {
         state_version: StateVersion,
     },
     PendingPreparingVertices {
         base_committed_state_version: StateVersion,
+        pending_transactions_root: TransactionTreeHash,
     },
+}
+
+impl AtSpecificState {
+    pub fn committed_version(&self) -> StateVersion {
+        match self {
+            Self::Committed { state_version } => *state_version,
+            Self::PendingPreparingVertices {
+                base_committed_state_version,
+                ..
+            } => *base_committed_state_version,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -270,14 +338,72 @@ pub enum RetryFrom {
     Whenever,
 }
 
-impl PendingTransactionRecord {
-    pub fn new(
-        intent_hash: IntentHash,
-        invalid_from_epoch: Option<Epoch>,
-        attempt: TransactionAttempt,
+impl RetryFrom {
+    fn exponential_backoff(
+        from: SystemTime,
+        base_delay: Duration,
+        exponent: f32,
+        multiplier_range: core::ops::Range<f32>,
     ) -> Self {
+        Self::calculated_or_never(|| {
+            let multiplier: f32 = 2.0_f32
+                .powf(exponent)
+                .clamp(multiplier_range.start, multiplier_range.end);
+            let delay = Duration::try_from_secs_f32(base_delay.as_secs_f32() * multiplier).ok()?;
+            Some(RetryFrom::FromTime(from.checked_add(delay)?))
+        })
+    }
+
+    fn after_fixed_delay(from: SystemTime, delay: Duration) -> Self {
+        Self::calculated_or_never(|| Some(RetryFrom::FromTime(from.checked_add(delay)?)))
+    }
+
+    fn after_instant(instant: Instant) -> Self {
+        let Instant {
+            seconds_since_unix_epoch,
+        } = instant;
+        Self::calculated_or_never(|| {
+            let unix_seconds = u64::try_from(seconds_since_unix_epoch).ok()?;
+            // Add one more second so we don't risk retrying before the timestamp
+            // on ledger has updated
+            let unix_seconds = unix_seconds.checked_add(1)?;
+            let at_time = SystemTime::UNIX_EPOCH.checked_add(Duration::from_secs(unix_seconds))?;
+            Some(RetryFrom::FromTime(at_time))
+        })
+    }
+
+    fn calculated_or_never(calculate: impl FnOnce() -> Option<Self>) -> Self {
+        calculate().unwrap_or(RetryFrom::Never)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PendingExecutedTransaction {
+    pub executable: ExecutableTransaction,
+    pub user_hashes: UserTransactionHashes,
+    pub latest_attempt_against_state: AtSpecificState,
+}
+
+impl PendingExecutedTransaction {
+    pub fn new(
+        executable: ExecutableTransaction,
+        user_hashes: UserTransactionHashes,
+        against_state: AtState,
+    ) -> Self {
+        let AtState::Specific(latest_attempt_against_state) = against_state else {
+            panic!("transaction must have been executed against some state")
+        };
+        Self {
+            executable,
+            user_hashes,
+            latest_attempt_against_state,
+        }
+    }
+}
+
+impl PendingTransactionRecord {
+    pub fn new(invalid_from_epoch: Option<Epoch>, attempt: TransactionAttempt) -> Self {
         let mut new_record = Self {
-            intent_hash,
             intent_invalid_from_epoch: invalid_from_epoch,
             first_tracked_timestamp: attempt.timestamp,
             latest_attempt: attempt.clone(),
@@ -336,12 +462,12 @@ impl PendingTransactionRecord {
     }
 
     /// Precondition:
-    /// * If check = CheckMetadata::Cached, the latest attempt must be a rejection
-    /// This precondition is met if the record/metadata come from a call using ForceRecalculation::IfCachedAsValid
+    /// * If `check == CheckMetadata::Cached`, the latest attempt must be a rejection.
+    ///   This precondition is met if the record/metadata come from a call using `ForceRecalculation::IfCachedAsValid`
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
-    ) -> Result<Box<ValidatedNotarizedTransactionV1>, MempoolAddRejection> {
+    ) -> Result<PendingExecutedTransaction, MempoolAddRejection> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
             return Err(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
@@ -366,18 +492,28 @@ impl PendingTransactionRecord {
             CheckMetadata::Cached => {
                 panic!("Precondition was not met - the result was cached, but the latest attempt was not a rejection")
             }
-            CheckMetadata::Fresh(StaticValidation::Valid(transaction)) => Ok(transaction),
+            CheckMetadata::Fresh(StaticValidation::Valid {
+                executable,
+                user_hashes,
+            }) => Ok(PendingExecutedTransaction::new(
+                executable,
+                user_hashes,
+                self.latest_attempt.against_state,
+            )),
             CheckMetadata::Fresh(StaticValidation::Invalid) => {
                 panic!("A statically invalid transaction should already have been handled in the above")
             }
         }
     }
 
-    pub fn most_applicable_status(&self) -> Option<&MempoolRejectionReason> {
+    pub fn most_applicable_status(&self) -> &TransactionAttempt {
         self.earliest_permanent_rejection
             .as_ref()
-            .and_then(|r| r.rejection.as_ref())
-            .or(self.latest_attempt.rejection.as_ref())
+            .unwrap_or(&self.latest_attempt)
+    }
+
+    pub fn most_applicable_rejection(&self) -> Option<&MempoolRejectionReason> {
+        self.most_applicable_status().rejection.as_ref()
     }
 
     /// This should be called after permanent rejection is set but before the counts are updated
@@ -400,18 +536,25 @@ impl PendingTransactionRecord {
                     RejectionPermanence::Temporary {
                         retry: RetrySettings::AfterDelay { base_delay },
                     } => {
-                        // Use exponential back-off.
-                        // Previous rejections increase the exponent, previous non-rejections decrease it by half as much
-                        let base: f32 = 2.0;
-                        let exponent: f32 = (previous_rejection_count as f32)
+                        // Previous rejections increase the exponent
+                        // and previous non-rejections decrease it by half as much
+                        let exponent = (previous_rejection_count as f32)
                             - ((previous_non_rejection_count as f32) / 2f32);
-                        let multiplier: f32 = base.powf(exponent);
-
-                        let delay = base_delay.mul_f32(multiplier).min(MAX_RECALCULATION_DELAY);
-
-                        RetryFrom::FromTime(attempt.timestamp.add(delay))
+                        // The resultant value is base_delay * multiplier where the multiplier
+                        // is 2^exponent and then clamped within this range
+                        let multiplier_range = 0.5f32..100f32;
+                        RetryFrom::exponential_backoff(
+                            attempt.timestamp,
+                            base_delay,
+                            exponent,
+                            multiplier_range,
+                        )
                     }
-                    _ => {
+                    RejectionPermanence::Temporary {
+                        retry: RetrySettings::FromProposerTimestamp { proposer_timestamp },
+                    } => RetryFrom::after_instant(proposer_timestamp),
+                    RejectionPermanence::PermanentForPayload
+                    | RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent => {
                         // If RejectionPermanence was Permanent, this has already been handled
                         return;
                     }
@@ -419,10 +562,9 @@ impl PendingTransactionRecord {
             }
             None => {
                 // Transaction was not rejected
-                // Use a flat delay to check it's still not rejected again soon (eg to catch a fee-vault now being out of money)
-                let delay = NON_REJECTION_RECALCULATION_DELAY;
-
-                RetryFrom::FromTime(attempt.timestamp.add(delay))
+                // Use a flat delay to check it's still not rejected again soon
+                // (e.g. to catch a fee-vault now being out of money)
+                RetryFrom::after_fixed_delay(attempt.timestamp, Duration::from_secs(120))
             }
         };
 
@@ -430,139 +572,244 @@ impl PendingTransactionRecord {
     }
 }
 
-const NON_REJECTION_RECALCULATION_DELAY: Duration = Duration::from_secs(120);
-const MAX_RECALCULATION_DELAY: Duration = Duration::from_secs(1000);
-
 pub struct PendingTransactionResultCache {
-    pending_transaction_records: LruCache<NotarizedTransactionHash, PendingTransactionRecord>,
-    intent_lookup: HashMap<IntentHash, HashSet<NotarizedTransactionHash>>,
-    recently_committed_intents: LruCache<IntentHash, CommittedIntentRecord>,
+    pending_transaction_records: LruCache<
+        NotarizedTransactionHash,
+        (
+            PendingTransactionRecord,
+            TransactionIntentHash,
+            Vec<SubintentHash>,
+        ),
+    >,
+    // INVARIANT: The `intent_lookup` and `subintent_lookup` are kept exactly in sync with
+    // pending_transaction_records, and provide, an inverse lookup from respectively:
+    // * The intent hash in the `PendingTransactionRecord` to the notarized hash
+    // * Any subintent hash in the `PendingTransactionRecord` to the notarized hash
+    intent_lookup: HashMap<TransactionIntentHash, HashSet<NotarizedTransactionHash>>,
+    subintent_lookup: HashMap<SubintentHash, HashSet<NotarizedTransactionHash>>,
+    recently_committed_intents: LruCache<TransactionIntentHash, CommittedIntentRecord>,
+    recently_finalized_subintents: LruCache<SubintentHash, CommittedSubintentRecord>,
 }
 
 impl PendingTransactionResultCache {
-    pub fn new(pending_txn_records_max_count: u32, committed_intents_max_size: u32) -> Self {
+    pub fn new(
+        pending_txn_records_max_count: NonZeroUsize,
+        committed_intents_max_size: NonZeroUsize,
+        committed_subintents_max_size: NonZeroUsize,
+    ) -> Self {
         PendingTransactionResultCache {
-            pending_transaction_records: LruCache::new(
-                NonZeroUsize::new(pending_txn_records_max_count as usize).unwrap(),
-            ),
+            pending_transaction_records: LruCache::new(pending_txn_records_max_count),
             intent_lookup: HashMap::new(),
-            recently_committed_intents: LruCache::new(
-                NonZeroUsize::new(committed_intents_max_size as usize).unwrap(),
-            ),
+            subintent_lookup: HashMap::new(),
+            recently_committed_intents: LruCache::new(committed_intents_max_size),
+            recently_finalized_subintents: LruCache::new(committed_subintents_max_size),
         }
     }
 
     /// Note - the invalid_from_epoch only needs to be provided if the attempt is not a permanent rejection
     pub fn track_transaction_result(
         &mut self,
-        intent_hash: IntentHash,
-        notarized_transaction_hash: NotarizedTransactionHash,
-        invalid_from_epoch: Option<Epoch>,
+        metadata: TransactionMetadata,
         attempt: TransactionAttempt,
     ) -> PendingTransactionRecord {
+        let TransactionMetadata {
+            user_transaction_hashes,
+            end_epoch_exclusive,
+        } = metadata;
         let existing_record = self
             .pending_transaction_records
-            .get_mut(&notarized_transaction_hash);
+            .get_mut(&user_transaction_hashes.notarized_transaction_hash);
 
-        if let Some(record) = existing_record {
+        let is_permanent_rejection = attempt.marks_permanent_rejection_for_intent();
+
+        if let Some((record, _, _)) = existing_record {
             record.track_attempt(attempt);
             return record.clone();
         }
 
-        let new = PendingTransactionRecord::new(intent_hash, invalid_from_epoch, attempt);
+        let new_record = PendingTransactionRecord::new(Some(end_epoch_exclusive), attempt);
+
+        // If it's a permanent rejection, then:
+        // - It could be statically invalid
+        let subintent_hashes_to_store = if is_permanent_rejection {
+            vec![]
+        } else {
+            user_transaction_hashes.non_root_subintent_hashes
+        };
+
+        self.handled_added(
+            user_transaction_hashes.transaction_intent_hash,
+            user_transaction_hashes.notarized_transaction_hash,
+            subintent_hashes_to_store.as_slice(),
+        );
+
+        let pending_record = (
+            new_record.clone(),
+            user_transaction_hashes.transaction_intent_hash,
+            subintent_hashes_to_store,
+        );
 
         // NB - removed is the item kicked out of the LRU cache if it's at capacity
-        let removed = self
-            .pending_transaction_records
-            .push(notarized_transaction_hash, new.clone());
+        let removed = self.pending_transaction_records.push(
+            user_transaction_hashes.notarized_transaction_hash,
+            pending_record,
+        );
 
-        self.handled_added(intent_hash, notarized_transaction_hash);
-        if let Some((p, r)) = removed {
-            self.handled_removed(p, r);
+        if let Some((notarized_transaction_hash, removed)) = removed {
+            let (_, transaction_intent_hash, subintent_hashes) = removed;
+            self.handled_removed(
+                notarized_transaction_hash,
+                transaction_intent_hash,
+                subintent_hashes,
+            );
         }
 
-        new
+        new_record
     }
 
-    pub fn track_committed_transactions(
+    pub fn handle_nullified_transaction_intent(
         &mut self,
         current_timestamp: SystemTime,
-        committed_transactions: Vec<CommittedUserTransactionIdentifiers>,
+        committed_transaction: &CommittedUserTransactionIdentifiers,
+        nullified_transaction_intent: TransactionIntentHash,
     ) {
-        for committed_transaction in committed_transactions {
-            let committed_intent_hash = committed_transaction.intent_hash;
-            let committed_notarized_transaction_hash =
-                committed_transaction.notarized_transaction_hash;
-            // Note - we keep the relevant statuses of all known payloads for the intent in the cache
-            // so that we can still serve status responses for them - we just ensure we mark them as rejected
-            self.recently_committed_intents.push(
-                committed_intent_hash,
-                CommittedIntentRecord {
-                    state_version: committed_transaction.state_version,
-                    notarized_transaction_hash: committed_notarized_transaction_hash,
-                    timestamp: current_timestamp,
-                },
-            );
-
-            if let Some(payload_hashes) = self.intent_lookup.get(&committed_intent_hash) {
-                for cached_payload_hash in payload_hashes {
-                    let record = self
-                        .pending_transaction_records
-                        .peek_mut(cached_payload_hash)
-                        .expect("Intent lookup out of sync with rejected payloads");
-
-                    // We even overwrite the record for transaction which got committed here
-                    // because this is a cache for pending transactions, and it can't be re-committed
-                    record.track_attempt(TransactionAttempt {
-                        rejection: Some(MempoolRejectionReason::AlreadyCommitted(
-                            AlreadyCommittedError {
-                                notarized_transaction_hash: *cached_payload_hash,
-                                committed_state_version: committed_transaction.state_version,
-                                committed_notarized_transaction_hash,
-                            },
-                        )),
-                        against_state: AtState::Committed {
-                            state_version: committed_transaction.state_version,
+        self.recently_committed_intents.push(
+            nullified_transaction_intent,
+            CommittedIntentRecord {
+                state_version: committed_transaction.state_version,
+                notarized_transaction_hash: committed_transaction.notarized_transaction_hash,
+                timestamp: current_timestamp,
+            },
+        );
+        let nullified_records = self.intent_lookup.get(&nullified_transaction_intent);
+        if let Some(nullified_records) = nullified_records {
+            for rejected_transaction_hash in nullified_records {
+                let attempt = TransactionAttempt {
+                    rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
+                        AlreadyCommittedError {
+                            committed_state_version: committed_transaction.state_version,
+                            committed_notarized_transaction_hash: committed_transaction
+                                .notarized_transaction_hash,
                         },
-                        timestamp: current_timestamp,
-                    })
-                }
+                    )),
+                    against_state: AtState::Specific(AtSpecificState::Committed {
+                        state_version: committed_transaction.state_version,
+                    }),
+                    timestamp: current_timestamp,
+                };
+                self.pending_transaction_records
+                    .peek_mut(rejected_transaction_hash)
+                    .expect("intent lookup out of sync with rejected payloads")
+                    .0
+                    .track_attempt(attempt);
+            }
+        }
+    }
+
+    pub fn handle_nullified_subintent(
+        &mut self,
+        current_timestamp: SystemTime,
+        committed_transaction: &CommittedUserTransactionIdentifiers,
+        nullified_subintent: SubintentHash,
+    ) {
+        self.recently_finalized_subintents.push(
+            nullified_subintent,
+            CommittedSubintentRecord {
+                state_version: committed_transaction.state_version,
+                transaction_intent_hash: committed_transaction.transaction_intent_hash,
+                notarized_transaction_hash: committed_transaction.notarized_transaction_hash,
+                timestamp: current_timestamp,
+            },
+        );
+        let nullified_records = self.subintent_lookup.get(&nullified_subintent);
+        if let Some(nullified_records) = nullified_records {
+            for rejected_transaction_hash in nullified_records {
+                // We even overwrite the record for transaction which got committed here
+                // because this is a cache for pending transactions, and it can't be re-committed
+                let attempt = TransactionAttempt {
+                    rejection: Some(MempoolRejectionReason::SubintentAlreadyFinalized(
+                        SubintentAlreadyFinalizedError {
+                            subintent_hash: nullified_subintent,
+                            committed_transaction_intent_hash: committed_transaction
+                                .transaction_intent_hash,
+                            committed_state_version: committed_transaction.state_version,
+                            committed_notarized_transaction_hash: committed_transaction
+                                .notarized_transaction_hash,
+                        },
+                    )),
+                    against_state: AtState::Specific(AtSpecificState::Committed {
+                        state_version: committed_transaction.state_version,
+                    }),
+                    timestamp: current_timestamp,
+                };
+                self.pending_transaction_records
+                    .peek_mut(rejected_transaction_hash)
+                    .expect("subintent lookup out of sync with rejected payloads")
+                    .0
+                    .track_attempt(attempt);
             }
         }
     }
 
     pub fn get_pending_transaction_record(
         &mut self,
-        intent_hash: &IntentHash,
-        notarized_transaction_hash: &NotarizedTransactionHash,
+        user_hashes: UserTransactionHashes,
     ) -> Option<PendingTransactionRecord> {
-        if let Some(x) = self
+        if let Some((record, _, _)) = self
             .pending_transaction_records
-            .get(notarized_transaction_hash)
+            .get(&user_hashes.notarized_transaction_hash)
         {
-            return Some(x.clone());
+            return Some(record.clone());
         }
-        // We might not have a pending transaction record for this, but we know it has to be rejected due to the committed intent cache
-        // So let's create and return a transient committed record for it
-        if let Some(committed_intent_record) = self.recently_committed_intents.get(intent_hash) {
+        if let Some(committed_intent_record) = self
+            .recently_committed_intents
+            .get(&user_hashes.transaction_intent_hash)
+        {
+            // We might not have a pending transaction record for this, but we know it has to be rejected
+            // due to the committed intent cache - so let's create and return a transient committed record for it
             return Some(PendingTransactionRecord::new(
-                *intent_hash,
                 None,
                 TransactionAttempt {
-                    rejection: Some(MempoolRejectionReason::AlreadyCommitted(
+                    rejection: Some(MempoolRejectionReason::TransactionIntentAlreadyCommitted(
                         AlreadyCommittedError {
-                            notarized_transaction_hash: *notarized_transaction_hash,
                             committed_state_version: committed_intent_record.state_version,
                             committed_notarized_transaction_hash: committed_intent_record
                                 .notarized_transaction_hash,
                         },
                     )),
-                    against_state: AtState::Committed {
+                    against_state: AtState::Specific(AtSpecificState::Committed {
                         state_version: committed_intent_record.state_version,
-                    },
+                    }),
                     timestamp: committed_intent_record.timestamp,
                 },
             ));
+        }
+        for subintent_hash in user_hashes.non_root_subintent_hashes {
+            if let Some(committed_subintent_record) =
+                self.recently_finalized_subintents.get(&subintent_hash)
+            {
+                // We might not have a pending transaction record for this, but we know it has to be rejected
+                // due to the committed subintent cache - so let's create and return a transient committed record for it
+                return Some(PendingTransactionRecord::new(
+                    None,
+                    TransactionAttempt {
+                        rejection: Some(MempoolRejectionReason::SubintentAlreadyFinalized(
+                            SubintentAlreadyFinalizedError {
+                                subintent_hash,
+                                committed_transaction_intent_hash: committed_subintent_record
+                                    .transaction_intent_hash,
+                                committed_state_version: committed_subintent_record.state_version,
+                                committed_notarized_transaction_hash: committed_subintent_record
+                                    .notarized_transaction_hash,
+                            },
+                        )),
+                        against_state: AtState::Specific(AtSpecificState::Committed {
+                            state_version: committed_subintent_record.state_version,
+                        }),
+                        timestamp: committed_subintent_record.timestamp,
+                    },
+                ));
+            }
         }
 
         None
@@ -570,13 +817,13 @@ impl PendingTransactionResultCache {
 
     pub fn peek_all_known_payloads_for_intent(
         &self,
-        intent_hash: &IntentHash,
+        intent_hash: &TransactionIntentHash,
     ) -> HashMap<NotarizedTransactionHash, PendingTransactionRecord> {
         match self.intent_lookup.get(intent_hash) {
             Some(payload_hashes) => payload_hashes
                 .iter()
                 .map(|payload_hash| {
-                    let record = self
+                    let (record, _, _) = self
                         .pending_transaction_records
                         .peek(payload_hash)
                         .expect("Intent lookup out of sync with rejected payloads");
@@ -589,8 +836,9 @@ impl PendingTransactionResultCache {
 
     fn handled_added(
         &mut self,
-        intent_hash: IntentHash,
+        intent_hash: TransactionIntentHash,
         notarized_transaction_hash: NotarizedTransactionHash,
+        subintent_hashes: &[SubintentHash],
     ) {
         // Add the intent hash <-> payload hash lookup
         match self.intent_lookup.entry(intent_hash) {
@@ -601,15 +849,26 @@ impl PendingTransactionResultCache {
                 e.insert(HashSet::from([notarized_transaction_hash]));
             }
         }
+        // Add the subintent hash <-> payload hash lookup
+        for subintent_hash in subintent_hashes {
+            match self.subintent_lookup.entry(*subintent_hash) {
+                Entry::Occupied(mut e) => {
+                    e.get_mut().insert(notarized_transaction_hash);
+                }
+                Entry::Vacant(e) => {
+                    e.insert(HashSet::from([notarized_transaction_hash]));
+                }
+            }
+        }
     }
 
     fn handled_removed(
         &mut self,
         notarized_transaction_hash: NotarizedTransactionHash,
-        rejection_record: PendingTransactionRecord,
+        intent_hash: TransactionIntentHash,
+        subintent_hashes: Vec<SubintentHash>,
     ) {
         // Remove the intent hash <-> payload hash lookup
-        let intent_hash = rejection_record.intent_hash;
         match self.intent_lookup.entry(intent_hash) {
             Entry::Occupied(e) if e.get().len() == 1 => {
                 e.remove_entry();
@@ -625,6 +884,81 @@ impl PendingTransactionResultCache {
                 panic!("Invalid intent_lookup state");
             }
         }
+        for subintent_hash in subintent_hashes {
+            match self.subintent_lookup.entry(subintent_hash) {
+                Entry::Occupied(e) if e.get().len() == 1 => {
+                    e.remove_entry();
+                }
+                Entry::Occupied(mut e) if e.get().len() > 1 => {
+                    e.get_mut().remove(&notarized_transaction_hash);
+                }
+                Entry::Occupied(_) => {
+                    // num_hashes == 0
+                    panic!("Invalid subintent_lookup state");
+                }
+                Entry::Vacant(_) => {
+                    panic!("Invalid subintent_lookup state");
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TransactionMetadata {
+    pub user_transaction_hashes: UserTransactionHashes,
+    pub end_epoch_exclusive: Epoch,
+}
+
+impl TransactionMetadata {
+    pub fn read_from_user_executable(
+        executable: &ExecutableTransaction,
+        user_hashes: &UserTransactionHashes,
+    ) -> Self {
+        Self {
+            user_transaction_hashes: user_hashes.clone(),
+            end_epoch_exclusive: executable
+                .overall_epoch_range()
+                .expect("User executable transactions should have an epoch range")
+                .end_epoch_exclusive,
+        }
+    }
+
+    pub fn read_from_prepared(prepared: &PreparedUserTransaction) -> Self {
+        Self {
+            user_transaction_hashes: prepared.hashes(),
+            end_epoch_exclusive: match prepared {
+                #[allow(deprecated)]
+                PreparedUserTransaction::V1(prepared) => {
+                    prepared
+                        .signed_intent
+                        .intent
+                        .header
+                        .inner
+                        .end_epoch_exclusive
+                }
+                PreparedUserTransaction::V2(prepared) => {
+                    let transaction_intent = &prepared.signed_intent.transaction_intent;
+
+                    let root_intent_expiry_epoch = transaction_intent
+                        .root_intent_core
+                        .header
+                        .inner
+                        .end_epoch_exclusive;
+                    let non_root_intent_expiry_epochs = transaction_intent
+                        .non_root_subintents
+                        .subintents
+                        .iter()
+                        .map(|subintent| subintent.intent_core.header.inner.end_epoch_exclusive);
+
+                    // Unwrapping as we know it's non-empty
+                    std::iter::once(root_intent_expiry_epoch)
+                        .chain(non_root_intent_expiry_epochs)
+                        .min()
+                        .unwrap()
+                }
+            },
+        }
     }
 }
 
@@ -634,17 +968,24 @@ struct CommittedIntentRecord {
     timestamp: SystemTime,
 }
 
+struct CommittedSubintentRecord {
+    state_version: StateVersion,
+    transaction_intent_hash: TransactionIntentHash,
+    notarized_transaction_hash: NotarizedTransactionHash,
+    timestamp: SystemTime,
+}
+
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use radix_engine::system::system_modules::costing::{CostingError, FeeReserveError};
 
     fn user_payload_hash(nonce: u8) -> NotarizedTransactionHash {
         NotarizedTransactionHash::from(blake2b_256_hash([0, nonce]))
     }
 
-    fn intent_hash(nonce: u8) -> IntentHash {
-        IntentHash::from(blake2b_256_hash([1, nonce]))
+    fn intent_hash(nonce: u8) -> TransactionIntentHash {
+        TransactionIntentHash::from(blake2b_256_hash([1, nonce]))
     }
 
     #[test]
@@ -652,8 +993,7 @@ mod tests {
         let rejection_limit = 3;
         let recently_committed_intents_limit = 1;
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit, 1);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -676,31 +1016,29 @@ mod tests {
 
         let example_attempt_2 = TransactionAttempt {
             rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
+                ExecutionRejectionReason::BootloadingError(
+                    BootloadingError::FailedToApplyDeferredCosts(CostingError::FeeReserveError(
+                        FeeReserveError::Overflow,
+                    )),
+                ),
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: SystemTime::now(),
         };
 
         // Start by adding 3 payloads against first intent hash. These all fit in, but cache is full
         cache.track_transaction_result(
-            intent_hash_1,
-            payload_hash_1,
-            None,
+            transaction_metadata(intent_hash_1, payload_hash_1, Epoch::of(0)),
             example_attempt_1.clone(),
         );
         cache.track_transaction_result(
-            intent_hash_1,
-            payload_hash_2,
-            Some(Epoch::of(0)),
+            transaction_metadata(intent_hash_1, payload_hash_2, Epoch::of(0)),
             example_attempt_2.clone(),
         );
         cache.track_transaction_result(
-            intent_hash_1,
-            payload_hash_3,
-            None,
+            transaction_metadata(intent_hash_1, payload_hash_3, Epoch::of(0)),
             example_attempt_1.clone(),
         );
         assert_eq!(
@@ -712,9 +1050,7 @@ mod tests {
 
         // Now add another rejection - the first rejection (intent_1, payload_1, reason_1) should drop out
         cache.track_transaction_result(
-            intent_hash_2,
-            payload_hash_4,
-            None,
+            transaction_metadata(intent_hash_2, payload_hash_4, Epoch::of(0)),
             example_attempt_1.clone(),
         );
         assert_eq!(
@@ -756,14 +1092,15 @@ mod tests {
 
         // Reading transaction status should jump payload 2 back to the top of the cache
         // So (intent_1, payload_3, reason_1) and (intent_2, payload_4, reason_1) should drop out instead
-        cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2);
+        cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_2));
         cache.track_transaction_result(
-            intent_hash_3,
-            payload_hash_5,
-            None,
+            transaction_metadata(intent_hash_3, payload_hash_5, Epoch::of(0)),
             example_attempt_1.clone(),
         );
-        cache.track_transaction_result(intent_hash_3, payload_hash_6, None, example_attempt_1);
+        cache.track_transaction_result(
+            transaction_metadata(intent_hash_3, payload_hash_6, Epoch::of(0)),
+            example_attempt_1,
+        );
         assert_eq!(
             cache
                 .peek_all_known_payloads_for_intent(&intent_hash_1)
@@ -798,8 +1135,7 @@ mod tests {
         let recently_committed_intents_limit = 1;
         let now = SystemTime::now();
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit, 1);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -807,18 +1143,21 @@ mod tests {
         let intent_hash_1 = intent_hash(1);
         let intent_hash_2 = intent_hash(2);
 
-        cache.track_committed_transactions(
+        cache.handle_nullified_transaction_intent(
             now,
-            vec![CommittedUserTransactionIdentifiers {
+            &CommittedUserTransactionIdentifiers {
                 state_version: StateVersion::of(1),
-                intent_hash: intent_hash_1,
+                transaction_intent_hash: intent_hash_1,
                 notarized_transaction_hash: payload_hash_1,
-            }],
+            },
+            intent_hash_1,
         );
-        let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_1));
         assert!(record.is_some());
 
-        let record = cache.get_pending_transaction_record(&intent_hash_2, &payload_hash_2);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_2, payload_hash_2));
         assert!(record.is_none());
     }
 
@@ -828,11 +1167,10 @@ mod tests {
         let recently_committed_intents_limit = 1;
 
         let start = SystemTime::now();
-        let far_in_future = start.add(Duration::from_secs(u32::MAX as u64));
-        let little_in_future = start.add(Duration::from_secs(1));
+        let far_in_future = start + Duration::from_secs(u32::MAX as u64);
+        let little_in_future = start + Duration::from_secs(1);
 
-        let mut cache =
-            PendingTransactionResultCache::new(rejection_limit, recently_committed_intents_limit);
+        let mut cache = create_subject(rejection_limit, recently_committed_intents_limit, 1);
 
         let payload_hash_1 = user_payload_hash(1);
         let payload_hash_2 = user_payload_hash(2);
@@ -844,11 +1182,15 @@ mod tests {
 
         let attempt_with_temporary_rejection = TransactionAttempt {
             rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
-                ExecutionRejectionReason::SuccessButFeeLoanNotRepaid,
+                ExecutionRejectionReason::BootloadingError(
+                    BootloadingError::FailedToApplyDeferredCosts(CostingError::FeeReserveError(
+                        FeeReserveError::Overflow,
+                    )),
+                ),
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_rejection_until_epoch_10 = TransactionAttempt {
@@ -858,36 +1200,35 @@ mod tests {
                     current_epoch: Epoch::of(9),
                 },
             ))),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::of(10000),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_permanent_rejection = TransactionAttempt {
             rejection: Some(MempoolRejectionReason::ValidationError(
                 TransactionValidationError::TransactionTooLarge,
             )),
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
         let attempt_with_no_rejection = TransactionAttempt {
             rejection: None,
-            against_state: AtState::Committed {
+            against_state: AtState::Specific(AtSpecificState::Committed {
                 state_version: StateVersion::pre_genesis(),
-            },
+            }),
             timestamp: start,
         };
 
         // Permanent Rejection
         cache.track_transaction_result(
-            intent_hash_1,
-            payload_hash_1,
-            None,
+            transaction_metadata(intent_hash_1, payload_hash_1, Epoch::of(50)),
             attempt_with_permanent_rejection,
         );
-        let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_1);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_1));
         // Even far in future, a permanent rejection is still there and never ready for recalculation
         assert!(record.is_some());
         assert!(!record
@@ -896,20 +1237,20 @@ mod tests {
 
         // Temporary Rejection
         cache.track_transaction_result(
-            intent_hash_1,
-            payload_hash_2,
-            Some(Epoch::of(50)),
+            transaction_metadata(intent_hash_1, payload_hash_2, Epoch::of(50)),
             attempt_with_temporary_rejection,
         );
         // A little in future, a temporary rejection is not ready for recalculation
-        let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_2));
         assert!(record.is_some());
         assert!(!record
             .unwrap()
             .should_recalculate(Epoch::of(0), little_in_future));
 
         // Far in future, a temporary rejection is ready for recalculation
-        let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_2);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_2));
         assert!(record.is_some());
         assert!(record
             .unwrap()
@@ -917,21 +1258,21 @@ mod tests {
 
         // No rejection
         cache.track_transaction_result(
-            intent_hash_1,
-            payload_hash_3,
-            Some(Epoch::of(50)),
+            transaction_metadata(intent_hash_1, payload_hash_3, Epoch::of(50)),
             attempt_with_no_rejection,
         );
 
         // A little in future, a no-rejection result is not ready for recalculation
-        let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_3);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_3));
         assert!(record.is_some());
         assert!(!record
             .unwrap()
             .should_recalculate(Epoch::of(0), little_in_future));
 
         // Far in future, a no-rejection result is ready for recalculation
-        let record = cache.get_pending_transaction_record(&intent_hash_1, &payload_hash_3);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_1, payload_hash_3));
         assert!(record.is_some());
         assert!(record
             .unwrap()
@@ -939,14 +1280,13 @@ mod tests {
 
         // Temporary Rejection with recalculation from epoch 10
         cache.track_transaction_result(
-            intent_hash_2,
-            payload_hash_4,
-            Some(Epoch::of(50)),
+            transaction_metadata(intent_hash_2, payload_hash_4, Epoch::of(50)),
             attempt_with_rejection_until_epoch_10,
         );
 
         // Still at epoch 9, not yet ready for recalculation
-        let record = cache.get_pending_transaction_record(&intent_hash_2, &payload_hash_4);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_2, payload_hash_4));
         let current_epoch = Epoch::of(9);
         assert!(record.is_some());
         assert!(!record
@@ -954,11 +1294,82 @@ mod tests {
             .should_recalculate(current_epoch, little_in_future));
 
         // Now at epoch 10, now ready for recalculation
-        let record = cache.get_pending_transaction_record(&intent_hash_2, &payload_hash_4);
+        let record =
+            cache.get_pending_transaction_record(user_hashes(intent_hash_2, payload_hash_4));
         let current_epoch = Epoch::of(10);
         assert!(record.is_some());
         assert!(record
             .unwrap()
             .should_recalculate(current_epoch, little_in_future));
+    }
+
+    #[test]
+    fn track_transaction_result_does_not_panic_on_lots_of_failures() {
+        let mut cache = create_subject(1, 1, 1);
+
+        let metadata = transaction_metadata(intent_hash(1), user_payload_hash(1), Epoch::of(50));
+        let mut latest_attempt = SystemTime::now();
+
+        for _ in 0..100 {
+            cache.track_transaction_result(
+                metadata.clone(),
+                temporary_error_attempt(latest_attempt),
+            );
+            latest_attempt += Duration::from_secs(1);
+        }
+    }
+
+    fn temporary_error_attempt(attempt_timestamp: SystemTime) -> TransactionAttempt {
+        TransactionAttempt {
+            rejection: Some(MempoolRejectionReason::FromExecution(Box::new(
+                ExecutionRejectionReason::BootloadingError(
+                    BootloadingError::FailedToApplyDeferredCosts(CostingError::FeeReserveError(
+                        FeeReserveError::Overflow,
+                    )),
+                ),
+            ))),
+            against_state: AtState::Specific(AtSpecificState::Committed {
+                state_version: StateVersion::pre_genesis(),
+            }),
+            timestamp: attempt_timestamp,
+        }
+    }
+
+    fn transaction_metadata(
+        transaction_intent_hash: TransactionIntentHash,
+        notarized_transaction_hash: NotarizedTransactionHash,
+        end_epoch_exclusive: Epoch,
+    ) -> TransactionMetadata {
+        TransactionMetadata {
+            user_transaction_hashes: user_hashes(
+                transaction_intent_hash,
+                notarized_transaction_hash,
+            ),
+            end_epoch_exclusive,
+        }
+    }
+
+    fn user_hashes(
+        transaction_intent_hash: TransactionIntentHash,
+        notarized_transaction_hash: NotarizedTransactionHash,
+    ) -> UserTransactionHashes {
+        UserTransactionHashes {
+            transaction_intent_hash,
+            signed_transaction_intent_hash: SignedTransactionIntentHash::from_bytes([0; 32]),
+            notarized_transaction_hash,
+            non_root_subintent_hashes: vec![],
+        }
+    }
+
+    fn create_subject(
+        rejection_limit: usize,
+        recently_committed_intents_limit: usize,
+        recently_committed_subintents_limit: usize,
+    ) -> PendingTransactionResultCache {
+        PendingTransactionResultCache::new(
+            NonZeroUsize::new(rejection_limit).unwrap(),
+            NonZeroUsize::new(recently_committed_intents_limit).unwrap(),
+            NonZeroUsize::new(recently_committed_subintents_limit).unwrap(),
+        )
     }
 }

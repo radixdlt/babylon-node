@@ -101,7 +101,6 @@ dependencies {
     implementation project(':core')
     implementation project(':core-rust-bridge')
     implementation project(':common')
-    implementation project(':olympia-engine')
 
     implementation 'commons-cli:commons-cli'
     implementation "com.github.akarnokd:rxjava3-extensions"
@@ -178,7 +177,6 @@ task generateDevGenesis(type: Exec) {
     dependsOn ':core:jar'
     dependsOn ':common:jar'
     dependsOn ':core-rust-bridge:jar'
-    dependsOn ':olympia-engine:jar'
     group = "Execution"
     description = "Generate development genesis"
     environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
@@ -197,7 +195,6 @@ task generateGenesisFile(type: Exec) {
     dependsOn ':core:jar'
     dependsOn ':common:jar'
     dependsOn ':core-rust-bridge:jar'
-    dependsOn ':olympia-engine:jar'
     group = "Execution"
     description = "Generate development genesis"
     environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
@@ -252,5 +249,4 @@ task runP2pTests(type: JavaExec) {
     environment "LD_PRELOAD", "${project(':core-rust').projectDir}/target/debug/libcorerust.so"
     systemProperty "java.library.path", "${project(':core-rust').projectDir}/target/debug/"
     main = "com.radixdlt.p2ptest.LargeMessageTest"
-
 }

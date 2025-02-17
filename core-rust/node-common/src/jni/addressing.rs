@@ -62,12 +62,8 @@
  * permissions under this License.
  */
 
-use crate::engine_prelude::*;
-use crate::java::utils::jni_sbor_coded_call;
+use crate::jni_prelude::*;
 use bech32::{FromBase32, ToBase32, Variant};
-use jni::objects::JClass;
-use jni::sys::jbyteArray;
-use jni::JNIEnv;
 
 #[no_mangle]
 extern "system" fn Java_com_radixdlt_identifiers_Bech32mCoder_encodeAddress(
@@ -153,7 +149,25 @@ extern "system" fn Java_com_radixdlt_identifiers_Address_nativeVirtualAccountAdd
             // Note: the bytes may represent a non-existent point on a curve (an invalid public key) -
             // this is okay. We need to support this because there are such accounts on Olympia.
             let public_key = Secp256k1PublicKey(unchecked_public_key_bytes);
-            ComponentAddress::virtual_account_from_public_key(&public_key)
+            ComponentAddress::preallocated_account_from_public_key(&public_key)
+        },
+    )
+}
+
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_identifiers_Address_nativeVirtualIdentityAddress(
+    env: JNIEnv,
+    _class: JClass,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |unchecked_public_key_bytes: [u8; Secp256k1PublicKey::LENGTH]| {
+            // Note: the bytes may represent a non-existent point on a curve (an invalid public key) -
+            // this is okay. We need to support this because there are such accounts on Olympia.
+            let public_key = Secp256k1PublicKey(unchecked_public_key_bytes);
+            ComponentAddress::preallocated_identity_from_public_key(&public_key)
         },
     )
 }

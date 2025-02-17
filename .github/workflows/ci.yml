@@ -6,13 +6,30 @@ concurrency:
 
 on:
   pull_request:
-    # Runs on all PRs
+# Runs on all PRs
   push:
     branches:
       - develop
       - main
       - release\/*
 jobs:
+  phylum-analyze:
+    if: ${{ github.event.pull_request }}
+    uses: radixdlt/public-iac-resuable-artifacts/.github/workflows/phylum-analyze.yml@main
+    permissions:
+      id-token: write
+      pull-requests: write
+      contents: read
+      deployments: write
+    secrets:
+      phylum_api_key: ${{ secrets.PHYLUM_API_KEY }}
+    with:
+      phylum_pr_number: ${{ github.event.number }}
+      phylum_pr_name: ${{ github.head_ref }}
+      phylum_group_name: Protocol
+      phylum_project_id: 3f5b2c53-46bd-4f68-b050-5898f929002f
+      github_repository: ${{ github.repository }}
+      add_report_comment_to_pull_request: true
   snyk-scan-deps-licences:
     name: Snyk deps/licences scan
     runs-on: ubuntu-latest
@@ -31,6 +48,8 @@ jobs:
           secret_prefix: 'SNYK'
           secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
           parse_json: true
+      - name: Create .snyk file
+        run: echo "${{ vars.DOT_SNYK_FILE }}" > .snyk
       - name: Run Snyk to check for deps vulnerabilities
         uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
         with:
@@ -53,8 +72,11 @@ jobs:
           secret_prefix: 'SNYK'
           secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
           parse_json: true
+      - name: Create .snyk file
+        run: echo "${{ vars.DOT_SNYK_FILE }}" > .snyk
       - name: Run Snyk to check for code vulnerabilities
         uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
+        continue-on-error: true
         with:
           args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --severity-threshold=high
           command: code test
@@ -79,7 +101,7 @@ jobs:
       - name: Generate SBOM # check SBOM can be generated but nothing is done with it
         uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
         with:
-          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json --json-file-output sbom.json
+          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json > sbom.json
           command: sbom
   build:
     name: Unit tests and sonarqube
@@ -92,16 +114,8 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cache SonarCloud packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -122,6 +136,25 @@ jobs:
         env:
           RADIXDLT_LOG_LEVEL: error
         run: ./gradlew clean check jacocoTestReport --stacktrace --refresh-dependencies
+      - name: Install cargo-llvm-cov
+        uses: RDXWorks-actions/install-action@cargo-llvm-cov
+      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
+        with:
+          role_name: ${{ secrets.COMMON_SECRETS_ROLE_ARN }}
+          app_name: "babylon-node"
+          step_name: "codecoverage"
+          secret_prefix: "CODECOV"
+          secret_name: ${{ secrets.AWS_SECRET_NAME_CODECOV }}
+          parse_json: true
+      - name: Generate Code Coverage
+        run: cd core-rust && cargo llvm-cov --lcov --output-path lcov.info && cd ..
+      - name: Upload to codecov.io
+        uses: RDXWorks-actions/codecov-action@main
+        with:
+          fail_ci_if_error: true
+          file: ./core-rust/lcov.info
+          name: codecov-rust
+          flags: rust
       - name: DistZip
         run: ./gradlew distZip
       - name: Publish Java distZip
@@ -131,7 +164,7 @@ jobs:
           name: distZip
           retention-days: 7
       - uses: ./.github/actions/fetch-secrets
-        with: 
+        with:
           role_name: "${{ secrets.COMMON_SECRETS_ROLE_ARN }}"
           app_name: "babylon-node"
           step_name: "build"
@@ -152,14 +185,8 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cache Gradle packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -176,16 +203,8 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cache Gradle packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -194,7 +213,8 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run steady-state integration tests
         env:
-          RADIXDLT_LOG_LEVEL: warn
+          # Might be set to warn for debugging purposes. Warning, log file will be huge.
+          RADIXDLT_LOG_LEVEL: error
         run: ./gradlew clean runSteadyStateIntegrationTests --info --refresh-dependencies
   targeted-integration:
     name: Targeted integration tests
@@ -204,16 +224,8 @@ jobs:
         with:
           # Shallow clones should be disabled for a better relevancy of analysis
           fetch-depth: 0
-      - uses: RDXWorks-actions/rust-toolchain@master
-        with:
-          toolchain: stable
-      - name: Set up JDK 17
-        uses: RDXWorks-actions/setup-java@main
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: Install libclang-dev
-        run: sudo apt-get update -y && sudo apt-get install -y libclang-dev
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
       - name: Cache Gradle packages
         uses: RDXWorks-actions/cache@main
         with:
@@ -222,8 +234,44 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Run targeted integration tests
         env:
-          RADIXDLT_LOG_LEVEL: warn
+          # Might be set to warn for debugging purposes. Warning, log file will be huge.
+          RADIXDLT_LOG_LEVEL: error
         run: ./gradlew clean runTargetedIntegrationTests --info --refresh-dependencies --parallel
+  mesh-api-test-suite:
+    name: Run Mesh API tests
+    runs-on: selfhosted-ubuntu-22.04-16-cores
+    steps:
+      - uses: RDXWorks-actions/checkout@main
+        with:
+          # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+      - name: Cache Gradle packages
+        uses: RDXWorks-actions/cache@main
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
+      - name: Build Node
+        run: ./gradlew build
+      - name: Run Node in the background
+        env:
+          # This is to skip keygen step
+          RADIXDLT_NODE_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY=
+        run: |
+          echo "db.historical_substate_values.enable=true" >> core/default.config
+          ./gradlew :core:run --info &
+      - name: Wait for 2 minutes
+        run: sleep 2m
+      - name: Install mesh-cli
+        run: curl -sSfL https://raw.githubusercontent.com/coinbase/mesh-cli/master/scripts/install.sh | sh -s
+      - name: Run Data API tests
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:data
+      - name: Run Construction API tests
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:construction
+      - name: Run Coinbase-spec tests
+        run: ./bin/rosetta-cli --configuration-file core-rust/mesh-api-server/mesh-cli-configs/localnet.json check:spec
   cross-xwin:
     name: Cross compile to Windows
     runs-on: ubuntu-latest
@@ -231,14 +279,10 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 1
-      - uses: RDXWorks-actions/rust-toolchain@master
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
         with:
-          toolchain: stable
-          targets: x86_64-pc-windows-msvc
-      - name: Update clang version to 16
-        run: sudo apt remove clang-14 && sudo apt autoclean && sudo apt autoremove && wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && sudo ./llvm.sh 16 && sudo ls /usr/bin/ | grep clang && sudo ln -sf /usr/bin/clang-16 /usr/bin/clang && sudo ln -sf /usr/bin/clang++-16 /usr/bin/clang++ && sudo apt-get install -y libclang-dev llvm llvm-dev
-      - name: Install cargo-xwin
-        run: cargo install cargo-xwin
+          cross-compile-to-windows: "true"
       - name: cross compile to windows
         run: pushd core-rust; cargo xwin build --release --target x86_64-pc-windows-msvc
       - name: Publish corerust.dll

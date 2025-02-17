@@ -71,6 +71,8 @@ import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
+import com.radixdlt.transactions.RawLedgerTransaction;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -97,16 +99,16 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
   public EventProcessor<LedgerUpdate> updateProcessor() {
     return update -> {
       synchronized (lock) {
-        // We must skip protocol update proofs here (`trimProtocolUpdate`)
-        final var proof = update.committedProof().trimProtocolUpdate();
+        // We must skip protocol update proofs here
+        final var proof = update.committedProofBundle().latestRoundOrEpochChangeProof();
         final var transactions = update.committedNonProtocolUpdateTransactions();
         final var latestStateVersion = proof.stateVersion();
         long firstVersion = latestStateVersion - transactions.size() + 1;
         for (long version = firstVersion; version <= latestStateVersion; version++) {
           int index = (int) (version - firstVersion);
-          store.committedLedgerExtensions.put(
-              version,
-              LedgerExtension.create(transactions.subList(index, transactions.size()), proof));
+          List<RawLedgerTransaction> transactions1 =
+              transactions.subList(index, transactions.size());
+          store.committedLedgerExtensions.put(version, new LedgerExtension(transactions1, proof));
         }
 
         proof
@@ -114,7 +116,7 @@ public final class InMemoryTransactionsAndProofReader implements TransactionsAnd
             .nextEpoch()
             .ifPresent(nextEpoch -> this.store.epochProofs.put(nextEpoch.epoch().toLong(), proof));
 
-        this.store.latestProof = Optional.of(update.committedProof());
+        this.store.latestProof = Optional.of(update.committedProofBundle());
       }
     };
   }

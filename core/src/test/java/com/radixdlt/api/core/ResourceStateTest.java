@@ -76,7 +76,7 @@ import org.junit.Test;
 public class ResourceStateTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_core_api_state_resource_response_for_xrd() throws Exception {
-    try (var test = buildRunningServerTest()) {
+    try (var test = buildRunningServerTest(defaultConfig())) {
       test.suppressUnusedWarning();
       final var addressing = Addressing.ofNetwork(networkDefinition);
       final var response =

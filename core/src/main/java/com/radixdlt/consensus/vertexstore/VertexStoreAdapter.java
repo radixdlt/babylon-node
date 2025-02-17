@@ -133,10 +133,15 @@ public final class VertexStoreAdapter {
     };
   }
 
-  public VertexStore.InsertQcResult insertQc(QuorumCertificate qc) {
+  public VertexStore.InsertQcResult insertQuorumCertificate(QuorumCertificate qc) {
     final var result = vertexStore.insertQc(qc);
-    if (result instanceof VertexStore.InsertQcResult.Inserted inserted) {
-      dispatchPostQcInsertionEvents(inserted);
+    switch (result) {
+      case VertexStore.InsertQcResult.Inserted inserted -> this.highQCUpdateDispatcher.dispatch(
+          new BFTHighQCUpdate(
+              inserted.newHighQc(),
+              inserted.committedUpdate().map(VertexStore.CommittedUpdate::committedVertices),
+              inserted.serializedVertexStoreState()));
+      default -> {} // no-op
     }
     return result;
   }
@@ -151,16 +156,19 @@ public final class VertexStoreAdapter {
 
   public void insertVertexChain(VertexChain vertexChain) {
     final var result = vertexStore.insertVertexChain(vertexChain);
-    result.insertedQcs().forEach(this::dispatchPostQcInsertionEvents);
+    result
+        .insertedQcs()
+        .forEach(
+            inserted -> {
+              this.highQCUpdateDispatcher.dispatch(
+                  new BFTHighQCUpdate(
+                      inserted.newHighQc(),
+                      inserted
+                          .committedUpdate()
+                          .map(VertexStore.CommittedUpdate::committedVertices),
+                      inserted.serializedVertexStoreState()));
+            });
     result.insertUpdates().forEach(bftUpdateDispatcher::dispatch);
-  }
-
-  private void dispatchPostQcInsertionEvents(VertexStore.InsertQcResult.Inserted inserted) {
-    this.highQCUpdateDispatcher.dispatch(
-        new BFTHighQCUpdate(
-            inserted.newHighQc(),
-            inserted.committedUpdate().map(VertexStore.CommittedUpdate::committedVertices),
-            inserted.serializedVertexStoreState()));
   }
 
   public Optional<ImmutableList<VertexWithHash>> getVertices(HashCode vertexId, int count) {

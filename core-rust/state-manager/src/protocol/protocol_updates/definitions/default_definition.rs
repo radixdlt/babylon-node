@@ -1,22 +1,28 @@
-use crate::engine_prelude::*;
-use crate::protocol::*;
+use crate::prelude::*;
 
-pub struct DefaultConfigOnlyProtocolDefinition;
+pub struct NoOpProtocolDefinition;
 
-impl ProtocolUpdateDefinition for DefaultConfigOnlyProtocolDefinition {
+impl ProtocolUpdateDefinition for NoOpProtocolDefinition {
     type Overrides = ();
 
-    fn create_updater(
-        _new_protocol_version: &ProtocolVersionName,
-        _network_definition: &NetworkDefinition,
+    fn create_batch_generator(
+        &self,
+        _context: ProtocolUpdateContext,
+        _overrides_hash: Option<Hash>,
         _overrides: Option<Self::Overrides>,
-    ) -> Box<dyn ProtocolUpdater> {
-        Box::new(NoOpProtocolUpdater)
+    ) -> Box<dyn NodeProtocolUpdateGenerator> {
+        Box::new(EmptyNodeBatchGenerator)
     }
+}
 
-    fn state_computer_config(
-        network_definition: &NetworkDefinition,
-    ) -> ProtocolStateComputerConfig {
-        ProtocolStateComputerConfig::default(network_definition.clone())
+struct EmptyNodeBatchGenerator;
+
+impl NodeProtocolUpdateGenerator for EmptyNodeBatchGenerator {
+    fn config_hash(&self) -> Hash {
+        Hash([0; Hash::LENGTH])
+    }
+    
+    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>> {
+        vec![]
     }
 }

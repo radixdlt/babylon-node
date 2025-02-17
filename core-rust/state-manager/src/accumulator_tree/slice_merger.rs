@@ -63,6 +63,7 @@
  */
 
 use super::storage::TreeSlice;
+use crate::engine_prelude::*;
 
 /// A merger (compactor) of consecutive `TreeSlice`s.
 pub struct AccuTreeSliceMerger<N> {

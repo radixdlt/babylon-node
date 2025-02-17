@@ -1,16 +1,8 @@
-use crate::engine_prelude::*;
-
-use std::collections::HashMap;
-
-use std::time::{Duration, Instant};
-
-use tracing::warn;
-
-use super::ValidatedLedgerTransaction;
+use crate::prelude::*;
 
 /// A logic of an already-validated transaction, ready to be executed against an arbitrary state of
 /// a substate store.
-pub trait TransactionLogic<S>: Sized {
+pub trait TransactionLogic<S> {
     fn execute_on(self, store: &S) -> TransactionReceipt;
 }
 
@@ -19,14 +11,18 @@ pub trait TransactionLogic<S>: Sized {
 pub enum ConfigType {
     /// A system genesis transaction.
     Genesis,
-    /// A system transaction _other_ than genesis (e.g. round update).
-    OtherSystem,
+    /// A (non-genesis) system protocol update transaction.
+    ProtocolUpdate,
+    /// A validator transaction (e.g. round update, which sometimes becomes a much larger epoch change).
+    Validator,
     /// A user transaction during regular execution (e.g. prepare or commit).
-    Regular,
+    User,
     /// A user transaction during "committability check" execution (e.g. in mempool).
-    Pending,
+    UserAbortingRejectionCheck,
     /// A user transaction during preview execution.
     Preview,
+    /// A user transaction during preview execution with auth module disabled.
+    PreviewNoAuth,
 }
 
 const PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(100);
@@ -37,9 +33,11 @@ const PREVIEW_RUNTIME_WARN_THRESHOLD: Duration = Duration::from_millis(500);
 impl ConfigType {
     pub fn get_transaction_runtime_warn_threshold(&self) -> Duration {
         match self {
-            ConfigType::Genesis => GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD,
-            ConfigType::Pending => PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
-            ConfigType::Preview => PREVIEW_RUNTIME_WARN_THRESHOLD,
+            ConfigType::Genesis | ConfigType::ProtocolUpdate | ConfigType::Validator => {
+                GENESIS_TRANSACTION_RUNTIME_WARN_THRESHOLD
+            }
+            ConfigType::UserAbortingRejectionCheck => PENDING_UP_TO_FEE_LOAN_RUNTIME_WARN_THRESHOLD,
+            ConfigType::Preview | ConfigType::PreviewNoAuth => PREVIEW_RUNTIME_WARN_THRESHOLD,
             _ => TRANSACTION_RUNTIME_WARN_THRESHOLD,
         }
     }
@@ -48,48 +46,52 @@ impl ConfigType {
 /// A preconfigured set of execution settings, allowing to turn `Executable` transactions into
 /// `TransactionLogic`.
 pub struct ExecutionConfigurator {
-    scrypto_vm: ScryptoVm<DefaultWasmEngine>,
-    pub(crate) costing_parameters: CostingParameters,
-    pub execution_configs: HashMap<ConfigType, ExecutionConfig>,
+    vm_modules: DefaultVmModules,
+    execution_configs: HashMap<ConfigType, ExecutionConfig>,
 }
 
 impl ExecutionConfigurator {
-    pub fn new(
-        network: &NetworkDefinition,
-        engine_trace: bool,
-        costing_parameters: CostingParameters,
-    ) -> Self {
+    pub fn new(network: &NetworkDefinition, no_fees: bool, engine_trace: bool) -> Self {
         Self {
-            scrypto_vm: ScryptoVm::<DefaultWasmEngine>::default(),
-            costing_parameters,
+            vm_modules: DefaultVmModules::default(),
             execution_configs: HashMap::from([
                 (
                     ConfigType::Genesis,
                     ExecutionConfig::for_genesis_transaction(network.clone())
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
-                    ConfigType::OtherSystem,
-                    ExecutionConfig {
-                        max_number_of_events: 1_000_000,
-                        ..ExecutionConfig::for_system_transaction(network.clone())
-                            .with_kernel_trace(engine_trace)
-                    },
-                ),
-                (
-                    ConfigType::Regular,
-                    ExecutionConfig::for_notarized_transaction(network.clone())
+                    ConfigType::ProtocolUpdate,
+                    ExecutionConfig::for_system_transaction(network.clone())
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
-                    ConfigType::Pending,
+                    ConfigType::Validator,
+                    ExecutionConfig::for_validator_transaction(network.clone())
+                        .with_no_fees(no_fees)
+                        .with_kernel_trace(engine_trace),
+                ),
+                (
+                    ConfigType::User,
                     ExecutionConfig::for_notarized_transaction(network.clone())
-                        .up_to_loan_repayment(true)
+                        .with_no_fees(no_fees)
+                        .with_kernel_trace(engine_trace),
+                ),
+                (
+                    ConfigType::UserAbortingRejectionCheck,
+                    ExecutionConfig::for_notarized_transaction_rejection_check(network.clone())
+                        .with_no_fees(no_fees)
                         .with_kernel_trace(engine_trace),
                 ),
                 (
                     ConfigType::Preview,
-                    ExecutionConfig::for_preview(network.clone()),
+                    ExecutionConfig::for_preview(network.clone()).with_no_fees(no_fees),
+                ),
+                (
+                    ConfigType::PreviewNoAuth,
+                    ExecutionConfig::for_preview_no_auth(network.clone()).with_no_fees(no_fees),
                 ),
             ]),
         }
@@ -98,55 +100,67 @@ impl ExecutionConfigurator {
     /// Wraps the given `Executable` with a configuration resolved from its `ConfigType`.
     pub fn wrap_ledger_transaction<'a>(
         &'a self,
-        transaction: &'a ValidatedLedgerTransaction,
+        transaction_hashes: &LedgerTransactionHashes,
+        ledger_executable: &'a LedgerExecutable,
         description: impl ToString,
-    ) -> ConfiguredExecutable<'a> {
-        if let Some(executable) = transaction.as_flash() {
-            return executable;
-        }
+    ) -> ConfiguredExecutable {
+        match ledger_executable {
+            LedgerExecutable::GenesisFlash => ConfiguredExecutable::SystemFlash {
+                state_updates: create_system_bootstrap_flash_state_updates(),
+            },
+            LedgerExecutable::Flash { updates } => ConfiguredExecutable::SystemFlash {
+                state_updates: updates.clone(),
+            },
+            LedgerExecutable::Transaction { executable } => {
+                let config_type = match &transaction_hashes.kinded {
+                    KindedTransactionHashes::Genesis { .. } => ConfigType::Genesis,
+                    KindedTransactionHashes::User(..) => ConfigType::User,
+                    KindedTransactionHashes::RoundUpdateV1 { .. } => ConfigType::Validator,
+                    KindedTransactionHashes::FlashV1 { .. } => ConfigType::ProtocolUpdate,
+                };
 
-        self.wrap_transaction(
-            transaction.get_executable(),
-            transaction.config_type(),
-            description.to_string(),
-        )
+                self.wrap_transaction(executable, config_type, description.to_string())
+            }
+        }
     }
 
     pub fn wrap_pending_transaction<'a>(
         &'a self,
-        transaction: &'a ValidatedNotarizedTransactionV1,
+        executable: &'a ExecutableTransaction,
+        user_hashes: &UserTransactionHashes,
     ) -> ConfiguredExecutable<'a> {
         self.wrap_transaction(
-            transaction.get_executable(),
-            ConfigType::Pending,
+            executable,
+            ConfigType::UserAbortingRejectionCheck,
             format!(
                 "pending intent hash {:?}, up to fee loan",
-                transaction.prepared.intent_hash()
+                &user_hashes.transaction_intent_hash,
             ),
         )
     }
 
     pub fn wrap_preview_transaction<'a>(
         &'a self,
-        validated_preview_intent: &'a ValidatedPreviewIntent,
+        executable: &'a ExecutableTransaction,
+        disable_auth: bool,
     ) -> ConfiguredExecutable<'a> {
-        self.wrap_transaction(
-            validated_preview_intent.get_executable(),
-            ConfigType::Preview,
-            "preview".to_string(),
-        )
+        let config_type = if disable_auth {
+            ConfigType::PreviewNoAuth
+        } else {
+            ConfigType::Preview
+        };
+        self.wrap_transaction(executable, config_type, "preview".to_string())
     }
 
     fn wrap_transaction<'a>(
         &'a self,
-        executable: Executable<'a>,
+        executable: &'a ExecutableTransaction,
         config_type: ConfigType,
         description: String,
-    ) -> ConfiguredExecutable<'a> {
+    ) -> ConfiguredExecutable {
         ConfiguredExecutable::Transaction {
             executable,
-            scrypto_interpreter: &self.scrypto_vm,
-            costing_parameters: &self.costing_parameters,
+            vm_modules: &self.vm_modules,
             execution_config: self.execution_configs.get(&config_type).unwrap(),
             threshold: config_type.get_transaction_runtime_warn_threshold(),
             description,
@@ -156,77 +170,33 @@ impl ExecutionConfigurator {
 
 /// An `Executable` transaction bound to a specific execution configuration.
 pub enum ConfiguredExecutable<'a> {
-    GenesisFlash {
-        flash_receipt: FlashReceipt,
-    },
     SystemFlash {
         state_updates: StateUpdates,
     },
     Transaction {
-        executable: Executable<'a>,
-        scrypto_interpreter: &'a ScryptoVm<DefaultWasmEngine>,
-        costing_parameters: &'a CostingParameters,
+        executable: &'a ExecutableTransaction,
+        vm_modules: &'a DefaultVmModules,
         execution_config: &'a ExecutionConfig,
         threshold: Duration,
         description: String,
     },
 }
 
-impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
+impl<S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'_> {
     fn execute_on(self, store: &S) -> TransactionReceipt {
         match self {
-            ConfiguredExecutable::GenesisFlash { flash_receipt } => flash_receipt.into(),
             ConfiguredExecutable::SystemFlash { state_updates } => {
-                let mut substate_schema_mapper =
-                    SubstateSchemaMapper::new(SystemDatabaseReader::new(store));
-                substate_schema_mapper.add_for_all_individually_updated(&state_updates);
-                let substate_system_structures = substate_schema_mapper.done();
-
-                // Sanity check that all updates are to existing nodes so that
-                // we can assure there are no new entities in the receipt
-                let reader = SystemDatabaseReader::new(store);
-                for (node_id, ..) in &state_updates.by_node {
-                    reader
-                        .get_object_info(*node_id)
-                        .expect("Substate flash is currently only supported for existing nodes.");
-                }
-
-                let commit_result = CommitResult {
-                    state_updates,
-                    state_update_summary: Default::default(),
-                    fee_source: Default::default(),
-                    fee_destination: Default::default(),
-                    outcome: TransactionOutcome::Success(vec![]),
-                    application_events: vec![],
-                    application_logs: vec![],
-                    system_structure: SystemStructure {
-                        substate_system_structures,
-                        event_system_structures: index_map_new(),
-                    },
-                    execution_trace: None,
-                };
-
-                TransactionReceipt::empty_with_commit(commit_result)
+                FlashReceipt::from_state_updates(state_updates, store).into()
             }
             ConfiguredExecutable::Transaction {
                 executable,
-                scrypto_interpreter,
-                costing_parameters,
+                vm_modules,
                 execution_config,
                 threshold,
                 description,
             } => {
-                let start = Instant::now();
-                let result = execute_transaction(
-                    store,
-                    Vm {
-                        scrypto_vm: scrypto_interpreter,
-                        native_vm: DefaultNativeVm::new(),
-                    },
-                    costing_parameters,
-                    execution_config,
-                    &executable,
-                );
+                let start = StdInstant::now();
+                let result = execute_transaction(store, vm_modules, execution_config, executable);
                 let elapsed = start.elapsed();
                 if elapsed > threshold {
                     warn!(
@@ -239,5 +209,23 @@ impl<'a, S: SubstateDatabase> TransactionLogic<S> for ConfiguredExecutable<'a> {
                 result
             }
         }
+    }
+}
+
+/// An extension trait for easier, declarative customization of our various [`ExecutionConfig`]s.
+trait CustomizedExecutionConfig {
+    fn with_no_fees(self, no_fees: bool) -> Self;
+}
+
+impl CustomizedExecutionConfig for ExecutionConfig {
+    fn with_no_fees(mut self, no_fees: bool) -> Self {
+        if no_fees {
+            self.system_overrides = Some(SystemOverrides {
+                disable_costing: true,
+                // Note: In practice, all ExecutionConfig's constructors set the system_overrides.
+                ..self.system_overrides.unwrap_or_default()
+            })
+        }
+        self
     }
 }

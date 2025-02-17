@@ -71,11 +71,13 @@ import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
+import com.radixdlt.db.checkpoint.RustDbCheckpoints;
 import com.radixdlt.environment.*;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.EventProcessor;
 import com.radixdlt.environment.NodeAutoCloseable;
 import com.radixdlt.environment.ProcessOnDispatch;
+import com.radixdlt.genesis.GenesisProvider;
 import com.radixdlt.lang.Option;
 import com.radixdlt.ledger.LedgerProofBundle;
 import com.radixdlt.ledger.LedgerUpdate;
@@ -99,87 +101,99 @@ import com.radixdlt.transaction.REv2TransactionAndProofStore;
 import com.radixdlt.transactions.NotarizedTransactionHash;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
-import java.io.File;
 
 public final class REv2StateManagerModule extends AbstractModule {
-
+  private final GenesisProvider genesisProvider;
   private final ProposalLimitsConfig proposalLimitsConfig;
   private final Option<VertexLimitsConfig> vertexLimitsConfigOpt;
-  private final DatabaseFlags databaseFlags;
+  private final DatabaseConfig databaseConfig;
   private final Option<RustMempoolConfig> mempoolConfig;
   private final boolean debugLogging;
-  private final StateHashTreeGcConfig stateHashTreeGcConfig;
+  private final StateTreeGcConfig stateTreeGcConfig;
   private final LedgerProofsGcConfig ledgerProofsGcConfig;
   private final LedgerSyncLimitsConfig ledgerSyncLimitsConfig;
   private final ProtocolConfig protocolConfig;
   private final boolean noFees;
+  private final ScenariosExecutionConfig scenariosExecutionConfig;
 
   private REv2StateManagerModule(
+      GenesisProvider genesisProvider,
       ProposalLimitsConfig proposalLimitsConfig,
       Option<VertexLimitsConfig> vertexLimitsConfigOpt,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
       boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees) {
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
+    this.genesisProvider = genesisProvider;
     this.proposalLimitsConfig = proposalLimitsConfig;
     this.vertexLimitsConfigOpt = vertexLimitsConfigOpt;
-    this.databaseFlags = databaseFlags;
+    this.databaseConfig = databaseConfig;
     this.mempoolConfig = mempoolConfig;
     this.debugLogging = debugLogging;
-    this.stateHashTreeGcConfig = stateHashTreeGcConfig;
+    this.stateTreeGcConfig = stateTreeGcConfig;
     this.ledgerProofsGcConfig = ledgerProofsGcConfig;
     this.ledgerSyncLimitsConfig = ledgerSyncLimitsConfig;
     this.protocolConfig = protocolConfig;
     this.noFees = noFees;
+    this.scenariosExecutionConfig = scenariosExecutionConfig;
   }
 
   public static REv2StateManagerModule create(
+      GenesisProvider genesisProvider,
       ProposalLimitsConfig proposalLimitsConfig,
       VertexLimitsConfig vertexLimitsConfig,
-      DatabaseFlags databaseFlags,
+      DatabaseConfig databaseConfig,
       Option<RustMempoolConfig> mempoolConfig,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
-      LedgerProofsGcConfig ledgerProofsGcConfig,
-      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
-      ProtocolConfig protocolConfig) {
-    return new REv2StateManagerModule(
-        proposalLimitsConfig,
-        Option.some(vertexLimitsConfig),
-        databaseFlags,
-        mempoolConfig,
-        false,
-        stateHashTreeGcConfig,
-        ledgerProofsGcConfig,
-        ledgerSyncLimitsConfig,
-        protocolConfig,
-        false);
-  }
-
-  public static REv2StateManagerModule createForTesting(
-      ProposalLimitsConfig proposalLimitsConfig,
-      DatabaseFlags databaseFlags,
-      Option<RustMempoolConfig> mempoolConfig,
-      boolean debugLogging,
-      StateHashTreeGcConfig stateHashTreeGcConfig,
+      StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
-      boolean noFees) {
+      ScenariosExecutionConfig scenariosExecutionConfig) {
     return new REv2StateManagerModule(
+        genesisProvider,
         proposalLimitsConfig,
-        Option.none(),
-        databaseFlags,
+        Option.some(vertexLimitsConfig),
+        databaseConfig,
         mempoolConfig,
-        debugLogging,
-        stateHashTreeGcConfig,
+        false,
+        stateTreeGcConfig,
         ledgerProofsGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
-        noFees);
+        false,
+        scenariosExecutionConfig);
+  }
+
+  public static REv2StateManagerModule createForTesting(
+      GenesisProvider genesisProvider,
+      ProposalLimitsConfig proposalLimitsConfig,
+      DatabaseConfig databaseConfig,
+      Option<RustMempoolConfig> mempoolConfig,
+      boolean debugLogging,
+      StateTreeGcConfig stateTreeGcConfig,
+      LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
+      ProtocolConfig protocolConfig,
+      boolean noFees,
+      ScenariosExecutionConfig scenariosExecutionConfig) {
+    return new REv2StateManagerModule(
+        genesisProvider,
+        proposalLimitsConfig,
+        Option.none(),
+        databaseConfig,
+        mempoolConfig,
+        debugLogging,
+        stateTreeGcConfig,
+        ledgerProofsGcConfig,
+        ledgerSyncLimitsConfig,
+        protocolConfig,
+        noFees,
+        scenariosExecutionConfig);
   }
 
   @Override
@@ -187,7 +201,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(StateComputerLedger.StateComputer.class).to(REv2StateComputer.class);
     bind(REv2TransactionsAndProofReader.class).in(Scopes.SINGLETON);
     bind(TransactionsAndProofReader.class).to(REv2TransactionsAndProofReader.class);
-    bind(DatabaseFlags.class).toInstance(databaseFlags);
+    bind(DatabaseConfig.class).toInstance(databaseConfig);
     bind(LedgerSyncLimitsConfig.class).toInstance(ledgerSyncLimitsConfig);
     bind(ProtocolConfig.class).toInstance(protocolConfig);
     install(proposalLimitsConfig.asModule());
@@ -196,10 +210,10 @@ public final class REv2StateManagerModule extends AbstractModule {
         new AbstractModule() {
           @Provides
           @Singleton
-          DatabaseBackendConfig databaseBackendConfig(
+          @NodeStorageLocation
+          DatabaseBackendConfig stateManagerDatabaseBackendConfig(
               @NodeStorageLocation String nodeStorageLocation) {
-            return new DatabaseBackendConfig(
-                new File(nodeStorageLocation, "state_manager").getPath());
+            return new DatabaseBackendConfig(nodeStorageLocation);
           }
 
           @Provides
@@ -208,23 +222,25 @@ public final class REv2StateManagerModule extends AbstractModule {
               MempoolRelayDispatcher<RawNotarizedTransaction> mempoolRelayDispatcher,
               FatalPanicHandler fatalPanicHandler,
               Network network,
-              DatabaseBackendConfig databaseBackendConfig,
-              DatabaseFlags databaseFlags) {
+              @NodeStorageLocation DatabaseBackendConfig nodeDatabaseBackendConfig,
+              DatabaseConfig databaseConfig) {
             return new NodeRustEnvironment(
+                genesisProvider,
                 mempoolRelayDispatcher,
                 fatalPanicHandler,
                 new StateManagerConfig(
                     NetworkDefinition.from(network),
                     mempoolConfig,
                     vertexLimitsConfigOpt,
-                    databaseBackendConfig,
-                    databaseFlags,
+                    nodeDatabaseBackendConfig,
+                    databaseConfig,
                     getLoggingConfig(),
-                    stateHashTreeGcConfig,
+                    stateTreeGcConfig,
                     ledgerProofsGcConfig,
                     ledgerSyncLimitsConfig,
                     protocolConfig,
-                    noFees));
+                    noFees,
+                    scenariosExecutionConfig));
           }
 
           @Provides
@@ -263,6 +279,27 @@ public final class REv2StateManagerModule extends AbstractModule {
           }
 
           @Provides
+          @Singleton
+          REv2LedgerInitializerToken initializeLedger(TransactionsAndProofReader reader) {
+            // In the past, genesis was run manually when a particular guice module initialized.
+            // This made the "has genesis run" question quite implicit, so the
+            // REv2LedgerInitializerToken was created to allow adding an explicit dependency
+            // on genesis running for a test to run.
+            //
+            // As of Cuttlefish, the ledger is initialized when the RustEnvironment is created.
+            // And pretty much everything requires the RustEnvironment. But we have kept the
+            // `REv2LedgerInitializerToken` around for explicit inclusion if required.
+            //
+            // In particular, the TransactionsAndProofReader requires the RustEnvironment,
+            // so genesis must been executed by this point.
+            var postGenesisEpochProof = reader.getPostGenesisEpochProof();
+            if (postGenesisEpochProof.isEmpty()) {
+              throw new IllegalStateException("Genesis was unexpectedly not run on start-up.");
+            }
+            return new REv2LedgerInitializerToken(postGenesisEpochProof.get());
+          }
+
+          @Provides
           VertexStoreRecovery rEv2VertexStoreRecovery(
               Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
             return new VertexStoreRecovery(metrics, nodeRustEnvironment);
@@ -290,7 +327,7 @@ public final class REv2StateManagerModule extends AbstractModule {
               // doesn't carry a commit. Otherwise, the vertex store state is
               // already persisted alongside the commit, so no need to repeat it here.
               if (update.committedVertices().isEmpty()) {
-                persistentVertexStore.save(update.serializedVertexStoreState().value());
+                persistentVertexStore.save(update.serializedVertexStoreState());
               }
             };
           }
@@ -299,16 +336,14 @@ public final class REv2StateManagerModule extends AbstractModule {
           @ProcessOnDispatch
           EventProcessor<BFTInsertUpdate> onInsertUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update ->
-                persistentVertexStore.save(update.serializedVertexStoreState().value());
+            return update -> persistentVertexStore.save(update.serializedVertexStoreState());
           }
 
           @ProvidesIntoSet
           @ProcessOnDispatch
           EventProcessor<BFTRebuildUpdate> onRebuildUpdatePersistVertexStore(
               PersistentVertexStore persistentVertexStore) {
-            return update ->
-                persistentVertexStore.save(update.serializedVertexStoreState().value());
+            return update -> persistentVertexStore.save(update.serializedVertexStoreState());
           }
         });
 
@@ -360,5 +395,12 @@ public final class REv2StateManagerModule extends AbstractModule {
   @NewestProtocolVersion
   private String newestProtocolVersion(RustStateComputer rustStateComputer) {
     return rustStateComputer.newestProtocolVersion();
+  }
+
+  @Provides
+  @Singleton
+  private RustDbCheckpoints rustCheckpoints(
+      Metrics metrics, NodeRustEnvironment nodeRustEnvironment) {
+    return new RustDbCheckpoints(metrics, nodeRustEnvironment);
   }
 }

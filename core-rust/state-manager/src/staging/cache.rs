@@ -64,26 +64,64 @@
 
 #![allow(clippy::too_many_arguments)]
 
-use super::stage_tree::{Accumulator, Delta, DerivedStageKey, StageKey, StageTree};
-use super::ReadableStore;
-
-use crate::accumulator_tree::storage::{ReadableAccuTreeStore, TreeSlice};
-use crate::engine_prelude::*;
-use crate::protocol::ProtocolState;
-use crate::staging::overlays::{
-    MapSubstateNodeAncestryStore, StagedSubstateNodeAncestryStore, SubstateOverlayIterator,
-};
-use crate::staging::{
-    AccuTreeDiff, HashStructuresDiff, HashUpdateContext, ProcessedTransactionReceipt,
-    StateHashTreeDiff,
-};
-use crate::transaction::{LedgerTransactionHash, TransactionLogic};
-use crate::{EpochTransactionIdentifiers, ReceiptTreeHash, StateVersion, TransactionTreeHash};
+use super::overlays::*;
+use super::stage_tree::*;
+use crate::prelude::*;
 use im::hashmap::HashMap as ImmutableHashMap;
-use itertools::Itertools;
-
-use crate::store::traits::{SubstateNodeAncestryRecord, SubstateNodeAncestryStore};
 use slotmap::SecondaryMap;
+
+pub struct ExecutionCacheManager {
+    database: Arc<DbLock<ActualStateManagerDatabase>>,
+    execution_cache: Mutex<ExecutionCache>,
+}
+
+impl ExecutionCacheManager {
+    pub fn new(
+        database: Arc<DbLock<ActualStateManagerDatabase>>,
+        lock_factory: &LockFactory,
+    ) -> Self {
+        let execution_cache = Self::create_clean_execution_cache(database.lock().deref());
+        Self {
+            database,
+            execution_cache: lock_factory
+                .named("execution_cache")
+                .new_mutex(execution_cache),
+        }
+    }
+
+    pub fn clear(&self) {
+        *self.execution_cache.lock() =
+            Self::create_clean_execution_cache(self.database.lock().deref());
+    }
+
+    pub fn access_exclusively(&self) -> impl DerefMut<Target = ExecutionCache> + '_ {
+        self.execution_cache.lock()
+    }
+
+    pub fn find_transaction_root(
+        &self,
+        parent_transaction_root: &TransactionTreeHash,
+        transactions: &[PreparedLedgerTransaction],
+    ) -> Option<TransactionTreeHash> {
+        let execution_cache = self.execution_cache.lock();
+        let mut transaction_root = parent_transaction_root;
+        for transaction in transactions {
+            transaction_root = execution_cache.get_cached_transaction_root(
+                transaction_root,
+                &transaction.ledger_transaction_hash(),
+            )?
+        }
+        Some(*transaction_root)
+    }
+
+    fn create_clean_execution_cache<S: QueryableProofStore>(database: &S) -> ExecutionCache {
+        let current_transaction_root = database
+            .get_latest_proof()
+            .map(|proof| proof.ledger_header.hashes.transaction_root)
+            .unwrap_or_else(|| LedgerHashes::pre_genesis().transaction_root);
+        ExecutionCache::new(current_transaction_root)
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]
 struct TransactionPlacement {
@@ -116,16 +154,16 @@ struct InternalTransactionIds {
 /// A transaction may be unambiguously identified by 2 different business keys here:
 ///
 /// - By a [`TransactionPlacement`]:
-/// A "transaction placement" of transaction X is technically a tuple `{X's parent's transaction
-/// root, X's payload hash}`. It can be produced for any "candidate" transaction (i.e. even for ones
-/// that would be rejected).
+///   A "transaction placement" of transaction X is technically a tuple `{X's parent's transaction
+///   root, X's payload hash}`. It can be produced for any "candidate" transaction (i.e. even for ones
+///   that would be rejected).
 ///
 /// - By a transaction root:
-/// This means just a regular transaction tree root (i.e. our replacement of accumulator hash).
-/// There is a gotcha though: transaction root comes from transaction's [`LedgerHashes`], and we do
-/// not compute them for transactions that are rejected (technically we could compute just the
-/// transaction root alone, but in our current impl we do not - for simplicity and performance).
-/// Yet, in this cache, we want to reference rejected transactions as well.
+///   This means just a regular transaction tree root (i.e. our replacement of accumulator hash).
+///   There is a gotcha though: transaction root comes from transaction's [`LedgerHashes`], and we do
+///   not compute them for transactions that are rejected (technically we could compute just the
+///   transaction root alone, but in our current impl we do not - for simplicity and performance).
+///   Yet, in this cache, we want to reference rejected transactions as well.
 ///
 /// For the above reasons, we need two [`HashMap`]s leading to [`DerivedStageKey`]s (we identify the
 /// candidate transactions by their placement, and we identify their parents by transaction root).
@@ -157,9 +195,9 @@ impl ExecutionCache {
         epoch_transaction_identifiers: &EpochTransactionIdentifiers,
         parent_state_version: StateVersion,
         parent_transaction_root: &TransactionTreeHash,
-        parent_protocol_state: &ProtocolState,
         ledger_transaction_hash: &LedgerTransactionHash,
         executable: T,
+        engine_receipt_listener: impl FnOnce(&TransactionReceipt),
     ) -> &ProcessedTransactionReceipt {
         let transaction_placement =
             TransactionPlacement::new(parent_transaction_root, ledger_transaction_hash);
@@ -173,8 +211,9 @@ impl ExecutionCache {
                 let staged_store =
                     StagedStore::new(root_store, self.stage_tree.get_accumulator(&parent_key));
                 let transaction_receipt = executable.execute_on(&staged_store);
+                engine_receipt_listener(&transaction_receipt);
 
-                let processed = ProcessedTransactionReceipt::process::<_, SpreadPrefixKeyMapper>(
+                let processed = ProcessedTransactionReceipt::process(
                     HashUpdateContext {
                         store: &staged_store,
                         epoch_transaction_identifiers,
@@ -182,7 +221,6 @@ impl ExecutionCache {
                         ledger_transaction_hash,
                     },
                     transaction_receipt,
-                    parent_protocol_state,
                 );
 
                 let internal_transaction_ids = InternalTransactionIds {
@@ -279,20 +317,24 @@ impl<'s, S> StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
-    fn get_substate(
+impl<S: SubstateDatabase> SubstateDatabase for StagedStore<'_, S> {
+    fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
         sort_key: &DbSortKey,
     ) -> Option<DbSubstateValue> {
         let partition_updates = self.overlay.partition_updates.get(partition_key);
         let Some(partition_updates) = partition_updates else {
-            return self.root.get_substate(partition_key, sort_key);
+            return self
+                .root
+                .get_raw_substate_by_db_key(partition_key, sort_key);
         };
         match partition_updates {
             ImmutablePartitionUpdates::Delta { substate_updates } => {
                 match substate_updates.get(sort_key) {
-                    None => self.root.get_substate(partition_key, sort_key),
+                    None => self
+                        .root
+                        .get_raw_substate_by_db_key(partition_key, sort_key),
                     Some(update) => match update {
                         DatabaseUpdate::Set(value) => Some(value.clone()),
                         DatabaseUpdate::Delete => None,
@@ -307,14 +349,16 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
         }
     }
 
-    fn list_entries_from(
+    fn list_raw_values_from_db_key(
         &self,
         partition_key: &DbPartitionKey,
         from_sort_key: Option<&DbSortKey>,
     ) -> Box<dyn Iterator<Item = PartitionEntry> + '_> {
         let partition_updates = self.overlay.partition_updates.get(partition_key);
         let Some(partition_updates) = partition_updates else {
-            return self.root.list_entries_from(partition_key, from_sort_key);
+            return self
+                .root
+                .list_raw_values_from_db_key(partition_key, from_sort_key);
         };
         let cloned_from_sort_key = from_sort_key.cloned();
 
@@ -333,7 +377,8 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
                     });
 
                 Box::new(SubstateOverlayIterator::new(
-                    self.root.list_entries_from(partition_key, from_sort_key),
+                    self.root
+                        .list_raw_values_from_db_key(partition_key, from_sort_key),
                     Box::new(overlaid_iter),
                 ))
             }
@@ -358,8 +403,8 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {
-    fn get_node(&self, key: &NodeKey) -> Option<TreeNode> {
+impl<S: ReadableTreeStore> ReadableTreeStore for StagedStore<'_, S> {
+    fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.overlay
             .state_tree_nodes
             .get(key)
@@ -368,8 +413,8 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>
-    ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StagedStore<'s, S>
+impl<S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>
+    ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StagedStore<'_, S>
 {
     fn get_tree_slice(&self, key: &StateVersion) -> Option<TreeSlice<TransactionTreeHash>> {
         self.overlay
@@ -380,8 +425,8 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
-    ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StagedStore<'s, S>
+impl<S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
+    ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StagedStore<'_, S>
 {
     fn get_tree_slice(&self, key: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.overlay
@@ -392,13 +437,35 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
     }
 }
 
-impl<'s, S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore<'s, S> {
+impl<S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore<'_, S> {
     fn batch_get_ancestry<'a>(
         &self,
         node_ids: impl IntoIterator<Item = &'a NodeId>,
     ) -> Vec<Option<SubstateNodeAncestryRecord>> {
         let overlay = MapSubstateNodeAncestryStore::wrap(&self.overlay.node_ancestry_records);
         StagedSubstateNodeAncestryStore::new(self.root, &overlay).batch_get_ancestry(node_ids)
+    }
+}
+
+impl<S: ConfigurableDatabase> ConfigurableDatabase for StagedStore<'_, S> {
+    fn is_account_change_index_enabled(&self) -> bool {
+        self.root.is_account_change_index_enabled()
+    }
+
+    fn is_local_transaction_execution_index_enabled(&self) -> bool {
+        self.root.is_local_transaction_execution_index_enabled()
+    }
+
+    fn are_entity_listing_indices_enabled(&self) -> bool {
+        self.root.are_entity_listing_indices_enabled()
+    }
+
+    fn is_state_history_enabled(&self) -> bool {
+        self.root.is_state_history_enabled()
+    }
+
+    fn get_first_stored_historical_state_version(&self) -> StateVersion {
+        self.root.get_first_stored_historical_state_version()
     }
 }
 
@@ -418,13 +485,13 @@ impl Delta for ProcessedTransactionReceipt {
 
 impl HashStructuresDiff {
     pub fn weight(&self) -> usize {
-        self.state_hash_tree_diff.weight()
+        self.state_tree_diff.weight()
             + self.transaction_tree_diff.weight()
             + self.receipt_tree_diff.weight()
     }
 }
 
-impl StateHashTreeDiff {
+impl StateTreeDiff {
     pub fn weight(&self) -> usize {
         self.new_nodes.len()
     }
@@ -445,7 +512,7 @@ impl<K, N> AccuTreeDiff<K, N> {
 #[derive(Clone)]
 pub struct ImmutableStore {
     partition_updates: ImmutableHashMap<DbPartitionKey, ImmutablePartitionUpdates>,
-    state_tree_nodes: ImmutableHashMap<NodeKey, TreeNode>,
+    state_tree_nodes: ImmutableHashMap<StoredTreeNodeKey, TreeNode>,
     transaction_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<TransactionTreeHash>>,
     receipt_tree_slices: ImmutableHashMap<StateVersion, TreeSlice<ReceiptTreeHash>>,
     node_ancestry_records: ImmutableHashMap<NodeId, SubstateNodeAncestryRecord>,
@@ -569,7 +636,7 @@ impl Accumulator<ProcessedTransactionReceipt> for ImmutableStore {
             }
 
             let hash_structures_diff = &commit.hash_structures_diff;
-            let state_tree_diff = &hash_structures_diff.state_hash_tree_diff;
+            let state_tree_diff = &hash_structures_diff.state_tree_diff;
             self.state_tree_nodes
                 .extend(state_tree_diff.new_nodes.iter().cloned());
             let transaction_tree_diff = &hash_structures_diff.transaction_tree_diff;

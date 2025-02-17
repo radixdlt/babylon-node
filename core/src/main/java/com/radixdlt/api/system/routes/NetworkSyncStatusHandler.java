@@ -65,14 +65,13 @@
 package com.radixdlt.api.system.routes;
 
 import com.google.inject.Inject;
-import com.radixdlt.api.system.SystemGetJsonHandler;
+import com.radixdlt.api.system.SystemJsonHandler;
 import com.radixdlt.api.system.generated.models.NetworkSyncStatusResponse;
 import com.radixdlt.api.system.generated.models.SyncStatus;
 import com.radixdlt.monitoring.Metrics;
 import java.util.Objects;
 
-public final class NetworkSyncStatusHandler
-    extends SystemGetJsonHandler<NetworkSyncStatusResponse> {
+public final class NetworkSyncStatusHandler extends SystemJsonHandler<NetworkSyncStatusResponse> {
   private final Metrics metrics;
 
   @Inject
