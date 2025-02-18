@@ -233,7 +233,7 @@ public final class DivergentExecutionLivenessBreakTest {
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
                 true,
-                FunctionalRadixNodeModule.SafetyRecoveryConfig.BERKELEY_DB,
+                FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 INITIAL_CONSENSUS_CONFIG,
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
                     StateComputerConfig.rev2()
