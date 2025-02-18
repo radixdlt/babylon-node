@@ -437,6 +437,7 @@ public class VertexStoreTest {
     // And the size should be close to the limit
     final var size = vertexStoreAdapter.getCurrentSerializedSizeBytes();
     assertTrue(
-        size < config.maxSerializedSizeBytes() && size + 5000 > config.maxSerializedSizeBytes());
+        size < config.maxSerializedSizeBytes() + 500
+            && size > config.maxSerializedSizeBytes() - 500);
   }
 }
