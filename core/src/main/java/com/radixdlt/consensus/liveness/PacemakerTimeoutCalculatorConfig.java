@@ -68,30 +68,72 @@ import com.google.common.base.Preconditions;
 
 public record PacemakerTimeoutCalculatorConfig(
     long baseTimeoutMs,
-    double rate,
-    int maxExponent,
-    long additionalRoundTimeIfProposalReceivedMs,
-    double vertexStoreMultiplierThreshold,
-    double maxVertexStoreMultiplier) {
+    double consecutiveTimeoutFactorRate,
+    int consecutiveTimeoutFactorMaxExponent,
+    double vertexStoreUtilizationFactorThreshold,
+    double vertexStoreUtilizationFactorRate,
+    int vertexStoreUtilizationFactorMaxExponent,
+    long additionalRoundTimeIfProposalReceivedMs) {
+
+  public static PacemakerTimeoutCalculatorConfig defaultConfig() {
+    /*
+    MultiFactorPacemakerTimeoutCalculator calculates the timeout as:
+    base_timeout
+      * consecutiveTimeoutFactorRate^consecutiveTimeoutFactorMaxExponent
+      * vertexStoreUtilizationFactorRate^vertexStoreUtilizationFactorMaxExponent
+
+    With these defaults the maximum possible timeout is:
+    3s * 1.2^8 * 1.3^9 ~= 136s
+
+    The threshold for vertexStoreUtilizationFactor is 2/3 of its max capacity (that is: 2/3*150 = 100 MB by default).
+    */
+    final var baseTimeoutMs = 3_000;
+    final var consecutiveTimeoutFactorRate = 1.2;
+    final var consecutiveTimeoutFactorMaxExponent = 8;
+    final var vertexStoreUtilizationFactorThreshold = 0.66;
+    final var vertexStoreUtilizationFactorRate = 1.3;
+    final var vertexStoreUtilizationFactorMaxExponent = 9;
+    final var additionalRoundTimeIfProposalReceivedMs = 30_000;
+
+    return new PacemakerTimeoutCalculatorConfig(
+        baseTimeoutMs,
+        consecutiveTimeoutFactorRate,
+        consecutiveTimeoutFactorMaxExponent,
+        vertexStoreUtilizationFactorThreshold,
+        vertexStoreUtilizationFactorRate,
+        vertexStoreUtilizationFactorMaxExponent,
+        additionalRoundTimeIfProposalReceivedMs);
+  }
 
   public PacemakerTimeoutCalculatorConfig {
     Preconditions.checkArgument(
         baseTimeoutMs > 0, "timeoutMs must be > 0 but was {}", baseTimeoutMs);
 
-    Preconditions.checkArgument(rate > 1.0, "rate must be > 1.0, but was {}", rate);
+    Preconditions.checkArgument(
+        consecutiveTimeoutFactorRate >= 1.0,
+        "consecutiveTimeoutFactorRate must be >= 1.0, but was %s",
+        consecutiveTimeoutFactorRate);
 
     Preconditions.checkArgument(
-        maxExponent >= 0, "maxExponent must be >= 0, but was {}", maxExponent);
+        consecutiveTimeoutFactorMaxExponent >= 0,
+        "consecutiveTimeoutFactorMaxExponent must be >= 0, but was %s",
+        consecutiveTimeoutFactorMaxExponent);
 
-    double maxTimeout = baseTimeoutMs * Math.pow(rate, maxExponent);
+    Preconditions.checkArgument(
+        vertexStoreUtilizationFactorRate >= 1.0,
+        "vertexStoreUtilizationFactorRate must be >= 1.0, but was %s",
+        vertexStoreUtilizationFactorRate);
+
+    Preconditions.checkArgument(
+        vertexStoreUtilizationFactorMaxExponent >= 0,
+        "vertexStoreUtilizationFactorMaxExponent must be >= 0, but was {}",
+        vertexStoreUtilizationFactorMaxExponent);
+
+    double maxTimeout =
+        baseTimeoutMs
+            * Math.pow(consecutiveTimeoutFactorRate, consecutiveTimeoutFactorMaxExponent)
+            * Math.pow(vertexStoreUtilizationFactorRate, vertexStoreUtilizationFactorMaxExponent);
     Preconditions.checkArgument(
         maxTimeout <= Long.MAX_VALUE, "Maximum timeout value of {} is too large", maxTimeout);
-
-    Preconditions.checkArgument(
-        vertexStoreMultiplierThreshold >= 0 && vertexStoreMultiplierThreshold < 1,
-        "vertexStoreMultiplierThreshold must be between 0 (inclusive) and 1 (exclusive)");
-
-    Preconditions.checkArgument(
-        maxVertexStoreMultiplier >= 1, "maxVertexStoreMultiplier must be at least 1");
   }
 }

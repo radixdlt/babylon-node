@@ -209,9 +209,10 @@ public final class FunctionalRadixNodeModule extends AbstractModule {
                       pacemakerBaseTimeoutMs,
                       pacemakerBackoffRate,
                       0,
-                      additionalRoundTimeIfProposalReceivedMs,
                       0,
-                      1));
+                      1,
+                      0,
+                      additionalRoundTimeIfProposalReceivedMs));
           bindConstant()
               .annotatedWith(TimeoutQuorumResolutionDelayMs.class)
               .to(timeoutQuorumResolutionDelayMs);

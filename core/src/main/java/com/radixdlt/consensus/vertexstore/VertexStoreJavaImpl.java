@@ -505,10 +505,6 @@ public final class VertexStoreJavaImpl implements VertexStore {
         serialization.toDson(state.toSerializable(), DsonOutput.Output.ALL));
   }
 
-  public int getCurrentSerializedSizeBytes() {
-    return currentSerializedSizeBytes;
-  }
-
   @Override
   @SuppressWarnings("UnstableApiUsage")
   public double getCurrentUtilizationRatio() {

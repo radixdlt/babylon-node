@@ -251,7 +251,7 @@ public class EpochManagerTest {
             .toInstance(RateLimiter.create(Double.MAX_VALUE));
         bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(50);
         bind(PacemakerTimeoutCalculatorConfig.class)
-            .toInstance(new PacemakerTimeoutCalculatorConfig(10L, 2.0, 0, 10L, 0, 1));
+            .toInstance(PacemakerTimeoutCalculatorConfig.defaultConfig());
         bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(10L);
         bind(VertexStoreConfig.class).toInstance(VertexStoreConfig.testingDefault());
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);

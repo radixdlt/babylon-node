@@ -157,15 +157,13 @@ public final class RadixNodeModule extends AbstractModule {
         .annotatedWith(BFTSyncPatienceMillis.class)
         .to(properties.get("bft.sync.patience", 200));
 
-    /* Default timeouts config:
-    Max exponential timeout (based on consecutive timeout occurrences) = (1.2^8)×3 ~= 13s
-    Additionally, when vertex store reaches 2/3 of its max capacity (that is: 2/3*150 = 100 MB by default)
-    we start multiplying the timeout by a linearly increasing value, up to 10x.
-    So a maximum theoretical timeout is 130s. */
     bind(PacemakerTimeoutCalculatorConfig.class)
-        .toInstance(new PacemakerTimeoutCalculatorConfig(3000L, 1.2, 8, 30_000L, 0.66, 10));
+        .toInstance(PacemakerTimeoutCalculatorConfig.defaultConfig());
 
-    // Delayed resolution is disabled for now.
+    // Delayed resolution is disabled for now because we cannot create QCs on fallback vertices,
+    // because we don't just sign the ledger header, but also the BFT header,
+    // which captures the previous certificate chain,
+    // and all the nodes have a different certificate chain for their fallback vertex.
     // TODO: consider reviving this feature or clean it up
     bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(0L);
 

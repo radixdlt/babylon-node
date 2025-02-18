@@ -69,9 +69,8 @@ import com.google.common.primitives.Doubles;
 import com.google.inject.Inject;
 
 /**
- * Main timeout calculator implementation: uses the number of consecutive timeout occurrences to
- * calculate an exponential timeout and then on top of that applies a multiplier that's based on
- * vertex store utilization.
+ * Main timeout calculator implementation, which uses two factors to calculate the timeout: - the
+ * number of consecutive timeout occurrences - and the current capacity of the vertex store
  */
 public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
   private final PacemakerTimeoutCalculatorConfig config;
@@ -84,29 +83,32 @@ public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTim
   @Override
   @SuppressWarnings("UnstableApiUsage")
   public long calculateTimeoutMs(long timeoutOccurrences, double vertexStoreUtilizationRatio) {
-    final var exponential =
-        Math.pow(config.rate(), Math.min(config.maxExponent(), timeoutOccurrences));
-
-    final var exponentialTimeout = config.baseTimeoutMs() * exponential;
+    final var consecutiveTimeoutFactor =
+        Math.pow(
+            config.consecutiveTimeoutFactorRate(),
+            Math.min(config.consecutiveTimeoutFactorMaxExponent(), timeoutOccurrences));
 
     // It should already be in the [0, 1] range, but we're nonetheless sanitizing the input
     final var vertexStoreUtilizationRatioClamped =
         Doubles.constrainToRange(vertexStoreUtilizationRatio, 0, 1);
 
-    // We're only applying the multiplier if vertexStoreUtilizationRatio is
-    // on or above vertexStoreMultiplierThreshold: we're translating from
-    // range [vertexStoreMultiplierThreshold, 1] to [1, maxVertexStoreMultiplier].
-    // The multiplier starts at 1 right at the threshold
-    // and linearly grows to reach maxVertexStoreMultiplier
-    // when vertexStoreUtilizationRatio = 1.
-    final var multiplier =
+    // We're linearly transforming the current utilization
+    // from [threshold, 1] to [1, maxExponent] to get the exponent
+    // for the vertex store utilization factor.
+    // Values below the threshold are mapped to an exponent of 0
+    // and don't contribute to the overall timeout.
+    final var vertexStoreUtilizationFactorExponent =
         Math.max(
-            1, // Multiplier is 1 (i.e. no-op) if we're below the threshold
-            LinearTransformation.mapping(config.vertexStoreMultiplierThreshold(), 1.0)
-                .and(1.0, config.maxVertexStoreMultiplier())
+            0,
+            LinearTransformation.mapping(config.vertexStoreUtilizationFactorThreshold(), 1.0)
+                .and(1.0, config.vertexStoreUtilizationFactorMaxExponent())
                 .transform(vertexStoreUtilizationRatioClamped));
 
-    return Math.round(exponentialTimeout * multiplier);
+    final var vertexStoreUtilizationFactor =
+        Math.pow(config.vertexStoreUtilizationFactorRate(), vertexStoreUtilizationFactorExponent);
+
+    return Math.round(
+        config.baseTimeoutMs() * consecutiveTimeoutFactor * vertexStoreUtilizationFactor);
   }
 
   @Override

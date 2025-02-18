@@ -229,7 +229,7 @@ public class ConsensusModuleTest {
         bind(Addressing.class).toInstance(Addressing.ofNetwork(Network.LOCALNET));
         bindConstant().annotatedWith(BFTSyncPatienceMillis.class).to(200);
         bind(PacemakerTimeoutCalculatorConfig.class)
-            .toInstance(new PacemakerTimeoutCalculatorConfig(1000L, 2.0, 6, 1000L, 0, 1));
+            .toInstance(PacemakerTimeoutCalculatorConfig.defaultConfig());
         bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(1000L);
         bind(VertexStoreConfig.class).toInstance(VertexStoreConfig.testingDefault());
 
