@@ -132,6 +132,7 @@ where
     /// hash of the transaction, which the upper layer decided to discard).
     /// The passed description will only be used for logging/errors/panics (and will be augmented by
     /// the transaction's ledger hash).
+    #[allow(clippy::result_large_err)] // Because it's paired with an even bigger Ok variant.
     pub fn execute_and_update_state(
         &mut self,
         executable: &LedgerExecutable,
@@ -151,6 +152,7 @@ where
     /// update it with commit result (which can later be done by calling [`TransactionSeriesExecutor::update_state()`]).
     /// The passed description will only be used for logging/errors/panics (and will be augmented by
     /// the transaction's ledger hash).
+    #[allow(clippy::result_large_err)] // Because it's paired with an even bigger Ok variant.
     pub fn execute_no_state_update(
         &mut self,
         executable: &LedgerExecutable,
@@ -171,6 +173,7 @@ where
         )
     }
 
+    #[allow(clippy::result_large_err)] // Because it's paired with an even bigger Ok variant.
     fn execute_wrapped_no_state_update<T: for<'l> TransactionLogic<StagedStore<'l, S>>>(
         &mut self,
         described_ledger_transaction_hash: &DescribedTransactionHash<impl Display>,
@@ -192,6 +195,7 @@ where
         processed
             .expect_commit_or_reject(&described_ledger_transaction_hash)
             .cloned()
+            .map_err(|reject| reject.clone())
     }
 
     pub fn update_state(&mut self, commit: &ProcessedCommitResult) {

@@ -300,7 +300,9 @@ impl MempoolManager {
                 // If the transaction fails to prepare at this point then we don't even have a hash to assign against it,
                 // so we can't cache anything - just return an error
                 return Err(MempoolAddError::Rejected(
-                    MempoolAddRejection::for_static_rejection(prepare_error.into()),
+                    Box::new(MempoolAddRejection::for_static_rejection(
+                        prepare_error.into(),
+                    )),
                     None,
                 ));
             }
@@ -547,6 +549,7 @@ enum ForceRecalculation {
     IfCachedAsValid,
 }
 
+#[allow(clippy::large_enum_variant)]
 enum ShouldRecalculate {
     Yes,
     No(PendingTransactionRecord),

@@ -1,0 +1,9 @@
+[toolchain]
+# IMPORTANT: This should correspond to the channel currently used in radixdlt/scrypto.
+# If this changes it will also need updating in:
+# - .github/actions/setup-env/action.yml
+# - rust-builder.dockerfile - and the base image will need publishing again
+channel = "1.81.0"
+components = ["rustfmt"]
+targets = ["wasm32-unknown-unknown"]
+profile = "default"

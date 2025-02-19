@@ -12,6 +12,7 @@ const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
 const BOTTLENOSE_PROTOCOL_VERSION: &str = "bottlenose";
 const CUTTLEFISH_PART1_PROTOCOL_VERSION: &str = "cuttlefish";
 const CUTTLEFISH_PART2_PROTOCOL_VERSION: &str = "cuttlefish-part2";
+const DUGONG_PROTOCOL_VERSION: &str = "dugong";
 
 pub enum ResolvedProtocolVersion {
     Babylon,
@@ -19,6 +20,7 @@ pub enum ResolvedProtocolVersion {
     Bottlenose,
     CuttlefishPart1,
     CuttlefishPart2,
+    Dugong,
     Custom(ProtocolVersionName),
     Test(ProtocolVersionName),
 }
@@ -31,6 +33,7 @@ impl ResolvedProtocolVersion {
             BOTTLENOSE_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Bottlenose),
             CUTTLEFISH_PART1_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::CuttlefishPart1),
             CUTTLEFISH_PART2_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::CuttlefishPart2),
+            DUGONG_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Dugong),
             // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
             name_string if CustomProtocolUpdateDefinition::matches(name_string) => Some(
                 ResolvedProtocolVersion::Custom(protocol_version_name.clone()),
@@ -50,6 +53,7 @@ impl ResolvedProtocolVersion {
             ResolvedProtocolVersion::Bottlenose => Some(ProtocolVersion::Bottlenose),
             ResolvedProtocolVersion::CuttlefishPart1 => Some(ProtocolVersion::CuttlefishPart1),
             ResolvedProtocolVersion::CuttlefishPart2 => Some(ProtocolVersion::CuttlefishPart2),
+            ResolvedProtocolVersion::Dugong => Some(ProtocolVersion::Dugong),
             ResolvedProtocolVersion::Custom { .. } => None,
             ResolvedProtocolVersion::Test { .. } => None,
         }
@@ -66,6 +70,7 @@ impl ResolvedProtocolVersion {
             ResolvedProtocolVersion::CuttlefishPart2 => {
                 Box::new(CuttlefishPart2ProtocolUpdateDefinition)
             }
+            ResolvedProtocolVersion::Dugong => Box::new(DugongProtocolUpdateDefinition),
             ResolvedProtocolVersion::Custom(..) => Box::new(CustomProtocolUpdateDefinition),
             ResolvedProtocolVersion::Test(name) => {
                 Box::new(TestProtocolUpdateDefinition::new(name.clone()))
@@ -196,6 +201,10 @@ impl ProtocolVersionName {
         Self::of(CUTTLEFISH_PART2_PROTOCOL_VERSION).unwrap()
     }
 
+    pub fn dugong() -> Self {
+        Self::of(DUGONG_PROTOCOL_VERSION).unwrap()
+    }
+
     pub fn for_engine(version: ProtocolVersion) -> Self {
         match version {
             ProtocolVersion::Unbootstrapped => panic!("Unbootstrapped is not supported!"),
@@ -204,6 +213,7 @@ impl ProtocolVersionName {
             ProtocolVersion::Bottlenose => Self::bottlenose(),
             ProtocolVersion::CuttlefishPart1 => Self::cuttlefish_part1(),
             ProtocolVersion::CuttlefishPart2 => Self::cuttlefish_part2(),
+            ProtocolVersion::Dugong => Self::dugong(),
         }
     }
 

@@ -88,7 +88,7 @@ pub(crate) async fn handle_account_balance(
 // Method `dump_component_state()` might be slow on large accounts,
 // therefore we use it only when user didn't specify which balances
 // to get.
-fn get_all_balances<'a>(
+fn get_all_balances(
     mapping_context: &MappingContext,
     database: &impl SubstateDatabase,
     component_address: &ComponentAddress,
