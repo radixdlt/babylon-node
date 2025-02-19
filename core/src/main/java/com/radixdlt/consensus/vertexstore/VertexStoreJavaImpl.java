@@ -137,7 +137,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     this.executedVertices.clear();
     this.vertexChildren.clear();
 
-    for (var vertexWithHash : state.getVertices()) {
+    for (var vertexWithHash : state.getNonRootVertices()) {
       this.vertices.put(vertexWithHash.hash(), vertexWithHash);
       this.vertexChildren.put(vertexWithHash.vertex().getParentVertexId(), vertexWithHash.hash());
     }
@@ -158,7 +158,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
     // FIXME: Currently this assumes vertexStoreState is a chain with no forks which is our only use
     // case at the moment.
     var executedVertices = new LinkedList<ExecutedVertex>();
-    for (VertexWithHash vertex : vertexStoreState.getVertices()) {
+    for (VertexWithHash vertex : vertexStoreState.getNonRootVertices()) {
       var executedVertexMaybe = ledger.prepare(executedVertices, vertex);
 
       // If any vertex couldn't be executed successfully, our saved state is invalid
@@ -178,7 +178,7 @@ public final class VertexStoreJavaImpl implements VertexStore {
       this.executedVertices.put(executedVertex.getVertexHash(), executedVertex);
     }
 
-    metrics.bft().vertexStore().vertexCount().set(vertexStoreState.getVertices().size());
+    metrics.bft().vertexStore().vertexCount().set(vertexStoreState.getNonRootVertices().size());
     metrics.bft().vertexStore().rebuilds().inc();
 
     return Result.success(new RebuildSummary(vertexStoreState, serializedVertexStoreState));
@@ -187,13 +187,13 @@ public final class VertexStoreJavaImpl implements VertexStore {
   @Override
   public InsertQcResult insertQc(QuorumCertificate qc) {
     if (!this.containsVertex(qc.getProposedHeader().getVertexId())) {
-      return new VertexStore.InsertQcResult.VertexIsMissing();
+      return new InsertQcResult.VertexIsMissing();
     }
 
     final var hasAnyChildren = vertexChildren.containsKey(qc.getProposedHeader().getVertexId());
     if (hasAnyChildren) {
       // TODO: Check to see if qc's match in case there's a fault
-      return new VertexStore.InsertQcResult.Ignored();
+      return new InsertQcResult.Ignored();
     }
 
     // Proposed vertex doesn't have any children
@@ -217,17 +217,14 @@ public final class VertexStoreJavaImpl implements VertexStore {
       committedUpdate = Option.empty();
     }
 
-    metrics.bft().vertexStore().vertexCount().set(vertices.size());
-
     if (isHighQC || committedUpdate.isPresent()) {
       // We have either received a new highQc, or some vertices were committed, or both.
       final var serializedVertexStoreState = recordHighQcOrVertexChange();
 
-      return new VertexStore.InsertQcResult.Inserted(
-          highQC(), serializedVertexStoreState, committedUpdate);
+      return new InsertQcResult.Inserted(highQC(), serializedVertexStoreState, committedUpdate);
     } else {
       // This wasn't our new high QC and nothing has been committed
-      return new VertexStore.InsertQcResult.Ignored();
+      return new InsertQcResult.Ignored();
     }
   }
 
@@ -340,12 +337,21 @@ public final class VertexStoreJavaImpl implements VertexStore {
         bftInsertUpdates.add(insertRes.unwrap());
       } else {
         switch (insertRes.unwrapError()) {
-          case ALREADY_PRESENT, PREPARE_FAILED -> {
+          case ALREADY_PRESENT -> {
             // No-op, continue iterating the vertices
           }
-          case VERTEX_STORE_SIZE_EXCEEDED -> {
-            // Stop if we hit the size limit
+          case PREPARE_FAILED -> {
+            logger.warn(
+                "Failed to insert vertex chain: prepare failed for {} (successfully inserted {} QCs"
+                    + " and {} vertices)",
+                v,
+                insertedQcs.size(),
+                bftInsertUpdates.size());
             break vertices_loop;
+          }
+          case VERTEX_STORE_SIZE_EXCEEDED -> {
+            logVertexStoreSizeExceededError();
+            throw new VertexStoreSizeExceededException();
           }
         }
       }
@@ -356,7 +362,28 @@ public final class VertexStoreJavaImpl implements VertexStore {
 
   @Override
   public Option<BFTInsertUpdate> insertVertex(VertexWithHash vertexWithHash) {
-    return insertVertexInternal(vertexWithHash).toOption();
+    return switch (insertVertexInternal(vertexWithHash)) {
+      case Result.Success<BFTInsertUpdate, VertexInsertError> v -> Option.some(v.value());
+      case Result.Error<BFTInsertUpdate, VertexInsertError> v -> switch (v.error()) {
+        case ALREADY_PRESENT -> Option.none();
+        case PREPARE_FAILED -> Option.none();
+        case VERTEX_STORE_SIZE_EXCEEDED -> {
+          logVertexStoreSizeExceededError();
+          throw new VertexStoreSizeExceededException();
+        }
+      };
+    };
+  }
+
+  private void logVertexStoreSizeExceededError() {
+    logger.error(
+        "Vertex store has reached its maximum capacity of {} bytes (serialized). This indicates"
+            + " likely consensus issues. Please check the official Radix communication channels"
+            + " (Discord) for more information. The limit can be overridden using the"
+            + " `bft.vertex_store.max_serialized_size_bytes` config (bound to"
+            + " `RADIXDLT_BFT_VERTEX_STORE_MAX_SERIALIZED_SIZE_BYTES` env var), but it should never"
+            + " exceed ~250 MiB, which is right below SBOR limits.",
+        config.maxSerializedSizeBytes());
   }
 
   private Result<BFTInsertUpdate, VertexInsertError> insertVertexInternal(
@@ -460,16 +487,16 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private VertexStoreState getState() {
     // TODO: store list dynamically rather than recomputing
     ImmutableSet.Builder<VertexWithHash> verticesBuilder = ImmutableSet.builder();
-    getChildrenVerticesList(this.rootVertex, verticesBuilder);
+    addChildrenRecursive(this.rootVertex, verticesBuilder);
     return VertexStoreState.create(this.highQC(), this.rootVertex, verticesBuilder.build(), hasher);
   }
 
-  private void getChildrenVerticesList(
+  private void addChildrenRecursive(
       VertexWithHash parent, ImmutableSet.Builder<VertexWithHash> builder) {
     for (HashCode child : this.vertexChildren.get(parent.hash())) {
       final var v = vertices.get(child);
       builder.add(v);
-      getChildrenVerticesList(v, builder);
+      addChildrenRecursive(v, builder);
     }
   }
 

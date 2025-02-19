@@ -204,12 +204,8 @@ public class NodePredicate {
     return i -> i.getInstance(TestStateReader.class).getEpoch() >= epoch;
   }
 
-  public static Predicate<Injector> bftAtOrOverRound(Round round) {
+  public static Predicate<Injector> nonEpochedBftAtOrOverRound(Round round) {
     return i -> i.getInstance(PacemakerState.class).highQC().getHighestRound().gte(round);
-  }
-
-  public static Predicate<Injector> atOrOverRound(Round round) {
-    return metricsPredicate(metrics -> metrics.bft().pacemaker().round().get() >= round.number());
   }
 
   public static Predicate<Injector> metricsPredicate(Predicate<Metrics> predicate) {

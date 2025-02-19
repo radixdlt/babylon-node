@@ -268,6 +268,10 @@ public final class DeterministicNodes implements AutoCloseable {
       super("Exception: " + e + "\nOn message: " + message.toString(), e);
       this.message = message;
     }
+
+    public ControlledMessage getControlledMessage() {
+      return message;
+    }
   }
 
   public void startNode(int nodeIndex, long time) {

@@ -73,11 +73,13 @@ import com.radixdlt.consensus.LedgerHashes;
 import com.radixdlt.consensus.NextEpoch;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
+import com.radixdlt.consensus.vertexstore.VertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.environment.deterministic.network.MessageSelector;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
+import com.radixdlt.harness.deterministic.DeterministicNodes;
 import com.radixdlt.harness.deterministic.DeterministicTest;
 import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.predicates.NodePredicate;
@@ -94,9 +96,9 @@ import com.radixdlt.p2p.NodeId;
 import com.radixdlt.rev2.Decimal;
 import com.radixdlt.rev2.REV2TransactionGenerator;
 import com.radixdlt.rev2.REv2StateComputer;
-import com.radixdlt.rev2.REv2TransactionsAndProofReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.WrappedByteArray;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -232,7 +234,7 @@ public final class DivergentExecutionLivenessBreakTest {
         .functionalNodeModule(
             new FunctionalRadixNodeModule(
                 NodeStorageConfig.tempFolder(folder),
-                true,
+                false,
                 FunctionalRadixNodeModule.SafetyRecoveryConfig.REAL,
                 INITIAL_CONSENSUS_CONFIG,
                 FunctionalRadixNodeModule.LedgerConfig.stateComputerNoSync(
@@ -255,7 +257,7 @@ public final class DivergentExecutionLivenessBreakTest {
       test.startAllNodes();
       test.runUntilState(
           NodesPredicate.allNodesMatch(
-              NodePredicate.atOrOverRound(LIVENESS_BREAK_START_ROUND.previous())));
+              NodePredicate.nonEpochedBftAtOrOverRound(LIVENESS_BREAK_START_ROUND.previous())));
 
       verifyMetricsOnAllNodes(
           test,
@@ -274,38 +276,18 @@ public final class DivergentExecutionLivenessBreakTest {
           });
 
       // Phase 2: Liveness break
-      // Run until we observe that vertex store hits its size limit
-      // 100 occurrences is chosen arbitrarily, just to make sure that the issue is not transient
-      test.runUntilState(
-          NodesPredicate.allNodesMatch(
-              NodePredicate.metricsPredicate(
-                  metrics -> metrics.bft().vertexStore().errorsDueToSizeLimit().get() > 100)));
-
-      verifyMetricsOnAllNodes(
-          test,
-          metrics -> {
-            // Verify that the cause is what we expect: a divergent execution
-            assertTrue(metrics.bft().divergentVertexExecutions().getSum() > 1);
-            // Cross-check another metric to verify that vertex store
-            // indeed holds more vertices than expected in a healthy scenario.
-            assertTrue(metrics.bft().vertexStore().vertexCount().get() >= 20);
-          });
-
-      // Another verification that we're in a liveness break
-      final var stateVersionA =
-          test.getInstance(0, REv2TransactionsAndProofReader.class)
-              .getLatestProofBundle()
-              .orElseThrow()
-              .primaryProof()
-              .stateVersion();
-      test.runForCount(1000);
-      final var stateVersionB =
-          test.getInstance(0, REv2TransactionsAndProofReader.class)
-              .getLatestProofBundle()
-              .orElseThrow()
-              .primaryProof()
-              .stateVersion();
-      assertEquals(stateVersionA, stateVersionB);
+      // Run until we observe that vertex store hits its size limit on all nodes
+      // (VertexStoreSizeExceededException)
+      HashSet<Integer> crashedNodes = new HashSet<>();
+      while (crashedNodes.size() != NUM_VALIDATORS) {
+        try {
+          test.runForCount(1);
+        } catch (DeterministicNodes.EventHandleException e) {
+          if (e.getCause() instanceof VertexStore.VertexStoreSizeExceededException) {
+            crashedNodes.add(e.getControlledMessage().channelId().receiverIndex());
+          }
+        }
+      }
 
       // Phase 3: Recovery
       for (var i = 0; i < test.numNodes(); i++) {

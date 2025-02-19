@@ -95,13 +95,13 @@ public final class VertexStoreState {
 
   private final VertexWithHash root;
   private final HighQC highQC;
-  private final ImmutableSet<VertexWithHash> vertices;
+  private final ImmutableSet<VertexWithHash> nonRootVertices;
 
   private VertexStoreState(
-      HighQC highQC, VertexWithHash root, ImmutableSet<VertexWithHash> vertices) {
+      HighQC highQC, VertexWithHash root, ImmutableSet<VertexWithHash> nonRootVertices) {
     this.highQC = highQC;
     this.root = root;
-    this.vertices = vertices;
+    this.nonRootVertices = nonRootVertices;
   }
 
   public static VertexStoreState createNewForNextEpoch(
@@ -128,7 +128,10 @@ public final class VertexStoreState {
   }
 
   public static VertexStoreState create(
-      HighQC highQC, VertexWithHash root, ImmutableSet<VertexWithHash> vertices, Hasher hasher) {
+      HighQC highQC,
+      VertexWithHash root,
+      ImmutableSet<VertexWithHash> nonRootVertices,
+      Hasher hasher) {
     final var processedQcCommit =
         highQC
             .highestCommittedQC()
@@ -146,12 +149,13 @@ public final class VertexStoreState {
     var seen = new HashMap<HashCode, VertexWithHash>();
     seen.put(root.hash(), root);
 
-    for (var vertexWithHash : vertices) {
+    for (var vertexWithHash : nonRootVertices) {
       final var vertex = vertexWithHash.vertex();
       if (!seen.containsKey(vertex.getParentVertexId())) {
         throw new IllegalStateException(
             String.format(
-                "Missing qc=%s {root=%s vertices=%s}", vertex.getQCToParent(), root, vertices));
+                "Missing qc=%s {root=%s vertices=%s}",
+                vertex.getQCToParent(), root, nonRootVertices));
       }
       seen.put(vertexWithHash.hash(), vertexWithHash);
     }
@@ -163,7 +167,7 @@ public final class VertexStoreState {
       logger.warn(
           String.format(
               "highQC=%s highCommitted proposed missing {root=%s vertices=%s}",
-              highQC, root, vertices));
+              highQC, root, nonRootVertices));
       /*
       throw new IllegalStateException(
           String.format(
@@ -210,21 +214,14 @@ public final class VertexStoreState {
        */
     }
 
-    return new VertexStoreState(highQC, root, vertices);
-  }
-
-  public VertexStoreState withVertex(VertexWithHash vertex) {
-    return new VertexStoreState(
-        this.highQC,
-        this.root,
-        ImmutableSet.<VertexWithHash>builder().addAll(this.vertices).add(vertex).build());
+    return new VertexStoreState(highQC, root, nonRootVertices);
   }
 
   public SerializableVertexStoreState toSerializable() {
     return new SerializableVertexStoreState(
         this.highQC,
         this.root.vertex(),
-        this.vertices.stream()
+        this.nonRootVertices.stream()
             .map(VertexWithHash::vertex)
             .collect(ImmutableList.toImmutableList()));
   }
@@ -237,13 +234,13 @@ public final class VertexStoreState {
     return root;
   }
 
-  public ImmutableSet<VertexWithHash> getVertices() {
-    return vertices;
+  public ImmutableSet<VertexWithHash> getNonRootVertices() {
+    return nonRootVertices;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(root, highQC, vertices);
+    return Objects.hash(root, highQC, nonRootVertices);
   }
 
   @Override
@@ -255,7 +252,7 @@ public final class VertexStoreState {
     return o instanceof VertexStoreState other
         && Objects.equals(this.root, other.root)
         && Objects.equals(this.highQC, other.highQC)
-        && Objects.equals(this.vertices, other.vertices);
+        && Objects.equals(this.nonRootVertices, other.nonRootVertices);
   }
 
   @Override
@@ -266,7 +263,7 @@ public final class VertexStoreState {
         + ", highQC="
         + highQC
         + ", vertices="
-        + vertices
+        + nonRootVertices
         + '}';
   }
 

@@ -98,14 +98,13 @@ public final class VertexWithHash {
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.vertex, this.vertexHash);
+    return Objects.hash(this.vertexHash);
   }
 
   @Override
   public boolean equals(Object o) {
     if (o instanceof final VertexWithHash that) {
-      return Objects.equals(this.vertexHash, that.vertexHash)
-          && Objects.equals(this.vertex, that.vertex);
+      return Objects.equals(this.vertexHash, that.vertexHash);
     }
     return false;
   }

@@ -156,4 +156,6 @@ public interface VertexStore {
   Option<ImmutableList<VertexWithHash>> getVertices(HashCode vertexHash, int count);
 
   int getCurrentSerializedSizeBytes();
+
+  class VertexStoreSizeExceededException extends RuntimeException {}
 }
