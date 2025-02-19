@@ -66,5 +66,6 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
         ProtocolVersionName::cuttlefish_part2() => EnactImmediatelyAfterEndOfProtocolUpdate {
             trigger_after: ProtocolVersionName::cuttlefish_part1(),
         },
+        // Dugong to come when it's ready >> This can be printed using `config_printer.rs`
     })
 }

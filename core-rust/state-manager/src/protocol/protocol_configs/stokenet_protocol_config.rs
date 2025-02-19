@@ -58,5 +58,6 @@ pub fn stokenet_protocol_config() -> ProtocolConfig {
                 },
             ],
         },
+        // Dugong to come when it's ready >> This can be printed using `config_printer.rs`
     })
 }

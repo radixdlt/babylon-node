@@ -64,6 +64,7 @@
 
 use crate::prelude::*;
 
+#[allow(clippy::large_enum_variant)]
 pub enum ProcessedTransactionReceipt {
     Commit(ProcessedCommitResult),
     Reject(ProcessedRejectResult),
@@ -134,10 +135,10 @@ impl ProcessedTransactionReceipt {
     pub fn expect_commit_or_reject(
         &self,
         description: &impl Display,
-    ) -> Result<&ProcessedCommitResult, ProcessedRejectResult> {
+    ) -> Result<&ProcessedCommitResult, &ProcessedRejectResult> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
-            ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),
+            ProcessedTransactionReceipt::Reject(reject) => Err(reject),
             ProcessedTransactionReceipt::Abort(abort) => {
                 panic!("Transaction {} was aborted: {:?}", description, abort)
             }

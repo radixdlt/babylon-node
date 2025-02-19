@@ -63,7 +63,7 @@ impl From<ApiError> for ResponseError {
 
 pub fn list_available_api_errors() -> Vec<models::Error> {
     ApiError::iter()
-        .map(|v| ResponseError::from(v).error)
+        .map(|v| *ResponseError::from(v).error)
         .collect()
 }
 
@@ -89,7 +89,7 @@ impl ResponseForPanic for InternalServerErrorResponseForPanic {
 #[derive(Debug, Clone)]
 pub(crate) struct ResponseError {
     status_code: StatusCode,
-    error: models::Error,
+    error: Box<models::Error>,
 }
 
 impl ResponseError {
@@ -97,29 +97,29 @@ impl ResponseError {
         Self {
             // "500" should be returned in case of unexpected error
             status_code: StatusCode::INTERNAL_SERVER_ERROR,
-            error: models::Error::new(code, error_message.into(), retryable),
+            error: Box::new(models::Error::new(code, error_message.into(), retryable)),
         }
     }
 
     #[allow(unused)]
     pub fn retryable(self, retryable: bool) -> Self {
         Self {
-            error: models::Error {
+            error: Box::new(models::Error {
                 retriable: retryable,
-                ..self.error
-            },
+                ..*self.error
+            }),
             ..self
         }
     }
 
     pub fn with_details(self, details_message: impl Into<String>) -> Self {
         Self {
-            error: models::Error {
+            error: Box::new(models::Error {
                 details: Some(serde_json::json!({
                     "details_message": details_message.into(),
                 })),
-                ..self.error
-            },
+                ..*self.error
+            }),
             ..self
         }
     }
@@ -166,7 +166,7 @@ impl IntoResponse for ResponseError {
 
         let error_response_event = ErrorResponseEvent {
             level: resolve_level(self.status_code),
-            error: returned_body.clone(),
+            error: (*returned_body).clone(),
         };
         let mut framework_response = (self.status_code, Json(returned_body)).into_response();
         framework_response

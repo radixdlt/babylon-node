@@ -19,7 +19,7 @@ use super::*;
 #[test]
 fn print_fixed_config_code() {
     // This is used for stokenet and dumunet
-    let version = ProtocolVersionName::cuttlefish_part2();
+    let version = ProtocolVersionName::dugong();
     let start_epoch = Epoch::of(1);
     let end_epoch = Epoch::of(10000000);
     let thresholds = vec![SignalledReadinessThreshold {
