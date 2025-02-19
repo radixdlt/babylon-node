@@ -82,6 +82,7 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.VertexStore;
 import com.radixdlt.consensus.vertexstore.VertexStoreAdapter;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.consensus.vertexstore.VertexStoreJavaImpl;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.ledger.LedgerProofBundle;
@@ -89,6 +90,7 @@ import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.messaging.core.GetVerticesRequestRateLimit;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.sync.messages.local.LocalSyncRequest;
 import com.radixdlt.utils.TimeSupplier;
 import java.util.Comparator;
@@ -115,7 +117,6 @@ public class NoEpochsConsensusModule extends AbstractModule {
     eventBinder.addBinding().toInstance(BFTRebuildUpdate.class);
     eventBinder.addBinding().toInstance(BFTInsertUpdate.class);
     eventBinder.addBinding().toInstance(BFTHighQCUpdate.class);
-    eventBinder.addBinding().toInstance(BFTCommittedUpdate.class);
     eventBinder.addBinding().toInstance(Proposal.class);
     eventBinder.addBinding().toInstance(Vote.class);
     eventBinder.addBinding().toInstance(LedgerUpdate.class);
@@ -301,8 +302,20 @@ public class NoEpochsConsensusModule extends AbstractModule {
 
   @Provides
   @Singleton
-  private VertexStore vertexStore(BFTConfiguration bftConfiguration, Ledger ledger, Hasher hasher) {
-    return VertexStoreJavaImpl.create(bftConfiguration.getVertexStoreState(), ledger, hasher);
+  private VertexStore vertexStore(
+      BFTConfiguration bftConfiguration,
+      Ledger ledger,
+      Hasher hasher,
+      Serialization serialization,
+      Metrics metrics,
+      VertexStoreConfig vertexStoreConfig) {
+    return new VertexStoreJavaImpl(
+        ledger,
+        hasher,
+        serialization,
+        metrics,
+        vertexStoreConfig,
+        bftConfiguration.getVertexStoreState());
   }
 
   @Provides
@@ -311,14 +324,9 @@ public class NoEpochsConsensusModule extends AbstractModule {
       VertexStore vertexStore,
       EventDispatcher<BFTInsertUpdate> updateSender,
       EventDispatcher<BFTRebuildUpdate> rebuildUpdateDispatcher,
-      EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher,
-      EventDispatcher<BFTCommittedUpdate> committedSender) {
+      EventDispatcher<BFTHighQCUpdate> highQCUpdateEventDispatcher) {
     return new VertexStoreAdapter(
-        vertexStore,
-        highQCUpdateEventDispatcher,
-        updateSender,
-        rebuildUpdateDispatcher,
-        committedSender);
+        vertexStore, highQCUpdateEventDispatcher, updateSender, rebuildUpdateDispatcher);
   }
 
   @ProvidesIntoSet

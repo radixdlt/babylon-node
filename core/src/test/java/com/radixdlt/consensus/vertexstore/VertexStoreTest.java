@@ -77,22 +77,23 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.hash.HashCode;
 import com.radixdlt.consensus.*;
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
-import com.radixdlt.consensus.bft.BFTHighQCUpdate;
-import com.radixdlt.consensus.bft.BFTInsertUpdate;
-import com.radixdlt.consensus.bft.BFTRebuildUpdate;
-import com.radixdlt.consensus.bft.BFTValidatorId;
-import com.radixdlt.consensus.bft.Round;
+import com.radixdlt.consensus.bft.*;
 import com.radixdlt.crypto.Blake2b256Hasher;
+import com.radixdlt.crypto.HashUtils;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
+import com.radixdlt.monitoring.Metrics;
+import com.radixdlt.monitoring.MetricsInitializer;
 import com.radixdlt.serialization.DefaultSerialization;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.ZeroHasher;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -112,14 +113,19 @@ public class VertexStoreTest {
   private EventDispatcher<BFTInsertUpdate> bftUpdateSender;
   private EventDispatcher<BFTRebuildUpdate> rebuildUpdateEventDispatcher;
   private EventDispatcher<BFTHighQCUpdate> bftHighQCUpdateEventDispatcher;
-  private EventDispatcher<BFTCommittedUpdate> committedSender;
-  private Hasher hasher = new Blake2b256Hasher(DefaultSerialization.getInstance());
+  private Serialization serialization = DefaultSerialization.getInstance();
+  private Hasher hasher = new Blake2b256Hasher(serialization);
+  private Metrics metrics = new MetricsInitializer().initialize();
 
   private static final LedgerHeader MOCKED_HEADER =
       LedgerHeader.create(0, Round.epochInitial(), 0, LedgerHashes.zero(), 0, 0);
 
   @Before
   public void setUp() {
+    setUp(VertexStoreConfig.testingDefault());
+  }
+
+  public void setUp(VertexStoreConfig vertexStoreConfig) {
     // No type check issues with mocking generic here
     Ledger ssc = mock(Ledger.class);
     this.ledger = ssc;
@@ -136,23 +142,24 @@ public class VertexStoreTest {
     this.bftUpdateSender = rmock(EventDispatcher.class);
     this.rebuildUpdateEventDispatcher = rmock(EventDispatcher.class);
     this.bftHighQCUpdateEventDispatcher = rmock(EventDispatcher.class);
-    this.committedSender = rmock(EventDispatcher.class);
 
     this.genesisVertex = Vertex.createInitialEpochVertex(MOCKED_HEADER).withId(ZeroHasher.INSTANCE);
     this.genesisHash = genesisVertex.hash();
     this.rootQC = QuorumCertificate.createInitialEpochQC(genesisVertex, MOCKED_HEADER);
     this.underlyingVertexStore =
-        VertexStoreJavaImpl.create(
-            VertexStoreState.create(HighQC.ofInitialEpochQc(rootQC), genesisVertex, hasher),
+        new VertexStoreJavaImpl(
             ledger,
-            hasher);
+            hasher,
+            serialization,
+            metrics,
+            vertexStoreConfig,
+            VertexStoreState.create(HighQC.ofInitialEpochQc(rootQC), genesisVertex, hasher));
     this.vertexStoreAdapter =
         new VertexStoreAdapter(
             underlyingVertexStore,
             bftHighQCUpdateEventDispatcher,
             bftUpdateSender,
-            rebuildUpdateEventDispatcher,
-            committedSender);
+            rebuildUpdateEventDispatcher);
 
     AtomicReference<BFTHeader> lastParentHeader =
         new AtomicReference<>(new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER));
@@ -206,7 +213,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = vertices.get(1).vertex().getQCToParent();
-    vertexStoreAdapter.insertQc(qc);
+    vertexStoreAdapter.insertQuorumCertificate(qc);
 
     // Assert
     assertThat(vertexStoreAdapter.highQC().highestQC()).isEqualTo(qc);
@@ -274,7 +281,7 @@ public class VertexStoreTest {
             .getQCToParent();
 
     // Act
-    final var insertQcResult = vertexStoreAdapter.insertQc(qcForVertexG);
+    final var insertQcResult = vertexStoreAdapter.insertQuorumCertificate(qcForVertexG);
 
     assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.Inserted);
     assertEquals(vertexStoreAdapter.getRoot().hash(), vertexD.hash());
@@ -314,7 +321,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = vertices.get(3).vertex().getQCToParent();
-    final var insertQcResult = vertexStoreAdapter.insertQc(qc);
+    final var insertQcResult = vertexStoreAdapter.insertQuorumCertificate(qc);
 
     // Assert
     assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.Inserted);
@@ -322,12 +329,16 @@ public class VertexStoreTest {
     assertThat(vertexStoreAdapter.highQC().highestCommittedQC()).isEqualTo(qc);
     assertThat(vertexStoreAdapter.getVertices(vertices.get(2).hash(), 3))
         .hasValue(ImmutableList.of(vertices.get(2), vertices.get(1), vertices.get(0)));
-    verify(committedSender, times(1))
+    verify(bftHighQCUpdateEventDispatcher, times(1))
         .dispatch(
             argThat(
                 u ->
-                    u.committed().size() == 1
-                        && u.committed().get(0).getVertexWithHash().equals(vertices.get(0))));
+                    u.committedVertices().unwrap().size() == 1
+                        && u.committedVertices()
+                            .unwrap()
+                            .get(0)
+                            .getVertexWithHash()
+                            .equals(vertices.get(0))));
     assertTrue(isVertexStoreChildrenMappingTidy(underlyingVertexStore));
   }
 
@@ -351,7 +362,7 @@ public class VertexStoreTest {
 
     // Act
     QuorumCertificate qc = this.nextVertex.get().vertex().getQCToParent();
-    final var insertQcResult = vertexStoreAdapter.insertQc(qc);
+    final var insertQcResult = vertexStoreAdapter.insertQuorumCertificate(qc);
 
     // Assert
     assertTrue(insertQcResult instanceof VertexStore.InsertQcResult.VertexIsMissing);
@@ -363,11 +374,12 @@ public class VertexStoreTest {
     final var vertices = Stream.generate(this.nextVertex).limit(4).toList();
 
     final var qc = vertices.get(3).vertex().getQCToParent();
+    final var nonRootVertices = vertices.stream().skip(1).collect(ImmutableSet.toImmutableSet());
     VertexStoreState vertexStoreState =
         VertexStoreState.create(
             HighQC.from(qc, qc, vertexStoreAdapter.highQC().highestTC()),
             vertices.get(0),
-            vertices.stream().skip(1).collect(ImmutableList.toImmutableList()),
+            nonRootVertices,
             hasher);
 
     // Act
@@ -378,8 +390,8 @@ public class VertexStoreTest {
         .dispatch(
             argThat(
                 u -> {
-                  List<VertexWithHash> sentVertices = u.vertexStoreState().getVertices();
-                  return sentVertices.equals(vertices.subList(1, vertices.size()));
+                  Set<VertexWithHash> sentVertices = u.vertexStoreState().getNonRootVertices();
+                  return sentVertices.equals(nonRootVertices);
                 }));
   }
 
@@ -398,5 +410,43 @@ public class VertexStoreTest {
 
     vertexStoreAdapter.insertTimeoutCertificate(initialTC);
     assertEquals(higherTC, vertexStoreAdapter.highQC().highestTC().orElse(null));
+  }
+
+  @Test
+  public void vertex_store_should_not_insert_a_vertex_when_size_limit_is_reached() {
+    final var config = new VertexStoreConfig(1_000_000);
+    setUp(config);
+    final var parentHeader = new BFTHeader(Round.epochInitial(), genesisHash, MOCKED_HEADER);
+    final var parent = createVertex(parentHeader, parentHeader, parentHeader, new byte[] {0});
+    vertexStoreAdapter.insertVertex(parent);
+
+    // Try to insert as many vertices as possible
+    var numInserted = 0;
+    var inserted = true;
+    var thrown = false;
+    while (inserted) {
+      final var vertex =
+          createVertex(
+              parentHeader, parentHeader, mockedHeaderOf(parent), HashUtils.random256().asBytes());
+      try {
+        inserted = vertexStoreAdapter.insertVertex(vertex);
+        if (inserted) {
+          numInserted += 1;
+        }
+      } catch (VertexStore.VertexStoreSizeExceededException e) {
+        thrown = true;
+        inserted = false;
+      }
+    }
+    assertTrue(thrown);
+
+    // We're expecting around 650 vertices to be inserted (no need to check for a specific value)
+    assertTrue(numInserted > 600 && numInserted < 700);
+
+    // And the size should be close to the limit
+    final var size = vertexStoreAdapter.getCurrentSerializedSizeBytes();
+    assertTrue(
+        size < config.maxSerializedSizeBytes() + 500
+            && size > config.maxSerializedSizeBytes() - 500);
   }
 }

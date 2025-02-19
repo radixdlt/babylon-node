@@ -65,14 +65,15 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.hash.HashCode;
+import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.HashUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class BFTInsertUpdateTest {
+public class SerializableVertexStoreStateTest {
   @Test
   public void equalsContract() {
-    EqualsVerifier.forClass(BFTInsertUpdate.class)
+    EqualsVerifier.forClass(VertexStoreState.SerializableVertexStoreState.class)
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }

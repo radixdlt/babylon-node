@@ -84,6 +84,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.*;
 import com.radixdlt.consensus.vertexstore.ExecutedVertex;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
+import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.consensus.vertexstore.VertexStoreState;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hasher;
@@ -117,6 +118,7 @@ import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.TimeSupplier;
 import com.radixdlt.utils.UInt192;
 import com.radixdlt.utils.UInt32;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -167,7 +169,7 @@ public class EpochManagerTest {
 
         @Override
         public LedgerProofBundle commit(
-            LedgerExtension ledgerExtension, VertexStoreState vertexStoreState) {
+            LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
           // No-op
           // `closestEpochProofOnOrBefore` isn't really correct here, but that's fine
           return new LedgerProofBundle(
@@ -190,8 +192,6 @@ public class EpochManagerTest {
         bind(new TypeLiteral<EventDispatcher<BFTRebuildUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<BFTHighQCUpdate>>() {})
-            .toInstance(rmock(EventDispatcher.class));
-        bind(new TypeLiteral<EventDispatcher<BFTCommittedUpdate>>() {})
             .toInstance(rmock(EventDispatcher.class));
         bind(new TypeLiteral<EventDispatcher<EpochLocalTimeoutOccurrence>>() {})
             .toInstance(rmock(EventDispatcher.class));
@@ -255,6 +255,7 @@ public class EpochManagerTest {
         bindConstant().annotatedWith(PacemakerMaxExponent.class).to(0);
         bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(10L);
         bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(10L);
+        bind(VertexStoreConfig.class).toInstance(VertexStoreConfig.testingDefault());
         bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 
         bind(new TypeLiteral<Consumer<EpochRoundUpdate>>() {}).toInstance(rmock(Consumer.class));

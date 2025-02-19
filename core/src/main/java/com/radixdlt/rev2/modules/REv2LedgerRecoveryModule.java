@@ -117,7 +117,7 @@ public final class REv2LedgerRecoveryModule extends AbstractModule {
                 bytes -> {
                   try {
                     return serialization.fromDson(
-                        bytes, VertexStoreState.SerializedVertexStoreState.class);
+                        bytes, VertexStoreState.SerializableVertexStoreState.class);
                   } catch (DeserializeException e) {
                     throw new RuntimeException("Unable to recover VertexStore", e);
                   }

@@ -102,8 +102,8 @@ public final class GenesisFileStore implements GenesisStore {
       throw new RuntimeException("Couldn't wipe the potentially pre-existing genesisDataFile", e);
     }
     try (FileOutputStream outputStream = new FileOutputStream(genesisDataFile)) {
-      final var compressed = Compress.compress(genesisDataWithHash.genesisData().value());
-      outputStream.write(compressed);
+      final var compressed = Compress.compress(genesisDataWithHash.genesisData());
+      outputStream.write(compressed.value());
     } catch (IOException e) {
       throw new RuntimeException("Couldn't write to the genesis data file", e);
     }

@@ -135,7 +135,9 @@ public final class RecoveryAfterTimeoutQuorumTest {
 
       // Run until the round that's expected to form a timeout quorum
       test.runUntilState(
-          NodesPredicate.allNodesMatch(NodePredicate.bftAtOrOverRound(TIMEOUT_QUORUM_ROUND)), 1000);
+          NodesPredicate.allNodesMatch(
+              NodePredicate.nonEpochedBftAtOrOverRound(TIMEOUT_QUORUM_ROUND)),
+          1000);
 
       // Make sure that round was indeed due to a timeout quorum
       for (var node : test.getNodeInjectors()) {
@@ -177,7 +179,8 @@ public final class RecoveryAfterTimeoutQuorumTest {
       for (var i = 0; i < NUM_VALIDATORS; i++) {
         if (i != LEADER_INDEX_AT_TIMEOUT_ROUND) {
           test.runUntilState(
-              NodesPredicate.nodeAt(i, NodePredicate.bftAtOrOverRound(Round.of(10))), 1000);
+              NodesPredicate.nodeAt(i, NodePredicate.nonEpochedBftAtOrOverRound(Round.of(10))),
+              1000);
         }
       }
 
@@ -185,7 +188,8 @@ public final class RecoveryAfterTimeoutQuorumTest {
       test.startNode(LEADER_INDEX_AT_TIMEOUT_ROUND);
       test.runUntilState(
           NodesPredicate.nodeAt(
-              LEADER_INDEX_AT_TIMEOUT_ROUND, NodePredicate.bftAtOrOverRound(Round.of(10))),
+              LEADER_INDEX_AT_TIMEOUT_ROUND,
+              NodePredicate.nonEpochedBftAtOrOverRound(Round.of(10))),
           1000);
     }
   }

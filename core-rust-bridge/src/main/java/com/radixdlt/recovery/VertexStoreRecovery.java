@@ -71,6 +71,7 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.sbor.Natives;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.Optional;
 
 public final class VertexStoreRecovery {
@@ -96,8 +97,8 @@ public final class VertexStoreRecovery {
 
   private final Natives.Call1<Tuple.Tuple0, Option<byte[]>> getVertexStore;
 
-  public void saveVertexStore(byte[] vertexStoreBytes) {
-    this.saveVertexStoreFunc.call(vertexStoreBytes);
+  public void saveVertexStore(WrappedByteArray vertexStoreBytes) {
+    this.saveVertexStoreFunc.call(vertexStoreBytes.value());
   }
 
   private static native byte[] saveVertexStore(

@@ -73,7 +73,7 @@ import java.util.Objects;
 public final class BFTConfiguration {
   private final ProposerElection proposerElection;
   private final BFTValidatorSet validatorSet;
-  private final VertexStoreState vertexStoreState;
+  private final VertexStoreState initialVertexStoreState;
 
   public BFTConfiguration(
       ProposerElection proposerElection,
@@ -81,7 +81,7 @@ public final class BFTConfiguration {
       VertexStoreState vertexStoreState) {
     this.proposerElection = Objects.requireNonNull(proposerElection);
     this.validatorSet = Objects.requireNonNull(validatorSet);
-    this.vertexStoreState = Objects.requireNonNull(vertexStoreState);
+    this.initialVertexStoreState = Objects.requireNonNull(vertexStoreState);
   }
 
   public ProposerElection getProposerElection() {
@@ -93,12 +93,12 @@ public final class BFTConfiguration {
   }
 
   public VertexStoreState getVertexStoreState() {
-    return vertexStoreState;
+    return initialVertexStoreState;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.proposerElection, this.validatorSet, this.vertexStoreState);
+    return Objects.hash(this.proposerElection, this.validatorSet, this.initialVertexStoreState);
   }
 
   @Override
@@ -106,7 +106,7 @@ public final class BFTConfiguration {
     if (obj instanceof BFTConfiguration) {
       BFTConfiguration that = (BFTConfiguration) obj;
       return Objects.equals(this.validatorSet, that.validatorSet)
-          && Objects.equals(this.vertexStoreState, that.vertexStoreState)
+          && Objects.equals(this.initialVertexStoreState, that.initialVertexStoreState)
           && Objects.equals(this.proposerElection, that.proposerElection);
     }
     return false;
@@ -115,7 +115,7 @@ public final class BFTConfiguration {
   @Override
   public String toString() {
     return String.format(
-        "%s[validatorSet=%s, vertexStoreState=%s]",
-        getClass().getSimpleName(), this.validatorSet, this.vertexStoreState);
+        "%s[validatorSet=%s, initialVertexStoreState=%s]",
+        getClass().getSimpleName(), this.validatorSet, this.initialVertexStoreState);
   }
 }

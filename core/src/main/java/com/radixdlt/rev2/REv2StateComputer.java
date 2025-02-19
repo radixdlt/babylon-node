@@ -86,13 +86,13 @@ import com.radixdlt.mempool.*;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.protocol.RustProtocolUpdate;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RustStateComputer;
 import com.radixdlt.statecomputer.commit.*;
 import com.radixdlt.transactions.PreparedNotarizedTransaction;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
+import com.radixdlt.utils.WrappedByteArray;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -285,20 +285,16 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   }
 
   @Override
-  public LedgerProofBundle commit(LedgerExtension ledgerExtension, VertexStoreState vertexStore) {
+  public LedgerProofBundle commit(
+      LedgerExtension ledgerExtension, Option<WrappedByteArray> serializedVertexStoreState) {
     final var proof = ledgerExtension.proof();
-
-    final Option<byte[]> vertexStoreBytes;
-    if (vertexStore != null) {
-      vertexStoreBytes =
-          Option.some(serialization.toDson(vertexStore.toSerialized(), DsonOutput.Output.ALL));
-    } else {
-      vertexStoreBytes = none();
-    }
 
     var commitRequest =
         new CommitRequest(
-            ledgerExtension.transactions(), proof, vertexStoreBytes, Option.from(selfValidatorId));
+            ledgerExtension.transactions(),
+            proof,
+            serializedVertexStoreState,
+            Option.from(selfValidatorId));
 
     final var result = stateComputer.commit(commitRequest);
     final var commitSummary =

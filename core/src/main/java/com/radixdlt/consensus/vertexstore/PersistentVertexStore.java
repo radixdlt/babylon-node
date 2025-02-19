@@ -64,10 +64,12 @@
 
 package com.radixdlt.consensus.vertexstore;
 
+import com.radixdlt.utils.WrappedByteArray;
+
 /**
  * Store which saves the Vertex Store State for recovery TODO: Remove this interface, integrate with
  * RadixEngine ((RPNV1-718)
  */
 public interface PersistentVertexStore {
-  void save(VertexStoreState vertexStoreState);
+  void save(WrappedByteArray serializedVertexStoreState);
 }

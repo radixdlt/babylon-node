@@ -220,9 +220,6 @@ public class DispatcherModule extends AbstractModule {
     final var highQcUpdateKey = new TypeLiteral<EventProcessor<BFTHighQCUpdate>>() {};
     Multibinder.newSetBinder(binder(), highQcUpdateKey, ProcessOnDispatch.class);
     Multibinder.newSetBinder(binder(), highQcUpdateKey);
-    final var committedUpdateKey = new TypeLiteral<EventProcessor<BFTCommittedUpdate>>() {};
-    Multibinder.newSetBinder(binder(), committedUpdateKey);
-    Multibinder.newSetBinder(binder(), committedUpdateKey, ProcessOnDispatch.class);
     final var syncUpdateKey = new TypeLiteral<EventProcessor<LedgerExtension>>() {};
     Multibinder.newSetBinder(binder(), syncUpdateKey, ProcessOnDispatch.class);
 
@@ -378,18 +375,9 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   private EventDispatcher<BFTInsertUpdate> bftInsertUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors,
-      Environment environment,
-      Metrics metrics) {
+      @ProcessOnDispatch Set<EventProcessor<BFTInsertUpdate>> processors, Environment environment) {
     var dispatcher = environment.getDispatcher(BFTInsertUpdate.class);
     return update -> {
-      if (update.siblingsCount() > 1) {
-        metrics.bft().vertexStore().forks().inc();
-      }
-      if (!update.insertedVertex().getVertexWithHash().vertex().hasDirectParent()) {
-        metrics.bft().vertexStore().indirectParents().inc();
-      }
-      metrics.bft().vertexStore().size().set(update.getVertexStoreSize());
       dispatcher.dispatch(update);
       processors.forEach(p -> p.process(update));
     };
@@ -397,13 +385,8 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   private EventDispatcher<BFTRebuildUpdate> bftRebuildUpdateEventDispatcher(
-      Environment environment, Metrics metrics) {
-    var dispatcher = environment.getDispatcher(BFTRebuildUpdate.class);
-    return update -> {
-      metrics.bft().vertexStore().size().set(update.vertexStoreState().getVertices().size());
-      metrics.bft().vertexStore().rebuilds().inc();
-      dispatcher.dispatch(update);
-    };
+      Environment environment) {
+    return environment.getDispatcher(BFTRebuildUpdate.class);
   }
 
   @Provides
@@ -418,21 +401,8 @@ public class DispatcherModule extends AbstractModule {
 
   @Provides
   private EventDispatcher<LedgerExtension> syncUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<LedgerExtension>> processors, Metrics metrics) {
+      @ProcessOnDispatch Set<EventProcessor<LedgerExtension>> processors) {
     return commit -> processors.forEach(e -> e.process(commit));
-  }
-
-  @Provides
-  private EventDispatcher<BFTCommittedUpdate> committedUpdateEventDispatcher(
-      @ProcessOnDispatch Set<EventProcessor<BFTCommittedUpdate>> processors,
-      Environment environment,
-      Metrics metrics) {
-    var dispatcher = environment.getDispatcher(BFTCommittedUpdate.class);
-    return commit -> {
-      metrics.bft().vertexStore().size().set(commit.vertexStoreSize());
-      processors.forEach(e -> e.process(commit));
-      dispatcher.dispatch(commit);
-    };
   }
 
   @Provides

@@ -69,6 +69,7 @@ import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.monitoring.InMemorySystemInfo;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.protocol.ProtocolConfig;
 import com.radixdlt.statecomputer.commit.LedgerProof;
 import com.radixdlt.sync.TransactionsAndProofReader;
@@ -203,8 +204,12 @@ public class NodePredicate {
     return i -> i.getInstance(TestStateReader.class).getEpoch() >= epoch;
   }
 
-  public static Predicate<Injector> bftAtOrOverRound(Round round) {
+  public static Predicate<Injector> nonEpochedBftAtOrOverRound(Round round) {
     return i -> i.getInstance(PacemakerState.class).highQC().getHighestRound().gte(round);
+  }
+
+  public static Predicate<Injector> metricsPredicate(Predicate<Metrics> predicate) {
+    return i -> predicate.test(i.getInstance(Metrics.class));
   }
 
   public static Predicate<Injector> votedAtRound(Round round) {

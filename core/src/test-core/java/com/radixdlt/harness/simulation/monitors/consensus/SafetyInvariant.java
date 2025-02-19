@@ -64,7 +64,7 @@
 
 package com.radixdlt.harness.simulation.monitors.consensus;
 
-import com.radixdlt.consensus.bft.BFTCommittedUpdate;
+import com.radixdlt.consensus.bft.BFTHighQCUpdate;
 import com.radixdlt.harness.invariants.SafetyChecker;
 import com.radixdlt.harness.simulation.TestInvariant;
 import com.radixdlt.harness.simulation.monitors.NodeEvents;
@@ -85,11 +85,10 @@ public class SafetyInvariant implements TestInvariant {
   @Override
   public Observable<TestInvariantError> check(RunningNetwork network) {
     final SafetyChecker safetyChecker = new SafetyChecker(network.getNodes());
-    return Observable.<Pair<NodeId, BFTCommittedUpdate>>create(
+    return Observable.<Pair<NodeId, BFTHighQCUpdate>>create(
             emitter ->
                 nodeEvents.addListener(
-                    (node, update) -> emitter.onNext(Pair.of(node, update)),
-                    BFTCommittedUpdate.class))
+                    (node, update) -> emitter.onNext(Pair.of(node, update)), BFTHighQCUpdate.class))
         .serialize()
         .flatMap(
             e -> {
