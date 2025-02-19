@@ -425,7 +425,7 @@ public final class StateComputerLedger implements Ledger, ProposalGenerator {
     // synchronization theoretically needed here).
 
     this.metrics.ledger().stateVersion().set(this.latestProof.resultantStateVersion());
-    if (serializedVertexStoreState.isPresent()) {
+    if (serializedVertexStoreState.isEmpty()) {
       this.metrics.ledger().syncTransactionsProcessed().inc(extensionTransactionCount);
     } else {
       this.metrics.ledger().bftTransactionsProcessed().inc(extensionTransactionCount);
