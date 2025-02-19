@@ -264,10 +264,10 @@ impl<'s, R: ReadableRocks + 's, DS: Deref<Target = StateManagerDatabase<R>>>
             return Err(StateHistoryError::StateVersionInFuture { current_version });
         }
 
-        return Ok(Self::Historical(StateTreeBasedSubstateDatabase::new(
+        Ok(Self::Historical(StateTreeBasedSubstateDatabase::new(
             database,
             requested_version,
-        )));
+        )))
     }
 
     /// Returns the summary of the ledger's state at which this store is scoped.

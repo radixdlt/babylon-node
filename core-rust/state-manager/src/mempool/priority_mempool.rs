@@ -648,7 +648,7 @@ mod tests {
                 tip_percentage,
             })
             .manifest(ManifestBuilder::new_v1().build())
-            .sign(&Ed25519PrivateKey::from_u64(signer_discriminator).unwrap())
+            .sign(Ed25519PrivateKey::from_u64(signer_discriminator).unwrap())
             .notarize(&notary)
             .build()
             .to_raw()

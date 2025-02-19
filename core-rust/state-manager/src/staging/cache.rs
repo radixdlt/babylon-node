@@ -106,13 +106,10 @@ impl ExecutionCacheManager {
         let execution_cache = self.execution_cache.lock();
         let mut transaction_root = parent_transaction_root;
         for transaction in transactions {
-            transaction_root = match execution_cache.get_cached_transaction_root(
+            transaction_root = execution_cache.get_cached_transaction_root(
                 transaction_root,
                 &transaction.ledger_transaction_hash(),
-            ) {
-                Some(cached) => cached,
-                None => return None,
-            }
+            )?
         }
         Some(*transaction_root)
     }
@@ -320,7 +317,7 @@ impl<'s, S> StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
+impl<S: SubstateDatabase> SubstateDatabase for StagedStore<'_, S> {
     fn get_raw_substate_by_db_key(
         &self,
         partition_key: &DbPartitionKey,
@@ -406,7 +403,7 @@ impl<'s, S: SubstateDatabase> SubstateDatabase for StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {
+impl<S: ReadableTreeStore> ReadableTreeStore for StagedStore<'_, S> {
     fn get_node(&self, key: &StoredTreeNodeKey) -> Option<TreeNode> {
         self.overlay
             .state_tree_nodes
@@ -416,8 +413,8 @@ impl<'s, S: ReadableTreeStore> ReadableTreeStore for StagedStore<'s, S> {
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>
-    ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StagedStore<'s, S>
+impl<S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>
+    ReadableAccuTreeStore<StateVersion, TransactionTreeHash> for StagedStore<'_, S>
 {
     fn get_tree_slice(&self, key: &StateVersion) -> Option<TreeSlice<TransactionTreeHash>> {
         self.overlay
@@ -428,8 +425,8 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, TransactionTreeHash>>
     }
 }
 
-impl<'s, S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
-    ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StagedStore<'s, S>
+impl<S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
+    ReadableAccuTreeStore<StateVersion, ReceiptTreeHash> for StagedStore<'_, S>
 {
     fn get_tree_slice(&self, key: &StateVersion) -> Option<TreeSlice<ReceiptTreeHash>> {
         self.overlay
@@ -440,7 +437,7 @@ impl<'s, S: ReadableAccuTreeStore<StateVersion, ReceiptTreeHash>>
     }
 }
 
-impl<'s, S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore<'s, S> {
+impl<S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore<'_, S> {
     fn batch_get_ancestry<'a>(
         &self,
         node_ids: impl IntoIterator<Item = &'a NodeId>,
@@ -450,7 +447,7 @@ impl<'s, S: SubstateNodeAncestryStore> SubstateNodeAncestryStore for StagedStore
     }
 }
 
-impl<'s, S: ConfigurableDatabase> ConfigurableDatabase for StagedStore<'s, S> {
+impl<S: ConfigurableDatabase> ConfigurableDatabase for StagedStore<'_, S> {
     fn is_account_change_index_enabled(&self) -> bool {
         self.root.is_account_change_index_enabled()
     }

@@ -137,7 +137,7 @@ impl<'a> ByteCountWriter<'a> {
     }
 }
 
-impl<'a> Write for ByteCountWriter<'a> {
+impl Write for ByteCountWriter<'_> {
     fn write(&mut self, data: &[u8]) -> Result<usize, std::io::Error> {
         *self.bytes += data.len();
         Ok(data.len())

@@ -47,5 +47,19 @@ pub fn dumunet_protocol_config() -> ProtocolConfig {
         ProtocolVersionName::cuttlefish_part2() => EnactImmediatelyAfterEndOfProtocolUpdate {
             trigger_after: ProtocolVersionName::cuttlefish_part1(),
         },
+        ProtocolVersionName::dugong() => EnactAtStartOfEpochIfValidatorsReady {
+            // =================================================================
+            // PROTOCOL_VERSION: "dugong"
+            // READINESS_SIGNAL: "bb035a14077816c80000000000dugong"
+            // =================================================================
+            lower_bound_inclusive: Epoch::of(1),
+            upper_bound_exclusive: Epoch::of(10000000),
+            readiness_thresholds: vec![
+                SignalledReadinessThreshold {
+                    required_ratio_of_stake_supported: dec!(0.8),
+                    required_consecutive_completed_epochs_of_support: 10,
+                },
+            ],
+        },
     })
 }

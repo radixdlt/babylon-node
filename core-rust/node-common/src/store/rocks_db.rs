@@ -205,7 +205,7 @@ impl CheckpointableRocks for DirectRocks {
     }
 }
 
-impl<'db> CheckpointableRocks for SnapshotRocks<'db> {
+impl CheckpointableRocks for SnapshotRocks<'_> {
     fn create_checkpoint(&self, checkpoint_path: PathBuf) -> Result<(), rocksdb::Error> {
         create_checkpoint(self.db, checkpoint_path)
     }
@@ -227,7 +227,7 @@ pub struct SnapshotRocks<'db> {
     snapshot: Snapshot<'db>,
 }
 
-impl<'db> ReadableRocks for SnapshotRocks<'db> {
+impl ReadableRocks for SnapshotRocks<'_> {
     fn cf_handle(&self, name: &str) -> &ColumnFamily {
         self.db.cf_handle(name).expect(name)
     }

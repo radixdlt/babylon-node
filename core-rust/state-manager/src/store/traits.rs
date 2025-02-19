@@ -950,7 +950,7 @@ impl<'a> TransactionAndProofIterator<'a> {
     }
 }
 
-impl<'a> Iterator for TransactionAndProofIterator<'a> {
+impl Iterator for TransactionAndProofIterator<'_> {
     type Item = (CommittedTransactionBundle, Option<LedgerProof>);
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -293,7 +293,7 @@ impl<'r> TokioSpawner<'r> {
     }
 }
 
-impl<'r> Spawner for TokioSpawner<'r> {
+impl Spawner for TokioSpawner<'_> {
     fn spawn(
         &self,
         interval: Duration,
