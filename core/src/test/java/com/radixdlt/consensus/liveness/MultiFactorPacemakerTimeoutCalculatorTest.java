@@ -113,11 +113,11 @@ public class MultiFactorPacemakerTimeoutCalculatorTest {
     return Stream.of(
             of((double) -1, 1000L),
             of(0.5, 1000L),
-            of(0.6, 1300L),
-            of(0.61, 1370L),
-            of(0.7, 2197L),
-            of(0.8, 3713L),
-            of(0.999, 10549L),
+            of(0.6, 1000L),
+            of(0.61, 1061L),
+            of(0.7, 1805L),
+            of(0.8, 3256L),
+            of(0.999, 10542L),
             of((double) 1, 10604L),
             of((double) 2, 10604L),
             of((double) 5, 10604L))

@@ -463,10 +463,10 @@ public class EpochsConsensusModule extends AbstractModule {
       Serialization serialization,
       Metrics metrics,
       VertexStoreConfig vertexStoreConfig) {
-    return vertexStoreState ->
+    return initialVertexStoreState ->
         new VertexStoreAdapter(
             new VertexStoreJavaImpl(
-                ledger, hasher, serialization, metrics, vertexStoreConfig, vertexStoreState),
+                ledger, hasher, serialization, metrics, vertexStoreConfig, initialVertexStoreState),
             highQCUpdateEventDispatcher,
             updateSender,
             rebuildUpdateDispatcher);

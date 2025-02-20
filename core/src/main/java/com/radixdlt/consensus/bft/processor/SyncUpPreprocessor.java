@@ -168,7 +168,7 @@ public final class SyncUpPreprocessor implements BFTEventProcessor {
   public void processBFTRebuildUpdate(BFTRebuildUpdate rebuildUpdate) {
     rebuildUpdate
         .vertexStoreState()
-        .getVertices()
+        .getNonRootVertices()
         .forEach(
             v -> {
               HashCode vertexId = v.hash();

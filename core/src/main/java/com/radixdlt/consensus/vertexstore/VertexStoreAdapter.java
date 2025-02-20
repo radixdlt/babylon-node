@@ -141,7 +141,8 @@ public final class VertexStoreAdapter {
               inserted.newHighQc(),
               inserted.committedUpdate().map(VertexStore.CommittedUpdate::committedVertices),
               inserted.serializedVertexStoreState()));
-      default -> {} // no-op
+      case VertexStore.InsertQcResult.Ignored ignored -> {} // No-op
+      case VertexStore.InsertQcResult.VertexIsMissing ignored -> {} // No-op
     }
     return result;
   }

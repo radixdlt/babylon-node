@@ -163,4 +163,6 @@ public interface VertexStore {
    * between 0 and 1 (both inclusive). In practice the size is always above 0.
    */
   double getCurrentUtilizationRatio();
+
+  class VertexStoreSizeExceededException extends RuntimeException {}
 }

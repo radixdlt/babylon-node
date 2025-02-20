@@ -76,6 +76,7 @@ public class VertexWithHashTest {
   @Test
   public void equalsContract() {
     EqualsVerifier.forClass(VertexWithHash.class)
+        .withIgnoredFields("vertex")
         .withPrefabValues(HashCode.class, HashUtils.random256(), HashUtils.random256())
         .verify();
   }

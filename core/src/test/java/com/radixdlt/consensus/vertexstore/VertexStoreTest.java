@@ -390,7 +390,7 @@ public class VertexStoreTest {
         .dispatch(
             argThat(
                 u -> {
-                  Set<VertexWithHash> sentVertices = u.vertexStoreState().getVertices();
+                  Set<VertexWithHash> sentVertices = u.vertexStoreState().getNonRootVertices();
                   return sentVertices.equals(nonRootVertices);
                 }));
   }
@@ -423,13 +423,22 @@ public class VertexStoreTest {
     // Try to insert as many vertices as possible
     var numInserted = 0;
     var inserted = true;
+    var thrown = false;
     while (inserted) {
       final var vertex =
           createVertex(
               parentHeader, parentHeader, mockedHeaderOf(parent), HashUtils.random256().asBytes());
-      inserted = vertexStoreAdapter.insertVertex(vertex);
-      numInserted += 1;
+      try {
+        inserted = vertexStoreAdapter.insertVertex(vertex);
+        if (inserted) {
+          numInserted += 1;
+        }
+      } catch (VertexStore.VertexStoreSizeExceededException e) {
+        thrown = true;
+        inserted = false;
+      }
     }
+    assertTrue(thrown);
 
     // We're expecting around 650 vertices to be inserted (no need to check for a specific value)
     assertTrue(numInserted > 600 && numInserted < 700);

@@ -64,16 +64,26 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.google.common.math.LinearTransformation;
 import com.google.common.primitives.Doubles;
+import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Main timeout calculator implementation, which uses two factors to calculate the timeout: - the
- * number of consecutive timeout occurrences - and the current capacity of the vertex store
+ * Main timeout calculator implementation, which uses two factors to calculate the timeout:
+ *
+ * <ol>
+ *   <li>- the number of consecutive timeout occurrences
+ *   <li>- and the current capacity of the vertex store
  */
 public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
+  private static final Logger logger = LogManager.getLogger();
+
   private final PacemakerTimeoutCalculatorConfig config;
+
+  private final RateLimiter logRatelimiter =
+      RateLimiter.create(0.016); // At most one log every ~minute
 
   @Inject
   public MultiFactorPacemakerTimeoutCalculator(PacemakerTimeoutCalculatorConfig config) {
@@ -92,23 +102,52 @@ public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTim
     final var vertexStoreUtilizationRatioClamped =
         Doubles.constrainToRange(vertexStoreUtilizationRatio, 0, 1);
 
-    // We're linearly transforming the current utilization
-    // from [threshold, 1] to [1, maxExponent] to get the exponent
-    // for the vertex store utilization factor.
-    // Values below the threshold are mapped to an exponent of 0
-    // and don't contribute to the overall timeout.
-    final var vertexStoreUtilizationFactorExponent =
-        Math.max(
-            0,
-            LinearTransformation.mapping(config.vertexStoreUtilizationFactorThreshold(), 1.0)
-                .and(1.0, config.vertexStoreUtilizationFactorMaxExponent())
-                .transform(vertexStoreUtilizationRatioClamped));
+    final double vertexStoreUtilizationFactor;
+    if (vertexStoreUtilizationRatioClamped <= config.vertexStoreUtilizationFactorThreshold()) {
+      vertexStoreUtilizationFactor = 1;
+    } else {
+      // We're linearly transforming the current utilization
+      // from [threshold, 1] to [1, maxExponent] to get the exponent
+      // for the vertex store utilization factor.
+      final var exponent =
+          lerp(
+              config.vertexStoreUtilizationFactorThreshold(),
+              1.0,
+              0.0,
+              config.vertexStoreUtilizationFactorMaxExponent(),
+              vertexStoreUtilizationRatioClamped);
+      vertexStoreUtilizationFactor = Math.pow(config.vertexStoreUtilizationFactorRate(), exponent);
+    }
 
-    final var vertexStoreUtilizationFactor =
-        Math.pow(config.vertexStoreUtilizationFactorRate(), vertexStoreUtilizationFactorExponent);
+    final var res =
+        Math.round(
+            config.baseTimeoutMs() * consecutiveTimeoutFactor * vertexStoreUtilizationFactor);
 
-    return Math.round(
-        config.baseTimeoutMs() * consecutiveTimeoutFactor * vertexStoreUtilizationFactor);
+    if (vertexStoreUtilizationRatioClamped >= config.vertexStoreUtilizationFactorThreshold()
+        && logRatelimiter.tryAcquire()) {
+      logger.warn(
+          "Vertex store is currently at {} of its maximum byte capacity. Consensus timeouts are"
+              + " being slowed down to slow down pressure accumulation on the vertex store."
+              + " [base_timeout ({} ms) * consecutive_timeout_factor ({}) *"
+              + " vertex_store_utilization_factor ({}) = resultant_timeout ({} ms)]",
+          vertexStoreUtilizationRatioClamped,
+          config.baseTimeoutMs(),
+          consecutiveTimeoutFactor,
+          vertexStoreUtilizationFactor,
+          res);
+    }
+
+    return res;
+  }
+
+  // Computes a linear interpolation (or extrapolation).
+  // The input value `z` is interpolated from the source range [x, y]
+  // to the target range [p, q].
+  // E.g. if [x, y] = [10, 20], z = 15 and [p, q] = [0, 1], returns 0.5.
+  // If z is outside [x, y] then it's extrapolated (linearly) and can produce
+  // a value outside [p, q]. This should be handled by the caller.
+  private static double lerp(double x, double y, double p, double q, double z) {
+    return p + (q - p) * (z - x) / (y - x);
   }
 
   @Override
