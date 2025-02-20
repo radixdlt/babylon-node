@@ -62,19 +62,78 @@
  * permissions under this License.
  */
 
-package com.radixdlt.consensus.bft;
+package com.radixdlt.consensus.liveness;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import com.google.common.base.Preconditions;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+public record PacemakerTimeoutCalculatorConfig(
+    long baseTimeoutMs,
+    double consecutiveTimeoutFactorRate,
+    int consecutiveTimeoutFactorMaxExponent,
+    double vertexStoreUtilizationFactorThreshold,
+    double vertexStoreUtilizationFactorRate,
+    int vertexStoreUtilizationFactorMaxExponent,
+    long additionalRoundTimeIfProposalReceivedMs) {
 
-/** The amount of time the pacemaker will wait until considering the round timed out. */
-@Qualifier
-@Target({FIELD, PARAMETER, METHOD})
-@Retention(RUNTIME)
-public @interface PacemakerBaseTimeoutMs {}
+  public static PacemakerTimeoutCalculatorConfig defaultConfig() {
+    /*
+    MultiFactorPacemakerTimeoutCalculator calculates the timeout as:
+    base_timeout
+      * consecutiveTimeoutFactorRate^consecutiveTimeoutFactorMaxExponent
+      * vertexStoreUtilizationFactorRate^vertexStoreUtilizationFactorMaxExponent
+
+    With these defaults the maximum possible timeout is:
+    3s * 1.2^8 * 1.3^9 ~= 136s
+
+    The threshold for vertexStoreUtilizationFactor is 2/3 of its max capacity (that is: 2/3*150 = 100 MB by default).
+    */
+    final var baseTimeoutMs = 3_000;
+    final var consecutiveTimeoutFactorRate = 1.2;
+    final var consecutiveTimeoutFactorMaxExponent = 8;
+    final var vertexStoreUtilizationFactorThreshold = 0.66;
+    final var vertexStoreUtilizationFactorRate = 1.3;
+    final var vertexStoreUtilizationFactorMaxExponent = 9;
+    final var additionalRoundTimeIfProposalReceivedMs = 30_000;
+
+    return new PacemakerTimeoutCalculatorConfig(
+        baseTimeoutMs,
+        consecutiveTimeoutFactorRate,
+        consecutiveTimeoutFactorMaxExponent,
+        vertexStoreUtilizationFactorThreshold,
+        vertexStoreUtilizationFactorRate,
+        vertexStoreUtilizationFactorMaxExponent,
+        additionalRoundTimeIfProposalReceivedMs);
+  }
+
+  public PacemakerTimeoutCalculatorConfig {
+    Preconditions.checkArgument(
+        baseTimeoutMs > 0, "timeoutMs must be > 0 but was {}", baseTimeoutMs);
+
+    Preconditions.checkArgument(
+        consecutiveTimeoutFactorRate >= 1.0,
+        "consecutiveTimeoutFactorRate must be >= 1.0, but was %s",
+        consecutiveTimeoutFactorRate);
+
+    Preconditions.checkArgument(
+        consecutiveTimeoutFactorMaxExponent >= 0,
+        "consecutiveTimeoutFactorMaxExponent must be >= 0, but was %s",
+        consecutiveTimeoutFactorMaxExponent);
+
+    Preconditions.checkArgument(
+        vertexStoreUtilizationFactorRate >= 1.0,
+        "vertexStoreUtilizationFactorRate must be >= 1.0, but was %s",
+        vertexStoreUtilizationFactorRate);
+
+    Preconditions.checkArgument(
+        vertexStoreUtilizationFactorMaxExponent >= 0,
+        "vertexStoreUtilizationFactorMaxExponent must be >= 0, but was {}",
+        vertexStoreUtilizationFactorMaxExponent);
+
+    double maxTimeout =
+        baseTimeoutMs
+            * Math.pow(consecutiveTimeoutFactorRate, consecutiveTimeoutFactorMaxExponent)
+            * Math.pow(vertexStoreUtilizationFactorRate, vertexStoreUtilizationFactorMaxExponent);
+    Preconditions.checkArgument(
+        maxTimeout <= Long.MAX_VALUE, "Maximum timeout value of {} is too large", maxTimeout);
+  }
+}

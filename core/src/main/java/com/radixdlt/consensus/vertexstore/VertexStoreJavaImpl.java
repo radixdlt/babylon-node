@@ -70,6 +70,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.hash.HashCode;
+import com.google.common.primitives.Doubles;
 import com.radixdlt.consensus.BFTHeader;
 import com.radixdlt.consensus.HighQC;
 import com.radixdlt.consensus.Ledger;
@@ -529,6 +530,15 @@ public final class VertexStoreJavaImpl implements VertexStore {
   private WrappedByteArray serializeState(VertexStoreState state) {
     return new WrappedByteArray(
         serialization.toDson(state.toSerializable(), DsonOutput.Output.ALL));
+  }
+
+  @Override
+  @SuppressWarnings("UnstableApiUsage")
+  public double getCurrentUtilizationRatio() {
+    // In practice the actual size can slightly exceed the limit (see the comments above)
+    // So we need to clamp the result at 1.
+    return Doubles.constrainToRange(
+        (double) currentSerializedSizeBytes / config.maxSerializedSizeBytes(), 0, 1);
   }
 
   @VisibleForTesting

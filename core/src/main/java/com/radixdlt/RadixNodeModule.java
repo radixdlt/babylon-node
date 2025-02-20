@@ -76,6 +76,7 @@ import com.radixdlt.config.SelfValidatorAddressConfig;
 import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
 import com.radixdlt.consensus.epoch.EpochsConsensusModule;
+import com.radixdlt.consensus.liveness.PacemakerTimeoutCalculatorConfig;
 import com.radixdlt.consensus.sync.BFTSyncPatienceMillis;
 import com.radixdlt.consensus.vertexstore.VertexStoreConfig;
 import com.radixdlt.environment.*;
@@ -156,11 +157,14 @@ public final class RadixNodeModule extends AbstractModule {
         .annotatedWith(BFTSyncPatienceMillis.class)
         .to(properties.get("bft.sync.patience", 200));
 
-    // Max timeout = (1.2^8)×3 ~= 13s
-    bindConstant().annotatedWith(PacemakerBaseTimeoutMs.class).to(3000L);
-    bindConstant().annotatedWith(PacemakerBackoffRate.class).to(1.2);
-    bindConstant().annotatedWith(PacemakerMaxExponent.class).to(8);
-    bindConstant().annotatedWith(AdditionalRoundTimeIfProposalReceivedMs.class).to(30_000L);
+    bind(PacemakerTimeoutCalculatorConfig.class)
+        .toInstance(PacemakerTimeoutCalculatorConfig.defaultConfig());
+
+    // Delayed resolution is disabled for now because we cannot create QCs on fallback vertices,
+    // because we don't just sign the ledger header, but also the BFT header,
+    // which captures the previous certificate chain,
+    // and all the nodes have a different certificate chain for their fallback vertex.
+    // TODO: consider reviving this feature or clean it up
     bindConstant().annotatedWith(TimeoutQuorumResolutionDelayMs.class).to(0L);
 
     final var vertexStoreConfig =

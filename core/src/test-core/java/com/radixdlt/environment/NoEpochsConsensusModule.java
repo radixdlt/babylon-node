@@ -103,8 +103,8 @@ public class NoEpochsConsensusModule extends AbstractModule {
   public void configure() {
     bind(PacemakerState.class).in(Scopes.SINGLETON);
     bind(PacemakerReducer.class).to(PacemakerState.class);
-    bind(ExponentialPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
-    bind(PacemakerTimeoutCalculator.class).to(ExponentialPacemakerTimeoutCalculator.class);
+    bind(MultiFactorPacemakerTimeoutCalculator.class).in(Scopes.SINGLETON);
+    bind(PacemakerTimeoutCalculator.class).to(MultiFactorPacemakerTimeoutCalculator.class);
 
     OptionalBinder.newOptionalBinder(
         binder(), EpochManager.class); // So that this is consistent with tests

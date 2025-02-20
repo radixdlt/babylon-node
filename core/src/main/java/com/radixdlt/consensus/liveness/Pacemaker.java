@@ -194,7 +194,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     this.scheduledRoundTimeoutHasOccurred = false;
     this.hasAnyVoteBeenSentInCurrentRound = false;
 
-    final var timeoutMs = timeoutCalculator.calculateTimeoutMs(0);
+    final var timeoutMs =
+        timeoutCalculator.calculateTimeoutMs(0, vertexStore.getCurrentUtilizationRatio());
     final var scheduledLocalTimeout = ScheduledLocalTimeout.create(latestRoundUpdate, timeoutMs);
     this.scheduledLocalTimeoutDispatcher.dispatch(scheduledLocalTimeout, timeoutMs);
 
@@ -463,7 +464,9 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   }
 
   private void rescheduleTimeout(ScheduledLocalTimeout scheduledTimeout) {
-    final var timeout = timeoutCalculator.calculateTimeoutMs(scheduledTimeout.count() + 1);
+    final var timeout =
+        timeoutCalculator.calculateTimeoutMs(
+            (long) scheduledTimeout.count() + 1, vertexStore.getCurrentUtilizationRatio());
     final var nextTimeout = scheduledTimeout.nextRetry(timeout);
     this.scheduledLocalTimeoutDispatcher.dispatch(nextTimeout, timeout);
   }

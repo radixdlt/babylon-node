@@ -64,48 +64,82 @@
 
 package com.radixdlt.consensus.liveness;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertEquals;
+import com.google.common.math.LinearTransformation;
+import com.google.common.primitives.Doubles;
+import com.google.common.util.concurrent.RateLimiter;
+import com.google.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.util.Map;
-import org.junit.Test;
+/**
+ * Main timeout calculator implementation, which uses two factors to calculate the timeout:
+ *
+ * <ol>
+ *   <li>- the number of consecutive timeout occurrences
+ *   <li>- and the current capacity of the vertex store
+ */
+public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTimeoutCalculator {
+  private static final Logger logger = LogManager.getLogger();
 
-public class ExponentialPacemakerTimeoutCalculatorTest {
+  private final PacemakerTimeoutCalculatorConfig config;
 
-  @Test
-  public void when_creating_timeout_calculator_with_invalid_timeout__then_exception_is_thrown() {
-    checkConstructionParams(0, 1.2, 1, "timeoutMilliseconds must be > 0");
-    checkConstructionParams(-1, 1.2, 1, "timeoutMilliseconds must be > 0");
-    checkConstructionParams(1, 1.0, 1, "rate must be > 1.0");
-    checkConstructionParams(1, 1.2, -1, "maxExponent must be >= 0");
-    checkConstructionParams(1, 100.0, 100, "Maximum timeout value");
+  private final RateLimiter logRatelimiter =
+      RateLimiter.create(0.016); // At most one log every ~minute
+
+  @Inject
+  public MultiFactorPacemakerTimeoutCalculator(PacemakerTimeoutCalculatorConfig config) {
+    this.config = config;
   }
 
-  @Test
-  public void timeout_should_grow_exponentially() {
-    final ExponentialPacemakerTimeoutCalculator calculator =
-        new ExponentialPacemakerTimeoutCalculator(1000L, 2.0, 6, 0L);
+  @Override
+  @SuppressWarnings("UnstableApiUsage")
+  public long calculateTimeoutMs(long timeoutOccurrences, double vertexStoreUtilizationRatio) {
+    final var consecutiveTimeoutFactor =
+        Math.pow(
+            config.consecutiveTimeoutFactorRate(),
+            Math.min(config.consecutiveTimeoutFactorMaxExponent(), timeoutOccurrences));
 
-    final Map<Long, Long> expectedTimeouts =
-        Map.of(
-            0L, 1000L,
-            1L, 2000L,
-            2L, 4000L,
-            3L, 8000L,
-            4L, 16000L,
-            5L, 32000L);
+    // It should already be in the [0, 1] range, but we're nonetheless sanitizing the input
+    final var vertexStoreUtilizationRatioClamped =
+        Doubles.constrainToRange(vertexStoreUtilizationRatio, 0, 1);
 
-    expectedTimeouts.forEach(
-        (uncommittedRounds, expectedResult) ->
-            assertEquals(
-                expectedResult.longValue(), calculator.calculateTimeoutMs(uncommittedRounds)));
+    final double vertexStoreUtilizationFactor;
+    if (vertexStoreUtilizationRatioClamped <= config.vertexStoreUtilizationFactorThreshold()) {
+      vertexStoreUtilizationFactor = 1;
+    } else {
+      // We're linearly transforming the current utilization
+      // from [threshold, 1] to [1, maxExponent] to get the exponent
+      // for the vertex store utilization factor.
+      final var exponent =
+          LinearTransformation.mapping(config.vertexStoreUtilizationFactorThreshold(), 0.0)
+              .and(1.0, config.vertexStoreUtilizationFactorMaxExponent())
+              .transform(vertexStoreUtilizationRatioClamped);
+      vertexStoreUtilizationFactor = Math.pow(config.vertexStoreUtilizationFactorRate(), exponent);
+    }
+
+    final var res =
+        Math.round(
+            config.baseTimeoutMs() * consecutiveTimeoutFactor * vertexStoreUtilizationFactor);
+
+    if (vertexStoreUtilizationRatioClamped >= config.vertexStoreUtilizationFactorThreshold()
+        && logRatelimiter.tryAcquire()) {
+      logger.warn(
+          "Vertex store is currently at {} of its maximum byte capacity. Consensus timeouts are"
+              + " being slowed down to slow down pressure accumulation on the vertex store."
+              + " [base_timeout ({} ms) * consecutive_timeout_factor ({}) *"
+              + " vertex_store_utilization_factor ({}) = resultant_timeout ({} ms)]",
+          vertexStoreUtilizationRatioClamped,
+          config.baseTimeoutMs(),
+          consecutiveTimeoutFactor,
+          vertexStoreUtilizationFactor,
+          res);
+    }
+
+    return res;
   }
 
-  private void checkConstructionParams(
-      long timeout, double rate, int maxExponent, String exceptionMessage) {
-    assertThatThrownBy(
-            () -> new ExponentialPacemakerTimeoutCalculator(timeout, rate, maxExponent, 0L))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageStartingWith(exceptionMessage);
+  @Override
+  public long additionalRoundTimeIfProposalReceivedMs() {
+    return config.additionalRoundTimeIfProposalReceivedMs();
   }
 }
