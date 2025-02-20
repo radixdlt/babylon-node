@@ -64,6 +64,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.google.common.math.LinearTransformation;
 import com.google.common.primitives.Doubles;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
@@ -110,12 +111,9 @@ public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTim
       // from [threshold, 1] to [1, maxExponent] to get the exponent
       // for the vertex store utilization factor.
       final var exponent =
-          lerp(
-              config.vertexStoreUtilizationFactorThreshold(),
-              1.0,
-              0.0,
-              config.vertexStoreUtilizationFactorMaxExponent(),
-              vertexStoreUtilizationRatioClamped);
+          LinearTransformation.mapping(config.vertexStoreUtilizationFactorThreshold(), 0.0)
+              .and(1.0, config.vertexStoreUtilizationFactorMaxExponent())
+              .transform(vertexStoreUtilizationRatioClamped);
       vertexStoreUtilizationFactor = Math.pow(config.vertexStoreUtilizationFactorRate(), exponent);
     }
 
@@ -138,16 +136,6 @@ public final class MultiFactorPacemakerTimeoutCalculator implements PacemakerTim
     }
 
     return res;
-  }
-
-  // Computes a linear interpolation (or extrapolation).
-  // The input value `z` is interpolated from the source range [x, y]
-  // to the target range [p, q].
-  // E.g. if [x, y] = [10, 20], z = 15 and [p, q] = [0, 1], returns 0.5.
-  // If z is outside [x, y] then it's extrapolated (linearly) and can produce
-  // a value outside [p, q]. This should be handled by the caller.
-  private static double lerp(double x, double y, double p, double q, double z) {
-    return p + (q - p) * (z - x) / (y - x);
   }
 
   @Override
