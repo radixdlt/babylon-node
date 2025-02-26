@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build_deb:
     name: Build debian package
-    runs-on: selfhosted-ubuntu-22.04-16-cores
+    runs-on: ubuntu-latest-16-cores
     needs:
       - setup_version_properties
     outputs:
