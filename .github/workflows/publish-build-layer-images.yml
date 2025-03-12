@@ -27,8 +27,7 @@ jobs:
       target: "babylon-node-build-layers"
       platforms: "linux/amd64"
       provenance: "false"
-      scan_image: true
-      snyk_target_ref: ${{ github.ref_name }}
+      scan_image: false
       enable_dockerhub: true
       use_gh_remote_cache: true
       cache_tag_suffix: amd64
@@ -52,7 +51,6 @@ jobs:
       platforms: "linux/arm64"
       provenance: "false"
       scan_image: false
-      snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: true
       use_gh_remote_cache: true
       cache_tag_suffix: arm64
@@ -91,8 +89,7 @@ jobs:
       target: "babylon-node-build-layers"
       platforms: "linux/amd64"
       provenance: "false"
-      scan_image: true
-      snyk_target_ref: ${{ github.ref_name }}
+      scan_image: false
       enable_dockerhub: true
       use_gh_remote_cache: true
       cache_tag_suffix: amd64
@@ -116,7 +113,6 @@ jobs:
       platforms: "linux/arm64"
       provenance: "false"
       scan_image: false
-      snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: true
       use_gh_remote_cache: true
       cache_tag_suffix: arm64
@@ -155,8 +151,7 @@ jobs:
       target: "babylon-node-build-layers"
       platforms: "linux/amd64"
       provenance: "false"
-      scan_image: true
-      snyk_target_ref: ${{ github.ref_name }}
+      scan_image: false
       enable_dockerhub: true
       use_gh_remote_cache: true
       cache_tag_suffix: amd64
@@ -180,7 +175,6 @@ jobs:
       platforms: "linux/arm64"
       provenance: "false"
       scan_image: false
-      snyk_target_ref: ${{ github.ref_name }}
       enable_dockerhub: true
       use_gh_remote_cache: true
       cache_tag_suffix: arm64
