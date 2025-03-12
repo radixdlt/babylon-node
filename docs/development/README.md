@@ -12,7 +12,7 @@ Otherwise, please set it up as [directed by GitHub docs](https://docs.github.com
 
 Main dependencies:
 - Java 17.0.4+ SDK installed and configured. It's very important to have at least 17.0.4, else you will hit Java Compiler bugs.
-- Install the latest [rust toolchain](https://www.rust-lang.org/tools/install). If you hit any rust compilation issues, try `rustup update` and try again. If you still hit issues, ensure you're running with the Rust version corresponding to the version in the engine at the given protocol update you're working on.
+- Install the version of the [rust toolchain](https://www.rust-lang.org/tools/install) which corresponds with the version of the engine that the node is using - this should be in the [/core-rust/rust-toolchain.toml](/core-rust/rust-toolchain.toml) file. For Cuttlefish, this is 1.81.0.
 - Follow the set-up instructions for [radixdlt-scrypto](https://github.com/radixdlt/radixdlt-scrypto).
 
 If you wish to launch a local network through Docker:
@@ -30,9 +30,7 @@ If an internal contributor, simply clone the main repository.
 
 ### Branching strategy
 
-We follow the git-flow branch management model, please see the [branching strategy](../branching-strategy.md).
-
-To summarise - for code changes, you should branch off the `develop` branch and put a PR up merging back into the `develop` branch. For CI/workflows, do the same with the earliest supported `release/*` branch. For docs, use `main`.
+We follow the git-flow branch management model, please see the [branching strategy](../branching-strategy.md). For most code changes which can wait to go out in the next protocol update, use the `develop` branch.
 
 ## Developing
 
@@ -92,7 +90,7 @@ Take a look at tests beginning `REv2` for some examples of how these can be conf
 
 #### Radix shell (native)
 
-For certain kinds of manual testing, running a [radix shell](../../shell) can be the easiest.
+For certain kinds of manual testing, running a [radix shell](/shell) can be the easiest.
 
 This allows programmatically spinning up, configuring and connecting natively-running nodes together.
 
