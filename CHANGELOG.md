@@ -63,6 +63,12 @@
 
 # v1.3.x - [Cuttlefish](https://docs.radixdlt.com/docs/cuttlefish)
 
+## v1.3.1
+
+### Other changes
+
+* [#1063](https://github.com/radixdlt/babylon-node/pull/1063) - Permits configuring larger values of `state_hash_tree.state_version_history_length` up to `9,223,372,036,854,775,807`, although we currently advise against running with full history; due to very large disk usage.
+
 ## v1.3.0
 
 We didn't have a formal changelog. Please see the [protocol updates](https://docs.radixdlt.com/docs/protocol-updates) section of the docs site for more information.

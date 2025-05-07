@@ -506,7 +506,7 @@ public final class RadixNodeModule extends AbstractModule {
     // - we want to offer Merkle proofs verification up to 10 minutes after their generation.
     // Note: the legacy `state_hash_tree` name lives on here to avoid breaking configurations.
     var stateVersionHistoryLength =
-        properties.get("state_hash_tree.state_version_history_length", 60000);
+        properties.get("state_hash_tree.state_version_history_length", 60000L);
     Preconditions.checkArgument(
         stateVersionHistoryLength >= 0,
         "state version history length must not be negative: %s",
