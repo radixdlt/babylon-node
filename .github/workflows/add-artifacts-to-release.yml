@@ -201,29 +201,3 @@ jobs:
         with:
           files: |
             babylon-node-${{ needs.setup_version_properties.outputs.VERSION_TAG }}.zip
-
-  snyk-sbom:
-    if: github.event_name == 'release'
-    name: SBOM
-    runs-on: ubuntu-22.04 # Fix GLIBC
-    permissions: write-all
-    steps:
-      - uses: RDXWorks-actions/checkout@main
-      - uses: radixdlt/public-iac-resuable-artifacts/fetch-secrets@main
-        with:
-          role_name: ${{ secrets.AWS_ROLE_NAME_SNYK_SECRET }}
-          app_name: 'babylon-node'
-          step_name: 'snyk-sbom'
-          secret_prefix: 'SNYK'
-          secret_name: ${{ secrets.AWS_SECRET_NAME_SNYK }}
-          parse_json: true
-      - name: Generate SBOM
-        uses: RDXWorks-actions/snyk-actions/gradle-jdk17@master
-        with:
-          args: --all-projects --org=${{ env.SNYK_NETWORK_ORG_ID }} --format=cyclonedx1.4+json > sbom.json
-          command: sbom
-      - name: Upload SBOM
-        uses: RDXWorks-actions/action-gh-release@master
-        with:
-          files: |
-            sbom.json
