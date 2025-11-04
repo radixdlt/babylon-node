@@ -20,7 +20,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 CMD ["/bin/bash"]
 
-ARG WGET_VERSION="1.21.3-1+b2"
+ARG WGET_VERSION="1.21.3-1+deb12u1"
 ARG VERSION_BRANCH=""
 ARG VERSION_COMMIT=""
 ARG VERSION_DISPLAY=""
@@ -50,7 +50,7 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     docker.io=20.10.24+dfsg1-1+deb12u1 \
-    libssl-dev=3.0.15-1~deb12u1 \
+    libssl-dev=3.0.17-1~deb12u3 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
     wget=${WGET_VERSION} \
@@ -131,7 +131,7 @@ RUN apt-get update \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.15-1~deb12u1 \
+    libssl-dev=3.0.17-1~deb12u3 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
