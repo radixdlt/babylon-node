@@ -637,6 +637,10 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
                     .state_changes
                     .substate_level_changes,
             );
+            db_context.cf(ExtensionsDataCf).put(
+                &ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
+                &transaction_bundle.state_version.to_be_bytes().to_vec(),
+            );
         }
 
         let CommittedTransactionBundle {
