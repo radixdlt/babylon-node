@@ -209,7 +209,6 @@ jobs:
       platforms: "linux/arm64"
       cache_tag_suffix: arm64
       build-args: |
-        WGET_VERSION=1.21.3-1+b1
         VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
         VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
         VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
@@ -297,7 +296,6 @@ jobs:
       enable_dockerhub: "true"
       provenance: "false"
       build-args: |
-        WGET_VERSION=1.21.3-1+b1
         VERSION_BRANCH=${{ needs.setup_version_properties.outputs.VERSION_BRANCH }}
         VERSION_COMMIT=${{ needs.setup_version_properties.outputs.VERSION_COMMIT }}
         VERSION_DISPLAY=${{ needs.setup_version_properties.outputs.VERSION_DISPLAY }}
