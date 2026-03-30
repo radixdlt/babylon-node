@@ -49,7 +49,7 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 # - https://packages.debian.org/bookworm/openjdk-17-jdk
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    docker.io=20.10.24+dfsg1-1+deb12u1+b2 \
+    docker.io=20.10.24+dfsg1-1+deb12u1+b3 \
     libssl-dev=3.0.18-1~deb12u2 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
