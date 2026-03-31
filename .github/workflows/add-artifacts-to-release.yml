@@ -20,6 +20,7 @@ jobs:
         run: git config --global core.longpaths true
         shell: pwsh
       - name: Enable long paths (system-wide)
+        if: runner.os == 'Windows'
         run: |
           New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
             -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
@@ -68,6 +69,7 @@ jobs:
         run: git config --global core.longpaths true
         shell: pwsh
       - name: Enable long paths (system-wide)
+        if: runner.os == 'Windows'
         run: |
           New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
             -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
@@ -158,6 +160,7 @@ jobs:
         run: git config --global core.longpaths true
         shell: pwsh
       - name: Enable long paths (system-wide)
+        if: runner.os == 'Windows'
         run: |
           New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
             -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
