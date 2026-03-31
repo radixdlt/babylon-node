@@ -94,10 +94,6 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - name: Set git config for long paths
-        if: matrix.os == 'windows-latest'
-        run: |
-          git config --system core.longpaths true
       - name: Install Rust Targets
         run: |
           rustup target install ${{ matrix.target }}
@@ -118,6 +114,7 @@ jobs:
           echo "ls  ./target/${{ matrix.target }}/release"
           ls  ./target/${{ matrix.target }}/release/
         env:
+          CXXFLAGS: "-include cstdint"
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: "${{ matrix.target == 'aarch64-unknown-linux-gnu' && '' || 'aarch64-linux-gnu-gcc' }}"
       - uses: RDXWorks-actions/upload-artifact@main
         with:
