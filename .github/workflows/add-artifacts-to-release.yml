@@ -47,11 +47,11 @@ jobs:
             target: aarch64-unknown-linux-gnu
             zipname: 'arch-linux-aarch64'
             artifact: 'libcorerust.so'
-          - os: windows-2022
+          - os: windows-2025
             target: x86_64-pc-windows-msvc
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-msvc'
-          - os: windows-2022
+          - os: windows-2025
             target: x86_64-pc-windows-gnu
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-gnu'
