@@ -16,6 +16,15 @@ jobs:
       VERSION_TAG: ${{ steps.setup_version_properties.outputs.VERSION_TAG }}
       VERSION_LAST_TAG: ${{ steps.setup_version_properties.outputs.VERSION_LAST_TAG }}
     steps:
+      - name: Enable long paths
+        run: git config --global core.longpaths true
+        shell: pwsh
+      - name: Enable long paths (system-wide)
+        if: runner.os == 'Windows'
+        run: |
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+            -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+        shell: pwsh
       - uses: RDXWorks-actions/checkout@main
         with:
           fetch-depth: 0
@@ -56,6 +65,15 @@ jobs:
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-gnu'
     steps:
+      - name: Enable long paths
+        run: git config --global core.longpaths true
+        shell: pwsh
+      - name: Enable long paths (system-wide)
+        if: runner.os == 'Windows'
+        run: |
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+            -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+        shell: pwsh
       - uses: RDXWorks-actions/checkout@main
         with:
           lfs: true
@@ -76,10 +94,6 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - name: Set git config for long paths
-        if: matrix.os == 'windows-latest'
-        run: |
-          git config --system core.longpaths true
       - name: Install Rust Targets
         run: |
           rustup target install ${{ matrix.target }}
@@ -100,6 +114,7 @@ jobs:
           echo "ls  ./target/${{ matrix.target }}/release"
           ls  ./target/${{ matrix.target }}/release/
         env:
+          CXXFLAGS: "-include cstdint"
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: "${{ matrix.target == 'aarch64-unknown-linux-gnu' && '' || 'aarch64-linux-gnu-gcc' }}"
       - uses: RDXWorks-actions/upload-artifact@main
         with:
@@ -138,6 +153,15 @@ jobs:
             artifact: 'corerust.dll'
             zipname: 'arch-windows-x86_64-gnu'
     steps:
+      - name: Enable long paths
+        run: git config --global core.longpaths true
+        shell: pwsh
+      - name: Enable long paths (system-wide)
+        if: runner.os == 'Windows'
+        run: |
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+            -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+        shell: pwsh
       - uses: RDXWorks-actions/checkout@main
         with:
           lfs: true
