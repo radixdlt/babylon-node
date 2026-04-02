@@ -165,7 +165,7 @@ jobs:
       - uses: RDXWorks-actions/checkout@main
         with:
           lfs: true
-      - uses: RDXWorks-actions/download-artifact@main
+      - uses: RDXWorks-actions/download-artifact-v4@main
         with:
           name: libcorerust-${{ matrix.target }}
           path: libcorerust-${{ matrix.target }}
