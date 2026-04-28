@@ -77,7 +77,7 @@ impl NodeProtocolUpdateGenerator for ArbitraryNodeBatchGenerator {
         false
     }
 
-    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>> {
+    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator<'_> + '_>> {
         let mut batch_group = NodeFixedBatchGroupGenerator::named(Self::BATCH_GROUP_DESCRIPTOR);
         for (index, batch) in self.batches.iter().enumerate() {
             batch_group = batch_group.add_batch(format!("batch-{index:02}"), |_| batch.clone())

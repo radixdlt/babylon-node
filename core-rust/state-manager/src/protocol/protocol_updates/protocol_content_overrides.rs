@@ -124,7 +124,7 @@ impl RawProtocolUpdateContentOverrides {
         Default::default()
     }
 
-    pub fn iter(&self) -> hash_map::Iter<ProtocolVersionName, Vec<u8>> {
+    pub fn iter(&self) -> hash_map::Iter<'_, ProtocolVersionName, Vec<u8>> {
         self.0.iter()
     }
 

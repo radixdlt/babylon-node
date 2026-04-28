@@ -96,7 +96,7 @@ impl EpochAwareAccuTreeFactory {
         &'s self,
         previous_epoch_root: N,
         store: &'s mut S,
-    ) -> EpochAccuTreeBuilder<S, N> {
+    ) -> EpochAccuTreeBuilder<'s, S, N> {
         EpochAccuTreeBuilder::new(
             store,
             self.epoch_start_state_version,

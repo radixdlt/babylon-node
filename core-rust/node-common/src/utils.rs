@@ -65,16 +65,12 @@
 use crate::prelude::*;
 
 /// An implementation helper for a runtime-safe "capture a single expected value" functionality.
+#[derive(Default)]
 pub enum CaptureSupport<T> {
+    #[default]
     NotExpecting,
     Expecting,
     Captured(T),
-}
-
-impl<T> Default for CaptureSupport<T> {
-    fn default() -> Self {
-        Self::NotExpecting
-    }
 }
 
 impl<T> CaptureSupport<T> {

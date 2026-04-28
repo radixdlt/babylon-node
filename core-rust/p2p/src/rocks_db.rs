@@ -127,7 +127,9 @@ fn new_rocks_db(root_path: PathBuf, column_families: &[&str]) -> DB {
     DB::open_cf_descriptors(&db_opts, root_path.as_path(), column_families).unwrap()
 }
 
-fn open_rw_context<R: WriteableRocks>(db: &R) -> TypedDbContext<R, BufferedWriteSupport<R>> {
+fn open_rw_context<R: WriteableRocks>(
+    db: &R,
+) -> TypedDbContext<'_, R, BufferedWriteSupport<'_, R>> {
     TypedDbContext::new(db, BufferedWriteSupport::new(db))
 }
 

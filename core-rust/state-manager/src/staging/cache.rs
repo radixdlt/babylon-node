@@ -106,13 +106,10 @@ impl ExecutionCacheManager {
         let execution_cache = self.execution_cache.lock();
         let mut transaction_root = parent_transaction_root;
         for transaction in transactions {
-            transaction_root = match execution_cache.get_cached_transaction_root(
+            transaction_root = execution_cache.get_cached_transaction_root(
                 transaction_root,
                 &transaction.ledger_transaction_hash(),
-            ) {
-                Some(cached) => cached,
-                None => return None,
-            }
+            )?
         }
         Some(*transaction_root)
     }

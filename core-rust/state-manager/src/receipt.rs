@@ -601,12 +601,18 @@ impl<T> BySubstate<T> {
                 by_partition_num
                     .iter_mut()
                     .flat_map(move |(partition_num, by_substate_key)| {
-                        by_substate_key.iter_mut().map(move |(substate_key, element)| {
-                            (
-                                SubstateReference(*node_id, *partition_num, substate_key.clone()),
-                                element,
-                            )
-                        })
+                        by_substate_key
+                            .iter_mut()
+                            .map(move |(substate_key, element)| {
+                                (
+                                    SubstateReference(
+                                        *node_id,
+                                        *partition_num,
+                                        substate_key.clone(),
+                                    ),
+                                    element,
+                                )
+                            })
                     })
             })
     }
