@@ -594,6 +594,23 @@ impl<T> BySubstate<T> {
             })
     }
 
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (SubstateReference, &mut T)> + '_ {
+        self.by_node_id
+            .iter_mut()
+            .flat_map(|(node_id, by_partition_num)| {
+                by_partition_num
+                    .iter_mut()
+                    .flat_map(move |(partition_num, by_substate_key)| {
+                        by_substate_key.iter_mut().map(move |(substate_key, element)| {
+                            (
+                                SubstateReference(*node_id, *partition_num, substate_key.clone()),
+                                element,
+                            )
+                        })
+                    })
+            })
+    }
+
     pub fn iter_node_ids(&self) -> impl Iterator<Item = &NodeId> + '_ {
         self.by_node_id.keys()
     }

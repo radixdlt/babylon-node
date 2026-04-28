@@ -221,6 +221,7 @@ impl ActualStateManagerDatabase {
                 enable_account_change_index: false,
                 enable_historical_substate_values: false,
                 enable_entity_listing_indices: false,
+                keep_previous_substate_values: true,
             },
             rocks: DirectRocks { db },
         }
@@ -256,6 +257,7 @@ impl ActualStateManagerDatabase {
                 enable_account_change_index: false,
                 enable_historical_substate_values: false,
                 enable_entity_listing_indices: false,
+                keep_previous_substate_values: true,
             },
             rocks: DirectRocks { db },
         }
@@ -698,9 +700,18 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         db_context
             .cf(CommittedTransactionIdentifiersCf)
             .put(&state_version, &identifiers);
+
+        let mut on_ledger_receipt = receipt.on_ledger;
+        if !self.config.keep_previous_substate_values {
+            for (_, action) in on_ledger_receipt.state_changes.substate_level_changes.iter_mut() {
+                if let SubstateChangeAction::Update { previous, .. } = action {
+                    previous.clear();
+                }
+            }
+        }
         db_context
             .cf(TransactionReceiptsCf)
-            .put(&state_version, &receipt.on_ledger);
+            .put(&state_version, &on_ledger_receipt);
 
         for nullification in &receipt.local_execution.nullifications {
             let Nullification::Intent { intent_hash, .. } = nullification;

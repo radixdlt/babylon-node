@@ -91,6 +91,7 @@ pub struct DatabaseConfig {
     pub enable_account_change_index: bool,
     pub enable_historical_substate_values: bool,
     pub enable_entity_listing_indices: bool,
+    pub keep_previous_substate_values: bool,
 }
 
 impl Default for DatabaseConfig {
@@ -100,6 +101,7 @@ impl Default for DatabaseConfig {
             enable_account_change_index: true,
             enable_historical_substate_values: false,
             enable_entity_listing_indices: true,
+            keep_previous_substate_values: true,
         }
     }
 }

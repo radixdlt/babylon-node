@@ -80,7 +80,7 @@ public final class LtsAccountResourceBalanceTest extends DeterministicCoreApiTes
   @Test
   public void test_lts_account_xrd_balance() throws Exception {
     final var config =
-        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false, true));
     try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 

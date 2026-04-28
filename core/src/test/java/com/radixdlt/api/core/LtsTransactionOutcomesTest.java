@@ -87,7 +87,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_non_fungible_entity_changes() throws Exception {
     final var config =
-        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false, true));
     try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
@@ -269,7 +269,7 @@ public class LtsTransactionOutcomesTest extends DeterministicCoreApiTestBase {
   @Test
   public void test_multiple_transactions_have_correct_outcomes() throws Exception {
     final var config =
-        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false, true));
     try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 

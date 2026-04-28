@@ -459,7 +459,7 @@ public class TransactionPreviewTest extends DeterministicCoreApiTestBase {
   private DeterministicTest buildTest(boolean stateHistoryEnabled, long historyLength) {
     return buildRunningServerTest(
         defaultConfig()
-            .withDatabaseConfig(new DatabaseConfig(true, false, stateHistoryEnabled, false))
+            .withDatabaseConfig(new DatabaseConfig(true, false, stateHistoryEnabled, false, true))
             .withStateTreeGcConfig(
                 new StateTreeGcConfig(
                     UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(historyLength))));

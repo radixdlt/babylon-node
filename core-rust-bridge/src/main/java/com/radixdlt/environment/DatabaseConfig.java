@@ -72,7 +72,8 @@ public record DatabaseConfig(
     boolean enableLocalTransactionExecutionIndex,
     boolean enableAccountChangeIndex,
     boolean enableHistoricalSubstateValues,
-    boolean enableEntityListingIndices) {
+    boolean enableEntityListingIndices,
+    boolean keepPreviousSubstateValues) {
   public static void registerCodec(CodecMap codecMap) {
     codecMap.register(
         DatabaseConfig.class,
@@ -81,6 +82,6 @@ public record DatabaseConfig(
 
   public static DatabaseConfig forTesting() {
     // Many test assert on transaction execution details, so we keep this one on by default:
-    return new DatabaseConfig(true, false, false, false);
+    return new DatabaseConfig(true, false, false, false, true);
   }
 }

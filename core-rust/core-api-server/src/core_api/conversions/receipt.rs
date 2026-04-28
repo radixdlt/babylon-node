@@ -379,7 +379,7 @@ pub fn to_api_state_updates(
                         &typed_substate_key,
                         new,
                     )?),
-                    previous_value: if context.substate_options.include_previous {
+                    previous_value: if context.substate_options.include_previous && !previous.is_empty() {
                         Some(Box::new(to_api_substate_value(
                             context,
                             &state_mapping_lookups,
@@ -395,7 +395,7 @@ pub fn to_api_state_updates(
             SubstateChangeAction::Delete { previous } => {
                 deleted_substates.push(models::DeletedSubstate {
                     substate_id,
-                    previous_value: if context.substate_options.include_previous {
+                    previous_value: if context.substate_options.include_previous && !previous.is_empty() {
                         Some(Box::new(to_api_substate_value(
                             context,
                             &state_mapping_lookups,

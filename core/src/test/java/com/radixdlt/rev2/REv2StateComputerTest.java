@@ -133,7 +133,7 @@ public class REv2StateComputerTest {
         REv2StateManagerModule.createForTesting(
             genesisProvider,
             ProposalLimitsConfig.testDefaults(),
-            new DatabaseConfig(false, false, false, false),
+            new DatabaseConfig(false, false, false, false, true),
             Option.none(),
             false,
             StateTreeGcConfig.forTesting(),
