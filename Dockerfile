@@ -49,14 +49,14 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 # - https://packages.debian.org/bookworm/openjdk-17-jdk
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    docker.io=20.10.24+dfsg1-1+deb12u1+b3 \
-    libssl-dev=3.0.19-1~deb12u2 \
+    docker.io=20.10.24+dfsg1-1+deb12u1 \
+    libssl-dev=3.0.20-1~deb12u1 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.18+8-1~deb12u1 \
+    openjdk-17-jdk=17.0.19+10-1~deb12u2 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -131,7 +131,7 @@ RUN apt-get update \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.19-1~deb12u2 \
+    libssl-dev=3.0.20-1~deb12u1 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
