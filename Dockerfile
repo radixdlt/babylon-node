@@ -140,11 +140,11 @@ RUN apt-get update \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
   && sh rustup.sh -y --target 1.88.0-aarch64-unknown-linux-gnu,1.88.0-x86_64-unknown-linux-gnu --default-toolchain 1.88.0
 
-RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
+# RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
-ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+# ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 
 # =================================================================================================
 # LAYER: library-builder-local
