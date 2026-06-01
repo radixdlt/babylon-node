@@ -221,6 +221,7 @@ impl ActualStateManagerDatabase {
                 enable_account_change_index: false,
                 enable_historical_substate_values: false,
                 enable_entity_listing_indices: false,
+                keep_previous_substate_values: true,
             },
             rocks: DirectRocks { db },
         }
@@ -256,6 +257,7 @@ impl ActualStateManagerDatabase {
                 enable_account_change_index: false,
                 enable_historical_substate_values: false,
                 enable_entity_listing_indices: false,
+                keep_previous_substate_values: true,
             },
             rocks: DirectRocks { db },
         }
@@ -268,14 +270,14 @@ impl ActualStateManagerDatabase {
 
 impl<R: ReadableRocks> StateManagerDatabase<R> {
     /// Starts a read-only interaction with the DB through per-CF type-safe APIs.
-    fn open_read_context(&self) -> TypedDbContext<R, NoWriteSupport> {
+    fn open_read_context(&self) -> TypedDbContext<'_, R, NoWriteSupport> {
         TypedDbContext::new(&self.rocks, NoWriteSupport)
     }
 }
 
 impl<R: WriteableRocks> StateManagerDatabase<R> {
     /// Starts a read/buffered-write interaction with the DB through per-CF type-safe APIs.
-    fn open_rw_context(&self) -> TypedDbContext<R, BufferedWriteSupport<R>> {
+    fn open_rw_context(&self) -> TypedDbContext<'_, R, BufferedWriteSupport<'_, R>> {
         TypedDbContext::new(&self.rocks, BufferedWriteSupport::new(&self.rocks))
     }
 }
@@ -698,9 +700,22 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
         db_context
             .cf(CommittedTransactionIdentifiersCf)
             .put(&state_version, &identifiers);
+
+        let mut on_ledger_receipt = receipt.on_ledger;
+        if !self.config.keep_previous_substate_values {
+            for (_, action) in on_ledger_receipt
+                .state_changes
+                .substate_level_changes
+                .iter_mut()
+            {
+                if let SubstateChangeAction::Update { previous, .. } = action {
+                    previous.clear();
+                }
+            }
+        }
         db_context
             .cf(TransactionReceiptsCf)
-            .put(&state_version, &receipt.on_ledger);
+            .put(&state_version, &on_ledger_receipt);
 
         for nullification in &receipt.local_execution.nullifications {
             let Nullification::Intent { intent_hash, .. } = nullification;
@@ -1627,9 +1642,8 @@ impl<R: WriteableRocks> RestoreDecember2023LostSubstates for StateManagerDatabas
 
             // Substates were deleted on the transition to epoch 51817 so no need to restore
             // substates if the current epoch has not reached this epoch yet.
-            self.get_latest_epoch_proof().map_or(false, |p| {
-                p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817
-            })
+            self.get_latest_epoch_proof()
+                .is_some_and(|p| p.ledger_header.next_epoch.unwrap().epoch.number() >= 51817)
         } else {
             // For other networks, we can calculate the "problem" epoch from theoretical principles:
             let (Some(first_proof), Some(latest_epoch_proof)) =

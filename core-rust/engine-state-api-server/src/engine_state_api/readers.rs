@@ -667,7 +667,7 @@ pub struct BlueprintFieldMeta {
 
 impl BlueprintFieldMeta {
     /// Post-processes and returns the [`Self::transience_default_value_bytes`] (see the note there).
-    pub fn transience(&self) -> Option<FieldTransienceMeta> {
+    pub fn transience(&self) -> Option<FieldTransienceMeta<'_>> {
         self.transience_default_value_bytes
             .as_ref()
             .map(|default_value_bytes| FieldTransienceMeta {
@@ -1212,7 +1212,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         module_id: ModuleId,
         collection_meta: &'s ObjectCollectionMeta,
         from_key: Option<&RawCollectionKey>,
-    ) -> Result<impl Iterator<Item = SborCollectionKey> + '_, EngineStateBrowsingError> {
+    ) -> Result<impl Iterator<Item = SborCollectionKey<'_>> + '_, EngineStateBrowsingError> {
         // From performance PoV, there is no way to iterate over keys without iterating over values
         // too. The cost of the (discarded) `SborData` wrapper construction is negligible, hence:
         Ok(self
@@ -1230,7 +1230,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         collection_meta: &'s ObjectCollectionMeta,
         from_key: Option<&RawCollectionKey>,
     ) -> Result<
-        impl Iterator<Item = (SborCollectionKey, SborData<'s>)> + '_,
+        impl Iterator<Item = (SborCollectionKey<'_>, SborData<'s>)> + '_,
         EngineStateBrowsingError,
     > {
         let collection_index = collection_meta.index.number;
@@ -1262,7 +1262,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
         node_id: &NodeId,
         kv_store_meta: &'s KeyValueStoreMeta,
         from_key: Option<&MapKey>,
-    ) -> Result<impl Iterator<Item = SborData> + '_, EngineStateBrowsingError> {
+    ) -> Result<impl Iterator<Item = SborData<'_>> + '_, EngineStateBrowsingError> {
         Ok(self
             .reader
             .key_value_store_iter(node_id, from_key)
@@ -1280,7 +1280,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     pub fn load_schema(
         &self,
         reference: &SchemaReference,
-    ) -> Result<SborData, EngineStateBrowsingError> {
+    ) -> Result<SborData<'_>, EngineStateBrowsingError> {
         let versioned_schema = self
             .reader
             .get_schema(&reference.node_id, &reference.schema_hash)
@@ -1305,7 +1305,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     fn to_object_collection_key(
         substate_key: SubstateKey,
         collection_meta: &ObjectCollectionMeta,
-    ) -> SborCollectionKey {
+    ) -> SborCollectionKey<'_> {
         match (&collection_meta.kind, substate_key) {
             (ObjectCollectionKind::KeyValueStore, SubstateKey::Map(key)) => {
                 SborCollectionKey::KeyValueStore(SborData::new(

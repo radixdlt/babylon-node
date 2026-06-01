@@ -99,7 +99,7 @@ pub trait ReadableRocks {
         &self,
         cf: &impl AsColumnFamilyRef,
         key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice>;
+    ) -> Option<DBPinnableSlice<'_>>;
 
     /// Gets multiple values by keys.
     ///
@@ -121,7 +121,7 @@ pub trait WriteableRocks: ReadableRocks {
     fn write(&self, batch: WriteBatch);
 
     /// Returns a snapshot of the current state.
-    fn snapshot(&self) -> SnapshotRocks;
+    fn snapshot(&self) -> SnapshotRocks<'_>;
 }
 
 /// A [`ReadableRocks`] instance opened as secondary instance.
@@ -162,7 +162,7 @@ impl ReadableRocks for DirectRocks {
         &self,
         cf: &impl AsColumnFamilyRef,
         key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice> {
+    ) -> Option<DBPinnableSlice<'_>> {
         self.db.get_pinned_cf(cf, key).expect("DB get by key")
     }
 
@@ -183,7 +183,7 @@ impl WriteableRocks for DirectRocks {
         self.db.write(batch).expect("DB write batch");
     }
 
-    fn snapshot(&self) -> SnapshotRocks {
+    fn snapshot(&self) -> SnapshotRocks<'_> {
         SnapshotRocks {
             db: &self.db,
             snapshot: self.db.snapshot(),
@@ -248,7 +248,7 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
         &self,
         cf: &impl AsColumnFamilyRef,
         key: impl AsRef<[u8]>,
-    ) -> Option<DBPinnableSlice> {
+    ) -> Option<DBPinnableSlice<'_>> {
         self.snapshot
             .get_pinned_cf(cf, key)
             .expect("snapshot DB get by key")

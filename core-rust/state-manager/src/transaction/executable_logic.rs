@@ -103,7 +103,7 @@ impl ExecutionConfigurator {
         transaction_hashes: &LedgerTransactionHashes,
         ledger_executable: &'a LedgerExecutable,
         description: impl ToString,
-    ) -> ConfiguredExecutable {
+    ) -> ConfiguredExecutable<'a> {
         match ledger_executable {
             LedgerExecutable::GenesisFlash => ConfiguredExecutable::SystemFlash {
                 state_updates: create_system_bootstrap_flash_state_updates(),
@@ -157,7 +157,7 @@ impl ExecutionConfigurator {
         executable: &'a ExecutableTransaction,
         config_type: ConfigType,
         description: String,
-    ) -> ConfiguredExecutable {
+    ) -> ConfiguredExecutable<'a> {
         ConfiguredExecutable::Transaction {
             executable,
             vm_modules: &self.vm_modules,

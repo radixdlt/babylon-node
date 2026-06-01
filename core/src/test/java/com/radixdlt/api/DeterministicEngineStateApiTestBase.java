@@ -120,7 +120,7 @@ public abstract class DeterministicEngineStateApiTestBase {
                 1,
                 Decimal.ONE,
                 GenesisConsensusManagerConfig.Builder.testDefaults().epochExactRoundCount(1000000)))
-        .withDatabaseConfig(new DatabaseConfig(true, false, true, true))
+        .withDatabaseConfig(new DatabaseConfig(true, false, true, true, true))
         .withStateTreeGcConfig(
             new StateTreeGcConfig(UInt32.fromNonNegativeInt(1), UInt64.fromNonNegativeLong(20)));
   }

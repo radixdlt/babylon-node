@@ -36,7 +36,7 @@ pub trait NodeProtocolUpdateGenerator {
     /// Return the list of batch groups for the protocol update.
     ///
     /// Each should be a fixed, conceptual step in the update process.
-    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>>;
+    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator<'_> + '_>>;
 }
 
 /// Each batch group is a logical grouping of batches.
@@ -107,7 +107,7 @@ impl NodeProtocolUpdateGenerator for WrappedProtocolUpdateGenerator {
             .insert_status_tracking_flash_transactions()
     }
 
-    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>> {
+    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator<'_> + '_>> {
         self.engine_generator
             .batch_groups()
             .into_iter()
@@ -236,7 +236,7 @@ impl<B: NodeProtocolUpdateGenerator> NodeProtocolUpdateGenerator
         })
     }
 
-    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator + '_>> {
+    fn batch_groups(&self) -> Vec<Box<dyn NodeProtocolUpdateBatchGroupGenerator<'_> + '_>> {
         let mut batch_groups = self.base_batch_generator.batch_groups();
         if !self.scenario_names.is_empty() {
             batch_groups.insert(

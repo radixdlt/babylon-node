@@ -307,7 +307,7 @@ public final class RustMempoolTest {
                 new RustMempoolConfig(mempoolMaxTotalTransactionsSize, mempoolMaxTransactionCount)),
             Option.none(),
             stateManagerDbConfig,
-            new DatabaseConfig(false, false, false, false),
+            new DatabaseConfig(false, false, false, false, true),
             LoggingConfig.getDefault(),
             StateTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),

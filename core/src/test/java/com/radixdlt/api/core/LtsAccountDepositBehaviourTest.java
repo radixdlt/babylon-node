@@ -84,7 +84,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
   @Test
   public void account_with_default_config_allows_all_deposits() throws Exception {
     final var config =
-        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false, true));
     try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
@@ -160,7 +160,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
   @Test
   public void account_with_reject_default_rule_disallows_all_deposits() throws Exception {
     final var config =
-        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false, true));
     try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 
@@ -216,7 +216,7 @@ public final class LtsAccountDepositBehaviourTest extends DeterministicCoreApiTe
   @Test
   public void configured_resource_preference_and_depositor_badge_is_returned() throws Exception {
     final var config =
-        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false));
+        defaultConfig().withDatabaseConfig(new DatabaseConfig(true, true, false, false, true));
     try (final var test = buildRunningServerTest(config)) {
       test.suppressUnusedWarning();
 

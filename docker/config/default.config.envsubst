@@ -17,6 +17,7 @@ db.local_transaction_execution_index.enable=$RADIXDLT_DB_LOCAL_TRANSACTION_EXECU
 db.account_change_index.enable=$RADIXDLT_DB_ACCOUNT_CHANGE_INDEX_ENABLE
 db.entity_listing_indices.enable=$RADIXDLT_ENTITY_LISTING_INDICES_ENABLE
 db.historical_substate_values.enable=$RADIXDLT_DB_HISTORICAL_SUBSTATE_VALUES_ENABLE
+db.keep_previous_substate_values=$RADIXDLT_DB_KEEP_PREVIOUS_SUBSTATE_VALUES
 db.checkpoints_path=${RADIXDLT_DB_CHECKPOINTS_PATH}
 
 mempool.max_transaction_count=${RADIXDLT_MEMPOOL_MAX_TRANSACTION_COUNT}

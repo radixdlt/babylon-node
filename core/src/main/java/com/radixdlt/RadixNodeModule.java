@@ -288,12 +288,14 @@ public final class RadixNodeModule extends AbstractModule {
     var enableHistoricalSubstateValues =
         properties.get("db.historical_substate_values.enable", false);
     var enableEntityListingIndices = properties.get("db.entity_listing_indices.enable", false);
+    var keepPreviousSubstateValues = properties.get("db.keep_previous_substate_values", true);
     var databaseConfig =
         new DatabaseConfig(
             enableLocalTransactionExecutionIndex,
             enableAccountChangeIndex,
             enableHistoricalSubstateValues,
-            enableEntityListingIndices);
+            enableEntityListingIndices,
+            keepPreviousSubstateValues);
 
     var vertexMaxTransactionCount =
         properties.get(

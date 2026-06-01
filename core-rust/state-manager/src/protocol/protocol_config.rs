@@ -259,8 +259,7 @@ impl ProtocolVersionName {
     pub fn padded_len_16_version_name_for_readiness_signal(&self) -> String {
         self.validate()
             .expect("Must be valid before extracting readiness signal name");
-        std::iter::repeat('0')
-            .take(16 - self.0.len())
+        std::iter::repeat_n('0', 16 - self.0.len())
             .chain(self.0.chars())
             .collect()
     }

@@ -124,7 +124,7 @@ impl<'s, S: AccuTreeStore<usize, M>, M: Merklizable> AccuTree<'s, S, M> {
         let target_height = usize::BITS - (target_length - 1).leading_zeros();
         for _ in 0..target_height {
             let previous_slice_level = previous_slice_levels.next();
-            let left_sibling_cache = if from % 2 == 0 {
+            let left_sibling_cache = if from.is_multiple_of(2) {
                 None
             } else {
                 let previous_slice_level = previous_slice_level.unwrap();
@@ -138,7 +138,7 @@ impl<'s, S: AccuTreeStore<usize, M>, M: Merklizable> AccuTree<'s, S, M> {
                 TreeSliceLevel::new(left_sibling_cache, higher_level_nodes),
             );
 
-            let to = (from + lower_level_access.slice_level.nodes.len() + 1) / 2;
+            let to = (from + lower_level_access.slice_level.nodes.len()).div_ceil(2);
             from /= 2;
             higher_level_nodes = (from..to)
                 .map(|level_index| level_index * 2)

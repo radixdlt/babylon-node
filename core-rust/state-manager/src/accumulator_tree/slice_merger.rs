@@ -109,7 +109,7 @@ impl<N> AccuTreeSliceMerger<N> {
                 break;
             }
             let mut appended_nodes = appended_level.unwrap().nodes;
-            merged_to = (merged_to + 1) / 2;
+            merged_to = merged_to.div_ceil(2);
             appended_from /= 2;
             merged_nodes.truncate(merged_nodes.len() + appended_from - merged_to);
             merged_nodes.append(&mut appended_nodes);

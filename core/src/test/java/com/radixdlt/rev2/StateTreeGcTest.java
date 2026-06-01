@@ -101,7 +101,7 @@ public final class StateTreeGcTest {
     var genesis =
         GenesisBuilder.createTestGenesisWithNumValidators(
             1, Decimal.ONE, GenesisConsensusManagerConfig.Builder.testWithRoundsPerEpoch(100));
-    var databaseConfig = new DatabaseConfig(false, false, storeHistoricalSubstates, false);
+    var databaseConfig = new DatabaseConfig(false, false, storeHistoricalSubstates, false, true);
     var proposerConfig = REV2ProposerConfig.noUserTransactions();
     var stateTreeGcConfig =
         new StateTreeGcConfig(
