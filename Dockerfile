@@ -49,14 +49,14 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 # - https://packages.debian.org/bookworm/openjdk-17-jdk
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    docker.io=20.10.24+dfsg1-1+deb12u1+b3 \
-    libssl-dev=3.0.19-1~deb12u2 \
+    docker.io=20.10.24+dfsg1-1+deb12u1+b6 \
+    libssl-dev=3.0.20-1~deb12u1 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28 \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.18+8-1~deb12u1 \
+    openjdk-17-jdk=17.0.19+10-1~deb12u2 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -131,7 +131,7 @@ RUN apt-get update \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.19-1~deb12u2 \
+    libssl-dev=3.0.20-1~deb12u1 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -140,11 +140,11 @@ RUN apt-get update \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
   && sh rustup.sh -y --target 1.88.0-aarch64-unknown-linux-gnu,1.88.0-x86_64-unknown-linux-gnu --default-toolchain 1.88.0
 
-RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
+# RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
 
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc
-ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
+# ENV RUSTC_WRAPPER=/root/.cargo/bin/sccache
 
 # =================================================================================================
 # LAYER: library-builder-local
@@ -259,7 +259,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.18+8-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.19+10-1~deb12u2 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u14 \
     gettext-base=0.21-12 \
@@ -268,7 +268,7 @@ RUN apt-get update -y \
     # Fixes CVE-2023-4911 can be removed when we update the base OS image to include this fix
     # docker run -it debian:12.1-slim ldd --version
     # This fix can be removed as long as the version printed in the above command is 2.36-9+deb12u3 or above
-    libc6=2.36-9+deb12u13 \
+    libc6=2.36-9+deb12u14 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
