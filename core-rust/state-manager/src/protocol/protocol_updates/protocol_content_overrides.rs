@@ -12,6 +12,7 @@ pub struct ProtocolUpdateContentOverrides {
     bottlenose: Option<Overrides<BottlenoseProtocolUpdateDefinition>>,
     cuttlefish_part1: Option<Overrides<CuttlefishPart1ProtocolUpdateDefinition>>,
     cuttlefish_part2: Option<Overrides<CuttlefishPart2ProtocolUpdateDefinition>>,
+    eagle_ray: Option<Overrides<EagleRayProtocolUpdateDefinition>>,
     custom: HashMap<ProtocolVersionName, Overrides<CustomProtocolUpdateDefinition>>,
 }
 
@@ -51,6 +52,11 @@ impl ProtocolUpdateContentOverrides {
         config: Overrides<CuttlefishPart2ProtocolUpdateDefinition>,
     ) -> Self {
         self.cuttlefish_part2 = Some(config);
+        self
+    }
+
+    pub fn with_eagle_ray(mut self, config: Overrides<EagleRayProtocolUpdateDefinition>) -> Self {
+        self.eagle_ray = Some(config);
         self
     }
 
@@ -101,6 +107,12 @@ impl From<ProtocolUpdateContentOverrides> for RawProtocolUpdateContentOverrides 
         if let Some(config) = value.cuttlefish_part2 {
             map.insert(
                 ProtocolVersionName::cuttlefish_part2(),
+                scrypto_encode(&config).unwrap(),
+            );
+        }
+        if let Some(config) = value.eagle_ray {
+            map.insert(
+                ProtocolVersionName::eagle_ray(),
                 scrypto_encode(&config).unwrap(),
             );
         }
