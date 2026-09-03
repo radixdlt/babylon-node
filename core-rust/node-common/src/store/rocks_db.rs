@@ -95,6 +95,7 @@ pub trait ReadableRocks {
     ) -> Box<dyn Iterator<Item = KVBytes> + '_>;
 
     /// Gets a single value by key.
+    #[allow(mismatched_lifetime_syntaxes)]
     fn get_pinned_cf(
         &self,
         cf: &impl AsColumnFamilyRef,
@@ -158,6 +159,7 @@ impl ReadableRocks for DirectRocks {
         )
     }
 
+    #[allow(mismatched_lifetime_syntaxes)]
     fn get_pinned_cf(
         &self,
         cf: &impl AsColumnFamilyRef,
@@ -244,6 +246,7 @@ impl<'db> ReadableRocks for SnapshotRocks<'db> {
         )
     }
 
+    #[allow(mismatched_lifetime_syntaxes)]
     fn get_pinned_cf(
         &self,
         cf: &impl AsColumnFamilyRef,

@@ -82,6 +82,7 @@ impl<N> AccuTreeSliceMerger<N> {
     }
 
     /// Appends the next `TreeSlice`.
+    #[allow(clippy::manual_div_ceil)]
     pub fn append(&mut self, slice: TreeSlice<N>) {
         let mut merged_levels = self.merged.levels.iter_mut();
         let merged_leaves = merged_levels.next();

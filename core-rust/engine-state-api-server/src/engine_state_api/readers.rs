@@ -1206,6 +1206,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     /// Returns an iterator over all keys of the given object's collection, starting from the given
     /// key (or its successor, if it does not exist), in an arbitrary but deterministic order used
     /// by the backing storage.
+    #[allow(mismatched_lifetime_syntaxes)]
     pub fn iter_object_collection_keys(
         &self,
         node_id: &NodeId,
@@ -1223,6 +1224,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     /// Returns an iterator over all entries (i.e. both keys and values) of the given object's
     /// collection, starting from the given key (or its successor, if it does not exist), in an
     /// arbitrary but deterministic key order used by the backing storage.
+    #[allow(mismatched_lifetime_syntaxes)]
     pub fn iter_object_collection(
         &self,
         node_id: &NodeId,
@@ -1257,6 +1259,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     /// Returns an iterator over all keys of the given Key-Value Store entity, starting from the
     /// given key (or its successor, if it does not exist), in an arbitrary but deterministic order
     /// used by the backing storage.
+    #[allow(mismatched_lifetime_syntaxes)]
     pub fn iter_kv_store_keys(
         &self,
         node_id: &NodeId,
@@ -1277,6 +1280,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     }
 
     /// Loads schema by its reference, returning SBOR bytes of [`VersionedScryptoSchema`].
+    #[allow(mismatched_lifetime_syntaxes)]
     pub fn load_schema(
         &self,
         reference: &SchemaReference,
@@ -1302,6 +1306,7 @@ impl<'s, S: SubstateDatabase> EngineStateDataLoader<'s, S> {
     }
 
     /// Creates an API *output* representation from the low-level object collection's substate key.
+    #[allow(mismatched_lifetime_syntaxes)]
     fn to_object_collection_key(
         substate_key: SubstateKey,
         collection_meta: &ObjectCollectionMeta,

@@ -276,6 +276,7 @@ impl ProtocolVersionName {
     }
 
     /// The caller is assumed to have validated the version name before this is called.
+    #[allow(clippy::manual_repeat_n)]
     pub fn padded_len_16_version_name_for_readiness_signal(&self) -> String {
         self.validate()
             .expect("Must be valid before extracting readiness signal name");
@@ -414,5 +415,6 @@ pub struct SignalledReadinessThreshold {
     ///     "enact immediately at the beginning of an epoch on or above the threshold"
     /// - a value of 1 means:
     ///     "enact at the beginning of the _next_ epoch (if it still has enough support)"
+    #[allow(clippy::doc_overindented_list_items)]
     pub required_consecutive_completed_epochs_of_support: u64,
 }

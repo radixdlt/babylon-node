@@ -14,6 +14,7 @@ use super::{client_error, length_limit_error, ResponseError};
 
 // We define our own `Json` extractor that customizes the error from `axum::Json`
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct Json<T>(pub T);
 pub use axum::extract::State; // Re-export State so that it can be used easily

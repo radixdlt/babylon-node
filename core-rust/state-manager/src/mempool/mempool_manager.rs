@@ -552,6 +552,7 @@ enum ShouldRecalculate {
     No(PendingTransactionRecord),
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum CheckMetadata {
     Cached,
     Fresh(StaticValidation),
@@ -566,6 +567,7 @@ impl CheckMetadata {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum StaticValidation {
     Valid {
         executable: ExecutableTransaction,

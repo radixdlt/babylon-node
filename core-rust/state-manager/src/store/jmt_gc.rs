@@ -465,6 +465,7 @@ mod tests {
         hex::decode(string.replace(' ', "")).unwrap()
     }
 
+    #[allow(clippy::manual_is_multiple_of)]
     fn nibbles(string: &str) -> NibblePath {
         let mut string = string.replace(' ', "");
         if string.len() % 2 == 0 {
