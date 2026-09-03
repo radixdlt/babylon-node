@@ -67,7 +67,7 @@ pub fn mainnet_protocol_config() -> ProtocolConfig {
             trigger_after: ProtocolVersionName::cuttlefish_part1(),
         },
         ProtocolVersionName::eagle_ray() => EnactAtStartOfEpochUnconditionally(
-            Epoch::of(339897),
+            Epoch::of(339898),
         ),
     })
 }
