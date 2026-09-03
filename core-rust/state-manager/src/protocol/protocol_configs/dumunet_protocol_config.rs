@@ -47,5 +47,19 @@ pub fn dumunet_protocol_config() -> ProtocolConfig {
         ProtocolVersionName::cuttlefish_part2() => EnactImmediatelyAfterEndOfProtocolUpdate {
             trigger_after: ProtocolVersionName::cuttlefish_part1(),
         },
+        ProtocolVersionName::eagle_ray() => EnactAtStartOfEpochIfValidatorsReady {
+            // =================================================================
+            // PROTOCOL_VERSION: "eagle-ray"
+            // READINESS_SIGNAL: "8ed71bbdf45861cb0000000eagle-ray"
+            // =================================================================
+            lower_bound_inclusive: Epoch::of(1),
+            upper_bound_exclusive: Epoch::of(10000000),
+            readiness_thresholds: vec![
+                SignalledReadinessThreshold {
+                    required_ratio_of_stake_supported: dec!(0.8),
+                    required_consecutive_completed_epochs_of_support: 10,
+                },
+            ],
+        },
     })
 }
