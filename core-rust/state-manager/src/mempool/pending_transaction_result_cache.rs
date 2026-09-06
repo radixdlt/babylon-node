@@ -16,6 +16,8 @@ pub enum MempoolRejectionReason {
     SubintentAlreadyFinalized(SubintentAlreadyFinalizedError),
     FromExecution(Box<ExecutionRejectionReason>),
     ValidationError(TransactionValidationError),
+    /// A temporary policy refusal which must never enter the transaction cache.
+    UserTransactionMoratorium(UserTransactionMoratorium),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,6 +47,7 @@ impl MempoolRejectionReason {
             MempoolRejectionReason::SubintentAlreadyFinalized(_) => false,
             MempoolRejectionReason::FromExecution(_) => true,
             MempoolRejectionReason::ValidationError(_) => false,
+            MempoolRejectionReason::UserTransactionMoratorium(_) => false,
         }
     }
 
@@ -77,6 +80,7 @@ impl MempoolRejectionReason {
             MempoolRejectionReason::SubintentAlreadyFinalized(_) => None,
             MempoolRejectionReason::FromExecution(_) => None,
             MempoolRejectionReason::ValidationError(_) => None,
+            MempoolRejectionReason::UserTransactionMoratorium(_) => None,
         }
     }
 
@@ -155,6 +159,13 @@ impl MempoolRejectionReason {
                     RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
             },
+            MempoolRejectionReason::UserTransactionMoratorium(moratorium) => {
+                RejectionPermanence::Temporary {
+                    retry: RetrySettings::FromEpoch {
+                        epoch: moratorium.to_exclusive,
+                    },
+                }
+            }
         }
     }
 }
@@ -229,6 +240,13 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolRejectionR
             }
             MempoolRejectionReason::ValidationError(validation_error) => {
                 write!(f, "Validation Error: {validation_error:?}")
+            }
+            MempoolRejectionReason::UserTransactionMoratorium(moratorium) => {
+                write!(
+                    f,
+                    "User transactions are temporarily not accepted; retry from epoch {}",
+                    moratorium.to_exclusive.number(),
+                )
             }
         }
     }

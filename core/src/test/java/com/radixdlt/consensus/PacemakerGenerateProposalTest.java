@@ -147,6 +147,7 @@ public final class PacemakerGenerateProposalTest {
             timeoutSender,
             timeoutCalculator,
             proposalGenerator,
+            UserTransactionMoratoriumProvider.NONE,
             proposalDispatcher,
             voteDispatcher,
             noVoteDispatcher,

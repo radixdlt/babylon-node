@@ -93,19 +93,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-/** Verifies Eagle Ray enactment through the node protocol-update integration. */
 public final class EagleRayProtocolUpdateTest {
   /** Keeps the update late enough to observe Cuttlefish Part 2 first. */
   private static final long EAGLE_RAY_EPOCH = 8;
 
-  /** Launches earlier updates immediately and schedules Eagle Ray at the test epoch. */
   private static final ProtocolConfig EAGLE_RAY_AT_EPOCH =
       ProtocolConfig.enactAtEpoch(ProtocolConfig.EAGLE_RAY_PROTOCOL_VERSION_NAME, EAGLE_RAY_EPOCH);
 
-  /** Provides isolated storage for the node used by each test. */
   @Rule public final TemporaryFolder folder = new TemporaryFolder();
 
-  /** Creates a one-node network using the Eagle Ray test schedule. */
   private DeterministicTest createTest(Module... extraModules) {
     final var genesis =
         GenesisBuilder.createTestGenesisWithNumValidators(
@@ -126,7 +122,6 @@ public final class EagleRayProtocolUpdateTest {
                         .withProtocolConfig(EAGLE_RAY_AT_EPOCH))));
   }
 
-  /** Verifies the direct CF2-to-Eagle-Ray transition and its committed flashes. */
   @Test
   public void eagle_ray_enacts_after_cuttlefish_part2_with_expected_flashes() throws Exception {
     // Arrange

@@ -65,10 +65,12 @@
 package com.radixdlt.rev2.modules;
 
 import com.google.inject.*;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.BFTConfiguration;
 import com.radixdlt.consensus.ProposalLimitsConfig;
 import com.radixdlt.consensus.bft.*;
+import com.radixdlt.consensus.liveness.UserTransactionMoratoriumProvider;
 import com.radixdlt.consensus.vertexstore.PersistentVertexStore;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.db.checkpoint.RustDbCheckpoints;
@@ -205,6 +207,9 @@ public final class REv2StateManagerModule extends AbstractModule {
     bind(DatabaseConfig.class).toInstance(databaseConfig);
     bind(LedgerSyncLimitsConfig.class).toInstance(ledgerSyncLimitsConfig);
     bind(ProtocolConfig.class).toInstance(protocolConfig);
+    OptionalBinder.newOptionalBinder(binder(), UserTransactionMoratoriumProvider.class)
+        .setBinding()
+        .to(RustUserTransactionMoratoriumProvider.class);
     install(proposalLimitsConfig.asModule());
 
     install(
@@ -224,7 +229,9 @@ public final class REv2StateManagerModule extends AbstractModule {
               FatalPanicHandler fatalPanicHandler,
               Network network,
               @NodeStorageLocation DatabaseBackendConfig nodeDatabaseBackendConfig,
-              DatabaseConfig databaseConfig) {
+              DatabaseConfig databaseConfig,
+              // Injection lets restart tests replace the protocol configuration.
+              ProtocolConfig protocolConfig) {
             return new NodeRustEnvironment(
                 genesisProvider,
                 mempoolRelayDispatcher,

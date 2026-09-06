@@ -75,6 +75,9 @@ pub struct Committer {
     protocol_manager: Arc<ProtocolManager>,
     ledger_metrics: Arc<LedgerMetrics>,
     formatter: Arc<Formatter>,
+    /// Lets concurrency tests pause a commit before database persistence.
+    #[cfg(test)]
+    before_database_commit: Mutex<Option<BeforeDatabaseCommit>>,
 }
 
 impl Committer {
@@ -98,7 +101,15 @@ impl Committer {
             protocol_manager,
             ledger_metrics,
             formatter,
+            #[cfg(test)]
+            before_database_commit: LockFactory::new("commit_test_hook").new_mutex(None),
         }
+    }
+
+    /// Runs the observer once, immediately before database persistence.
+    #[cfg(test)]
+    pub(crate) fn before_next_database_commit(&self, observer: impl FnOnce() + Send + 'static) {
+        *self.before_database_commit.lock() = Some(Box::new(observer));
     }
 }
 
@@ -272,6 +283,14 @@ impl Committer {
 
         // Step 4.: Check final invariants, perform the DB commit
         self.verify_post_commit_invariants(&end_state, &proof);
+
+        #[cfg(test)]
+        {
+            let observer = self.before_database_commit.lock().take();
+            if let Some(observer) = observer {
+                observer();
+            }
+        }
 
         database.commit(commit_bundle_builder.build(proof, vertex_store));
 
@@ -506,3 +525,6 @@ pub struct CommittedUserTransactionIdentifiers {
     pub transaction_intent_hash: TransactionIntentHash,
     pub notarized_transaction_hash: NotarizedTransactionHash,
 }
+
+#[cfg(test)]
+type BeforeDatabaseCommit = Box<dyn FnOnce() + Send>;

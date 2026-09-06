@@ -72,6 +72,7 @@ pub mod jni;
 mod limits;
 mod mempool;
 mod metrics;
+mod moratorium_manager;
 mod protocol;
 pub mod query;
 mod receipt;
@@ -94,6 +95,7 @@ pub mod prelude {
     // Public prelude
     pub use crate::formatter::*;
     pub use crate::mempool::*;
+    pub use crate::moratorium_manager::*;
     pub use crate::protocol::*;
     pub use crate::query::*;
     pub use crate::receipt::*;

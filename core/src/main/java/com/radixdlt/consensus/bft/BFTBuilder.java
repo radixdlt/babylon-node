@@ -70,6 +70,7 @@ import com.radixdlt.consensus.bft.processor.*;
 import com.radixdlt.consensus.bft.processor.BFTQuorumAssembler.TimeoutQuorumDelayedResolution;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.UserTransactionMoratoriumProvider;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
@@ -104,6 +105,7 @@ public final class BFTBuilder {
   private TimeSupplier timeSupplier;
   private Metrics metrics;
   private Addressing addressing;
+  private UserTransactionMoratoriumProvider userTransactionMoratoriumProvider;
 
   private BFTBuilder() {
     // Just making this inaccessible
@@ -203,6 +205,12 @@ public final class BFTBuilder {
     return this;
   }
 
+  public BFTBuilder userTransactionMoratoriumProvider(
+      UserTransactionMoratoriumProvider userTransactionMoratoriumProvider) {
+    this.userTransactionMoratoriumProvider = userTransactionMoratoriumProvider;
+    return this;
+  }
+
   public BFTEventProcessor build() {
     if (!validatorSet.containsValidator(self)) {
       return EmptyBFTEventProcessor.INSTANCE;
@@ -215,6 +223,7 @@ public final class BFTBuilder {
        -> OneProposalPerRoundVerifier (verify that max 1 genuine proposal is received for each round)
        -> SyncUpPreprocessor (if needed, sync up to match BFT event's round)
        -> BFTEventPostSyncUpVerifier (verifies that we've synced up to a correct round)
+       -> UserTransactionMoratoriumVerifier (rejects proposals with user transactions during a moratorium)
        -> ProposalTimestampVerifier (verify proposal timestamp)
        -> BFTQuorumAssembler (processes votes and forms a quorum)
        -> Pacemaker (manages sending proposals, votes and timeouts) */
@@ -235,8 +244,15 @@ public final class BFTBuilder {
         new ProposalTimestampVerifier(
             quorumAssembler, timeSupplier, metrics, addressing, proposalRejectedDispatcher);
 
+    final var userTransactionMoratoriumVerifier =
+        new UserTransactionMoratoriumVerifier(
+            proposalTimestampVerifier,
+            userTransactionMoratoriumProvider,
+            addressing,
+            proposalRejectedDispatcher);
+
     final var postSyncUpVerifier =
-        new BFTEventPostSyncUpVerifier(proposalTimestampVerifier, metrics, roundUpdate);
+        new BFTEventPostSyncUpVerifier(userTransactionMoratoriumVerifier, metrics, roundUpdate);
 
     final var syncUpPreprocessor =
         new SyncUpPreprocessor(postSyncUpVerifier, bftSyncer, metrics, roundUpdate);

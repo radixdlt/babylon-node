@@ -114,6 +114,17 @@ impl MempoolAddRejection {
         }
     }
 
+    /// Rejects temporarily, with retry allowed from the moratorium's end epoch.
+    pub fn for_user_transaction_moratorium(moratorium: UserTransactionMoratorium) -> Self {
+        Self {
+            retry_from: RetryFrom::FromEpoch(moratorium.to_exclusive),
+            reason: MempoolRejectionReason::UserTransactionMoratorium(moratorium),
+            against_state: AtState::Static,
+            was_cached: false,
+            invalid_from_epoch: None,
+        }
+    }
+
     pub fn is_permanent_for_payload(&self) -> bool {
         self.reason.is_permanent_for_payload(&self.against_state)
     }

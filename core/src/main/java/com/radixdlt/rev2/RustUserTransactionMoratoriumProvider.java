@@ -62,80 +62,27 @@
  * permissions under this License.
  */
 
-use crate::jni_prelude::*;
+package com.radixdlt.rev2;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |prepare_request: PrepareRequest| -> PrepareResult {
-            JNINodeRustEnvironment::get_preparator(&env, j_node_rust_env).prepare(prepare_request)
-        },
-    )
+import com.google.inject.Inject;
+import com.radixdlt.consensus.liveness.UserTransactionMoratoriumProvider;
+import com.radixdlt.lang.Result;
+import com.radixdlt.lang.Tuple;
+import com.radixdlt.protocol.UserTransactionMoratorium;
+import com.radixdlt.statecomputer.RustStateComputer;
+import java.util.Objects;
+
+public final class RustUserTransactionMoratoriumProvider
+    implements UserTransactionMoratoriumProvider {
+  private final RustStateComputer rustStateComputer;
+
+  @Inject
+  public RustUserTransactionMoratoriumProvider(RustStateComputer rustStateComputer) {
+    this.rustStateComputer = Objects.requireNonNull(rustStateComputer);
+  }
+
+  @Override
+  public Result<Tuple.Tuple0, UserTransactionMoratorium> ensureUserTransactionsAllowed() {
+    return this.rustStateComputer.ensureUserTransactionsAllowed();
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
-            JNINodeRustEnvironment::get_committer(&env, j_node_rust_env).commit(commit_request)
-        },
-    )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProtocolVersion(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
-        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env)
-            .newest_protocol_version()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolState(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
-        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env).current_protocol_state()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_ensureUserTransactionsAllowed(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |_: ()| -> Result<(), UserTransactionMoratorium> {
-            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
-                .ensure_user_transactions_allowed()
-        },
-    )
-}
-
-pub fn export_extern_functions() {}

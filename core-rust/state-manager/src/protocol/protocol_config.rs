@@ -1,4 +1,5 @@
 use crate::engine_prelude::*;
+use crate::moratorium_manager::UserTransactionMoratorium;
 
 use crate::protocol::*;
 
@@ -105,6 +106,8 @@ pub struct ProtocolConfig {
     /// the definition of the protocol update, and if nodes use different overrides, they will execute
     /// different updates and need manual recovery.
     pub protocol_update_content_overrides: RawProtocolUpdateContentOverrides,
+    /// Moratorium ranges, independent of protocol enactment triggers.
+    pub user_transaction_moratoriums: Vec<UserTransactionMoratorium>,
 }
 
 impl ProtocolConfig {
@@ -112,8 +115,16 @@ impl ProtocolConfig {
         Self::new_with_triggers([])
     }
 
+    /// Leaves the moratorium schedule empty.
     pub fn new_with_triggers(
         triggers: impl IntoIterator<Item = (ProtocolVersionName, ProtocolUpdateEnactmentCondition)>,
+    ) -> Self {
+        Self::new_with_triggers_and_moratoriums(triggers, [])
+    }
+
+    pub fn new_with_triggers_and_moratoriums(
+        triggers: impl IntoIterator<Item = (ProtocolVersionName, ProtocolUpdateEnactmentCondition)>,
+        moratoriums: impl IntoIterator<Item = UserTransactionMoratorium>,
     ) -> Self {
         Self {
             protocol_update_triggers: triggers
@@ -123,6 +134,7 @@ impl ProtocolConfig {
                 })
                 .collect(),
             protocol_update_content_overrides: ProtocolUpdateContentOverrides::empty().into(),
+            user_transaction_moratoriums: moratoriums.into_iter().collect(),
         }
     }
 

@@ -62,80 +62,98 @@
  * permissions under this License.
  */
 
-use crate::jni_prelude::*;
+package com.radixdlt.p2p;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |prepare_request: PrepareRequest| -> PrepareResult {
-            JNINodeRustEnvironment::get_preparator(&env, j_node_rust_env).prepare(prepare_request)
-        },
-    )
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.protocol.ProtocolUpdateEnactmentCondition;
+import com.radixdlt.protocol.ProtocolUpdateTrigger;
+import com.radixdlt.rev2.Decimal;
+import com.radixdlt.statecomputer.ProtocolState;
+import org.junit.Test;
+
+public final class P2PModuleBanClearingTest {
+  private static final long ENACTMENT_EPOCH = 339898;
+
+  @Test
+  public void clears_bans_in_the_epoch_right_before_an_unconditional_enactment() {
+    // Arrange
+    final var protocolState =
+        pending(ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(ENACTMENT_EPOCH));
+
+    // Act
+    final var oneEpochBefore =
+        P2PModule.shouldClearNearProtocolUpdateBans(protocolState, ENACTMENT_EPOCH - 1);
+    final var twoEpochsBefore =
+        P2PModule.shouldClearNearProtocolUpdateBans(protocolState, ENACTMENT_EPOCH - 2);
+    final var atEnactmentEpoch =
+        P2PModule.shouldClearNearProtocolUpdateBans(protocolState, ENACTMENT_EPOCH);
+
+    // Assert
+    assertTrue(oneEpochBefore);
+    assertFalse(twoEpochsBefore);
+    assertFalse(atEnactmentEpoch);
+  }
+
+  @Test
+  public void clears_bans_in_the_epoch_right_before_a_moratorium_enactment() {
+    // Arrange
+    final var protocolState =
+        pending(ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(ENACTMENT_EPOCH));
+
+    // Act
+    final var oneEpochBefore =
+        P2PModule.shouldClearNearProtocolUpdateBans(protocolState, ENACTMENT_EPOCH - 1);
+    final var twoEpochsBefore =
+        P2PModule.shouldClearNearProtocolUpdateBans(protocolState, ENACTMENT_EPOCH - 2);
+
+    // Assert
+    assertTrue(oneEpochBefore);
+    assertFalse(twoEpochsBefore);
+  }
+
+  @Test
+  public void clears_bans_from_one_epoch_before_the_lower_bound_of_a_readiness_enactment() {
+    // Arrange
+    final var protocolState =
+        pending(
+            ProtocolUpdateEnactmentCondition.singleReadinessThresholdBetweenEpochs(
+                100, 200, Decimal.ofNonNegativeFraction(3, 4), 1));
+
+    // Act
+    final var beforeWindow = P2PModule.shouldClearNearProtocolUpdateBans(protocolState, 98);
+    final var oneBeforeLowerBound = P2PModule.shouldClearNearProtocolUpdateBans(protocolState, 99);
+    final var insideWindow = P2PModule.shouldClearNearProtocolUpdateBans(protocolState, 150);
+    final var atUpperBound = P2PModule.shouldClearNearProtocolUpdateBans(protocolState, 200);
+
+    // Assert
+    assertFalse(beforeWindow);
+    assertTrue(oneBeforeLowerBound);
+    assertTrue(insideWindow);
+    assertFalse(atUpperBound);
+  }
+
+  @Test
+  public void never_clears_bans_for_an_update_chained_after_another() {
+    // Arrange
+    final var protocolState = pending(ProtocolUpdateEnactmentCondition.immediatelyAfter("test-v1"));
+
+    // Act
+    final var result = P2PModule.shouldClearNearProtocolUpdateBans(protocolState, 5);
+
+    // Assert
+    assertFalse(result);
+  }
+
+  private static ProtocolState pending(ProtocolUpdateEnactmentCondition condition) {
+    final var trigger = new ProtocolUpdateTrigger("test-v2", condition);
+    return new ProtocolState(
+        ImmutableMap.of(),
+        ImmutableMap.of(
+            "test-v2",
+            new ProtocolState.PendingProtocolUpdate(
+                trigger, new ProtocolState.PendingProtocolUpdateState.Empty())));
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
-            JNINodeRustEnvironment::get_committer(&env, j_node_rust_env).commit(commit_request)
-        },
-    )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProtocolVersion(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
-        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env)
-            .newest_protocol_version()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolState(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
-        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env).current_protocol_state()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_ensureUserTransactionsAllowed(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |_: ()| -> Result<(), UserTransactionMoratorium> {
-            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
-                .ensure_user_transactions_allowed()
-        },
-    )
-}
-
-pub fn export_extern_functions() {}

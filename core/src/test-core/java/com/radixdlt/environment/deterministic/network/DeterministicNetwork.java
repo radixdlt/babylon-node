@@ -179,6 +179,14 @@ public final class DeterministicNetwork {
     return this.currentTime;
   }
 
+  /** Advances time without delivering queued messages. New messages use the advanced time. */
+  public void advanceTime(long millis) {
+    if (millis < 0) {
+      throw new IllegalArgumentException("Simulated time can only move forward");
+    }
+    this.currentTime += millis;
+  }
+
   long delayForChannel(ChannelId channelId) {
     if (channelId.isLocal()) {
       return DEFAULT_LOCAL_LATENCY;

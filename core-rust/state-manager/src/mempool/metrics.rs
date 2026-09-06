@@ -156,6 +156,7 @@ impl MetricLabel for MempoolAddResult {
                 MempoolRejectionReason::SubintentAlreadyFinalized(_) => "SubintentAlreadyFinalized",
                 MempoolRejectionReason::FromExecution(_) => "ExecutionError",
                 MempoolRejectionReason::ValidationError(_) => "ValidationError",
+                MempoolRejectionReason::UserTransactionMoratorium(_) => "UserTransactionMoratorium",
             },
             Some(MempoolAddError::Duplicate(_)) => "Duplicate",
         }

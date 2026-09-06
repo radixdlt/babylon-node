@@ -73,6 +73,7 @@ import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
 import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.monitoring.Metrics.MethodId;
+import com.radixdlt.protocol.UserTransactionMoratorium;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.*;
 import java.util.Objects;
@@ -98,6 +99,11 @@ public class RustStateComputer {
     this.protocolStateFunc =
         Natives.builder(nodeRustEnvironment, RustStateComputer::protocolState)
             .measure(timer.label(new MethodId(RustStateComputer.class, "protocolState")))
+            .build(new TypeToken<>() {});
+    this.ensureUserTransactionsAllowedFunc =
+        Natives.builder(nodeRustEnvironment, RustStateComputer::ensureUserTransactionsAllowed)
+            .measure(
+                timer.label(new MethodId(RustStateComputer.class, "ensureUserTransactionsAllowed")))
             .build(new TypeToken<>() {});
   }
 
@@ -134,5 +140,16 @@ public class RustStateComputer {
   private final Natives.Call1<Tuple.Tuple0, ProtocolState> protocolStateFunc;
 
   private static native byte[] protocolState(
+      NodeRustEnvironment nodeRustEnvironment, byte[] payload);
+
+  /** Returns the active moratorium as an error, using Rust's committed ledger epoch. */
+  public Result<Tuple.Tuple0, UserTransactionMoratorium> ensureUserTransactionsAllowed() {
+    return ensureUserTransactionsAllowedFunc.call(tuple());
+  }
+
+  private final Natives.Call1<Tuple.Tuple0, Result<Tuple.Tuple0, UserTransactionMoratorium>>
+      ensureUserTransactionsAllowedFunc;
+
+  private static native byte[] ensureUserTransactionsAllowed(
       NodeRustEnvironment nodeRustEnvironment, byte[] payload);
 }

@@ -62,80 +62,68 @@
  * permissions under this License.
  */
 
-use crate::jni_prelude::*;
+package com.radixdlt.consensus.bft.processor;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |prepare_request: PrepareRequest| -> PrepareResult {
-            JNINodeRustEnvironment::get_preparator(&env, j_node_rust_env).prepare(prepare_request)
-        },
-    )
+import com.radixdlt.addressing.Addressing;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.ProposalRejected;
+import com.radixdlt.consensus.liveness.UserTransactionMoratoriumProvider;
+import com.radixdlt.environment.EventDispatcher;
+import java.util.Objects;
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+/**
+ * During a moratorium, rejects proposals carrying user transactions after BFT sync processes their
+ * certificates. Dispatches {@link ProposalRejected} to allow an empty fallback.
+ */
+public final class UserTransactionMoratoriumVerifier implements BFTEventProcessorAtCurrentRound {
+  private static final Logger log = LogManager.getLogger();
+
+  private final BFTEventProcessorAtCurrentRound forwardTo;
+  private final UserTransactionMoratoriumProvider userTransactionMoratoriumProvider;
+  private final Addressing addressing;
+  private final EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
+
+  public UserTransactionMoratoriumVerifier(
+      BFTEventProcessorAtCurrentRound forwardTo,
+      UserTransactionMoratoriumProvider userTransactionMoratoriumProvider,
+      Addressing addressing,
+      EventDispatcher<ProposalRejected> proposalRejectedDispatcher) {
+    this.forwardTo = Objects.requireNonNull(forwardTo);
+    this.userTransactionMoratoriumProvider =
+        Objects.requireNonNull(userTransactionMoratoriumProvider);
+    this.addressing = Objects.requireNonNull(addressing);
+    this.proposalRejectedDispatcher = Objects.requireNonNull(proposalRejectedDispatcher);
+  }
+
+  @Override
+  public void processProposal(Proposal proposal) {
+    final var transactionCount = proposal.getVertex().getTransactions().size();
+    if (transactionCount == 0) {
+      forwardTo.processProposal(proposal);
+      return;
+    }
+
+    final var moratorium = userTransactionMoratoriumProvider.ensureUserTransactionsAllowed();
+    if (moratorium.isSuccess()) {
+      forwardTo.processProposal(proposal);
+      return;
+    }
+
+    log.warn(
+        "Rejecting a proposal from {} at round {}: it carries {} user transaction(s) while a user"
+            + " transaction moratorium is in force until epoch {}",
+        addressing.encode(proposal.getAuthor().getValidatorAddress()),
+        proposal.getRound(),
+        transactionCount,
+        moratorium.unwrapError().toExclusive());
+    proposalRejectedDispatcher.dispatch(new ProposalRejected(proposal.getRound()));
+  }
+
+  @Override
+  public Optional<BFTEventProcessorAtCurrentRound> forwardTo() {
+    return Optional.of(forwardTo);
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
-            JNINodeRustEnvironment::get_committer(&env, j_node_rust_env).commit(commit_request)
-        },
-    )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProtocolVersion(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
-        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env)
-            .newest_protocol_version()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolState(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
-        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env).current_protocol_state()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_ensureUserTransactionsAllowed(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |_: ()| -> Result<(), UserTransactionMoratorium> {
-            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
-                .ensure_user_transactions_allowed()
-        },
-    )
-}
-
-pub fn export_extern_functions() {}

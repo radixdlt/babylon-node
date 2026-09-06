@@ -134,6 +134,7 @@ public class PacemakerTest {
             this.timeoutSender,
             this.timeoutCalculator,
             this.proposalGenerator,
+            UserTransactionMoratoriumProvider.NONE,
             this.proposalDispatcher,
             this.voteDispatcher,
             this.noVoteDispatcher,

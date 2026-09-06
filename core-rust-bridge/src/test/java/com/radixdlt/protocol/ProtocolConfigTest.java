@@ -62,80 +62,50 @@
  * permissions under this License.
  */
 
-use crate::jni_prelude::*;
+package com.radixdlt.protocol;
 
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_prepare(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |prepare_request: PrepareRequest| -> PrepareResult {
-            JNINodeRustEnvironment::get_preparator(&env, j_node_rust_env).prepare(prepare_request)
-        },
-    )
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.sbor.NodeSborCodecs;
+import org.junit.Test;
+
+public final class ProtocolConfigTest {
+  @Test
+  public void round_trips_the_separate_moratorium_with_the_ordinary_epoch_trigger() {
+    // Arrange
+    final var original =
+        ProtocolConfig.enactAtEpochWithUserTransactionMoratorium("eagle-ray", 339897, 339898);
+    final var encoded =
+        NodeSborCodecs.encode(
+            original, NodeSborCodecs.resolveCodec(new TypeToken<ProtocolConfig>() {}));
+
+    // Act
+    final var decoded = ProtocolConfig.sborDecode(encoded, "Invalid protocol config");
+
+    // Assert
+    assertEquals(original, decoded);
+    assertEquals(
+        ProtocolUpdateEnactmentCondition.unconditionallyAtEpoch(339898),
+        decoded
+            .protocolUpdateTriggers()
+            .get(decoded.protocolUpdateTriggers().size() - 1)
+            .enactmentCondition());
+  }
+
+  @Test
+  public void refuses_malformed_configuration() {
+    // Arrange
+    final var encoded = new byte[] {0};
+
+    // Act
+    final var error =
+        assertThrows(
+            RuntimeException.class,
+            () -> ProtocolConfig.sborDecode(encoded, "Invalid protocol config"));
+
+    // Assert
+    assertEquals("Invalid protocol config", error.getMessage());
+  }
 }
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_commit(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |commit_request: CommitRequest| -> Result<CommitSummary, InvalidCommitRequestError> {
-            JNINodeRustEnvironment::get_committer(&env, j_node_rust_env).commit(commit_request)
-        },
-    )
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_newestProtocolVersion(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolVersionName {
-        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env)
-            .newest_protocol_version()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolState(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(&env, request_payload, |_: ()| -> ProtocolState {
-        JNINodeRustEnvironment::get_protocol_manager(&env, j_node_rust_env).current_protocol_state()
-    })
-}
-
-#[no_mangle]
-extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_ensureUserTransactionsAllowed(
-    env: JNIEnv,
-    _class: JClass,
-    j_node_rust_env: JObject,
-    request_payload: jbyteArray,
-) -> jbyteArray {
-    jni_sbor_coded_call(
-        &env,
-        request_payload,
-        |_: ()| -> Result<(), UserTransactionMoratorium> {
-            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
-                .ensure_user_transactions_allowed()
-        },
-    )
-}
-
-pub fn export_extern_functions() {}

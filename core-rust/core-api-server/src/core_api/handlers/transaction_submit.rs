@@ -37,7 +37,21 @@ pub(crate) async fn handle_transaction_submit(
         )),
         Err(MempoolAddError::Duplicate(_)) => Ok(models::TransactionSubmitResponse::new(true)),
         Err(MempoolAddError::Rejected(rejection, notarized_transaction_hash)) => {
-            if let Some(already_committed_error) = rejection.transaction_intent_already_committed_error() {
+            if let MempoolRejectionReason::UserTransactionMoratorium(moratorium) = &rejection.reason {
+                Err(detailed_error(
+                    StatusCode::BAD_REQUEST,
+                    "User transactions are temporarily not accepted: a user transaction moratorium is in force until the pending protocol update is enacted",
+                    TransactionSubmitErrorDetails::TransactionSubmitRejectedErrorDetails {
+                        error_message: rejection.reason.to_string(&mapping_context),
+                        is_fresh: true,
+                        is_payload_rejection_permanent: false,
+                        is_intent_rejection_permanent: false,
+                        retry_from_timestamp: None,
+                        retry_from_epoch: Some(to_api_epoch(&mapping_context, moratorium.to_exclusive)?),
+                        invalid_from_epoch: None,
+                    },
+                ))
+            } else if let Some(already_committed_error) = rejection.transaction_intent_already_committed_error() {
                 let is_same_transaction = Some(already_committed_error.committed_notarized_transaction_hash) == notarized_transaction_hash;
                 Err(detailed_error(
                     StatusCode::BAD_REQUEST,
