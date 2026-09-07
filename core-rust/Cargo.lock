@@ -1768,8 +1768,8 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "radix-blueprint-schema-init"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "bitflags 1.3.2",
  "radix-common",
@@ -1779,8 +1779,8 @@ dependencies = [
 
 [[package]]
 name = "radix-common"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "bech32",
  "blake2",
@@ -1805,8 +1805,8 @@ dependencies = [
 
 [[package]]
 name = "radix-common-derive"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -1817,8 +1817,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "bitflags 1.3.2",
  "colored",
@@ -1848,8 +1848,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "bitflags 1.3.2",
  "const-sha1",
@@ -1869,16 +1869,16 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-profiling"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "fixedstr",
 ]
 
 [[package]]
 name = "radix-engine-profiling-derive"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1888,8 +1888,8 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-toolkit-common"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "radix-common",
  "radix-engine",
@@ -1902,8 +1902,8 @@ dependencies = [
 
 [[package]]
 name = "radix-native-sdk"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "radix-common",
  "radix-engine-interface",
@@ -1913,8 +1913,8 @@ dependencies = [
 
 [[package]]
 name = "radix-rust"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "indexmap 2.9.0",
  "preinterpret",
@@ -1923,8 +1923,8 @@ dependencies = [
 
 [[package]]
 name = "radix-sbor-derive"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1934,8 +1934,8 @@ dependencies = [
 
 [[package]]
 name = "radix-substate-store-impls"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "hex",
  "itertools",
@@ -1948,8 +1948,8 @@ dependencies = [
 
 [[package]]
 name = "radix-substate-store-interface"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "hex",
  "itertools",
@@ -1960,8 +1960,8 @@ dependencies = [
 
 [[package]]
 name = "radix-substate-store-queries"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "hex",
  "itertools",
@@ -1977,8 +1977,8 @@ dependencies = [
 
 [[package]]
 name = "radix-transaction-scenarios"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "hex",
  "itertools",
@@ -1997,8 +1997,8 @@ dependencies = [
 
 [[package]]
 name = "radix-transactions"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "annotate-snippets",
  "bech32",
@@ -2170,8 +2170,8 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "const-sha1",
  "hex",
@@ -2184,8 +2184,8 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "proc-macro2",
  "sbor-derive-common",
@@ -2194,8 +2194,8 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive-common"
-version = "1.4.0-dev"
-source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-722c3f32#722c3f3207c6c44f01fd0f53212a983074f9b446"
+version = "1.4.0"
+source = "git+https://github.com/radixdlt/radixdlt-scrypto?tag=eagle-ray-25e5fff4#25e5fff46a7037d460f4f135647a8233e2360195"
 dependencies = [
  "const-sha1",
  "indexmap 2.9.0",
