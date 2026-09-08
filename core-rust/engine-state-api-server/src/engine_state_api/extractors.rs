@@ -12,6 +12,7 @@ use serde::Serialize;
 pub use axum::extract::State;
 use axum::http::StatusCode;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct Json<T>(pub T);
 

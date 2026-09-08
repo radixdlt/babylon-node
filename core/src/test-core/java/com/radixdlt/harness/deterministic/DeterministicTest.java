@@ -90,6 +90,7 @@ import com.radixdlt.networks.Network;
 import com.radixdlt.rev2.ComponentAddress;
 import com.radixdlt.rev2.ScryptoConstants;
 import io.reactivex.rxjava3.schedulers.Timed;
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -313,9 +314,25 @@ public final class DeterministicTest implements AutoCloseable {
     this.nodes.startNode(nodeIndex, this.network.currentTime());
   }
 
+  /** Advances the clock observed by subsequently restarted nodes. */
+  public void advanceTime(Duration duration) {
+    this.network.advanceTime(duration.toMillis());
+  }
+
   public void restartNode(int nodeIndex) {
     this.shutdownNode(nodeIndex);
     this.startNode(nodeIndex);
+  }
+
+  public void restartNodeWithOverrideModule(int nodeIndex, Module overrideModule) {
+    this.shutdownNode(nodeIndex);
+    final var originalOverrideModule = this.nodes.getOverrideModule();
+    this.nodes.setOverrideModule(overrideModule);
+    try {
+      this.startNode(nodeIndex);
+    } finally {
+      this.nodes.setOverrideModule(originalOverrideModule);
+    }
   }
 
   public void restartNodeWithConfig(int nodeIndex, PhysicalNodeConfig config) {

@@ -135,6 +135,7 @@ public final class NodeSborCodecs {
     ProtocolUpdateEnactmentCondition.registerCodec(codecMap);
     ProtocolUpdateEnactmentCondition.SignalledReadinessThreshold.registerCodec(codecMap);
     ProtocolState.registerCodec(codecMap);
+    UserTransactionMoratorium.registerCodec(codecMap);
     ProtocolUpdateResult.registerCodec(codecMap);
     RawLedgerTransaction.registerCodec(codecMap);
     RawNotarizedTransaction.registerCodec(codecMap);

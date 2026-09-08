@@ -104,6 +104,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   private final ScheduledEventDispatcher<ScheduledLocalTimeout> scheduledLocalTimeoutDispatcher;
   private final PacemakerTimeoutCalculator timeoutCalculator;
   private final ProposalGenerator proposalGenerator;
+  private final UserTransactionMoratoriumProvider userTransactionMoratoriumProvider;
   private final Hasher hasher;
   private final RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher;
   private final RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher;
@@ -137,6 +138,7 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
       ScheduledEventDispatcher<ScheduledLocalTimeout> scheduledLocalTimeoutDispatcher,
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
+      UserTransactionMoratoriumProvider userTransactionMoratoriumProvider,
       RemoteEventDispatcher<BFTValidatorId, Proposal> proposalDispatcher,
       RemoteEventDispatcher<BFTValidatorId, Vote> voteDispatcher,
       EventDispatcher<NoVote> noVoteDispatcher,
@@ -152,6 +154,8 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     this.timeoutDispatcher = Objects.requireNonNull(timeoutDispatcher);
     this.timeoutCalculator = Objects.requireNonNull(timeoutCalculator);
     this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
+    this.userTransactionMoratoriumProvider =
+        Objects.requireNonNull(userTransactionMoratoriumProvider);
     this.proposalDispatcher = Objects.requireNonNull(proposalDispatcher);
     this.voteDispatcher = Objects.requireNonNull(voteDispatcher);
     this.noVoteDispatcher = Objects.requireNonNull(noVoteDispatcher);
@@ -270,6 +274,11 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
   }
 
   private void attemptVoteOnVertex(ExecutedVertex executedVertex) {
+    if (isVoteWithheldByUserTransactionMoratorium(executedVertex)) {
+      this.noVoteDispatcher.dispatch(new NoVote(executedVertex.getVertexWithHash()));
+      return;
+    }
+
     final var bftHeader =
         new BFTHeader(
             executedVertex.getRound(),
@@ -294,6 +303,31 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
           dispatchVote(vote);
         },
         () -> this.noVoteDispatcher.dispatch(new NoVote(executedVertex.getVertexWithHash())));
+  }
+
+  /**
+   * Blocks new votes for vertices carrying user transactions during a moratorium, including those
+   * received through BFT sync. Existing votes may still be resent with a timeout.
+   */
+  private boolean isVoteWithheldByUserTransactionMoratorium(ExecutedVertex executedVertex) {
+    final var transactionCount = executedVertex.vertex().getTransactions().size();
+    if (transactionCount == 0) {
+      return false;
+    }
+    final var moratorium =
+        this.userTransactionMoratoriumProvider.ensureUserTransactionsAllowed(
+            executedVertex.vertex().getEpoch());
+    if (moratorium.isSuccess()) {
+      return false;
+    }
+    log.warn(
+        "Not voting for vertex {} at round {}: it carries {} user transaction(s) while a user"
+            + " transaction moratorium is in force until epoch {}",
+        executedVertex.getVertexHash(),
+        executedVertex.getRound(),
+        transactionCount,
+        moratorium.unwrapError().toExclusive());
+    return true;
   }
 
   private void dispatchVote(Vote vote) {

@@ -99,6 +99,9 @@ public class EpochsConsensusModule extends AbstractModule {
     OptionalBinder.newOptionalBinder(
         binder(), EpochManager.class); // So that this is consistent with tests
     bind(EpochManager.class).in(Scopes.SINGLETON);
+    OptionalBinder.newOptionalBinder(binder(), UserTransactionMoratoriumProvider.class)
+        .setDefault()
+        .toInstance(UserTransactionMoratoriumProvider.NONE);
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
@@ -314,6 +317,7 @@ public class EpochsConsensusModule extends AbstractModule {
   private PacemakerFactory pacemakerFactory(
       Metrics metrics,
       ProposalGenerator proposalGenerator,
+      UserTransactionMoratoriumProvider userTransactionMoratoriumProvider,
       Hasher hasher,
       EventDispatcher<EpochLocalTimeoutOccurrence> timeoutEventDispatcher,
       ScheduledEventDispatcher<Epoched<ScheduledLocalTimeout>> localTimeoutSender,
@@ -339,6 +343,7 @@ public class EpochsConsensusModule extends AbstractModule {
                 localTimeoutSender.dispatch(new Epoched(epoch, scheduledTimeout), ms),
             timeoutCalculator,
             proposalGenerator,
+            userTransactionMoratoriumProvider,
             (n, m) -> {
               var nodeId = NodeId.fromPublicKey(n.getKey());
               proposalDispatcher.dispatch(nodeId, m);
@@ -366,7 +371,8 @@ public class EpochsConsensusModule extends AbstractModule {
           timeoutQuorumDelayedResolutionDispatcher,
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       EventDispatcher<EpochProposalRejected> proposalRejectedDispatcher,
-      @TimeoutQuorumResolutionDelayMs long timeoutQuorumResolutionDelayMs) {
+      @TimeoutQuorumResolutionDelayMs long timeoutQuorumResolutionDelayMs,
+      UserTransactionMoratoriumProvider userTransactionMoratoriumProvider) {
     return (self,
         pacemaker,
         bftSyncer,
@@ -378,6 +384,7 @@ public class EpochsConsensusModule extends AbstractModule {
         proposerElection) ->
         BFTBuilder.create()
             .self(self)
+            .userTransactionMoratoriumProvider(userTransactionMoratoriumProvider)
             .hasher(hasher)
             .verifier(verifier)
             .proposalRejectedDispatcher(

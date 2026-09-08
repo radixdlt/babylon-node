@@ -90,7 +90,6 @@ use crate::safety_store_components::SafetyState;
 /// The `NAME` constants defined by `*Cf` structs (and referenced below) are used as database column
 /// family names. Any change would effectively mean a ledger wipe. For this reason, we choose to
 /// define them manually (rather than using the `Into<String>`, which is refactor-sensitive).
-
 const ALL_ADDRESS_BOOK_COLUMN_FAMILIES: [&str; 3] = [
     AddressBookCf::NAME,
     HighPriorityPeersCf::NAME,

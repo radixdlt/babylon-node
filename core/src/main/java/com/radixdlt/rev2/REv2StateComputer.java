@@ -174,6 +174,10 @@ public final class REv2StateComputer implements StateComputerLedger.StateCompute
   @Override
   public List<RawNotarizedTransaction> getTransactionsForProposal(
       List<StateComputerLedger.ExecutedTransaction> previousExecutedTransactions) {
+    final var moratorium = this.stateComputer.ensureUserTransactionsAllowed();
+    if (moratorium.isError()) {
+      return List.of();
+    }
 
     final var previousTransactionHashes =
         previousExecutedTransactions.stream()

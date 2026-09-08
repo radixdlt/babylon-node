@@ -89,7 +89,7 @@ pub enum MempoolAddError {
         tip_basis_points: u32,
     },
     Duplicate(NotarizedTransactionHash),
-    Rejected(MempoolAddRejection, Option<NotarizedTransactionHash>),
+    Rejected(Box<MempoolAddRejection>, Option<NotarizedTransactionHash>),
 }
 
 #[derive(Debug, Clone)]
@@ -114,6 +114,17 @@ impl MempoolAddRejection {
         }
     }
 
+    /// Rejects temporarily, with retry allowed from the moratorium's end epoch.
+    pub fn for_user_transaction_moratorium(moratorium: UserTransactionMoratorium) -> Self {
+        Self {
+            retry_from: RetryFrom::FromEpoch(moratorium.to_exclusive),
+            reason: MempoolRejectionReason::UserTransactionMoratorium(moratorium),
+            against_state: AtState::Static,
+            was_cached: false,
+            invalid_from_epoch: None,
+        }
+    }
+
     pub fn is_permanent_for_payload(&self) -> bool {
         self.reason.is_permanent_for_payload(&self.against_state)
     }
@@ -131,9 +142,9 @@ impl MempoolAddRejection {
 impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolAddError {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter<'_>,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {

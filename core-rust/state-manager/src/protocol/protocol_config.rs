@@ -1,4 +1,5 @@
 use crate::engine_prelude::*;
+use crate::moratorium_manager::UserTransactionMoratorium;
 
 use crate::protocol::*;
 
@@ -12,6 +13,8 @@ const ANEMONE_PROTOCOL_VERSION: &str = "anemone";
 const BOTTLENOSE_PROTOCOL_VERSION: &str = "bottlenose";
 const CUTTLEFISH_PART1_PROTOCOL_VERSION: &str = "cuttlefish";
 const CUTTLEFISH_PART2_PROTOCOL_VERSION: &str = "cuttlefish-part2";
+const DUGONG_PROTOCOL_VERSION: &str = "dugong";
+const EAGLE_RAY_PROTOCOL_VERSION: &str = "eagle-ray";
 
 pub enum ResolvedProtocolVersion {
     Babylon,
@@ -19,6 +22,8 @@ pub enum ResolvedProtocolVersion {
     Bottlenose,
     CuttlefishPart1,
     CuttlefishPart2,
+    Dugong,
+    EagleRay,
     Custom(ProtocolVersionName),
     Test(ProtocolVersionName),
 }
@@ -31,6 +36,8 @@ impl ResolvedProtocolVersion {
             BOTTLENOSE_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Bottlenose),
             CUTTLEFISH_PART1_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::CuttlefishPart1),
             CUTTLEFISH_PART2_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::CuttlefishPart2),
+            DUGONG_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::Dugong),
+            EAGLE_RAY_PROTOCOL_VERSION => Some(ResolvedProtocolVersion::EagleRay),
             // Updates starting "custom-" are intended for use with tests, where the thresholds and config are injected on all nodes
             name_string if CustomProtocolUpdateDefinition::matches(name_string) => Some(
                 ResolvedProtocolVersion::Custom(protocol_version_name.clone()),
@@ -50,6 +57,8 @@ impl ResolvedProtocolVersion {
             ResolvedProtocolVersion::Bottlenose => Some(ProtocolVersion::Bottlenose),
             ResolvedProtocolVersion::CuttlefishPart1 => Some(ProtocolVersion::CuttlefishPart1),
             ResolvedProtocolVersion::CuttlefishPart2 => Some(ProtocolVersion::CuttlefishPart2),
+            ResolvedProtocolVersion::Dugong => Some(ProtocolVersion::Dugong),
+            ResolvedProtocolVersion::EagleRay => Some(ProtocolVersion::EagleRay),
             ResolvedProtocolVersion::Custom { .. } => None,
             ResolvedProtocolVersion::Test { .. } => None,
         }
@@ -66,6 +75,8 @@ impl ResolvedProtocolVersion {
             ResolvedProtocolVersion::CuttlefishPart2 => {
                 Box::new(CuttlefishPart2ProtocolUpdateDefinition)
             }
+            ResolvedProtocolVersion::Dugong => Box::new(DugongProtocolUpdateDefinition),
+            ResolvedProtocolVersion::EagleRay => Box::new(EagleRayProtocolUpdateDefinition),
             ResolvedProtocolVersion::Custom(..) => Box::new(CustomProtocolUpdateDefinition),
             ResolvedProtocolVersion::Test(name) => {
                 Box::new(TestProtocolUpdateDefinition::new(name.clone()))
@@ -95,6 +106,8 @@ pub struct ProtocolConfig {
     /// the definition of the protocol update, and if nodes use different overrides, they will execute
     /// different updates and need manual recovery.
     pub protocol_update_content_overrides: RawProtocolUpdateContentOverrides,
+    /// Moratorium ranges, independent of protocol enactment triggers.
+    pub user_transaction_moratoriums: Vec<UserTransactionMoratorium>,
 }
 
 impl ProtocolConfig {
@@ -102,8 +115,16 @@ impl ProtocolConfig {
         Self::new_with_triggers([])
     }
 
+    /// Leaves the moratorium schedule empty.
     pub fn new_with_triggers(
         triggers: impl IntoIterator<Item = (ProtocolVersionName, ProtocolUpdateEnactmentCondition)>,
+    ) -> Self {
+        Self::new_with_triggers_and_moratoriums(triggers, [])
+    }
+
+    pub fn new_with_triggers_and_moratoriums(
+        triggers: impl IntoIterator<Item = (ProtocolVersionName, ProtocolUpdateEnactmentCondition)>,
+        moratoriums: impl IntoIterator<Item = UserTransactionMoratorium>,
     ) -> Self {
         Self {
             protocol_update_triggers: triggers
@@ -113,6 +134,7 @@ impl ProtocolConfig {
                 })
                 .collect(),
             protocol_update_content_overrides: ProtocolUpdateContentOverrides::empty().into(),
+            user_transaction_moratoriums: moratoriums.into_iter().collect(),
         }
     }
 
@@ -196,6 +218,14 @@ impl ProtocolVersionName {
         Self::of(CUTTLEFISH_PART2_PROTOCOL_VERSION).unwrap()
     }
 
+    pub fn dugong() -> Self {
+        Self::of(DUGONG_PROTOCOL_VERSION).unwrap()
+    }
+
+    pub fn eagle_ray() -> Self {
+        Self::of(EAGLE_RAY_PROTOCOL_VERSION).unwrap()
+    }
+
     pub fn for_engine(version: ProtocolVersion) -> Self {
         match version {
             ProtocolVersion::Unbootstrapped => panic!("Unbootstrapped is not supported!"),
@@ -204,6 +234,8 @@ impl ProtocolVersionName {
             ProtocolVersion::Bottlenose => Self::bottlenose(),
             ProtocolVersion::CuttlefishPart1 => Self::cuttlefish_part1(),
             ProtocolVersion::CuttlefishPart2 => Self::cuttlefish_part2(),
+            ProtocolVersion::Dugong => Self::dugong(),
+            ProtocolVersion::EagleRay => Self::eagle_ray(),
         }
     }
 
@@ -394,5 +426,6 @@ pub struct SignalledReadinessThreshold {
     ///     "enact immediately at the beginning of an epoch on or above the threshold"
     /// - a value of 1 means:
     ///     "enact at the beginning of the _next_ epoch (if it still has enough support)"
+    #[allow(clippy::doc_overindented_list_items)]
     pub required_consecutive_completed_epochs_of_support: u64,
 }

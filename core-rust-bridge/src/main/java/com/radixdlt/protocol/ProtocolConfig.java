@@ -74,19 +74,22 @@ import com.radixdlt.sbor.NodeSborCodecs;
 import com.radixdlt.sbor.codec.CodecMap;
 import com.radixdlt.sbor.codec.StructCodec;
 import com.radixdlt.sbor.exceptions.SborDecodeException;
+import com.radixdlt.utils.UInt64;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public record ProtocolConfig(
     ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
-    Map<String, byte[]> rawProtocolUpdateContentOverrides) {
+    Map<String, byte[]> rawProtocolUpdateContentOverrides,
+    ImmutableList<UserTransactionMoratorium> userTransactionMoratoriums) {
 
   public static final String GENESIS_PROTOCOL_VERSION_NAME = "babylon-genesis";
   public static final String ANEMONE_PROTOCOL_VERSION_NAME = "anemone";
   public static final String BOTTLENOSE_PROTOCOL_VERSION_NAME = "bottlenose";
   public static final String CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME = "cuttlefish";
   public static final String CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME = "cuttlefish-part2";
+  public static final String EAGLE_RAY_PROTOCOL_VERSION_NAME = "eagle-ray";
 
   public static ImmutableList<String> VERSION_NAMES =
       ImmutableList.of(
@@ -94,13 +97,36 @@ public record ProtocolConfig(
           ANEMONE_PROTOCOL_VERSION_NAME,
           BOTTLENOSE_PROTOCOL_VERSION_NAME,
           CUTTLEFISH_PART1_PROTOCOL_VERSION_NAME,
-          CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME);
+          CUTTLEFISH_PART2_PROTOCOL_VERSION_NAME,
+          EAGLE_RAY_PROTOCOL_VERSION_NAME);
 
   public static final String LATEST_PROTOCOL_VERSION_NAME =
       VERSION_NAMES.get(VERSION_NAMES.size() - 1);
 
   public ProtocolConfig(ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers) {
-    this(protocolUpdateTriggers, Map.of());
+    this(protocolUpdateTriggers, Map.of(), ImmutableList.of());
+  }
+
+  public ProtocolConfig(
+      ImmutableList<ProtocolUpdateTrigger> protocolUpdateTriggers,
+      Map<String, byte[]> rawProtocolUpdateContentOverrides) {
+    this(protocolUpdateTriggers, rawProtocolUpdateContentOverrides, ImmutableList.of());
+  }
+
+  /** Replaces the moratorium schedule with a single range. */
+  public ProtocolConfig withUserTransactionMoratorium(long fromEpoch, long untilEpoch) {
+    return new ProtocolConfig(
+        protocolUpdateTriggers,
+        rawProtocolUpdateContentOverrides,
+        ImmutableList.of(
+            new UserTransactionMoratorium(
+                UInt64.fromNonNegativeLong(fromEpoch), UInt64.fromNonNegativeLong(untilEpoch))));
+  }
+
+  public static ProtocolConfig enactAtEpochWithUserTransactionMoratorium(
+      String version, long fromEpoch, long enactmentEpoch) {
+    return enactAtEpoch(version, enactmentEpoch)
+        .withUserTransactionMoratorium(fromEpoch, enactmentEpoch);
   }
 
   public static void registerCodec(CodecMap codecMap) {

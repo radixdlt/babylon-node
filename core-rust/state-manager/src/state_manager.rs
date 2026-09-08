@@ -223,6 +223,9 @@ impl StateManager {
 
         let database = Arc::new(lock_factory.named("database").new_db_lock(raw_db));
 
+        let moratorium_manager = Arc::new(UserTransactionMoratoriumManager::new(
+            protocol_config.user_transaction_moratoriums,
+        ));
         let formatter = Arc::new(Formatter::new(&network_definition));
 
         let transaction_validator = Arc::new(lock_factory.named("validator").new_rwlock(
@@ -274,6 +277,7 @@ impl StateManager {
                 mempool,
                 pending_transaction_result_cache,
                 committability_validator.clone(),
+                moratorium_manager,
                 metrics_registry,
             ),
             Some(mempool_relay_dispatcher) => MempoolManager::new(
@@ -281,6 +285,7 @@ impl StateManager {
                 mempool_relay_dispatcher,
                 pending_transaction_result_cache,
                 committability_validator.clone(),
+                moratorium_manager,
                 metrics_registry,
             ),
         });

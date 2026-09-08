@@ -99,6 +99,7 @@ impl<'s, S: AccuTreeStore<usize, M>, M: Merklizable> AccuTree<'s, S, M> {
     }
 
     /// Appends the given batch of new leaves to the tree.
+    #[allow(clippy::manual_div_ceil, clippy::manual_is_multiple_of)]
     pub fn append(&mut self, leaves: Vec<M>) {
         let new_leaf_count = leaves.len();
         if new_leaf_count == 0 {

@@ -16,6 +16,8 @@ pub enum MempoolRejectionReason {
     SubintentAlreadyFinalized(SubintentAlreadyFinalizedError),
     FromExecution(Box<ExecutionRejectionReason>),
     ValidationError(TransactionValidationError),
+    /// A temporary policy refusal which must never enter the transaction cache.
+    UserTransactionMoratorium(UserTransactionMoratorium),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,6 +47,7 @@ impl MempoolRejectionReason {
             MempoolRejectionReason::SubintentAlreadyFinalized(_) => false,
             MempoolRejectionReason::FromExecution(_) => true,
             MempoolRejectionReason::ValidationError(_) => false,
+            MempoolRejectionReason::UserTransactionMoratorium(_) => false,
         }
     }
 
@@ -77,6 +80,7 @@ impl MempoolRejectionReason {
             MempoolRejectionReason::SubintentAlreadyFinalized(_) => None,
             MempoolRejectionReason::FromExecution(_) => None,
             MempoolRejectionReason::ValidationError(_) => None,
+            MempoolRejectionReason::UserTransactionMoratorium(_) => None,
         }
     }
 
@@ -155,6 +159,13 @@ impl MempoolRejectionReason {
                     RejectionPermanence::PermanentForAnyPayloadWithThisTransactionIntent
                 }
             },
+            MempoolRejectionReason::UserTransactionMoratorium(moratorium) => {
+                RejectionPermanence::Temporary {
+                    retry: RetrySettings::FromEpoch {
+                        epoch: moratorium.to_exclusive,
+                    },
+                }
+            }
         }
     }
 }
@@ -212,9 +223,9 @@ pub enum RetrySettings {
 impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolRejectionReason {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter<'_>,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {
@@ -229,6 +240,13 @@ impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolRejectionR
             }
             MempoolRejectionReason::ValidationError(validation_error) => {
                 write!(f, "Validation Error: {validation_error:?}")
+            }
+            MempoolRejectionReason::UserTransactionMoratorium(moratorium) => {
+                write!(
+                    f,
+                    "User transactions are temporarily not accepted; retry from epoch {}",
+                    moratorium.to_exclusive.number(),
+                )
             }
         }
     }
@@ -467,26 +485,26 @@ impl PendingTransactionRecord {
     pub fn should_accept_into_mempool(
         self,
         check: CheckMetadata,
-    ) -> Result<PendingExecutedTransaction, MempoolAddRejection> {
+    ) -> Result<PendingExecutedTransaction, Box<MempoolAddRejection>> {
         if let Some(permanent_rejection) = self.earliest_permanent_rejection {
-            return Err(MempoolAddRejection {
+            return Err(Box::new(MempoolAddRejection {
                 reason: permanent_rejection.rejection.unwrap(),
                 against_state: permanent_rejection.against_state,
                 retry_from: self.retry_from,
                 was_cached: check.was_cached(),
                 invalid_from_epoch: self.intent_invalid_from_epoch,
-            });
+            }));
         }
         if let Some(rejection_reason) = self.latest_attempt.rejection {
             // Regardless of whether it was a rejection against committed or prepared state,
             // let's block it from coming into our mempool for a while
-            return Err(MempoolAddRejection {
+            return Err(Box::new(MempoolAddRejection {
                 reason: rejection_reason,
                 against_state: self.latest_attempt.against_state,
                 retry_from: self.retry_from,
                 was_cached: check.was_cached(),
                 invalid_from_epoch: self.intent_invalid_from_epoch,
-            });
+            }));
         }
         match check {
             CheckMetadata::Cached => {

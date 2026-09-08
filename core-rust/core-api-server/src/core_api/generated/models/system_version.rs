@@ -19,6 +19,10 @@ pub enum SystemVersion {
     V2,
     #[serde(rename = "V3")]
     V3,
+    #[serde(rename = "V4")]
+    V4,
+    #[serde(rename = "V5")]
+    V5,
 
 }
 
@@ -28,6 +32,8 @@ impl ToString for SystemVersion {
             Self::V1 => String::from("V1"),
             Self::V2 => String::from("V2"),
             Self::V3 => String::from("V3"),
+            Self::V4 => String::from("V4"),
+            Self::V5 => String::from("V5"),
         }
     }
 }
@@ -37,7 +43,6 @@ impl Default for SystemVersion {
         Self::V1
     }
 }
-
 
 
 

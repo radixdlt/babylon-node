@@ -777,6 +777,7 @@ mod tests {
             })
         }
 
+        #[allow(mismatched_lifetime_syntaxes)]
         pub fn create_subject(
             &self,
             at_state_version: StateVersion,

@@ -1,5 +1,6 @@
 use crate::prelude::*;
 
+#[allow(clippy::iter_kv_map)]
 #[tracing::instrument(skip(state))]
 pub(crate) async fn handle_lts_state_account_all_fungible_resource_balances(
     state: State<CoreApiState>,

@@ -121,4 +121,25 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_protocolSta
     })
 }
 
+#[no_mangle]
+extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_ensureUserTransactionsAllowed(
+    env: JNIEnv,
+    _class: JClass,
+    j_node_rust_env: JObject,
+    request_payload: jbyteArray,
+) -> jbyteArray {
+    jni_sbor_coded_call(
+        &env,
+        request_payload,
+        |epoch: Option<Epoch>| -> Result<(), UserTransactionMoratorium> {
+            let mempool_manager =
+                JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env);
+            match epoch {
+                Some(epoch) => mempool_manager.ensure_user_transactions_allowed_at_epoch(epoch),
+                None => mempool_manager.ensure_user_transactions_allowed(),
+            }
+        },
+    )
+}
+
 pub fn export_extern_functions() {}

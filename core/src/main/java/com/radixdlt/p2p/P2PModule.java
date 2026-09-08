@@ -164,33 +164,34 @@ public final class P2PModule extends AbstractModule {
     return new StartProcessorOnRunner(
         Runners.P2P_NETWORK,
         () -> {
-          final var initialEpoch = latestProof.primaryProof().ledgerHeader().epoch().toLong();
-          final var shouldClearAllBans =
-              initialProtocolState.pendingProtocolUpdates().values().stream()
-                  .anyMatch(
-                      pendingProtocolUpdate ->
-                          switch (pendingProtocolUpdate
-                              .protocolUpdateTrigger()
-                              .enactmentCondition()) {
-                            case EnactAtStartOfEpochIfValidatorsReady cond -> {
-                              // Clear if we're within enactment bounds or one epoch before the
-                              // lower bound
-                              final var lower = cond.lowerBoundInclusive().toLong();
-                              final var upper = cond.upperBoundExclusive().toLong();
-                              yield initialEpoch >= (lower - 1) && initialEpoch < upper;
-                            }
-                            case EnactAtStartOfEpochUnconditionally cond -> {
-                              final var updateEpoch = cond.epoch().toLong();
-                              // Clear if we're right before the update
-                              yield initialEpoch == updateEpoch - 1;
-                            }
-                            case EnactImmediatelyAfterEndOfProtocolUpdate ignored ->
-                            // Bans already cleared due to the preceding protocol update
-                            false;
-                          });
-          if (shouldClearAllBans) {
+          // An epoch-change proof's header names the epoch that ended, not the current epoch.
+          final var initialEpoch = latestProof.resultantEpoch();
+          if (shouldClearNearProtocolUpdateBans(initialProtocolState, initialEpoch)) {
             addressBook.clearAllBans();
           }
         });
+  }
+
+  static boolean shouldClearNearProtocolUpdateBans(ProtocolState protocolState, long currentEpoch) {
+    return protocolState.pendingProtocolUpdates().values().stream()
+        .anyMatch(
+            pendingProtocolUpdate ->
+                switch (pendingProtocolUpdate.protocolUpdateTrigger().enactmentCondition()) {
+                  case EnactAtStartOfEpochIfValidatorsReady cond -> {
+                    // Clear if we're within enactment bounds or one epoch before the lower bound
+                    final var lower = cond.lowerBoundInclusive().toLong();
+                    final var upper = cond.upperBoundExclusive().toLong();
+                    yield currentEpoch >= (lower - 1) && currentEpoch < upper;
+                  }
+                  case EnactAtStartOfEpochUnconditionally cond -> {
+                    final var updateEpoch = cond.epoch().toLong();
+                    // Clear if we're right before the update
+                    yield currentEpoch == updateEpoch - 1;
+                  }
+
+                  case EnactImmediatelyAfterEndOfProtocolUpdate ignored ->
+                  // Bans already cleared due to the preceding protocol update
+                  false;
+                });
   }
 }

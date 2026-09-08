@@ -33,7 +33,11 @@ public enum SystemVersion {
   
   V2("V2"),
   
-  V3("V3");
+  V3("V3"),
+
+  V4("V4"),
+
+  V5("V5");
 
   private String value;
 
@@ -61,4 +65,3 @@ public enum SystemVersion {
     throw new IllegalArgumentException("Unexpected value '" + value + "'");
   }
 }
-

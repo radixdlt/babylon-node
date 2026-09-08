@@ -92,7 +92,7 @@ jobs:
       - uses: RDXWorks-actions/toolchain@master
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: 1.92.0
           override: true
       - name: Install Rust Targets
         run: |

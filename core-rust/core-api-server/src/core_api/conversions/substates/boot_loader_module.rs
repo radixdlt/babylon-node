@@ -32,6 +32,8 @@ fn to_api_system_version(system_version: &SystemVersion) -> models::SystemVersio
         SystemVersion::V1 => models::SystemVersion::V1,
         SystemVersion::V2 => models::SystemVersion::V2,
         SystemVersion::V3 => models::SystemVersion::V3,
+        SystemVersion::V4 => models::SystemVersion::V4,
+        SystemVersion::V5 => models::SystemVersion::V5,
     }
 }
 

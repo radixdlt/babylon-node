@@ -141,7 +141,7 @@ impl Preparator {
         loop {
             let next = scenario
                 .next(previous_engine_receipt.as_ref())
-                .map_err(|err| err.into_full(&scenario))
+                .map_err(|err| err.into_full(scenario.as_ref()))
                 .unwrap();
             match next {
                 NextAction::Transaction(next) => {
@@ -525,10 +525,11 @@ impl Preparator {
                         }
                     }
                 }
-                Err(ProcessedRejectResult {
-                    result,
-                    fee_summary,
-                }) => {
+                Err(reject) => {
+                    let ProcessedRejectResult {
+                        result,
+                        fee_summary,
+                    } = *reject;
                     let error_message = format!("{:?}", &result.reason);
                     pending_transaction_results.push(PendingTransactionResult {
                         user_transaction_hashes: user_hashes.clone(),

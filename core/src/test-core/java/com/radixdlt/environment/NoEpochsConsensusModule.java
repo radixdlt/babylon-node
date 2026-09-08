@@ -106,6 +106,9 @@ public class NoEpochsConsensusModule extends AbstractModule {
 
     OptionalBinder.newOptionalBinder(
         binder(), EpochManager.class); // So that this is consistent with tests
+    OptionalBinder.newOptionalBinder(binder(), UserTransactionMoratoriumProvider.class)
+        .setDefault()
+        .toInstance(UserTransactionMoratoriumProvider.NONE);
     var eventBinder =
         Multibinder.newSetBinder(binder(), new TypeLiteral<Class<?>>() {}, LocalEvents.class)
             .permitDuplicates();
@@ -161,7 +164,8 @@ public class NoEpochsConsensusModule extends AbstractModule {
       EventDispatcher<ConsensusByzantineEvent> doubleVoteEventDispatcher,
       EventDispatcher<ProposalRejected> proposalRejectedDispatcher,
       RoundUpdate roundUpdate,
-      @TimeoutQuorumResolutionDelayMs long timeoutQuorumResolutionDelayMs) {
+      @TimeoutQuorumResolutionDelayMs long timeoutQuorumResolutionDelayMs,
+      UserTransactionMoratoriumProvider userTransactionMoratoriumProvider) {
     /*
     TODO: consider cleaning this up (but most probably it's not worth it :))
     This is a little hacky.
@@ -198,6 +202,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
         .metrics(metrics)
         .addressing(addressing)
         .proposerElection(proposerElection)
+        .userTransactionMoratoriumProvider(userTransactionMoratoriumProvider)
         .build();
   }
 
@@ -232,6 +237,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
       ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender,
       PacemakerTimeoutCalculator timeoutCalculator,
       ProposalGenerator proposalGenerator,
+      UserTransactionMoratoriumProvider userTransactionMoratoriumProvider,
       Hasher hasher,
       RemoteEventDispatcher<NodeId, Proposal> proposalDispatcher,
       RemoteEventDispatcher<NodeId, Vote> voteDispatcher,
@@ -249,6 +255,7 @@ public class NoEpochsConsensusModule extends AbstractModule {
         timeoutSender,
         timeoutCalculator,
         proposalGenerator,
+        userTransactionMoratoriumProvider,
         (n, m) -> {
           var nodeId = NodeId.fromPublicKey(n.getKey());
           proposalDispatcher.dispatch(nodeId, m);

@@ -52,14 +52,14 @@ RUN apt-get update \
     docker.io=20.10.24+dfsg1-1+deb12u1+b6 \
     libssl-dev=3.0.20-1~deb12u2 \
     pkg-config=1.8.1-1 \
-    unzip=6.0-28 \
+    unzip=6.0-28+deb12u1 \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.19+10-1~deb12u2 \
-    openjdk-17-jre=17.0.19+10-1~deb12u2 \
-    openjdk-17-jdk-headless=17.0.19+10-1~deb12u2 \
-    openjdk-17-jre-headless=17.0.19+10-1~deb12u2 \
+    openjdk-17-jdk=17.0.20.1+1-1~deb12u1 \
+    openjdk-17-jre=17.0.20.1+1-1~deb12u1 \
+    openjdk-17-jdk-headless=17.0.20.1+1-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.20.1+1-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -141,7 +141,7 @@ RUN apt-get update \
 # We fix the version of Rust here to ensure that we can update it without having
 # issues with the caching layers containing outdated versions which aren't compatible.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup.sh \
-  && sh rustup.sh -y --target 1.88.0-aarch64-unknown-linux-gnu,1.88.0-x86_64-unknown-linux-gnu --default-toolchain 1.88.0
+  && sh rustup.sh -y --target aarch64-unknown-linux-gnu,x86_64-unknown-linux-gnu --default-toolchain 1.92.0
 
 # RUN "$HOME/.cargo/bin/cargo" install sccache --version 0.7.4
 
@@ -262,7 +262,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.19+10-1~deb12u2 \
+    openjdk-17-jre-headless=17.0.20.1+1-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u15 \
     gettext-base=0.21-12 \

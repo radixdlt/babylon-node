@@ -136,6 +136,7 @@ def nodeNames = project.getProperties().get('nodeNames', "")
 def validators = project.getProperties().get('validators', '0')
 def publicKeys = project.getProperties().get('publicKeys', '')
 def network = project.getProperties().get('network', '')
+def stakingAccountPublicKey = project.findProperty('stakingAccountPublicKey')
 
 task getClassPathForRadixShell {
     doLast {
@@ -187,6 +188,9 @@ task generateDevGenesis(type: Exec) {
             "com.radixdlt.cli.GenerateGenesis",
             "--validator-count=${validators}",
             "--network=${network}"
+    if (stakingAccountPublicKey != null) {
+        args "--staking-account-public-key=${stakingAccountPublicKey}"
+    }
 }
 
 task generateGenesisFile(type: Exec) {
@@ -205,6 +209,9 @@ task generateGenesisFile(type: Exec) {
             "com.radixdlt.cli.GenerateGenesis",
             "--public-keys=${publicKeys}",
             "--network=${network}"
+    if (stakingAccountPublicKey != null) {
+        args "--staking-account-public-key=${stakingAccountPublicKey}"
+    }
 }
 
 task createGenerateGenesisScripts(type: CreateStartScripts) {

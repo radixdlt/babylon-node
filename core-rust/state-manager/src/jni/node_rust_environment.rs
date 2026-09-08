@@ -187,7 +187,7 @@ impl JNINodeRustEnvironment {
         (base_path, config)
     }
 
-    fn combine(base: &String, ext: &str) -> PathBuf {
+    fn combine(base: &str, ext: &str) -> PathBuf {
         [base, ext].iter().collect()
     }
 

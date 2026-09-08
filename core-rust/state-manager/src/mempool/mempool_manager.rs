@@ -97,6 +97,7 @@ pub struct MempoolManager {
     pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
     /// WARNING: Be sure to take out this lock in the correct order, as per the [`MempoolManager`] doc.
     committability_validator: Arc<CommittabilityValidator>,
+    moratorium_manager: Arc<UserTransactionMoratoriumManager>,
     metrics: MempoolManagerMetrics,
 }
 
@@ -107,6 +108,7 @@ impl MempoolManager {
         relay_dispatcher: MempoolRelayDispatcher,
         pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
         committability_validator: Arc<CommittabilityValidator>,
+        moratorium_manager: Arc<UserTransactionMoratoriumManager>,
         metric_registry: &MetricRegistry,
     ) -> Self {
         Self {
@@ -114,6 +116,7 @@ impl MempoolManager {
             relay_dispatcher: Some(relay_dispatcher),
             pending_transaction_result_cache,
             committability_validator,
+            moratorium_manager,
             metrics: MempoolManagerMetrics::new(metric_registry),
         }
     }
@@ -123,6 +126,7 @@ impl MempoolManager {
         mempool: RwLock<PriorityMempool>,
         pending_transaction_result_cache: RwLock<PendingTransactionResultCache>,
         committability_validator: Arc<CommittabilityValidator>,
+        moratorium_manager: Arc<UserTransactionMoratoriumManager>,
         metric_registry: &MetricRegistry,
     ) -> Self {
         Self {
@@ -130,16 +134,36 @@ impl MempoolManager {
             relay_dispatcher: None,
             pending_transaction_result_cache,
             committability_validator,
+            moratorium_manager,
             metrics: MempoolManagerMetrics::new(metric_registry),
         }
     }
 
+    /// Checks the policy using a fresh read of the committed epoch.
+    pub fn ensure_user_transactions_allowed(&self) -> Result<(), UserTransactionMoratorium> {
+        self.ensure_user_transactions_allowed_at_epoch(
+            self.committability_validator.current_epoch(),
+        )
+    }
+
+    pub(crate) fn ensure_user_transactions_allowed_at_epoch(
+        &self,
+        epoch: Epoch,
+    ) -> Result<(), UserTransactionMoratorium> {
+        self.moratorium_manager
+            .ensure_user_transactions_allowed(epoch)
+    }
+
+    /// Suppresses all mempool entries from proposals during a moratorium.
     pub fn get_proposal_transactions(
         &self,
         max_count: usize,
         max_payload_size_bytes: u64,
         user_payload_hashes_to_exclude: &HashSet<NotarizedTransactionHash>,
     ) -> Vec<Arc<MempoolTransaction>> {
+        if self.ensure_user_transactions_allowed().is_err() {
+            return Vec::new();
+        }
         self.mempool.read().get_proposal_transactions(
             max_count,
             max_payload_size_bytes,
@@ -152,12 +176,15 @@ impl MempoolManager {
     }
 
     /// Picks a random subset of transactions to be relayed via a mempool sync.
-    /// Obeys the given count/size limits.
+    /// Obeys the given count/size limits. Returns none during a moratorium.
     pub fn get_relay_transactions(
         &self,
         max_count: usize,
         max_payload_size_bytes: u64,
     ) -> Vec<Arc<MempoolTransaction>> {
+        if self.ensure_user_transactions_allowed().is_err() {
+            return Vec::new();
+        }
         // TODO: Definitely a better algorithm could be used here, especially with extra information like:
         // which peer/peers are we sending this to? or what do we know about said peer to have in it's mempool?
         // However (NOTE/WARN): changing transactions selection without careful consideration of the peer selection,
@@ -290,6 +317,17 @@ impl MempoolManager {
         raw_transaction: RawNotarizedTransaction,
         force_recalculate: bool,
     ) -> Result<Arc<MempoolTransaction>, MempoolAddError> {
+        // STEP 0 - Reject before validation and caching so the payload can be
+        // retried when the moratorium ends.
+        if let Err(moratorium) = self.ensure_user_transactions_allowed() {
+            return Err(MempoolAddError::Rejected(
+                Box::new(MempoolAddRejection::for_user_transaction_moratorium(
+                    moratorium,
+                )),
+                None,
+            ));
+        }
+
         // STEP 1 - We prepare the transaction to check it's in the right structure and so we have hashes to work with
         let prepared = match self
             .committability_validator
@@ -300,7 +338,9 @@ impl MempoolManager {
                 // If the transaction fails to prepare at this point then we don't even have a hash to assign against it,
                 // so we can't cache anything - just return an error
                 return Err(MempoolAddError::Rejected(
-                    MempoolAddRejection::for_static_rejection(prepare_error.into()),
+                    Box::new(MempoolAddRejection::for_static_rejection(
+                        prepare_error.into(),
+                    )),
                     None,
                 ));
             }
@@ -381,7 +421,7 @@ impl MempoolManager {
                 force_recalculate,
             )
         {
-            return (record, CheckMetadata::Cached);
+            return (*record, CheckMetadata::Cached);
         }
 
         let metadata = TransactionMetadata::read_from_prepared(&prepared);
@@ -451,7 +491,7 @@ impl MempoolManager {
                 {
                     return ShouldRecalculate::Yes;
                 }
-                return ShouldRecalculate::No(record);
+                return ShouldRecalculate::No(Box::new(record));
             }
         }
 
@@ -549,9 +589,10 @@ enum ForceRecalculation {
 
 enum ShouldRecalculate {
     Yes,
-    No(PendingTransactionRecord),
+    No(Box<PendingTransactionRecord>),
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum CheckMetadata {
     Cached,
     Fresh(StaticValidation),
@@ -566,6 +607,7 @@ impl CheckMetadata {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum StaticValidation {
     Valid {
         executable: ExecutableTransaction,

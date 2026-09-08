@@ -239,6 +239,7 @@ pub(crate) fn detailed_error<E: ErrorDetails>(
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn length_limit_error<E: ErrorDetails>() -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::PAYLOAD_TOO_LARGE,

@@ -143,6 +143,11 @@ public final class GenerateGenesis {
     options.addOption("p", "public-keys", true, "Specify validator keys");
     options.addOption("v", "validator-count", true, "Specify number of validators to generate");
     options.addOption("n", "network", true, "Specify the network name or ID");
+    options.addOption(
+        "s",
+        "staking-account-public-key",
+        true,
+        "Override the powerful staking account public key (hex)");
 
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);
@@ -188,8 +193,15 @@ public final class GenerateGenesis {
             });
 
     final var network = parseNetwork(cmd.getOptionValue("n"));
+    if (cmd.hasOption("s") && !NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network)) {
+      throw new IllegalArgumentException("This network does not use a powerful staking account");
+    }
+    final var stakingAccountPublicKey =
+        cmd.hasOption("s")
+            ? ECDSASecp256k1PublicKey.fromHex(cmd.getOptionValue("s"))
+            : GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY;
     final var validators = validatorsBuilder.build();
-    final var genesisData = createGenesisData(network, validators);
+    final var genesisData = createGenesisData(network, validators, stakingAccountPublicKey);
     final var encodedGenesisData =
         NodeSborCodecs.encode(genesisData, NodeSborCodecs.resolveCodec(new TypeToken<>() {}));
     final var compressedGenesisData = Compress.compress(encodedGenesisData);
@@ -240,7 +252,9 @@ public final class GenerateGenesis {
   }
 
   private static GenesisData createGenesisData(
-      Network network, ImmutableList<ECDSASecp256k1PublicKey> validators) {
+      Network network,
+      ImmutableList<ECDSASecp256k1PublicKey> validators,
+      ECDSASecp256k1PublicKey stakingAccountPublicKey) {
     final var usePowerfulStakingAccount =
         NETWORKS_TO_USE_POWERFUL_STAKING_ACCOUNT.contains(network);
 
@@ -251,16 +265,14 @@ public final class GenerateGenesis {
 
     final var stakingAccount =
         usePowerfulStakingAccount
-            ? Address.virtualAccountAddress(GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY)
+            ? Address.virtualAccountAddress(stakingAccountPublicKey)
             : Address.virtualAccountAddress(PrivateKeys.ofNumeric(1).getPublicKey());
 
     final var stakingAccountOwnsAllValidators = usePowerfulStakingAccount;
 
     final Map<ECDSASecp256k1PublicKey, Decimal> xrdBalances =
         usePowerfulStakingAccount
-            ? Map.of(
-                GENESIS_POWERFUL_STAKING_ACCOUNT_PUBLIC_KEY,
-                GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
+            ? Map.of(stakingAccountPublicKey, GENESIS_POWERFUL_STAKING_ACCOUNT_INITIAL_XRD_BALANCE)
             : Map.of();
 
     var consensusConfig =
