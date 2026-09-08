@@ -66,6 +66,7 @@ package com.radixdlt.consensus.bft.processor;
 
 import static com.radixdlt.utils.TypedMocks.rmock;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 import com.google.common.primitives.Bytes;
@@ -97,11 +98,13 @@ public final class UserTransactionMoratoriumVerifierTest {
 
   private BFTEventProcessorAtCurrentRound forwardTo;
   private EventDispatcher<ProposalRejected> proposalRejectedDispatcher;
+  private UserTransactionMoratoriumProvider provider;
 
   @Before
   public void setup() {
     this.forwardTo = mock(BFTEventProcessorAtCurrentRound.class);
     this.proposalRejectedDispatcher = rmock(EventDispatcher.class);
+    this.provider = mock(UserTransactionMoratoriumProvider.class);
   }
 
   @Test
@@ -115,6 +118,7 @@ public final class UserTransactionMoratoriumVerifierTest {
     verifier.processProposal(proposal);
 
     // Assert
+    verify(provider).ensureUserTransactionsAllowed(3);
     verify(forwardTo, never()).processProposal(any());
     verify(proposalRejectedDispatcher, times(1)).dispatch(new ProposalRejected(ROUND));
   }
@@ -129,6 +133,7 @@ public final class UserTransactionMoratoriumVerifierTest {
     verifier.processProposal(proposal);
 
     // Assert
+    verifyNoInteractions(provider);
     verify(forwardTo, times(1)).processProposal(proposal);
     verify(proposalRejectedDispatcher, never()).dispatch(any());
   }
@@ -139,18 +144,20 @@ public final class UserTransactionMoratoriumVerifierTest {
     final var verifier = createVerifier(Result.success(Tuple.tuple()));
     final var proposal =
         createProposal(List.of(RawNotarizedTransaction.create(new byte[] {1, 2, 3})));
+    when(proposal.getEpoch()).thenReturn(4L);
 
     // Act
     verifier.processProposal(proposal);
 
     // Assert
+    verify(provider).ensureUserTransactionsAllowed(4);
     verify(forwardTo, times(1)).processProposal(proposal);
     verify(proposalRejectedDispatcher, never()).dispatch(any());
   }
 
   private UserTransactionMoratoriumVerifier createVerifier(
       Result<Tuple.Tuple0, UserTransactionMoratorium> moratorium) {
-    final UserTransactionMoratoriumProvider provider = () -> moratorium;
+    when(provider.ensureUserTransactionsAllowed(anyLong())).thenReturn(moratorium);
     return new UserTransactionMoratoriumVerifier(
         forwardTo,
         provider,
@@ -170,6 +177,7 @@ public final class UserTransactionMoratoriumVerifierTest {
     final var vertex = mock(Vertex.class);
     when(vertex.getTransactions()).thenReturn(transactions);
     final var proposal = mock(Proposal.class);
+    when(proposal.getEpoch()).thenReturn(3L);
     when(proposal.getAuthor()).thenReturn(author);
     when(proposal.getRound()).thenReturn(ROUND);
     when(proposal.getVertex()).thenReturn(vertex);

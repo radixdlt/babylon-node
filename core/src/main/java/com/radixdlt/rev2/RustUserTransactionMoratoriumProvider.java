@@ -82,7 +82,7 @@ public final class RustUserTransactionMoratoriumProvider
   }
 
   @Override
-  public Result<Tuple.Tuple0, UserTransactionMoratorium> ensureUserTransactionsAllowed() {
-    return this.rustStateComputer.ensureUserTransactionsAllowed();
+  public Result<Tuple.Tuple0, UserTransactionMoratorium> ensureUserTransactionsAllowed(long epoch) {
+    return this.rustStateComputer.ensureUserTransactionsAllowed(epoch);
   }
 }

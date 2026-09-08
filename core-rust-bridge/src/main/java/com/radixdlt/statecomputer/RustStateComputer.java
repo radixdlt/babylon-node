@@ -68,6 +68,7 @@ import static com.radixdlt.lang.Tuple.tuple;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.environment.NodeRustEnvironment;
+import com.radixdlt.lang.Option;
 import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.monitoring.LabelledTimer;
@@ -76,6 +77,7 @@ import com.radixdlt.monitoring.Metrics.MethodId;
 import com.radixdlt.protocol.UserTransactionMoratorium;
 import com.radixdlt.sbor.Natives;
 import com.radixdlt.statecomputer.commit.*;
+import com.radixdlt.utils.UInt64;
 import java.util.Objects;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -144,10 +146,15 @@ public class RustStateComputer {
 
   /** Returns the active moratorium as an error, using Rust's committed ledger epoch. */
   public Result<Tuple.Tuple0, UserTransactionMoratorium> ensureUserTransactionsAllowed() {
-    return ensureUserTransactionsAllowedFunc.call(tuple());
+    return ensureUserTransactionsAllowedFunc.call(Option.none());
   }
 
-  private final Natives.Call1<Tuple.Tuple0, Result<Tuple.Tuple0, UserTransactionMoratorium>>
+  /** Checks the consensus event's epoch independently of the committed ledger epoch. */
+  public Result<Tuple.Tuple0, UserTransactionMoratorium> ensureUserTransactionsAllowed(long epoch) {
+    return ensureUserTransactionsAllowedFunc.call(Option.some(UInt64.fromNonNegativeLong(epoch)));
+  }
+
+  private final Natives.Call1<Option<UInt64>, Result<Tuple.Tuple0, UserTransactionMoratorium>>
       ensureUserTransactionsAllowedFunc;
 
   private static native byte[] ensureUserTransactionsAllowed(

@@ -131,9 +131,13 @@ extern "system" fn Java_com_radixdlt_statecomputer_RustStateComputer_ensureUserT
     jni_sbor_coded_call(
         &env,
         request_payload,
-        |_: ()| -> Result<(), UserTransactionMoratorium> {
-            JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env)
-                .ensure_user_transactions_allowed()
+        |epoch: Option<Epoch>| -> Result<(), UserTransactionMoratorium> {
+            let mempool_manager =
+                JNINodeRustEnvironment::get_mempool_manager(&env, j_node_rust_env);
+            match epoch {
+                Some(epoch) => mempool_manager.ensure_user_transactions_allowed_at_epoch(epoch),
+                None => mempool_manager.ensure_user_transactions_allowed(),
+            }
         },
     )
 }

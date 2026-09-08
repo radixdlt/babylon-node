@@ -314,7 +314,9 @@ public final class Pacemaker implements BFTEventProcessorAtCurrentRound {
     if (transactionCount == 0) {
       return false;
     }
-    final var moratorium = this.userTransactionMoratoriumProvider.ensureUserTransactionsAllowed();
+    final var moratorium =
+        this.userTransactionMoratoriumProvider.ensureUserTransactionsAllowed(
+            executedVertex.vertex().getEpoch());
     if (moratorium.isSuccess()) {
       return false;
     }

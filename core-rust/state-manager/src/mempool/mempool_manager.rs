@@ -141,8 +141,17 @@ impl MempoolManager {
 
     /// Checks the policy using a fresh read of the committed epoch.
     pub fn ensure_user_transactions_allowed(&self) -> Result<(), UserTransactionMoratorium> {
+        self.ensure_user_transactions_allowed_at_epoch(
+            self.committability_validator.current_epoch(),
+        )
+    }
+
+    pub(crate) fn ensure_user_transactions_allowed_at_epoch(
+        &self,
+        epoch: Epoch,
+    ) -> Result<(), UserTransactionMoratorium> {
         self.moratorium_manager
-            .ensure_user_transactions_allowed(self.committability_validator.current_epoch())
+            .ensure_user_transactions_allowed(epoch)
     }
 
     /// Suppresses all mempool entries from proposals during a moratorium.

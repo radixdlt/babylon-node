@@ -64,7 +64,7 @@
 
 use crate::prelude::*;
 
-/// Evaluates moratoriums using the caller's committed epoch.
+/// Evaluates moratoriums using the caller's epoch.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserTransactionMoratoriumManager {
     moratoriums: Vec<UserTransactionMoratorium>,

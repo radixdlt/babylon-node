@@ -1,17 +1,4 @@
-# =================================================================================================
-# BUILD ARGS
-#
-# For the standard build:
-# - TARGETPLATFORM - provided automatically, specified via `docker build --platform xyz`
-# - RUST_PROFILE - optional - either `debug` or `release` - defaults to release
-#
-# There are no args for the local rust builder.
-# =================================================================================================
-# LAYER: java-build-stage
-# The base for building the Java application
-# =================================================================================================
-FROM debian:12.1-slim AS java-build-stage
-
+# ==========================================================================================
 LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"
@@ -52,14 +39,14 @@ RUN apt-get update \
     docker.io=20.10.24+dfsg1-1+deb12u1+b6 \
     libssl-dev=3.0.20-1~deb12u2 \
     pkg-config=1.8.1-1 \
-    unzip=6.0-28 \
+    unzip=6.0-28+deb12u1 \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.19+10-1~deb12u2 \
-    openjdk-17-jre=17.0.19+10-1~deb12u2 \
-    openjdk-17-jdk-headless=17.0.19+10-1~deb12u2 \
-    openjdk-17-jre-headless=17.0.19+10-1~deb12u2 \
+    openjdk-17-jdk=17.0.20.1+1-1~deb12u1 \
+    openjdk-17-jre=17.0.20.1+1-1~deb12u1 \
+    openjdk-17-jdk-headless=17.0.20.1+1-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.20.1+1-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -262,7 +249,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.19+10-1~deb12u2 \
+    openjdk-17-jre-headless=17.0.20.1+1-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u15 \
     gettext-base=0.21-12 \

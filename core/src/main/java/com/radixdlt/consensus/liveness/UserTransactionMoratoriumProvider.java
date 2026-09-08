@@ -68,12 +68,12 @@ import com.radixdlt.lang.Result;
 import com.radixdlt.lang.Tuple;
 import com.radixdlt.protocol.UserTransactionMoratorium;
 
-/** Checks user transaction permission at the committed ledger epoch. */
+/** Checks user transaction permission at the consensus event's epoch. */
 @FunctionalInterface
 public interface UserTransactionMoratoriumProvider {
   /** Default for setups without a state manager. */
-  UserTransactionMoratoriumProvider NONE = () -> Result.success(Tuple.tuple());
+  UserTransactionMoratoriumProvider NONE = epoch -> Result.success(Tuple.tuple());
 
   /** Returns the active moratorium as an error, or success if none applies. */
-  Result<Tuple.Tuple0, UserTransactionMoratorium> ensureUserTransactionsAllowed();
+  Result<Tuple.Tuple0, UserTransactionMoratorium> ensureUserTransactionsAllowed(long epoch);
 }

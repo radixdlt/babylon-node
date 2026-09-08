@@ -65,6 +65,7 @@
 package com.radixdlt.rev2.protocol;
 
 import static com.radixdlt.environment.deterministic.network.MessageSelector.firstSelector;
+import static com.radixdlt.harness.predicates.EventPredicate.onlyLedgerSyncEvents;
 import static com.radixdlt.harness.predicates.EventPredicate.onlyLocalMempoolAddEvents;
 import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverEpoch;
 import static com.radixdlt.harness.predicates.NodesPredicate.allAtOrOverProtocolVersion;
@@ -89,16 +90,23 @@ import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDeta
 import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
 import com.radixdlt.api.mesh.generated.api.ConstructionApi;
 import com.radixdlt.api.mesh.generated.models.ConstructionSubmitRequest;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTInsertUpdate;
+import com.radixdlt.consensus.bft.NoVote;
 import com.radixdlt.consensus.bft.Round;
 import com.radixdlt.consensus.bft.Self;
 import com.radixdlt.consensus.epoch.EpochProposalRejected;
+import com.radixdlt.consensus.epoch.Epoched;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElections;
 import com.radixdlt.consensus.liveness.UserTransactionMoratoriumProvider;
 import com.radixdlt.crypto.ECDSASecp256k1PublicKey;
+import com.radixdlt.crypto.Hasher;
 import com.radixdlt.environment.EventDispatcher;
 import com.radixdlt.environment.RemoteEventDispatcher;
+import com.radixdlt.environment.deterministic.network.ControlledMessage;
 import com.radixdlt.genesis.GenesisBuilder;
 import com.radixdlt.genesis.GenesisConsensusManagerConfig;
 import com.radixdlt.harness.deterministic.DeterministicTest;
@@ -106,11 +114,13 @@ import com.radixdlt.harness.deterministic.PhysicalNodeConfig;
 import com.radixdlt.harness.deterministic.invariants.MessageMonitor;
 import com.radixdlt.harness.predicates.NodePredicate;
 import com.radixdlt.lang.Option;
+import com.radixdlt.ledger.LedgerUpdate;
 import com.radixdlt.mempool.MempoolAdd;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.RustMempool;
 import com.radixdlt.modules.FunctionalRadixNodeModule;
 import com.radixdlt.modules.StateComputerConfig;
+import com.radixdlt.monitoring.Metrics;
 import com.radixdlt.networks.Network;
 import com.radixdlt.p2p.NodeId;
 import com.radixdlt.protocol.ProtocolConfig;
@@ -123,15 +133,20 @@ import com.radixdlt.sync.SyncRelayConfig;
 import com.radixdlt.sync.TransactionsAndProofReader;
 import com.radixdlt.transactions.RawNotarizedTransaction;
 import com.radixdlt.utils.UInt64;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 
+@RunWith(JUnitParamsRunner.class)
 public final class UserTransactionMoratoriumTest {
   private static final String EAGLE_RAY = ProtocolConfig.EAGLE_RAY_PROTOCOL_VERSION_NAME;
   private static final int NUM_VALIDATORS = 4;
@@ -143,6 +158,223 @@ public final class UserTransactionMoratoriumTest {
   @Rule public final TemporaryFolder folder = new TemporaryFolder();
 
   private final List<EpochProposalRejected> rejectedProposals = new CopyOnWriteArrayList<>();
+
+  @Test
+  @Parameters({"4", "5"})
+  public void future_user_proposal_waits_for_epoch_change_before_moratorium_check(
+      long proposalEpoch) {
+    try (var test = createTest(withMoratorium(MORATORIUM_FROM_EPOCH, ENACTMENT_EPOCH))) {
+      // Arrange
+      test.startAllNodes();
+      test.runUntilState(allAtOrOverEpoch(proposalEpoch - 1), MAX_MESSAGES_PER_STEP);
+      test.runUntilState(
+          nodesMatch(List.of(1, 2, 3), NodePredicate.atOrOverEpoch(proposalEpoch)),
+          MAX_MESSAGES_PER_STEP,
+          message -> message.channelId().receiverIndex() != 0);
+      final var transaction = TransactionBuilder.forTests().prepare().raw();
+      test.restartNodeWithOverrideModule(1, oldBinaryEmulation(transaction));
+      final Predicate<ControlledMessage> isFutureUserProposal =
+          message ->
+              message.channelId().receiverIndex() == 0
+                  && message.message() instanceof Proposal proposal
+                  && proposal.getEpoch() == proposalEpoch
+                  && proposal.getVertex().getTransactions().contains(transaction);
+      test.runUntilState(
+          ignored -> test.getNetwork().allMessages().stream().anyMatch(isFutureUserProposal),
+          MAX_MESSAGES_PER_STEP,
+          message -> message.channelId().receiverIndex() != 0);
+      final var queuedProposal =
+          test.getNetwork().allMessages().stream()
+              .filter(isFutureUserProposal)
+              .findFirst()
+              .orElseThrow();
+      final var proposal = (Proposal) queuedProposal.message();
+      final var vertexHash = proposal.getVertex().withId(test.getInstance(0, Hasher.class)).hash();
+      final var metrics = test.getInstance(0, Metrics.class);
+      final var queuedBefore = metrics.epochManager().enqueuedConsensusEvents().get();
+      final var checkedBefore = metrics.bft().proposalsReceived().get();
+      final var committedBefore = currentEpoch(test);
+      final Predicate<ControlledMessage> isDecision =
+          message ->
+              message.channelId().senderIndex() == 0
+                  && (message.message() instanceof Vote vote
+                          && vote.getVoteData().getProposed().getVertexId().equals(vertexHash)
+                      || message.message() instanceof EpochProposalRejected rejected
+                          && rejected.epoch() == proposalEpoch
+                          && rejected.proposalRejected().round().equals(proposal.getRound()));
+
+      // Act
+      test.runNext(queuedProposal::equals);
+      final var queuedAfter = metrics.epochManager().enqueuedConsensusEvents().get();
+      final var checkedWhileBehind = metrics.bft().proposalsReceived().get();
+      final var committedWhileQueued = currentEpoch(test);
+      final var decidedWhileBehind = test.getNetwork().allMessages().stream().anyMatch(isDecision);
+      test.runUntilState(
+          ignored -> test.getNetwork().allMessages().stream().anyMatch(isDecision),
+          MAX_MESSAGES_PER_STEP,
+          message ->
+              !(message.message() instanceof ConsensusEvent
+                  || message.message() instanceof Epoched<?>));
+      final var decision =
+          test.getNetwork().allMessages().stream()
+              .filter(isDecision)
+              .findFirst()
+              .orElseThrow()
+              .message();
+      final var committedAtDecision = currentEpoch(test);
+      final var protocolAtDecision =
+          test.getInstance(0, RustStateComputer.class).protocolState().currentProtocolVersion();
+      test.runUntilState(allCommittedTransactionSuccess(transaction), MAX_MESSAGES_PER_STEP);
+
+      // Assert
+      assertEquals(proposalEpoch - 1, committedBefore);
+      assertEquals(committedBefore, committedWhileQueued);
+      assertEquals(queuedBefore + 1, queuedAfter, 0.0);
+      assertEquals(checkedBefore, checkedWhileBehind, 0.0);
+      assertFalse(decidedWhileBehind);
+      assertEquals(proposalEpoch, committedAtDecision);
+      assertEquals(proposalEpoch < ENACTMENT_EPOCH, decision instanceof EpochProposalRejected);
+      assertEquals(proposalEpoch >= ENACTMENT_EPOCH, decision instanceof Vote);
+      assertEquals(proposalEpoch >= ENACTMENT_EPOCH, EAGLE_RAY.equals(protocolAtDecision));
+    }
+  }
+
+  @Test
+  @Parameters({"3", "4"})
+  public void pending_vertex_vote_uses_vertex_epoch_after_committed_epoch_crosses_boundary(
+      long vertexEpoch) {
+    try (var test = createTest(withMoratorium(MORATORIUM_FROM_EPOCH, ENACTMENT_EPOCH))) {
+      // Arrange
+      test.startAllNodes();
+      test.runUntilState(allAtOrOverEpoch(vertexEpoch), MAX_MESSAGES_PER_STEP);
+      final var transaction = TransactionBuilder.forTests().prepare().raw();
+      List.of(1, 2, 3)
+          .forEach(
+              index -> test.restartNodeWithOverrideModule(index, oldBinaryEmulation(transaction)));
+      final var metrics = test.getInstance(0, Metrics.class);
+      final Predicate<ControlledMessage> isUserInsert =
+          message ->
+              message.channelId().isLocal(0)
+                  && message.message() instanceof BFTInsertUpdate update
+                  && update.insertedVertex().vertex().getEpoch() == vertexEpoch
+                  && update.insertedVertex().vertex().getTransactions().contains(transaction);
+      final Predicate<ControlledMessage> isCurrentUserInsert =
+          isUserInsert.and(
+              message ->
+                  ((BFTInsertUpdate) message.message()).insertedVertex().getRound().number()
+                      == metrics.bft().pacemaker().round().get());
+      test.runUntilState(
+          ignored -> test.getNetwork().allMessages().stream().anyMatch(isCurrentUserInsert),
+          MAX_MESSAGES_PER_STEP,
+          message ->
+              !isUserInsert.test(message)
+                  && !(message.channelId().receiverIndex() == 0
+                      && (message.message() instanceof Epoched<?>
+                          || message.message() instanceof EpochProposalRejected)));
+      final var pendingInsert =
+          test.getNetwork().allMessages().stream()
+              .filter(isCurrentUserInsert)
+              .findFirst()
+              .orElseThrow();
+      final var vertex = ((BFTInsertUpdate) pendingInsert.message()).insertedVertex();
+      final var committedBefore = currentEpoch(test);
+      final var roundBefore = metrics.bft().pacemaker().round().get();
+      final Predicate<ControlledMessage> isDecision =
+          message ->
+              message.channelId().senderIndex() == 0
+                  && (message.message() instanceof Vote vote
+                          && vote.getVoteData()
+                              .getProposed()
+                              .getVertexId()
+                              .equals(vertex.getVertexHash())
+                      || message.message() instanceof NoVote noVote
+                          && noVote.vertex().hash().equals(vertex.getVertexHash()));
+
+      // Act
+      test.runUntilState(
+          ignored -> currentEpoch(test) >= vertexEpoch + 1,
+          MAX_MESSAGES_PER_STEP,
+          message ->
+              (message.channelId().receiverIndex() != 0
+                      || onlyLedgerSyncEvents().test(message)
+                          && !(message.message() instanceof LedgerUpdate))
+                  && !(message.message() instanceof ConsensusEvent event
+                      && event.getEpoch() > vertexEpoch));
+      final var committedBeforeCallback = currentEpoch(test);
+      final var roundBeforeCallback = metrics.bft().pacemaker().round().get();
+      final var decidedBeforeCallback =
+          test.getNetwork().allMessages().stream().anyMatch(isDecision);
+      test.runNext(pendingInsert::equals);
+      final var decisions =
+          test.getNetwork().allMessages().stream()
+              .filter(isDecision)
+              .map(ControlledMessage::message)
+              .toList();
+      final var afterEnactment = TransactionBuilder.forTests().prepare().raw();
+      test.runUntilState(allAtOrOverEpoch(ENACTMENT_EPOCH), MAX_MESSAGES_PER_STEP);
+      submit(test, afterEnactment);
+      test.runUntilState(allCommittedTransactionSuccess(afterEnactment), MAX_MESSAGES_PER_STEP);
+
+      // Assert
+      assertEquals(vertexEpoch, committedBefore);
+      assertEquals(vertexEpoch + 1, committedBeforeCallback);
+      assertEquals(roundBefore, roundBeforeCallback, 0.0);
+      assertFalse(decidedBeforeCallback);
+      assertFalse(decisions.isEmpty());
+      assertTrue(
+          decisions.stream()
+              .allMatch(
+                  vertexEpoch < MORATORIUM_FROM_EPOCH
+                      ? Vote.class::isInstance
+                      : NoVote.class::isInstance));
+    }
+  }
+
+  @Test
+  public void consensus_checks_use_event_epoch_even_when_committed_epoch_is_across_a_boundary() {
+    try (var test = createTest(withMoratorium(MORATORIUM_FROM_EPOCH, ENACTMENT_EPOCH))) {
+      // Arrange
+      test.startAllNodes();
+      final var stateComputer = test.getInstance(0, RustStateComputer.class);
+      final var provider = test.getInstance(0, UserTransactionMoratoriumProvider.class);
+      final var epochs = List.of(MORATORIUM_FROM_EPOCH - 1, MORATORIUM_FROM_EPOCH, ENACTMENT_EPOCH);
+      final var committedEpochs = new ArrayList<Long>();
+      final var allowed = Option.<UserTransactionMoratorium>none();
+      final var refused =
+          Option.some(
+              new UserTransactionMoratorium(
+                  UInt64.fromNonNegativeLong(MORATORIUM_FROM_EPOCH),
+                  UInt64.fromNonNegativeLong(ENACTMENT_EPOCH)));
+
+      // Act
+      final var results =
+          epochs.stream()
+              .map(
+                  committedEpoch -> {
+                    test.runUntilState(allAtOrOverEpoch(committedEpoch), MAX_MESSAGES_PER_STEP);
+                    committedEpochs.add(currentEpoch(test));
+                    return List.of(
+                        stateComputer.ensureUserTransactionsAllowed().toOptionOfError(),
+                        provider
+                            .ensureUserTransactionsAllowed(MORATORIUM_FROM_EPOCH - 1)
+                            .toOptionOfError(),
+                        provider
+                            .ensureUserTransactionsAllowed(MORATORIUM_FROM_EPOCH)
+                            .toOptionOfError(),
+                        provider.ensureUserTransactionsAllowed(ENACTMENT_EPOCH).toOptionOfError());
+                  })
+              .toList();
+
+      // Assert
+      assertEquals(epochs, committedEpochs);
+      assertEquals(
+          List.of(
+              List.of(allowed, allowed, refused, allowed),
+              List.of(refused, allowed, refused, allowed),
+              List.of(allowed, allowed, refused, allowed)),
+          results);
+    }
+  }
 
   @Test
   public void submissions_are_rejected_and_nothing_commits_until_the_update_is_enacted() {

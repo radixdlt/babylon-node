@@ -106,7 +106,8 @@ public final class UserTransactionMoratoriumVerifier implements BFTEventProcesso
       return;
     }
 
-    final var moratorium = userTransactionMoratoriumProvider.ensureUserTransactionsAllowed();
+    final var moratorium =
+        userTransactionMoratoriumProvider.ensureUserTransactionsAllowed(proposal.getEpoch());
     if (moratorium.isSuccess()) {
       forwardTo.processProposal(proposal);
       return;

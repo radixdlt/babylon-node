@@ -117,6 +117,8 @@ public final class PacemakerUserTransactionMoratoriumTest {
   private final ScheduledEventDispatcher<ScheduledLocalTimeout> timeoutSender =
       rmock(ScheduledEventDispatcher.class);
   private final TimeSupplier timeSupplier = mock(TimeSupplier.class);
+  private final UserTransactionMoratoriumProvider provider =
+      mock(UserTransactionMoratoriumProvider.class);
   private final Metrics metrics = new MetricsInitializer().initialize();
 
   private HighQC highQC;
@@ -143,6 +145,7 @@ public final class PacemakerUserTransactionMoratoriumTest {
     pacemaker.processBFTUpdate(insertUpdate);
 
     // Assert
+    verify(this.provider).ensureUserTransactionsAllowed(3);
     verify(this.noVoteDispatcher, times(1)).dispatch(any(NoVote.class));
     verify(this.safetyRules, never()).createVote(any(), any(), anyLong(), any());
     verifyNoInteractions(this.voteDispatcher);
@@ -160,6 +163,7 @@ public final class PacemakerUserTransactionMoratoriumTest {
     pacemaker.processBFTUpdate(insertUpdate);
 
     // Assert
+    verifyNoInteractions(this.provider);
     verify(this.safetyRules, times(1)).createVote(any(), any(), anyLong(), any());
     verify(this.noVoteDispatcher, never()).dispatch(any());
   }
@@ -170,6 +174,7 @@ public final class PacemakerUserTransactionMoratoriumTest {
     final var pacemaker = createPacemaker(Result.success(Tuple.tuple()));
     final var insertUpdate =
         insertUpdateOfVertexWith(List.of(RawNotarizedTransaction.create(new byte[] {1, 2, 3})));
+    when(insertUpdate.insertedVertex().vertex().getEpoch()).thenReturn(4L);
     final var vote = mockVote();
     when(this.safetyRules.createVote(any(), any(), anyLong(), any())).thenReturn(Optional.of(vote));
 
@@ -177,12 +182,13 @@ public final class PacemakerUserTransactionMoratoriumTest {
     pacemaker.processBFTUpdate(insertUpdate);
 
     // Assert
+    verify(this.provider).ensureUserTransactionsAllowed(4);
     verify(this.safetyRules, times(1)).createVote(any(), any(), anyLong(), any());
     verify(this.noVoteDispatcher, never()).dispatch(any());
   }
 
   private Pacemaker createPacemaker(Result<Tuple.Tuple0, UserTransactionMoratorium> moratorium) {
-    final UserTransactionMoratoriumProvider provider = () -> moratorium;
+    when(this.provider.ensureUserTransactionsAllowed(anyLong())).thenReturn(moratorium);
     final var initialRoundUpdate =
         new RoundUpdate(
             CURRENT_ROUND, this.highQC, mock(BFTValidatorId.class), mock(BFTValidatorId.class));
@@ -217,6 +223,7 @@ public final class PacemakerUserTransactionMoratoriumTest {
 
   private BFTInsertUpdate insertUpdateOfVertexWith(List<RawNotarizedTransaction> transactions) {
     final var vertex = mock(Vertex.class);
+    when(vertex.getEpoch()).thenReturn(3L);
     when(vertex.getTransactions()).thenReturn(transactions);
     final var executedVertex = mock(ExecutedVertex.class);
     when(executedVertex.getRound()).thenReturn(CURRENT_ROUND);
