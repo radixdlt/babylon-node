@@ -65,8 +65,8 @@
 use crate::prelude::*;
 
 pub enum ProcessedTransactionReceipt {
-    Commit(ProcessedCommitResult),
-    Reject(ProcessedRejectResult),
+    Commit(Box<ProcessedCommitResult>),
+    Reject(Box<ProcessedRejectResult>),
     Abort(AbortResult),
 }
 
@@ -99,7 +99,7 @@ impl ProcessedTransactionReceipt {
     ) -> Self {
         match receipt.result {
             TransactionResult::Commit(commit) => {
-                ProcessedTransactionReceipt::Commit(ProcessedCommitResult::process(
+                ProcessedTransactionReceipt::Commit(Box::new(ProcessedCommitResult::process(
                     hash_update_context,
                     commit,
                     ExecutionFeeData {
@@ -107,13 +107,13 @@ impl ProcessedTransactionReceipt {
                         engine_costing_parameters: receipt.costing_parameters,
                         transaction_costing_parameters: receipt.transaction_costing_parameters,
                     },
-                ))
+                )))
             }
             TransactionResult::Reject(reject) => {
-                ProcessedTransactionReceipt::Reject(ProcessedRejectResult {
+                ProcessedTransactionReceipt::Reject(Box::new(ProcessedRejectResult {
                     result: reject,
                     fee_summary: receipt.fee_summary,
-                })
+                }))
             }
             TransactionResult::Abort(abort) => ProcessedTransactionReceipt::Abort(abort),
         }
@@ -134,7 +134,7 @@ impl ProcessedTransactionReceipt {
     pub fn expect_commit_or_reject(
         &self,
         description: &impl Display,
-    ) -> Result<&ProcessedCommitResult, ProcessedRejectResult> {
+    ) -> Result<&ProcessedCommitResult, Box<ProcessedRejectResult>> {
         match self {
             ProcessedTransactionReceipt::Commit(commit) => Ok(commit),
             ProcessedTransactionReceipt::Reject(reject) => Err(reject.clone()),

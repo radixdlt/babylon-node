@@ -137,7 +137,7 @@ where
         executable: &LedgerExecutable,
         hashes: &LedgerTransactionHashes,
         description: &str,
-    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
+    ) -> Result<ProcessedCommitResult, Box<ProcessedRejectResult>> {
         let result = self.execute_no_state_update(executable, hashes, description);
         if let Ok(commit) = &result {
             self.update_state(commit);
@@ -156,7 +156,7 @@ where
         executable: &LedgerExecutable,
         hashes: &LedgerTransactionHashes,
         description: &str,
-    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
+    ) -> Result<ProcessedCommitResult, Box<ProcessedRejectResult>> {
         let described_ledger_transaction_hash = DescribedTransactionHash {
             ledger_hash: hashes.ledger_transaction_hash,
             description,
@@ -175,7 +175,7 @@ where
         &mut self,
         described_ledger_transaction_hash: &DescribedTransactionHash<impl Display>,
         wrapped_executable: T,
-    ) -> Result<ProcessedCommitResult, ProcessedRejectResult> {
+    ) -> Result<ProcessedCommitResult, Box<ProcessedRejectResult>> {
         let mut execution_cache = self.execution_cache_manager.access_exclusively();
         let processed = execution_cache.execute_transaction(
             self.store,

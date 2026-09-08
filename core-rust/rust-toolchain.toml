@@ -2,6 +2,7 @@
 # IMPORTANT: This should correspond to the channel currently used in radixdlt/scrypto.
 # If this changes it will also need updating in:
 # - .github/actions/setup-env/action.yml
+# - .github/workflows/add-artifacts-to-release.yml
 # - Dockerfile
 channel = "1.92.0"
 components = ["rustfmt"]

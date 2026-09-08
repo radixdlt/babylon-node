@@ -232,9 +232,9 @@ public final class PacemakerUserTransactionMoratoriumTest {
     when(executedVertex.getLedgerHeader()).thenReturn(mock(LedgerHeader.class));
     final var insertUpdate = mock(BFTInsertUpdate.class);
     when(insertUpdate.insertedVertex()).thenReturn(executedVertex);
-    when(insertUpdate.getHeader())
-        .thenReturn(
-            new BFTHeader(CURRENT_ROUND, HashCode.fromInt(99), executedVertex.getLedgerHeader()));
+    final var header =
+        new BFTHeader(CURRENT_ROUND, HashCode.fromInt(99), executedVertex.getLedgerHeader());
+    when(insertUpdate.getHeader()).thenReturn(header);
     return insertUpdate;
   }
 }

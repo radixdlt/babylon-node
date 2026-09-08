@@ -525,10 +525,11 @@ impl Preparator {
                         }
                     }
                 }
-                Err(ProcessedRejectResult {
-                    result,
-                    fee_summary,
-                }) => {
+                Err(reject) => {
+                    let ProcessedRejectResult {
+                        result,
+                        fee_summary,
+                    } = *reject;
                     let error_message = format!("{:?}", &result.reason);
                     pending_transaction_results.push(PendingTransactionResult {
                         user_transaction_hashes: user_hashes.clone(),

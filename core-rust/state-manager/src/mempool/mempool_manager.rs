@@ -421,7 +421,7 @@ impl MempoolManager {
                 force_recalculate,
             )
         {
-            return (record, CheckMetadata::Cached);
+            return (*record, CheckMetadata::Cached);
         }
 
         let metadata = TransactionMetadata::read_from_prepared(&prepared);
@@ -491,7 +491,7 @@ impl MempoolManager {
                 {
                     return ShouldRecalculate::Yes;
                 }
-                return ShouldRecalculate::No(record);
+                return ShouldRecalculate::No(Box::new(record));
             }
         }
 
@@ -589,7 +589,7 @@ enum ForceRecalculation {
 
 enum ShouldRecalculate {
     Yes,
-    No(PendingTransactionRecord),
+    No(Box<PendingTransactionRecord>),
 }
 
 #[allow(clippy::large_enum_variant)]
