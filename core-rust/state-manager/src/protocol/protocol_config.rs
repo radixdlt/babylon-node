@@ -288,7 +288,6 @@ impl ProtocolVersionName {
     }
 
     /// The caller is assumed to have validated the version name before this is called.
-    #[allow(clippy::manual_repeat_n)]
     pub fn padded_len_16_version_name_for_readiness_signal(&self) -> String {
         self.validate()
             .expect("Must be valid before extracting readiness signal name");
