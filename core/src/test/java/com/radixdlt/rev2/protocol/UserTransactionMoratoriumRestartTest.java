@@ -419,7 +419,7 @@ public final class UserTransactionMoratoriumRestartTest {
       MessageMonitor recordHighQcRounds() {
         return (message, time) -> {
           if (message.message() instanceof BFTHighQCUpdate update) {
-            highQcRounds.add(update.newHighQc().highestQC().getRound());
+            highQcRounds.add(update.getHighQC().highestQC().getRound());
           }
         };
       }

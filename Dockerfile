@@ -1,4 +1,17 @@
-# ==========================================================================================
+# =================================================================================================
+# BUILD ARGS
+#
+# For the standard build:
+# - TARGETPLATFORM - provided automatically, specified via `docker build --platform xyz`
+# - RUST_PROFILE - optional - either `debug` or `release` - defaults to release
+#
+# There are no args for the local rust builder.
+# =================================================================================================
+# LAYER: java-build-stage
+# The base for building the Java application
+# =================================================================================================
+FROM debian:12.1-slim AS java-build-stage
+
 LABEL org.opencontainers.image.source="https://github.com/radixdlt/babylon-node"
 LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 LABEL org.opencontainers.image.description="Java + Debian 12 (OpenJDK)"

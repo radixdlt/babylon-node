@@ -324,6 +324,17 @@ public final class DeterministicTest implements AutoCloseable {
     this.startNode(nodeIndex);
   }
 
+  public void restartNodeWithOverrideModule(int nodeIndex, Module overrideModule) {
+    this.shutdownNode(nodeIndex);
+    final var originalOverrideModule = this.nodes.getOverrideModule();
+    this.nodes.setOverrideModule(overrideModule);
+    try {
+      this.startNode(nodeIndex);
+    } finally {
+      this.nodes.setOverrideModule(originalOverrideModule);
+    }
+  }
+
   public void restartNodeWithConfig(int nodeIndex, PhysicalNodeConfig config) {
     this.shutdownNode(nodeIndex);
     this.nodes.setNodeConfig(nodeIndex, config);

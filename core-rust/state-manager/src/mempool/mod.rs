@@ -89,7 +89,7 @@ pub enum MempoolAddError {
         tip_basis_points: u32,
     },
     Duplicate(NotarizedTransactionHash),
-    Rejected(MempoolAddRejection, Option<NotarizedTransactionHash>),
+    Rejected(Box<MempoolAddRejection>, Option<NotarizedTransactionHash>),
 }
 
 #[derive(Debug, Clone)]
@@ -142,9 +142,9 @@ impl MempoolAddRejection {
 impl<'a> ContextualDisplay<ScryptoValueDisplayContext<'a>> for MempoolAddError {
     type Error = fmt::Error;
 
-    fn contextual_format<F: fmt::Write>(
+    fn contextual_format(
         &self,
-        f: &mut F,
+        f: &mut fmt::Formatter<'_>,
         context: &ScryptoValueDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
         match self {

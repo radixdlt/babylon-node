@@ -84,12 +84,9 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.api.CoreApiHelper;
-import com.radixdlt.api.MeshApiHelper;
 import com.radixdlt.api.core.generated.models.TransactionSubmitErrorResponse;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRejectedErrorDetails;
 import com.radixdlt.api.core.generated.models.TransactionSubmitRequest;
-import com.radixdlt.api.mesh.generated.api.ConstructionApi;
-import com.radixdlt.api.mesh.generated.models.ConstructionSubmitRequest;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -589,7 +586,8 @@ public final class UserTransactionMoratoriumTest {
   }
 
   @Test
-  public void core_api_rejects_submission_during_moratorium_with_retry_epoch() {
+  public void core_api_refusal_is_temporary_and_the_same_payload_commits_after_enactment()
+      throws Exception {
     final var coreApiHelper = new CoreApiHelper(Network.INTEGRATIONTESTNET);
     try (var test = createTest(withMoratorium(MORATORIUM_FROM_EPOCH, ENACTMENT_EPOCH))) {
       // Arrange
@@ -608,57 +606,24 @@ public final class UserTransactionMoratoriumTest {
               () -> coreApiHelper.transactionApi().transactionSubmitPost(request),
               TransactionSubmitErrorResponse.class);
       final var details = (TransactionSubmitRejectedErrorDetails) errorResponse.getDetails();
+      final var mempoolCountDuringMoratorium = test.getInstance(0, RustMempool.class).getCount();
+      test.runUntilState(allAtOrOverProtocolVersion(EAGLE_RAY), MAX_MESSAGES_PER_STEP);
+      final var accepted = coreApiHelper.transactionApi().transactionSubmitPost(request);
+      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), MAX_MESSAGES_PER_STEP);
 
       // Assert
       assertEquals(Integer.valueOf(400), errorResponse.getCode());
       assertEquals(Boolean.FALSE, details.getIsIntentRejectionPermanent());
       assertEquals(Boolean.FALSE, details.getIsPayloadRejectionPermanent());
       assertEquals(Long.valueOf(ENACTMENT_EPOCH), details.getRetryFromEpoch());
+      assertEquals(0, mempoolCountDuringMoratorium);
+      assertEquals(Boolean.FALSE, accepted.getDuplicate());
+      assertTrue(isCommittedOnAnyNode(test, transaction.raw()));
       assertTrue(
           details.getErrorMessage(),
           details
               .getErrorMessage()
               .contains("temporarily not accepted; retry from epoch " + ENACTMENT_EPOCH));
-    }
-  }
-
-  @Test
-  public void mesh_api_refusal_is_retryable_and_the_same_payload_commits_after_enactment()
-      throws Exception {
-    final var meshApiHelper = new MeshApiHelper(Network.INTEGRATIONTESTNET);
-    try (var test = createTest(withMoratorium(MORATORIUM_FROM_EPOCH, ENACTMENT_EPOCH))) {
-      // Arrange
-      test.startAllNodes();
-      test.runUntilState(allAtOrOverEpoch(MORATORIUM_FROM_EPOCH), MAX_MESSAGES_PER_STEP);
-      test.restartNodeWithOverrideModule(0, meshApiHelper.module());
-      final var transaction = TransactionBuilder.forTests().prepare();
-      final var api = new ConstructionApi(meshApiHelper.client());
-      final var request =
-          new ConstructionSubmitRequest()
-              .networkIdentifier(meshApiHelper.networkIdentifier())
-              .signedTransaction(transaction.hexPayloadBytes());
-
-      // Act
-      final var refusal =
-          meshApiHelper.assertErrorResponseOfType(
-              () -> api.constructionSubmit(request),
-              com.radixdlt.api.mesh.generated.models.Error.class);
-      final var mempoolCountDuringMoratorium = test.getInstance(0, RustMempool.class).getCount();
-      test.runUntilState(allAtOrOverProtocolVersion(EAGLE_RAY), MAX_MESSAGES_PER_STEP);
-      final var accepted = api.constructionSubmit(request);
-      test.runUntilState(allCommittedTransactionSuccess(transaction.raw()), MAX_MESSAGES_PER_STEP);
-
-      // Assert
-      assertEquals(Boolean.TRUE, refusal.getRetriable());
-      assertTrue(
-          refusal.getDetails().toString(),
-          refusal
-              .getDetails()
-              .toString()
-              .contains("temporarily not accepted; retry from epoch " + ENACTMENT_EPOCH));
-      assertEquals(0, mempoolCountDuringMoratorium);
-      assertFalse(accepted.getTransactionIdentifier().getHash().isEmpty());
-      assertTrue(isCommittedOnAnyNode(test, transaction.raw()));
     }
   }
 
