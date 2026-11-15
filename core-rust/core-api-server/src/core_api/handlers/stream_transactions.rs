@@ -46,6 +46,12 @@ pub(crate) async fn handle_stream_transactions(
         ));
     }
 
+    // Note: the response also includes the identifiers of the previous state version.
+    assert_transaction_history_not_pruned(
+        database.deref(),
+        from_state_version.previous().unwrap_or(from_state_version),
+    )?;
+
     let max_ledger_state_version = to_api_state_version(database.max_state_version())?;
 
     let previous_state_identifiers = match from_state_version.previous() {

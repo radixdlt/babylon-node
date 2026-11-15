@@ -70,6 +70,7 @@ pub use traits::*;
 mod codecs;
 pub mod column_families;
 pub mod historical_state;
+pub mod history_gc;
 pub mod jmt_gc;
 pub mod proofs_gc;
 pub mod rocks_db;

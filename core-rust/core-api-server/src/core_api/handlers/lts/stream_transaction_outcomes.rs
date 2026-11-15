@@ -38,6 +38,8 @@ pub(crate) async fn handle_lts_stream_transaction_outcomes(
         ));
     }
 
+    assert_transaction_history_not_pruned(database.deref(), from_state_version)?;
+
     let max_state_version = database.max_state_version();
 
     let mut response = models::LtsStreamTransactionOutcomesResponse {

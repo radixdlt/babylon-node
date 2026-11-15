@@ -51,6 +51,15 @@ pub fn commit_round_updates_until_epoch(state_manager: &StateManager, epoch: Epo
 pub fn prepare_and_commit_round_update(
     state_manager: &StateManager,
 ) -> (PrepareResult, CommitSummary) {
+    prepare_and_commit_round_update_with_transactions(state_manager, vec![])
+}
+
+/// Same as [`prepare_and_commit_round_update()`], but additionally proposes the given user
+/// transactions.
+pub fn prepare_and_commit_round_update_with_transactions(
+    state_manager: &StateManager,
+    proposed_transactions: Vec<RawNotarizedTransaction>,
+) -> (PrepareResult, CommitSummary) {
     let database = state_manager.database.access_direct();
     let latest_proof: LedgerProof = database.get_latest_proof().unwrap();
     let latest_epoch_proof: LedgerProof = database.get_latest_epoch_proof().unwrap();
@@ -93,7 +102,7 @@ pub fn prepare_and_commit_round_update(
         committed_ledger_hashes: top_identifiers.resultant_ledger_hashes,
         ancestor_transactions: vec![],
         ancestor_ledger_hashes: top_identifiers.resultant_ledger_hashes,
-        proposed_transactions: vec![],
+        proposed_transactions,
         round_history: RoundHistory {
             is_fallback: false,
             epoch,
@@ -104,11 +113,14 @@ pub fn prepare_and_commit_round_update(
         },
     });
 
-    let txns_to_commit = prepare_result
+    let txns_to_commit: Vec<_> = prepare_result
         .committed
         .iter()
         .map(|prep| prep.raw.clone())
         .collect();
+    let commit_state_version = top_state_version
+        .relative(txns_to_commit.len() as u64)
+        .unwrap();
 
     let commit_result = state_manager
         .committer
@@ -118,7 +130,7 @@ pub fn prepare_and_commit_round_update(
                 ledger_header: LedgerHeader {
                     epoch,
                     round: next_round,
-                    state_version: top_state_version.next().unwrap(),
+                    state_version: commit_state_version,
                     hashes: prepare_result.ledger_hashes,
                     consensus_parent_round_timestamp_ms: latest_proof
                         .ledger_header

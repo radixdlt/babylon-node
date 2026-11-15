@@ -70,6 +70,8 @@ pub(crate) async fn handle_lts_stream_account_transaction_outcomes(
     // Reserve enough for the "header" fields
     let mut current_total_size = response.get_json_size();
     for state_version in state_versions.take(limit) {
+        assert_transaction_history_not_pruned(database.deref(), state_version)?;
+
         let committed_transaction_outcome = to_api_lts_committed_transaction_outcome(
             database.deref(),
             &mapping_context,

@@ -114,6 +114,7 @@ public final class REv2StateManagerModule extends AbstractModule {
   private final boolean debugLogging;
   private final StateTreeGcConfig stateTreeGcConfig;
   private final LedgerProofsGcConfig ledgerProofsGcConfig;
+  private final LedgerHistoryGcConfig ledgerHistoryGcConfig;
   private final LedgerSyncLimitsConfig ledgerSyncLimitsConfig;
   private final ProtocolConfig protocolConfig;
   private final boolean noFees;
@@ -128,6 +129,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       boolean debugLogging,
       StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerHistoryGcConfig ledgerHistoryGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
       boolean noFees,
@@ -140,6 +142,7 @@ public final class REv2StateManagerModule extends AbstractModule {
     this.debugLogging = debugLogging;
     this.stateTreeGcConfig = stateTreeGcConfig;
     this.ledgerProofsGcConfig = ledgerProofsGcConfig;
+    this.ledgerHistoryGcConfig = ledgerHistoryGcConfig;
     this.ledgerSyncLimitsConfig = ledgerSyncLimitsConfig;
     this.protocolConfig = protocolConfig;
     this.noFees = noFees;
@@ -154,6 +157,7 @@ public final class REv2StateManagerModule extends AbstractModule {
       Option<RustMempoolConfig> mempoolConfig,
       StateTreeGcConfig stateTreeGcConfig,
       LedgerProofsGcConfig ledgerProofsGcConfig,
+      LedgerHistoryGcConfig ledgerHistoryGcConfig,
       LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
       ProtocolConfig protocolConfig,
       ScenariosExecutionConfig scenariosExecutionConfig) {
@@ -166,6 +170,7 @@ public final class REv2StateManagerModule extends AbstractModule {
         false,
         stateTreeGcConfig,
         ledgerProofsGcConfig,
+        ledgerHistoryGcConfig,
         ledgerSyncLimitsConfig,
         protocolConfig,
         false,
@@ -193,6 +198,8 @@ public final class REv2StateManagerModule extends AbstractModule {
         debugLogging,
         stateTreeGcConfig,
         ledgerProofsGcConfig,
+        // Tests never prune any ledger history, unless they construct their own GC:
+        LedgerHistoryGcConfig.disabled(),
         ledgerSyncLimitsConfig,
         protocolConfig,
         noFees,
@@ -245,6 +252,7 @@ public final class REv2StateManagerModule extends AbstractModule {
                     getLoggingConfig(),
                     stateTreeGcConfig,
                     ledgerProofsGcConfig,
+                    ledgerHistoryGcConfig,
                     ledgerSyncLimitsConfig,
                     protocolConfig,
                     noFees,

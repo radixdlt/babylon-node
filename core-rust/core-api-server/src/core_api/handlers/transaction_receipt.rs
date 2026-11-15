@@ -28,6 +28,8 @@ pub(crate) async fn handle_transaction_receipt(
     let txn_state_version_opt = database.get_txn_state_version_by_identifier(&intent_hash);
 
     if let Some(txn_state_version) = txn_state_version_opt {
+        assert_transaction_history_not_pruned(database.deref(), txn_state_version)?;
+
         let raw = database
             .get_committed_transaction(txn_state_version)
             .expect("Txn is missing");
@@ -60,7 +62,8 @@ pub(crate) async fn handle_transaction_receipt(
         }))
     } else {
         Err(not_found_error(format!(
-            "Committed transaction not found with intent hash: {intent_hash:?}"
+            "Committed transaction not found with intent hash: {intent_hash:?}{}",
+            transaction_hash_indices_pruned_note(database.deref())
         )))
     }
 }

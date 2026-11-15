@@ -222,6 +222,7 @@ public final class NodeSborCodecs {
     RecentSelfProposalMissStatistic.registerCodec(codecMap);
     StateTreeGcConfig.registerCodec(codecMap);
     LedgerProofsGcConfig.registerCodec(codecMap);
+    LedgerHistoryGcConfig.registerCodec(codecMap);
     LedgerSyncLimitsConfig.registerCodec(codecMap);
 
     BFTHeaderDTO.registerCodec(codecMap);

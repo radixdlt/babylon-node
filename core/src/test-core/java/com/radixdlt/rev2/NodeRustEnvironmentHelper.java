@@ -89,6 +89,7 @@ public class NodeRustEnvironmentHelper {
             LoggingConfig.getDefault(),
             StateTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
+            LedgerHistoryGcConfig.disabled(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
             false,

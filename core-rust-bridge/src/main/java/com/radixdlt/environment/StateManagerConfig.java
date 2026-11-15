@@ -81,6 +81,7 @@ public record StateManagerConfig(
     LoggingConfig loggingConfig,
     StateTreeGcConfig stateTreeGcConfig,
     LedgerProofsGcConfig ledgerProofsGcConfig,
+    LedgerHistoryGcConfig ledgerHistoryGcConfig,
     LedgerSyncLimitsConfig ledgerSyncLimitsConfig,
     ProtocolConfig protocolConfig,
     boolean noFees,

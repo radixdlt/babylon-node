@@ -178,6 +178,7 @@ impl ActualStateManagerDatabase {
         };
 
         state_manager_database.validate_and_persist_new_config()?;
+        state_manager_database.validate_catchups_against_pruned_transaction_receipts()?;
 
         state_manager_database.catchup_account_change_index();
         state_manager_database.restore_december_2023_lost_substates(network);
@@ -324,6 +325,55 @@ impl<R: WriteableRocks> StateManagerDatabase<R> {
 }
 
 impl<R: WriteableRocks> StateManagerDatabase<R> {
+    /// Ensures that the on-boot "catch up" (i.e. backfill) of optional indices is not going to need
+    /// any transaction receipts which were already deleted by the [`LedgerHistoryGc`].
+    ///
+    /// Without this check, enabling an index on a pruned database would either panic with a
+    /// cryptic "DB inconsistency" message (in case of the account change index), or - worse -
+    /// silently create an incomplete index (in case of the entity listing indices).
+    ///
+    /// This is a no-op for a database on which the GC was never enabled.
+    fn validate_catchups_against_pruned_transaction_receipts(
+        &self,
+    ) -> Result<(), DatabaseConfigValidationError> {
+        let Some(pruned_below) = self.get_transaction_receipts_pruned_below() else {
+            return Ok(());
+        };
+        if self.config.enable_account_change_index {
+            let catchup_from = self
+                .account_change_index_last_processed_state_version()
+                .next()
+                .expect("Invalid next state version!");
+            if catchup_from < pruned_below {
+                return Err(
+                    DatabaseConfigValidationError::AccountChangeIndexRequiresPrunedTransactionReceipts {
+                        catchup_from,
+                        pruned_below,
+                    },
+                );
+            }
+        }
+        if self.config.enable_entity_listing_indices {
+            let catchup_from = self
+                .open_read_context()
+                .cf(ExtensionsDataCf)
+                .get(&ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion)
+                .map(StateVersion::from_be_bytes)
+                .unwrap_or(StateVersion::pre_genesis())
+                .next()
+                .expect("Invalid next state version!");
+            if catchup_from < pruned_below {
+                return Err(
+                    DatabaseConfigValidationError::EntityListingIndicesRequirePrunedTransactionReceipts {
+                        catchup_from,
+                        pruned_below,
+                    },
+                );
+            }
+        }
+        Ok(())
+    }
+
     /// Ensures that the database structures related to historical Substate values are initialized
     /// properly, according to the database configuration.
     ///
@@ -912,6 +962,97 @@ impl<R: ReadableRocks> QueryableTransactionStore for StateManagerDatabase<R> {
             (None, None) => None,
         }
     }
+
+    fn get_transaction_receipts_pruned_below(&self) -> Option<StateVersion> {
+        self.read_ledger_history_gc_progress(PrunableLedgerHistory::TransactionReceipts)
+            .map(|progress| progress.epoch_proof_state_version)
+    }
+
+    fn get_transaction_history_pruned_below(&self) -> Option<StateVersion> {
+        [
+            PrunableLedgerHistory::TransactionReceipts,
+            PrunableLedgerHistory::TransactionIdentifiers,
+        ]
+        .into_iter()
+        .filter_map(|history| self.read_ledger_history_gc_progress(history))
+        .map(|progress| progress.epoch_proof_state_version)
+        .max()
+    }
+
+    fn get_transaction_hash_indices_pruned_below(&self) -> Option<StateVersion> {
+        self.read_ledger_history_gc_progress(PrunableLedgerHistory::TransactionHashIndices)
+            .map(|progress| progress.epoch_proof_state_version)
+    }
+}
+
+impl<R: ReadableRocks> StateManagerDatabase<R> {
+    /// Returns the persisted progress of the [`LedgerHistoryGc`].
+    /// Note: this is deliberately available for any [`ReadableRocks`] (e.g. also for snapshots).
+    fn read_ledger_history_gc_progress(
+        &self,
+        history: PrunableLedgerHistory,
+    ) -> Option<LedgerHistoryGcProgress> {
+        self.open_read_context()
+            .cf(ExtensionsDataCf)
+            .get(&Self::ledger_history_gc_progress_key(history))
+            .map(|bytes| scrypto_decode_with_nice_error::<LedgerHistoryGcProgress>(&bytes).unwrap())
+    }
+
+    /// Returns the hashes of every transaction committed within the given range (from inclusive,
+    /// to exclusive): from its identifiers or - if these were already pruned - re-computed from its
+    /// raw transaction (which is never pruned). A `None` marks a transaction whose hashes could not
+    /// be re-computed (which should never happen).
+    fn get_transaction_hashes_in_range(
+        &self,
+        from: StateVersion,
+        to: StateVersion,
+    ) -> Vec<(StateVersion, Option<LedgerTransactionHashes>)> {
+        let db_context = self.open_read_context();
+        let raw_transactions_cf = db_context.cf(RawLedgerTransactionsCf);
+        let hashes_from_raw = |state_version: StateVersion| {
+            raw_transactions_cf
+                .get(&state_version)?
+                .prepare(&PreparationSettings::latest())
+                .ok()
+                .map(|prepared| prepared.create_hashes())
+        };
+        let mut hashes = Vec::new();
+        let mut next_state_version = from;
+        for (state_version, identifiers) in db_context
+            .cf(CommittedTransactionIdentifiersCf)
+            .iterate_from(&from, Direction::Forward)
+            .take_while(|(state_version, _)| *state_version < to)
+        {
+            while next_state_version < state_version {
+                hashes.push((next_state_version, hashes_from_raw(next_state_version)));
+                next_state_version = next_state_version.next().expect("state version overflow");
+            }
+            hashes.push((state_version, Some(identifiers.transaction_hashes)));
+            next_state_version = state_version.next().expect("state version overflow");
+        }
+        while next_state_version < to {
+            hashes.push((next_state_version, hashes_from_raw(next_state_version)));
+            next_state_version = next_state_version.next().expect("state version overflow");
+        }
+        hashes
+    }
+
+    fn ledger_history_gc_progress_key(history: PrunableLedgerHistory) -> ExtensionsDataKey {
+        match history {
+            PrunableLedgerHistory::TransactionReceipts => {
+                ExtensionsDataKey::TransactionReceiptsGcProgress
+            }
+            PrunableLedgerHistory::AccumulatorTreeSlices => {
+                ExtensionsDataKey::AccumulatorTreeSlicesGcProgress
+            }
+            PrunableLedgerHistory::TransactionIdentifiers => {
+                ExtensionsDataKey::TransactionIdentifiersGcProgress
+            }
+            PrunableLedgerHistory::TransactionHashIndices => {
+                ExtensionsDataKey::TransactionHashIndicesGcProgress
+            }
+        }
+    }
 }
 
 impl<R: ReadableRocks> TransactionIndex<&TransactionIntentHash> for StateManagerDatabase<R> {
@@ -1339,6 +1480,91 @@ impl<R: WriteableRocks> LedgerProofsGcStore for StateManagerDatabase<R> {
         self.open_rw_context()
             .cf(LedgerProofsCf)
             .delete_range(&from, &to);
+    }
+}
+
+impl<R: WriteableRocks> LedgerHistoryGcStore for StateManagerDatabase<R> {
+    fn get_ledger_history_gc_progress(
+        &self,
+        history: PrunableLedgerHistory,
+    ) -> Option<LedgerHistoryGcProgress> {
+        self.read_ledger_history_gc_progress(history)
+    }
+
+    fn prune_ledger_history(
+        &self,
+        history: PrunableLedgerHistory,
+        ranges: &[(StateVersion, StateVersion)],
+        progress: LedgerHistoryGcProgress,
+    ) {
+        // Note: all the writes below are buffered, and flushed as a single atomic batch.
+        let db_context = self.open_rw_context();
+        match history {
+            PrunableLedgerHistory::TransactionReceipts => {
+                let receipts_cf = db_context.cf(TransactionReceiptsCf);
+                let local_executions_cf = db_context.cf(LocalTransactionExecutionsCf);
+                let local_executions_stored = self.is_local_transaction_execution_index_enabled();
+                for (from, to) in ranges {
+                    receipts_cf.delete_range(from, to);
+                    if local_executions_stored {
+                        local_executions_cf.delete_range(from, to);
+                    }
+                }
+            }
+            PrunableLedgerHistory::AccumulatorTreeSlices => {
+                let transaction_tree_slices_cf = db_context.cf(TransactionAccuTreeSlicesCf);
+                let receipt_tree_slices_cf = db_context.cf(ReceiptAccuTreeSlicesCf);
+                for (from, to) in ranges {
+                    transaction_tree_slices_cf.delete_range(from, to);
+                    receipt_tree_slices_cf.delete_range(from, to);
+                }
+            }
+            PrunableLedgerHistory::TransactionIdentifiers => {
+                let identifiers_cf = db_context.cf(CommittedTransactionIdentifiersCf);
+                for (from, to) in ranges {
+                    identifiers_cf.delete_range(from, to);
+                }
+            }
+            PrunableLedgerHistory::TransactionHashIndices => {
+                // The indices are keyed by hashes, so their entries are deleted one by one. A ledger
+                // transaction hash, an intent hash and a notarized transaction hash is unique on
+                // ledger (a duplicate is refused at commit), so its entry can only ever point at
+                // the very state version being pruned. A subintent, however, is only finalized by
+                // a successful transaction, and may have been part of failed ones before - hence
+                // its entry is only deleted if it points at the pruned state version.
+                let ledger_hashes_cf = db_context.cf(LedgerTransactionHashesCf);
+                let intent_hashes_cf = db_context.cf(IntentHashesCf);
+                let notarized_hashes_cf = db_context.cf(NotarizedTransactionHashesCf);
+                let subintent_hashes_cf = db_context.cf(FinalizedSubintentHashesCf);
+                for (from, to) in ranges {
+                    for (state_version, hashes) in self.get_transaction_hashes_in_range(*from, *to)
+                    {
+                        let Some(hashes) = hashes else {
+                            warn!(
+                                "Could not resolve the hashes of a transaction committed at {}; \
+                                its hash index entries are left in place",
+                                state_version
+                            );
+                            continue;
+                        };
+                        ledger_hashes_cf.delete(&hashes.ledger_transaction_hash);
+                        if let Some(user_hashes) = hashes.as_user() {
+                            intent_hashes_cf.delete(&user_hashes.transaction_intent_hash);
+                            notarized_hashes_cf.delete(&user_hashes.notarized_transaction_hash);
+                            for subintent_hash in &user_hashes.non_root_subintent_hashes {
+                                if subintent_hashes_cf.get(subintent_hash) == Some(state_version) {
+                                    subintent_hashes_cf.delete(subintent_hash);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        db_context.cf(ExtensionsDataCf).put(
+            &Self::ledger_history_gc_progress_key(history),
+            &scrypto_encode(&progress).unwrap(),
+        );
     }
 }
 

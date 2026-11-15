@@ -264,6 +264,10 @@ pub enum ExtensionsDataKey {
     December2023LostSubstatesRestored,
     StateTreeAssociatedValuesStatus,
     EntityListingIndicesLastProcessedStateVersion,
+    TransactionReceiptsGcProgress,
+    AccumulatorTreeSlicesGcProgress,
+    TransactionIdentifiersGcProgress,
+    TransactionHashIndicesGcProgress,
 }
 
 // IMPORTANT NOTE: the strings defined below are used as database identifiers. Any change would
@@ -284,6 +288,10 @@ impl fmt::Display for ExtensionsDataKey {
             Self::EntityListingIndicesLastProcessedStateVersion => {
                 "entity_listing_indices_last_processed_state_version"
             }
+            Self::TransactionReceiptsGcProgress => "transaction_receipts_gc_progress",
+            Self::AccumulatorTreeSlicesGcProgress => "accumulator_tree_slices_gc_progress",
+            Self::TransactionIdentifiersGcProgress => "transaction_identifiers_gc_progress",
+            Self::TransactionHashIndicesGcProgress => "transaction_hash_indices_gc_progress",
         };
         write!(f, "{str}")
     }
@@ -311,6 +319,10 @@ impl TypedCf for ExtensionsDataCf {
             ExtensionsDataKey::December2023LostSubstatesRestored,
             ExtensionsDataKey::StateTreeAssociatedValuesStatus,
             ExtensionsDataKey::EntityListingIndicesLastProcessedStateVersion,
+            ExtensionsDataKey::TransactionReceiptsGcProgress,
+            ExtensionsDataKey::AccumulatorTreeSlicesGcProgress,
+            ExtensionsDataKey::TransactionIdentifiersGcProgress,
+            ExtensionsDataKey::TransactionHashIndicesGcProgress,
         ])
     }
 

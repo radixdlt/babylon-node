@@ -82,6 +82,18 @@ pub use vertex::*;
 pub enum DatabaseConfigValidationError {
     AccountChangeIndexRequiresLocalTransactionExecutionIndex,
     LocalTransactionExecutionIndexChanged,
+    /// The account change index needs to catch up using the local transaction executions which
+    /// were already deleted by the ledger history GC.
+    AccountChangeIndexRequiresPrunedTransactionReceipts {
+        catchup_from: StateVersion,
+        pruned_below: StateVersion,
+    },
+    /// The entity listing indices need to catch up using the transaction receipts which were
+    /// already deleted by the ledger history GC.
+    EntityListingIndicesRequirePrunedTransactionReceipts {
+        catchup_from: StateVersion,
+        pruned_below: StateVersion,
+    },
 }
 
 /// Database flags required for initialization built from config file and environment variables.
@@ -314,6 +326,31 @@ pub mod transactions {
             self.get_committed_transaction_identifiers(state_version)
                 .map(|ids| ids.resultant_ledger_hashes)
         }
+
+        /// Returns the state version below which the transaction receipts (and local transaction
+        /// executions) were deleted by the opt-in [`LedgerHistoryGc`], or `None` if nothing was
+        /// ever deleted (which is the case for every Node not enabling that GC).
+        ///
+        /// In other words: the entire history of receipts is guaranteed to be available only from
+        /// the returned state version (inclusive) onwards. Below it, only the receipts of the
+        /// epoch-changing transactions are still stored.
+        fn get_transaction_receipts_pruned_below(&self) -> Option<StateVersion>;
+
+        /// Returns the state version below which *any* part of the transaction history (i.e.
+        /// receipts, local transaction executions or transaction identifiers) was deleted by the
+        /// opt-in [`LedgerHistoryGc`], or `None` if nothing was ever deleted.
+        ///
+        /// In other words: a complete [`CommittedTransactionBundle`] is guaranteed to be available
+        /// only from the returned state version (inclusive) onwards.
+        fn get_transaction_history_pruned_below(&self) -> Option<StateVersion>;
+
+        /// Returns the state version below which the entries of the hash-based transaction indices
+        /// (i.e. the lookups by intent, notarized transaction, ledger transaction or subintent hash)
+        /// were deleted by the opt-in [`LedgerHistoryGc`], or `None` if nothing was ever deleted.
+        ///
+        /// In other words: a transaction committed below the returned state version can no longer
+        /// be found by its hash (although its raw transaction is still stored).
+        fn get_transaction_hash_indices_pruned_below(&self) -> Option<StateVersion>;
     }
 
     pub trait TransactionIndex<T>: QueryableTransactionStore {
@@ -897,6 +934,73 @@ pub mod gc {
 
         /// Deletes the given range (from inclusive, to exclusive) of ledger proofs.
         fn delete_ledger_proofs_range(&self, from: StateVersion, to: StateVersion);
+    }
+
+    /// A kind of ledger history which may be pruned by the [`LedgerHistoryGc`].
+    #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+    pub enum PrunableLedgerHistory {
+        /// The [`TransactionReceiptsCf`] and [`LocalTransactionExecutionsCf`] rows.
+        /// The rows of epoch-changing transactions are never deleted.
+        TransactionReceipts,
+        /// The [`TransactionAccuTreeSlicesCf`] and [`ReceiptAccuTreeSlicesCf`] rows.
+        AccumulatorTreeSlices,
+        /// The [`CommittedTransactionIdentifiersCf`] rows.
+        TransactionIdentifiers,
+        /// The [`LedgerTransactionHashesCf`], [`IntentHashesCf`], [`NotarizedTransactionHashesCf`]
+        /// and [`FinalizedSubintentHashesCf`] entries pointing at the pruned state versions.
+        /// The most recent `max_epoch_range` epochs are never pruned (see [`LedgerHistoryGc`]).
+        TransactionHashIndices,
+    }
+
+    impl PrunableLedgerHistory {
+        /// Returns whether the rows at state versions of epoch proofs (i.e. the rows of
+        /// epoch-changing transactions) need to be retained forever.
+        pub fn retains_rows_of_epoch_changes(&self) -> bool {
+            match self {
+                // See `epoch_change_iter()`, used e.g. when computing an initial `ProtocolState`.
+                Self::TransactionReceipts => true,
+                Self::AccumulatorTreeSlices => false,
+                Self::TransactionIdentifiers => false,
+                Self::TransactionHashIndices => false,
+            }
+        }
+    }
+
+    /// A storage API tailored for the [`LedgerHistoryGc`].
+    pub trait LedgerHistoryGcStore {
+        /// Returns the current state of the GC's progress for the given kind of history (or `None`
+        /// if it never deleted anything of that kind).
+        fn get_ledger_history_gc_progress(
+            &self,
+            history: PrunableLedgerHistory,
+        ) -> Option<LedgerHistoryGcProgress>;
+
+        /// Deletes the given ranges (each: from inclusive, to exclusive) of the given kind of
+        /// history, and records the given progress.
+        /// All of this happens within a single, atomic database write.
+        fn prune_ledger_history(
+            &self,
+            history: PrunableLedgerHistory,
+            ranges: &[(StateVersion, StateVersion)],
+            progress: LedgerHistoryGcProgress,
+        );
+    }
+
+    /// A state of the [`LedgerHistoryGc`]'s progress (tracked separately for each
+    /// [`PrunableLedgerHistory`]).
+    ///
+    /// Note: this is persisted in the [`ExtensionsDataCf`] (which leaves the serialization to each
+    /// extension), deliberately *not* in a new column family: this way, a database touched by the
+    /// GC can still be opened by a Node version which does not know this GC.
+    #[derive(Debug, Clone, Eq, PartialEq, ScryptoSbor)]
+    pub struct LedgerHistoryGcProgress {
+        /// The last epoch pruned by the GC. The next run should start from the beginning of the
+        /// next epoch.
+        pub last_pruned_epoch: Epoch,
+
+        /// The state version at which the epoch proof of the [`last_pruned_epoch`] was persisted.
+        /// The prunable rows *below* this state version are deleted.
+        pub epoch_proof_state_version: StateVersion,
     }
 
     define_single_versioned! {
