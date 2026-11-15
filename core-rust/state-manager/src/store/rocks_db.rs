@@ -165,9 +165,238 @@ impl ActualStateManagerDatabase {
         db_opts.create_if_missing(true);
         db_opts.create_missing_column_families(true);
 
+        // ---------------------------------------------------------------
+        // RocksDB tuning. Bottommost-level zstd compression (set per column
+        // family below) is always on. Every other knob is opt-in through an
+        // environment variable and inert when unset, so reverting it is
+        // removing that variable. None of it changes the on-disk
+        // format: format_version stays 6 and every setting is recorded per SST
+        // file, so existing files stay readable and a stock binary can still
+        // read anything written here.
+        // ---------------------------------------------------------------
+        let env_positive = |key: &str| -> Option<usize> {
+            std::env::var(key)
+                .ok()
+                .and_then(|value| value.trim().parse::<usize>().ok())
+                .filter(|value| *value > 0)
+        };
+        let env_flag = |key: &str| -> bool {
+            std::env::var(key)
+                .map(|value| matches!(value.trim(), "1" | "true" | "TRUE" | "yes"))
+                .unwrap_or(false)
+        };
+
+        // --- native memory ---------------------------------------------
+        // With no table options set, RocksDB runs with
+        // `max_open_files=-1` and `cache_index_and_filter_blocks=false`: every
+        // open SST keeps its index blocks resident, outside any cache and
+        // unevictable, so the footprint grows with the ledger (measured: 7,276
+        // SSTs over 398 GB) and a cold open cannot be capped. That is why a
+        // large ledger OOMs under a container memory limit instead of
+        // degrading gracefully.
+        //
+        // One cache shared by every column family. A cache built per
+        // descriptor would give 27 independent ceilings instead of one limit.
+        //
+        // The LRU cache takes a mutex per shard on EVERY lookup. Profiled on a
+        // node serving API reads with 16 threads, those lookups were ~13% of
+        // point-read time. HyperClockCache is RocksDB's lock-free replacement;
+        // an `estimated_entry_charge` of 0 selects its self-sizing variant.
+        let hyper_clock_cache = env_flag("RADIXDLT_ROCKSDB_HYPER_CLOCK_CACHE");
+        let block_cache = env_positive("RADIXDLT_ROCKSDB_BLOCK_CACHE_SIZE_MB").map(|mb| {
+            if hyper_clock_cache {
+                Cache::new_hyper_clock_cache(mb * 1024 * 1024, 0)
+            } else {
+                Cache::new_lru_cache(mb * 1024 * 1024)
+            }
+        });
+
+        // With the cache bounded, index and filter blocks (and zstd dictionary
+        // blocks) live in it too, so every table probe first looks them up:
+        // ~10% (index) and ~9% (dictionary) of point-read time, as profiled.
+        // Pinning keeps them resident for the lifetime of each open table: they
+        // are still charged to the cache, but never evicted or looked up again.
+        // Their size grows with the ledger, so this trades back some of the
+        // bound the cache gave; it is a separate switch for that reason.
+        let pin_metadata_blocks = env_flag("RADIXDLT_ROCKSDB_PIN_METADATA_BLOCKS");
+
+        // With no filter policy set, a lookup of a key that does NOT
+        // exist must search every level before answering. Reads of absent keys
+        // are routine (optional substates, absent metadata keys). A whole-key
+        // bloom filter answers "not in this file" without touching its index.
+        // Only the families read during execution get one (see the block-size
+        // list below): the append-only historical families are looked up by
+        // keys that exist. Filters reach existing files only as compaction
+        // rewrites them.
+        let bloom_filter_bits = env_positive("RADIXDLT_ROCKSDB_BLOOM_FILTER_BITS");
+
+        if let Some(max_open_files) = env_positive("RADIXDLT_ROCKSDB_MAX_OPEN_FILES") {
+            db_opts.set_max_open_files(max_open_files as i32);
+        }
+
+        // --- write buffers (memtables) ---------------------------------
+        // With neither set, every column family gets RocksDB's default
+        // 64 MiB write buffer x2: up to ~3.5 GiB across 27 families, none of it
+        // counted by the block cache. `db_write_buffer_size` puts ONE ceiling
+        // over all of them (RocksDB flushes the largest memtable when the total
+        // passes it), mirroring the single shared block cache above. Both are
+        // optional; unset, behaviour is exactly as before.
+        if let Some(mb) = env_positive("RADIXDLT_ROCKSDB_DB_WRITE_BUFFER_SIZE_MB") {
+            db_opts.set_db_write_buffer_size(mb * 1024 * 1024);
+        }
+        let write_buffer_mb = env_positive("RADIXDLT_ROCKSDB_WRITE_BUFFER_SIZE_MB");
+
+        // --- write-ahead log -------------------------------------------
+        // `max_total_wal_size` defaults to 0, meaning NO LIMIT. RocksDB then
+        // retains every WAL segment back to the oldest unflushed memtable, and
+        // with 27 column families each holding a 64 MiB write buffer a
+        // rarely-written family never fills its buffer and pins all newer
+        // segments. Measured on mainnet, same ledger: 5.5 GB of WAL on a
+        // synchronising node against 27.9 GB on a validator. A cap makes
+        // RocksDB flush the oldest memtable rather than hoard log files.
+        if let Some(mb) = env_positive("RADIXDLT_ROCKSDB_MAX_TOTAL_WAL_SIZE_MB") {
+            db_opts.set_max_total_wal_size((mb * 1024 * 1024) as u64);
+        }
+
+        // The WAL is appended sequentially and fsynced constantly, which suits
+        // a plain filesystem and actively fights a compressed copy-on-write
+        // one. Without this there is no way to separate it from the SSTs, so an
+        // operator on ZFS or btrfs cannot avoid compressing it. RocksDB itself
+        // leaves the WAL uncompressed (`wal_compression=kNoCompression`), so
+        // this is purely about which filesystem holds it.
+        //
+        // Set this only with the node STOPPED, and move any existing *.log
+        // files into the new directory first: recovery looks for them in
+        // `wal_dir`, and starting without them loses whatever had not yet been
+        // flushed into an SST.
+        if let Ok(wal_dir) = std::env::var("RADIXDLT_ROCKSDB_WAL_DIR") {
+            let wal_dir = wal_dir.trim();
+            if !wal_dir.is_empty() {
+                db_opts.set_wal_dir(wal_dir);
+            }
+        }
+
+        // --- block size, per column family -----------------------------
+        // RocksDB's 4 KiB default block is a poor fit for this ledger.
+        // `transaction_receipts` holds near-identical ~4,168-byte records, so
+        // at 4 KiB a block holds ONE record and zstd cannot see the repetition
+        // between records; at 64 KiB it holds ~16 and finds it directly.
+        // Applied only to the append-only historical families. The families
+        // read and updated during execution keep 4 KiB, because a point lookup
+        // decompresses a whole block and by default `filter_policy=nullptr`
+        // (no bloom filters), so nothing skips blocks. Together they are only a
+        // few GB, so nothing is lost by leaving them alone.
+        const LARGE_BLOCK_COLUMN_FAMILIES: &[&str] = &[
+            "transaction_receipts",
+            "committed_transaction_identifiers",
+            "raw_ledger_transactions",
+            "ledger_transaction_hashes",
+            "receipt_accu_tree_slices",
+            "transaction_accu_tree_slices",
+            "ledger_proofs",
+            "epoch_ledger_proofs",
+            "intent_hashes",
+            "notarized_transaction_hashes",
+            "finalized_subintent_hashes",
+        ];
+        let large_block_kb = env_positive("RADIXDLT_ROCKSDB_LARGE_BLOCK_SIZE_KB");
+
+        // By default only the bottommost level gets zstd (see below), so the daily
+        // compaction sawtooth sits in L0-L5 as Snappy until it merges down.
+        let all_level_zstd = env_flag("RADIXDLT_ROCKSDB_ALL_LEVEL_ZSTD");
+
+        // `periodic_compaction_seconds` is 0 by default, so cold bottom-level
+        // files are rewritten only when `ttl` (30 days) fires. Shortening it
+        // lets an EXISTING ledger converge onto these settings in days, which
+        // is what makes the change testable without a resync or a fresh
+        // snapshot. It costs background I/O while it converges.
+        let periodic_compaction_hours = env_positive("RADIXDLT_ROCKSDB_PERIODIC_COMPACTION_HOURS");
+
+        const DICT_BYTES: i32 = 110 * 1024;
+        const ZSTD_LEVEL: i32 = 3;
+        const WINDOW_BITS: i32 = -14;
+
+        let tuned_cf_options = |cf_name: &str| {
+            let mut options = Options::default();
+            let large_block =
+                large_block_kb.filter(|_| LARGE_BLOCK_COLUMN_FAMILIES.contains(&cf_name));
+
+            // A trained dictionary is what rescues 4 KiB blocks (15.9x with it
+            // against 10.8x without) and is measurably pointless at 64 KiB,
+            // where it changes the output by 10 bytes in 9.1 MB while costing
+            // training CPU on every compaction.
+            let dict_bytes = if large_block.is_some() { 0 } else { DICT_BYTES };
+
+            // Compression is a per-column-family option, so it must be set on
+            // each descriptor; setting it on `db_opts` would only reach the
+            // default column family.
+            options.set_bottommost_compression_type(DBCompressionType::Zstd);
+            if dict_bytes > 0 {
+                options.set_bottommost_zstd_max_train_bytes(dict_bytes, true);
+            }
+            options.set_bottommost_compression_options(
+                WINDOW_BITS,
+                ZSTD_LEVEL,
+                0,
+                dict_bytes,
+                true,
+            );
+
+            if all_level_zstd {
+                options.set_compression_type(DBCompressionType::Zstd);
+                options.set_compression_options(WINDOW_BITS, ZSTD_LEVEL, 0, dict_bytes);
+                if dict_bytes > 0 {
+                    options.set_zstd_max_train_bytes(dict_bytes);
+                }
+            }
+
+            if let Some(mb) = write_buffer_mb {
+                options.set_write_buffer_size(mb * 1024 * 1024);
+            }
+
+            if let Some(hours) = periodic_compaction_hours {
+                options.set_periodic_compaction_seconds((hours * 3600) as u64);
+            }
+
+            let bloom_filter =
+                bloom_filter_bits.filter(|_| !LARGE_BLOCK_COLUMN_FAMILIES.contains(&cf_name));
+            if block_cache.is_some() || large_block.is_some() || bloom_filter.is_some() {
+                // BlockBasedOptions defaults already match what RocksDB records
+                // in OPTIONS (format_version 6, kXXH3, 4 KiB blocks), so
+                // nothing about the on-disk format moves here.
+                let mut table_options = BlockBasedOptions::default();
+                if let Some(kb) = large_block {
+                    table_options.set_block_size(kb * 1024);
+                }
+                if let Some(cache) = block_cache.as_ref() {
+                    table_options.set_block_cache(cache);
+                    table_options.set_cache_index_and_filter_blocks(true);
+                    // Keep the hottest (L0) index blocks pinned so bounding the
+                    // cache does not turn every read into an index re-load.
+                    table_options.set_pin_l0_filter_and_index_blocks_in_cache(true);
+                    if pin_metadata_blocks {
+                        table_options
+                            .set_unpartitioned_pinning_tier(BlockBasedTablePinningTier::All);
+                        table_options
+                            .set_top_level_index_pinning_tier(BlockBasedTablePinningTier::All);
+                    }
+                }
+                if let Some(bits) = bloom_filter {
+                    table_options.set_bloom_filter(bits as f64, false);
+                }
+                options.set_block_based_table_factory(&table_options);
+            }
+
+            options
+        };
+
         let column_families: Vec<ColumnFamilyDescriptor> = ALL_STATE_MANAGER_COLUMN_FAMILIES
             .iter()
-            .map(|cf| ColumnFamilyDescriptor::new(cf.to_string(), Options::default()))
+            .map(|cf| {
+                let name = cf.to_string();
+                let options = tuned_cf_options(&name);
+                ColumnFamilyDescriptor::new(name, options)
+            })
             .collect();
 
         let db = DB::open_cf_descriptors(&db_opts, root_path.as_path(), column_families).unwrap();
