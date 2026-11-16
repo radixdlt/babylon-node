@@ -50,16 +50,16 @@ ENV VERSION_LAST_TAG=$VERSION_LAST_TAG
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     docker.io=20.10.24+dfsg1-1+deb12u1+b6 \
-    libssl-dev=3.0.20-1~deb12u2 \
+    libssl-dev=3.0.22-1~deb12u2 \
     pkg-config=1.8.1-1 \
     unzip=6.0-28+deb12u1 \
     wget=${WGET_VERSION} \
     software-properties-common=0.99.30-4.1~deb12u1 \
   && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk=17.0.20.1+1-1~deb12u1 \
-    openjdk-17-jre=17.0.20.1+1-1~deb12u1 \
-    openjdk-17-jdk-headless=17.0.20.1+1-1~deb12u1 \
-    openjdk-17-jre-headless=17.0.20.1+1-1~deb12u1 \
+    openjdk-17-jdk=17.0.21+9-1~deb12u1 \
+    openjdk-17-jre=17.0.21+9-1~deb12u1 \
+    openjdk-17-jdk-headless=17.0.21+9-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.21+9-1~deb12u1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -134,7 +134,7 @@ RUN apt-get update \
     g++-x86-64-linux-gnu \
     libc6-dev-arm64-cross=2.36-8cross1 \
     libclang-dev=1:14.0-55.7~deb12u1 \
-    libssl-dev=3.0.20-1~deb12u2 \
+    libssl-dev=3.0.22-1~deb12u2 \
     pkg-config=1.8.1-1 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -262,7 +262,7 @@ LABEL org.opencontainers.image.authors="devops@radixdlt.com"
 # - https://packages.debian.org/bookworm/libc6
 RUN apt-get update -y \
   && apt-get -y --no-install-recommends install \
-    openjdk-17-jre-headless=17.0.20.1+1-1~deb12u1 \
+    openjdk-17-jre-headless=17.0.21+9-1~deb12u1 \
     # https://security-tracker.debian.org/tracker/CVE-2023-38545
     curl=7.88.1-10+deb12u15 \
     gettext-base=0.21-12 \
