@@ -311,6 +311,7 @@ public final class RustMempoolTest {
             LoggingConfig.getDefault(),
             StateTreeGcConfig.forTesting(),
             LedgerProofsGcConfig.forTesting(),
+            LedgerHistoryGcConfig.disabled(),
             LedgerSyncLimitsConfig.defaults(),
             ProtocolConfig.testingDefault(),
             false,

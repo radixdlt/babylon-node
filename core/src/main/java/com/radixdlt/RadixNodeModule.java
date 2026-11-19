@@ -365,6 +365,7 @@ public final class RadixNodeModule extends AbstractModule {
 
     var stateTreeGcConfig = parseStateTreeGcConfig(properties);
     var ledgerProofsGcConfig = parseLedgerProofsGcConfig(properties);
+    var ledgerHistoryGcConfig = parseLedgerHistoryGcConfig(properties);
 
     // this is tied to the number of actually-persisted proofs, and should not be configureable:
     var ledgerSyncLimitsConfig = LedgerSyncLimitsConfig.defaults();
@@ -391,6 +392,7 @@ public final class RadixNodeModule extends AbstractModule {
             Option.some(mempoolConfig),
             stateTreeGcConfig,
             ledgerProofsGcConfig,
+            ledgerHistoryGcConfig,
             ledgerSyncLimitsConfig,
             protocolConfig,
             ScenariosExecutionConfig.ALL_FOR_NETWORK));
@@ -516,6 +518,76 @@ public final class RadixNodeModule extends AbstractModule {
     return new LedgerProofsGcConfig(
         UInt32.fromNonNegativeInt(intervalSec),
         UInt64.fromNonNegativeLong(mostRecentFullResolutionEpochCount));
+  }
+
+  /**
+   * Parses the part of the configuration related to the garbage collection process pruning the old
+   * ledger history which is not needed by the node itself. This GC is <b>disabled by default</b>:
+   * each kind of history is only pruned if its {@code ledger_history.gc.prune_*} flag is set.
+   *
+   * <p>When enabled, each {@link LedgerHistoryGcConfig#intervalSec()} seconds, we start a GC
+   * process which deletes the selected history of all completed epochs <b>except</b> the most
+   * recent {@link LedgerHistoryGcConfig#retainedEpochCount()} ones.
+   *
+   * <p>A node which prunes its history can still validate, and can still serve ledger-sync requests
+   * of its peers (including the ones syncing from genesis): the raw transactions and their proofs
+   * are never pruned. It can no longer serve the pruned part of the transaction history from its
+   * Core API, so this should not be enabled on a node backing a Gateway which needs a full history.
+   */
+  private LedgerHistoryGcConfig parseLedgerHistoryGcConfig(RuntimeProperties properties) {
+    // How often to run the GC, in seconds.
+    // Since this GC operates with an epoch precision, we do not need to run more often than epoch
+    // changes.
+    var intervalSec = properties.get("ledger_history.gc.interval_sec", 300);
+    Preconditions.checkArgument(
+        intervalSec > 0, "ledger history GC interval must be positive: %s sec", intervalSec);
+
+    // How many most recent completed epochs should not be pruned?
+    var retainedEpochCount =
+        properties.get(
+            "ledger_history.gc.retained_epoch_count",
+            LedgerHistoryGcConfig.DEFAULT_RETAINED_EPOCH_COUNT);
+    Preconditions.checkArgument(
+        retainedEpochCount >= 1,
+        "ledger history GC must retain at least 1 completed epoch: %s",
+        retainedEpochCount);
+
+    // How many epochs to prune during a single run, at most?
+    // This only paces the initial clean-up of an existing ledger.
+    var maxEpochsPerRun = properties.get("ledger_history.gc.max_epochs_per_run", 1000);
+    Preconditions.checkArgument(
+        maxEpochsPerRun > 0,
+        "ledger history GC must be allowed to prune at least 1 epoch per run: %s",
+        maxEpochsPerRun);
+
+    // Whether to prune the transaction receipts (and local transaction executions).
+    // The receipts of epoch-changing transactions are always retained.
+    var pruneTransactionReceipts =
+        properties.get("ledger_history.gc.prune_transaction_receipts", false);
+
+    // Whether to prune the slices of the transaction- and receipt- accumulator trees.
+    var pruneAccumulatorTreeSlices =
+        properties.get("ledger_history.gc.prune_accumulator_tree_slices", false);
+
+    // Whether to prune the committed transaction identifiers.
+    var pruneTransactionIdentifiers =
+        properties.get("ledger_history.gc.prune_transaction_identifiers", false);
+
+    // Whether to prune the hash-based transaction indices (i.e. the lookups of a transaction by its
+    // intent, notarized transaction, ledger transaction or subintent hash).
+    // These are always retained for at least the maximum epoch range of a transaction's validity
+    // (~30 days), regardless of the retained epoch count.
+    var pruneTransactionHashIndices =
+        properties.get("ledger_history.gc.prune_transaction_hash_indices", false);
+
+    return new LedgerHistoryGcConfig(
+        UInt32.fromNonNegativeInt(intervalSec),
+        UInt64.fromNonNegativeLong(retainedEpochCount),
+        UInt32.fromNonNegativeInt(maxEpochsPerRun),
+        pruneTransactionReceipts,
+        pruneAccumulatorTreeSlices,
+        pruneTransactionIdentifiers,
+        pruneTransactionHashIndices);
   }
 
   private void warnProtocolPropertySet(String prop) {

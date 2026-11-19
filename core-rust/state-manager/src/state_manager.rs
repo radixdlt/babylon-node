@@ -66,6 +66,7 @@ use std::num::NonZeroUsize;
 
 use crate::jni::LedgerSyncLimitsConfig;
 use crate::jni_prelude::*;
+use crate::store::history_gc::{LedgerHistoryGc, LedgerHistoryGcConfig};
 use crate::store::jmt_gc::*;
 use crate::store::proofs_gc::{LedgerProofsGc, LedgerProofsGcConfig};
 
@@ -89,6 +90,7 @@ pub struct StateManagerConfig {
     pub logging_config: LoggingConfig,
     pub state_tree_gc_config: StateTreeGcConfig,
     pub ledger_proofs_gc_config: LedgerProofsGcConfig,
+    pub ledger_history_gc_config: LedgerHistoryGcConfig,
     pub ledger_sync_limits_config: LedgerSyncLimitsConfig,
     pub protocol_config: ProtocolConfig,
     pub no_fees: bool,
@@ -148,6 +150,7 @@ impl StateManagerConfig {
             logging_config: LoggingConfig::default(),
             state_tree_gc_config: StateTreeGcConfig::default(),
             ledger_proofs_gc_config: LedgerProofsGcConfig::default(),
+            ledger_history_gc_config: LedgerHistoryGcConfig::default(),
             ledger_sync_limits_config: LedgerSyncLimitsConfig::default(),
             protocol_config: ProtocolConfig::new_with_no_updates(),
             no_fees: false,
@@ -201,6 +204,7 @@ impl StateManager {
             logging_config,
             state_tree_gc_config,
             ledger_proofs_gc_config,
+            ledger_history_gc_config,
             ledger_sync_limits_config,
             protocol_config,
             no_fees,
@@ -216,6 +220,12 @@ impl StateManager {
                     },
                     DatabaseConfigValidationError::LocalTransactionExecutionIndexChanged => {
                         panic!("Local transaction execution index can not be changed once configured.\nIf you need to change it, please wipe ledger data and resync.");
+                    }
+                    DatabaseConfigValidationError::AccountChangeIndexRequiresPrunedTransactionReceipts { catchup_from, pruned_below } => {
+                        panic!("Account change index can not be caught up: it needs the local transaction executions from state version {catchup_from}, but they were pruned below state version {pruned_below} (see `ledger_history.gc.prune_transaction_receipts`).\nPlease either disable the account change index, or wipe ledger data and resync without pruning.");
+                    }
+                    DatabaseConfigValidationError::EntityListingIndicesRequirePrunedTransactionReceipts { catchup_from, pruned_below } => {
+                        panic!("Entity listing indices can not be caught up: they need the transaction receipts from state version {catchup_from}, but these were pruned below state version {pruned_below} (see `ledger_history.gc.prune_transaction_receipts`).\nPlease either disable the entity listing indices, or wipe ledger data and resync without pruning.");
                     }
                 }
             }
@@ -359,6 +369,7 @@ impl StateManager {
             });
 
         // ... and for deleting the stale state hash tree nodes (a.k.a. "JMT GC")...
+        let state_version_history_length = state_tree_gc_config.state_version_history_length;
         let state_tree_gc = StateTreeGc::new(database.clone(), state_tree_gc_config);
         scheduler
             .named("state_tree_gc")
@@ -376,6 +387,22 @@ impl StateManager {
                 ledger_proofs_gc.run();
             },
         );
+
+        // ... and - only if explicitly enabled - for deleting the old ledger history:
+        let ledger_history_gc = LedgerHistoryGc::new(
+            database.clone(),
+            ledger_history_gc_config,
+            state_version_history_length,
+            transaction_validator.clone(),
+        );
+        if ledger_history_gc.is_enabled() {
+            scheduler.named("ledger_history_gc").start_periodic(
+                ledger_history_gc.interval(),
+                move || {
+                    ledger_history_gc.run();
+                },
+            );
+        }
 
         let state_manager = Self {
             network_definition,

@@ -45,6 +45,8 @@ pub(crate) async fn handle_lts_transaction_status(
         });
 
     if let Some(txn_state_version) = txn_state_version_opt {
+        assert_transaction_history_not_pruned(database.deref(), txn_state_version)?;
+
         let hashes = database
             .get_committed_transaction_identifiers(txn_state_version)
             .expect("Txn identifiers are missing")
@@ -162,10 +164,14 @@ pub(crate) async fn handle_lts_transaction_status(
             known_payloads,
         }
     } else {
+        let not_seen_description = format!(
+            "No payloads for this intent have been seen recently by this node.{}",
+            transaction_hash_indices_pruned_note(database.deref())
+        );
         let (status, description) = if known_payloads.is_empty() {
             (
                 models::LtsTransactionIntentStatus::NotSeen,
-                "No payloads for this intent have been seen recently by this node.",
+                not_seen_description.as_str(),
             )
         } else {
             let any_payloads_not_rejected = known_payloads

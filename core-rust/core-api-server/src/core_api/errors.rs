@@ -208,6 +208,43 @@ pub(crate) fn client_error<E: ErrorDetails>(message: impl Into<String>) -> Respo
     }
 }
 
+/// Fails with a client error if the history of the transaction at the given state version (i.e.
+/// its receipt or its identifiers) may have been deleted by the Node's (opt-in) ledger history GC.
+/// This must be called on the same database snapshot which is then used for reading the history.
+pub(crate) fn assert_transaction_history_not_pruned<E: ErrorDetails>(
+    database: &impl QueryableTransactionStore,
+    state_version: StateVersion,
+) -> Result<(), ResponseError<E>> {
+    match database.get_transaction_history_pruned_below() {
+        Some(pruned_below) if state_version < pruned_below => Err(client_error(format!(
+            "The transaction history at state version {} is not available from this node: \
+            it has pruned its transaction history below state version {} \
+            (see the `ledger_history.gc.*` node configuration). \
+            Please use a node which keeps the full transaction history.",
+            state_version.number(),
+            pruned_below.number(),
+        ))),
+        _ => Ok(()),
+    }
+}
+
+/// Returns a note to be appended to a "transaction not found" message (or an empty string): a Node
+/// which pruned its hash-based transaction indices (using its opt-in ledger history GC) cannot find
+/// an older transaction by its hash anymore.
+pub(crate) fn transaction_hash_indices_pruned_note(
+    database: &impl QueryableTransactionStore,
+) -> String {
+    match database.get_transaction_hash_indices_pruned_below() {
+        Some(pruned_below) => format!(
+            " Note: this node has pruned its transaction hash indices below state version {}, \
+            so it cannot find a transaction committed before it (see the `ledger_history.gc.*` \
+            node configuration).",
+            pruned_below.number(),
+        ),
+        None => String::new(),
+    }
+}
+
 pub(crate) fn not_found_error<E: ErrorDetails>(message: impl Into<String>) -> ResponseError<E> {
     ResponseError {
         status_code: StatusCode::NOT_FOUND,
